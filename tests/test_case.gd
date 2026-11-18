@@ -3,6 +3,9 @@ extends RefCounted
 ## Base class for headless unit tests. Methods named `test_*` are run in order.
 ## `before_each` / `after_each` run around every test if defined.
 
+## The test runner node, for tests that need the scene tree.
+var runner: Node
+
 var _failures: PackedStringArray = PackedStringArray()
 var _current: String = ""
 

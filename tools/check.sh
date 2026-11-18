@@ -34,4 +34,12 @@ wait $host_pid; host_rc=$?
 step net_host $host_rc
 step net_client $client_rc
 
+# Multi-instance session: 1 host + 2 clients run scripted bots and compare state.
+PORT=$(( 25000 + RANDOM % 5000 ))
+HEADLESS=1 WAIT_ALL=1 PORT=$PORT GAME_ARGS=--autotest GODOT="$GODOT" \
+  timeout 60 tools/launch.sh 3 >"$LOG_DIR/autotest.log" 2>&1; rc=$?
+if grep -qE "SCRIPT ERROR|Parse Error" "$LOG_DIR/autotest.log"; then rc=1; fi
+python3 tools/compare_autotest.py "$LOG_DIR/autotest.log" 3 || rc=1
+step autotest $rc
+
 exit $status

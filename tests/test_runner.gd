@@ -46,6 +46,7 @@ func _run_unit_tests(dir: String) -> int:
 			printerr("NOT A TestCase %s" % path)
 			failures += 1
 			continue
+		case.runner = self
 		for method: Dictionary in script.get_script_method_list():
 			var name: String = method["name"]
 			if not name.begins_with("test_"):

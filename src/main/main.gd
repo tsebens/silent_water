@@ -1,11 +1,10 @@
 extends Node
-## Boot scene. Reads launch args, hosts or joins, and loads the game scene
-## once a session is up. Without args it shows the dev connect menu.
+## Boot scene. Reads launch args, hosts or joins, and starts the game
+## session once connected. Without args it shows the dev connect menu.
 
-const GAME_SCENE: PackedScene = preload("res://src/game/game.tscn")
 const DEV_MENU_SCENE: PackedScene = preload("res://src/main/dev_menu.tscn")
 
-var _game: Node = null
+@onready var _game: Game = $Game
 var _menu: DevMenu = null
 
 
@@ -20,6 +19,18 @@ func _ready() -> void:
 	var args: LaunchArgs = LaunchArgs.parse(OS.get_cmdline_user_args())
 	for e: String in args.errors:
 		push_error("Launch args: " + e)
+
+	if OS.get_cmdline_user_args().has("--autotest"):
+		var autotest: Autotest = Autotest.new()
+		autotest.name = "Autotest"
+		add_child(autotest)
+		autotest.setup(_game, args.player_name)
+
+	if OS.get_cmdline_user_args().has("--screenshot"):
+		var shot: DebugScreenshot = DebugScreenshot.new()
+		shot.name = "DebugScreenshot"
+		add_child(shot)
+		shot.setup(_game, OS.get_cmdline_user_args())
 
 	if args.host:
 		_report(Net.host(args.port), "host")
@@ -44,18 +55,12 @@ func _start_game() -> void:
 	if _menu != null:
 		_menu.queue_free()
 		_menu = null
-	if _game != null:
-		return
 	print("[net] session up as %s (peer %d)" % ["host" if Net.is_host() else "client", Net.local_id()])
-	_game = GAME_SCENE.instantiate()
-	_game.name = "Game"
-	add_child(_game)
+	_game.start_session()
 
 
 func _end_game() -> void:
-	if _game != null:
-		_game.queue_free()
-		_game = null
+	_game.end_session()
 	_show_menu()
 
 

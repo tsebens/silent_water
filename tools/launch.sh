@@ -6,6 +6,9 @@
 #   GODOT     Godot binary (default: godot)
 #   PORT      port to use (default 24550)
 #   HEADLESS  set to 1 to run without windows (for CI or smoke checks)
+#   GAME_ARGS extra game arguments for every instance (e.g. "--tilt-test")
+#   WAIT_ALL  set to 1 to wait for every instance to exit (default: stop all
+#             when the first one exits)
 # Ctrl+C stops every instance.
 set -euo pipefail
 cd "$(dirname "$0")/.."
@@ -26,10 +29,10 @@ window_args() { # index -> godot window args
 }
 
 # shellcheck disable=SC2046
-"$GODOT" --path . $(window_args 0) "$@" -- --host --port "$PORT" --name "Crew1" & pids+=($!)
+"$GODOT" --path . $(window_args 0) "$@" -- --host --port "$PORT" --name "Crew1" ${GAME_ARGS:-} & pids+=($!)
 sleep 1
 for (( i = 1; i < N; i++ )); do
   # shellcheck disable=SC2046
-  "$GODOT" --path . $(window_args "$i") "$@" -- --join --port "$PORT" --name "Crew$((i + 1))" & pids+=($!)
+  "$GODOT" --path . $(window_args "$i") "$@" -- --join --port "$PORT" --name "Crew$((i + 1))" ${GAME_ARGS:-} & pids+=($!)
 done
-wait -n "${pids[@]}"
+if [ "${WAIT_ALL:-0}" = "1" ]; then wait "${pids[@]}"; else wait -n "${pids[@]}"; fi
