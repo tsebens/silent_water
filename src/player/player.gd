@@ -23,6 +23,10 @@ const LAYER_INTERACTABLE: int = 1 << 1
 const SLIDE_ANGLE_DEG: float = 30.0
 ## How strongly tilt slows walking uphill and speeds walking downhill.
 const SLOPE_SPEED_EFFECT: float = 1.5
+## Interior bounds (sub-local). A player outside them is put back inside;
+## this guards against physics glitches pushing someone through the hull.
+const INTERIOR_BOUNDS: AABB = AABB(Vector3(-1.5, -0.5, -6.0), Vector3(3.0, 3.0, 12.0))
+const RESCUE_POINT: Vector3 = Vector3(0, 0.1, 0)
 
 ## Replicated pose (sub-local). Written by the owning peer.
 @export var sync_position: Vector3 = Vector3.ZERO
@@ -39,6 +43,7 @@ var bot_move: Vector2 = Vector2.ZERO
 
 var _sub_frame: SubFrame
 var _held: Interactable = null
+var _seat: PilotSeat = null
 var _stride: float = 0.0
 
 
@@ -66,6 +71,7 @@ func _unhandled_input(event: InputEvent) -> void:
 		return
 	if event.is_action_pressed(&"release_mouse"):
 		_release_held()
+		stand_up()
 		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 		return
 	if Input.mouse_mode != Input.MOUSE_MODE_CAPTURED:
@@ -73,7 +79,10 @@ func _unhandled_input(event: InputEvent) -> void:
 			Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 		return
 	if event.is_action_pressed(&"interact"):
-		_try_grab()
+		if _seat != null:
+			stand_up()
+		else:
+			_try_grab()
 	elif event.is_action_released(&"interact"):
 		_release_held()
 	var motion: InputEventMouseMotion = event as InputEventMouseMotion
@@ -104,6 +113,12 @@ func _simulate(delta: float) -> void:
 	var input: Vector2 = bot_move
 	if input == Vector2.ZERO and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
 		input = Input.get_vector(&"move_left", &"move_right", &"move_forward", &"move_back")
+	if _seat != null:
+		# Seated: WASD flies the sub; the body stays in the chair.
+		_seat.drive(input, delta)
+		position = _seat.seat_transform().origin
+		velocity = Vector3.ZERO
+		return
 	var sneaking: bool = Input.is_action_pressed(&"sneak")
 	var speed: float = SNEAK_SPEED if sneaking else WALK_SPEED
 	# Part of gravity along the deck. The deck is flat in the sub frame, so the
@@ -126,6 +141,10 @@ func _simulate(delta: float) -> void:
 		velocity += gravity * delta
 	var before: Vector3 = position
 	move_and_slide()
+	if not INTERIOR_BOUNDS.has_point(position):
+		push_warning("Player %s left the interior at %s; moving back inside" % [name, position])
+		position = RESCUE_POINT
+		velocity = Vector3.ZERO
 	if is_on_floor():
 		_stride += (position - before).length()
 		if _stride >= STRIDE_M:
@@ -149,8 +168,40 @@ func _try_grab() -> void:
 		node = node.get_parent()
 	if node == null:
 		return
+	if node is PilotSeat:
+		sit_in(node as PilotSeat)
+		return
 	_held = node as Interactable
 	_held.begin_interaction()
+
+
+## Sits in the pilot's chair. Stands up again if someone else got there first.
+func sit_in(seat: PilotSeat) -> void:
+	if _seat != null:
+		return
+	_seat = seat
+	_seat.holder_changed.connect(_on_seat_holder_changed)
+	_seat.begin_interaction()
+
+
+func stand_up() -> void:
+	if _seat == null:
+		return
+	var seat: PilotSeat = _seat
+	_seat = null
+	seat.holder_changed.disconnect(_on_seat_holder_changed)
+	seat.end_interaction()
+	# Step out of the chair, back toward the corridor.
+	position = seat.seat_transform().origin + seat.seat_transform().basis.z * 0.6
+
+
+func is_seated() -> bool:
+	return _seat != null
+
+
+func _on_seat_holder_changed(peer_id: int) -> void:
+	if peer_id != Net.local_id() and peer_id != InteractableState.NO_HOLDER:
+		stand_up()
 
 
 func _release_held() -> void:

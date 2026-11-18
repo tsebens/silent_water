@@ -1,12 +1,14 @@
 #!/usr/bin/env python3
-"""Checks AUTOTEST_REPORT lines from a multi-instance run.
+"""Checks AUTOTEST_REPORT lines from a multi-instance run (see src/debug/autotest.gd).
 
 Usage: compare_autotest.py <log> <expected_instances>
-Every peer must agree on players, lever and valve; the lever must end at max
-(the second grabber was rejected) and the valve near half open.
 """
 import json
 import sys
+
+
+def near(a, b, tol):
+    return abs(a - b) <= tol
 
 
 def main() -> int:
@@ -19,20 +21,34 @@ def main() -> int:
     errors = []
     if len(reports) != expected:
         errors.append(f"expected {expected} reports, got {len(reports)}")
+    by_role = {r["role"]: r for r in reports}
     for r in reports:
+        who = r["role"]
         if len(r["players"]) != expected:
-            errors.append(f"{r['role']} sees {len(r['players'])} players, expected {expected}")
-        if abs(r["lever"] - 1.0) > 0.01:
-            errors.append(f"{r['role']} lever={r['lever']} (expected 1.0: Crew3 must be rejected)")
-        if r["lever_holder"] != 0:
-            errors.append(f"{r['role']} lever still held by {r['lever_holder']}")
-        if abs(r["valve"] - 0.5) > 0.1:
-            errors.append(f"{r['role']} valve={r['valve']} (expected ~0.5)")
+            errors.append(f"{who} sees {len(r['players'])} players, expected {expected}")
+        if not near(r["telegraph"], 3.0, 0.001):
+            errors.append(f"{who} telegraph={r['telegraph']} (expected Full Ahead 3; Crew3 must be rejected)")
+        if r["telegraph_holder"] != 0:
+            errors.append(f"{who} telegraph still held by {r['telegraph_holder']}")
+        if not near(r["flood"], 0.75, 0.1):
+            errors.append(f"{who} flood={r['flood']} (expected ~0.75)")
+        if r["rudder"] > -0.8:
+            errors.append(f"{who} rudder={r['rudder']} (expected hard to port)")
+        if r["engine"] <= 0.2:
+            errors.append(f"{who} engine={r['engine']} (should be spooling up)")
+    if "Crew3" in by_role and expected >= 3:
+        crew3 = by_role["Crew3"]
+        for r in reports:
+            if r["seat_holder"] != crew3["peer"]:
+                errors.append(f"{r['role']} thinks seat holder is {r['seat_holder']}, expected Crew3 {crew3['peer']}")
+        pos = crew3["players"].get(str(crew3["peer"]))
+        if pos and sum((a - b) ** 2 for a, b in zip(pos, crew3["seat_point"])) ** 0.5 > 0.05:
+            errors.append(f"Crew3 is at {pos}, not in the seat {crew3['seat_point']}")
     if reports:
         ref = reports[0]
         for r in reports[1:]:
-            for key in ("lever", "valve"):
-                if abs(r[key] - ref[key]) > 0.005:
+            for key, tol in (("telegraph", 0.001), ("flood", 0.005), ("rudder", 0.05), ("depth", 0.5), ("tank", 0.02)):
+                if not near(r[key], ref[key], tol):
                     errors.append(f"{key} disagrees: {ref['role']}={ref[key]} {r['role']}={r[key]}")
             for pid, pos in ref["players"].items():
                 other = r["players"].get(pid)

@@ -8,6 +8,7 @@ var game: Game
 
 func before_each() -> void:
 	game = GAME_SCENE.instantiate() as Game
+	(game.get_node("SubController") as SubController).enabled = false
 	runner.add_child(game)
 	game.start_session()
 

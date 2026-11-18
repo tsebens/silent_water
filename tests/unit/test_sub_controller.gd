@@ -1,0 +1,51 @@
+extends TestCase
+## Integration tests for the host SubController in a real Game scene, offline.
+
+const GAME_SCENE: PackedScene = preload("res://src/game/game.tscn")
+
+var game: Game
+var controller: SubController
+var strikes: Array[float] = []
+
+
+func before_each() -> void:
+	game = GAME_SCENE.instantiate() as Game
+	controller = game.get_node("SubController") as SubController
+	runner.add_child(game)
+	game.start_session()
+	strikes.clear()
+	controller.hull_strike.connect(func(speed: float) -> void: strikes.append(speed))
+
+
+func after_each() -> void:
+	game.end_session()
+	game.free()
+
+
+func _physics_frames(n: int) -> void:
+	for i: int in range(n):
+		await runner.get_tree().physics_frame
+
+
+func test_sinking_sub_strikes_and_rests_on_seabed() -> void:
+	controller.model.position = Vector3(0, -34, 0)
+	controller.model.tank_water_t = controller.model.tank_capacity_t
+	await _physics_frames(60 * 20)
+	expect(strikes.size() > 0, "expected a hull strike on the seabed")
+	# Seabed surface is at y = -40; the hull bottom is 0.4 m below the origin.
+	expect(controller.model.position.y > -40.0, "sub sank through the seabed to %f" % controller.model.position.y)
+	expect(absf(controller.model.velocity.y) < 0.1, "sub should come to rest, vy=%f" % controller.model.velocity.y)
+
+
+func test_telegraph_drives_engine() -> void:
+	var telegraph: Telegraph = game.get_node("Interior/Stations/Engineering/Telegraph") as Telegraph
+	telegraph.host_set_value(3.0)
+	await _physics_frames(60 * 3)
+	expect(controller.engine_output > 0.4, "engine output %f" % controller.engine_output)
+	expect(controller.speed > 0.0, "sub should be moving ahead")
+
+
+func test_readouts_track_model() -> void:
+	controller.model.position = Vector3(0, -22.5, 0)
+	await _physics_frames(2)
+	expect_near(controller.depth, 22.5, 0.5)

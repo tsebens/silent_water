@@ -60,3 +60,8 @@ func set_pose(new_transform: Transform3D, velocity: Vector3 = Vector3.ZERO) -> v
 	assert(is_multiplayer_authority(), "Only the host moves the sub")
 	sub_transform = new_transform.orthonormalized()
 	sub_velocity = velocity
+	# Apply immediately so physics queries in the next tick see the world
+	# where the sub actually is, even if several physics ticks run per frame.
+	_render_transform = sub_transform
+	if world_root != null:
+		world_root.transform = _render_transform.affine_inverse()

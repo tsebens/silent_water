@@ -1,8 +1,9 @@
-[gd_scene load_steps=8 format=3]
+[gd_scene format=3]
 
 [ext_resource type="Script" path="res://src/game/game.gd" id="1"]
 [ext_resource type="Script" path="res://src/sub/sub_frame.gd" id="2"]
-[ext_resource type="Script" path="res://src/sub/test_motion.gd" id="3"]
+[ext_resource type="Script" path="res://src/sub/sub_controller.gd" id="3"]
+[ext_resource type="Script" path="res://src/world/marine_snow.gd" id="6"]
 [ext_resource type="PackedScene" path="res://src/sub/interior.tscn" id="4"]
 [ext_resource type="PackedScene" path="res://src/world/exterior.tscn" id="5"]
 
@@ -13,6 +14,29 @@ properties/0/replication_mode = 1
 properties/1/path = NodePath(".:sub_velocity")
 properties/1/spawn = true
 properties/1/replication_mode = 1
+
+[sub_resource type="SceneReplicationConfig" id="readout_repl"]
+properties/0/path = NodePath(".:depth")
+properties/0/spawn = true
+properties/0/replication_mode = 1
+properties/1/path = NodePath(".:speed")
+properties/1/spawn = true
+properties/1/replication_mode = 1
+properties/2/path = NodePath(".:heading_deg")
+properties/2/spawn = true
+properties/2/replication_mode = 1
+properties/3/path = NodePath(".:pitch_deg")
+properties/3/spawn = true
+properties/3/replication_mode = 1
+properties/4/path = NodePath(".:engine_output")
+properties/4/spawn = true
+properties/4/replication_mode = 1
+properties/5/path = NodePath(".:tank_fraction")
+properties/5/spawn = true
+properties/5/replication_mode = 1
+properties/6/path = NodePath(".:air_fraction")
+properties/6/spawn = true
+properties/6/replication_mode = 1
 
 [sub_resource type="Environment" id="env"]
 background_mode = 1
@@ -38,15 +62,27 @@ world_root = NodePath("../World")
 replication_interval = 0.05
 replication_config = SubResource("sub_repl")
 
-[node name="TestMotion" type="Node" parent="." node_paths=PackedStringArray("sub_frame")]
+[node name="SubController" type="Node" parent="." node_paths=PackedStringArray("sub_frame", "telegraph", "rudder", "planes", "flood_valve", "blow_valve")]
 script = ExtResource("3")
 sub_frame = NodePath("../SubFrame")
+telegraph = NodePath("../Interior/Stations/Engineering/Telegraph")
+rudder = NodePath("../Interior/Stations/Pilot/Rudder")
+planes = NodePath("../Interior/Stations/Pilot/Planes")
+flood_valve = NodePath("../Interior/Stations/Ballast/FloodValve")
+blow_valve = NodePath("../Interior/Stations/Ballast/BlowValve")
+
+[node name="Sync" type="MultiplayerSynchronizer" parent="SubController"]
+replication_interval = 0.1
+replication_config = SubResource("readout_repl")
 
 [node name="Interior" parent="." instance=ExtResource("4")]
 
 [node name="World" type="Node3D" parent="."]
 
 [node name="Exterior" parent="World" instance=ExtResource("5")]
+
+[node name="MarineSnow" type="MeshInstance3D" parent="World"]
+script = ExtResource("6")
 
 [node name="Players" type="Node3D" parent="."]
 

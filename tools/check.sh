@@ -12,7 +12,7 @@ run() { # name, timeout, args...
   local name="$1" t="$2"; shift 2
   timeout "$t" "$GODOT" --headless --path . "$@" >"$LOG_DIR/$name.log" 2>&1
   local rc=$?
-  if grep -qE "SCRIPT ERROR|Parse Error|Failed to load script" "$LOG_DIR/$name.log"; then rc=1; fi
+  if grep -qE "SCRIPT ERROR|SHADER ERROR|Parse Error|Failed to load script" "$LOG_DIR/$name.log"; then rc=1; fi
   return $rc
 }
 
@@ -38,7 +38,7 @@ step net_client $client_rc
 PORT=$(( 25000 + RANDOM % 5000 ))
 HEADLESS=1 WAIT_ALL=1 PORT=$PORT GAME_ARGS=--autotest GODOT="$GODOT" \
   timeout 60 tools/launch.sh 3 >"$LOG_DIR/autotest.log" 2>&1; rc=$?
-if grep -qE "SCRIPT ERROR|Parse Error" "$LOG_DIR/autotest.log"; then rc=1; fi
+if grep -qE "SCRIPT ERROR|SHADER ERROR|Parse Error" "$LOG_DIR/autotest.log"; then rc=1; fi
 python3 tools/compare_autotest.py "$LOG_DIR/autotest.log" 3 || rc=1
 step autotest $rc
 

@@ -1,7 +1,10 @@
-[gd_scene load_steps=12 format=3]
+[gd_scene format=3]
 
-[ext_resource type="PackedScene" path="res://src/interact/lever.tscn" id="1"]
+[ext_resource type="PackedScene" path="res://src/interact/telegraph.tscn" id="1"]
 [ext_resource type="PackedScene" path="res://src/interact/valve.tscn" id="2"]
+[ext_resource type="Script" path="res://src/interact/gauge.gd" id="3"]
+[ext_resource type="Script" path="res://src/interact/pilot_seat.gd" id="4"]
+[ext_resource type="Script" path="res://src/interact/spring_axis.gd" id="5"]
 
 [sub_resource type="StandardMaterial3D" id="hull"]
 albedo_color = Color(0.32, 0.34, 0.33, 1)
@@ -32,6 +35,24 @@ albedo_color = Color(0.25, 0.3, 0.28, 1)
 metallic = 0.5
 roughness = 0.6
 
+[sub_resource type="BoxMesh" id="seat_mesh"]
+size = Vector3(0.55, 0.5, 0.55)
+
+[sub_resource type="BoxMesh" id="seat_back"]
+size = Vector3(0.55, 0.7, 0.1)
+
+[sub_resource type="BoxShape3D" id="seat_grab"]
+size = Vector3(0.6, 1.1, 0.6)
+
+[sub_resource type="CylinderMesh" id="yoke_column"]
+top_radius = 0.03
+bottom_radius = 0.03
+height = 0.35
+
+[sub_resource type="TorusMesh" id="yoke_wheel"]
+inner_radius = 0.13
+outer_radius = 0.16
+
 [node name="Interior" type="Node3D"]
 
 [node name="Hull" type="CSGCombiner3D" parent="."]
@@ -41,7 +62,7 @@ collision_mask = 0
 
 [node name="Outer" type="CSGBox3D" parent="Hull"]
 position = Vector3(0, 1.2, 0)
-size = Vector3(3.4, 2.8, 12.4)
+size = Vector3(3.8, 3.2, 12.8)
 material = SubResource("hull")
 
 [node name="Inner" type="CSGBox3D" parent="Hull"]
@@ -52,37 +73,47 @@ material = SubResource("hull")
 
 [node name="PortholePortA" type="CSGCylinder3D" parent="Hull"]
 operation = 2
-position = Vector3(-1.6, 1.6, -2.5)
+position = Vector3(-1.7, 1.6, -2.5)
 rotation = Vector3(0, 0, 1.5708)
 radius = 0.25
-height = 0.6
+height = 1.0
 sides = 16
 
 [node name="PortholePortB" type="CSGCylinder3D" parent="Hull"]
 operation = 2
-position = Vector3(-1.6, 1.6, 2.5)
+position = Vector3(-1.7, 1.6, 2.5)
 rotation = Vector3(0, 0, 1.5708)
 radius = 0.25
-height = 0.6
+height = 1.0
 sides = 16
 
 [node name="PortholeStbdA" type="CSGCylinder3D" parent="Hull"]
 operation = 2
-position = Vector3(1.6, 1.6, -2.5)
+position = Vector3(1.7, 1.6, -2.5)
 rotation = Vector3(0, 0, 1.5708)
 radius = 0.25
-height = 0.6
+height = 1.0
 sides = 16
 
 [node name="BowWindow" type="CSGBox3D" parent="Hull"]
 operation = 2
-position = Vector3(0, 1.6, -6.1)
-size = Vector3(1.2, 0.6, 0.6)
+position = Vector3(0, 1.6, -6.2)
+size = Vector3(1.2, 0.6, 1.0)
 
 [node name="Deck" type="CSGBox3D" parent="Hull"]
 position = Vector3(0, 0.01, 0)
 size = Vector3(2.98, 0.02, 11.98)
 material = SubResource("floor")
+
+[node name="PilotConsole" type="CSGBox3D" parent="Hull"]
+position = Vector3(0, 0.5, -5.6)
+size = Vector3(1.6, 1.0, 0.7)
+material = SubResource("console")
+
+[node name="GaugePanel" type="CSGBox3D" parent="Hull"]
+position = Vector3(0, 1.15, -5.85)
+size = Vector3(1.6, 0.36, 0.2)
+material = SubResource("console")
 
 [node name="EngineConsole" type="CSGBox3D" parent="Hull"]
 position = Vector3(1.2, 0.45, 4)
@@ -134,7 +165,7 @@ shadow_enabled = true
 omni_range = 6.0
 
 [node name="Headlight" type="SpotLight3D" parent="Lights"]
-position = Vector3(0, 0.6, -6.5)
+position = Vector3(0, 0.6, -6.7)
 light_color = Color(0.9, 0.95, 1, 1)
 light_energy = 6.0
 spot_range = 40.0
@@ -143,25 +174,157 @@ shadow_enabled = true
 
 [node name="Stations" type="Node3D" parent="."]
 
-[node name="EngineLever" parent="Stations" instance=ExtResource("1")]
+[node name="Pilot" type="Node3D" parent="Stations"]
+
+[node name="Seat" type="Node3D" parent="Stations/Pilot" node_paths=PackedStringArray("rudder", "planes", "sit_point")]
+position = Vector3(0, 0, -4.4)
+script = ExtResource("4")
+rudder = NodePath("../Rudder")
+planes = NodePath("../Planes")
+sit_point = NodePath("SitPoint")
+label = "pilot seat"
+
+[node name="Cushion" type="MeshInstance3D" parent="Stations/Pilot/Seat"]
+position = Vector3(0, 0.25, 0)
+mesh = SubResource("seat_mesh")
+material_override = SubResource("console")
+
+[node name="Back" type="MeshInstance3D" parent="Stations/Pilot/Seat"]
+position = Vector3(0, 0.85, 0.25)
+mesh = SubResource("seat_back")
+material_override = SubResource("console")
+
+[node name="SitPoint" type="Node3D" parent="Stations/Pilot/Seat"]
+position = Vector3(0, 0.0, -0.1)
+
+[node name="Grab" type="StaticBody3D" parent="Stations/Pilot/Seat"]
+collision_layer = 2
+collision_mask = 0
+
+[node name="Shape" type="CollisionShape3D" parent="Stations/Pilot/Seat/Grab"]
+position = Vector3(0, 0.55, 0)
+shape = SubResource("seat_grab")
+
+[node name="Planes" type="Node3D" parent="Stations/Pilot" node_paths=PackedStringArray("indicator")]
+position = Vector3(0, 0.95, -5.15)
+script = ExtResource("5")
+indicator = NodePath("Column")
+indicator_axis = Vector3(-1, 0, 0)
+label = "dive planes"
+
+[node name="Column" type="Node3D" parent="Stations/Pilot/Planes"]
+
+[node name="ColumnMesh" type="MeshInstance3D" parent="Stations/Pilot/Planes/Column"]
+position = Vector3(0, 0.17, 0)
+mesh = SubResource("yoke_column")
+
+[node name="Rudder" type="Node3D" parent="Stations/Pilot" node_paths=PackedStringArray("indicator")]
+position = Vector3(0, 1.3, -5.15)
+script = ExtResource("5")
+indicator = NodePath("Wheel")
+indicator_axis = Vector3(0, 0, -1)
+indicator_max_deg = 60.0
+label = "rudder"
+
+[node name="Wheel" type="MeshInstance3D" parent="Stations/Pilot/Rudder"]
+transform = Transform3D(1, 0, 0, 0, -4.37114e-08, -1, 0, 1, -4.37114e-08, 0, 0, 0)
+mesh = SubResource("yoke_wheel")
+
+[node name="DepthGauge" type="Node3D" parent="Stations/Pilot"]
+position = Vector3(-0.55, 1.2, -5.74)
+script = ExtResource("3")
+readout = &"depth"
+title = "DEPTH m"
+max_value = 200.0
+
+[node name="HeadingGauge" type="Node3D" parent="Stations/Pilot"]
+position = Vector3(0, 1.2, -5.74)
+script = ExtResource("3")
+readout = &"heading_deg"
+title = "HEADING"
+max_value = 360.0
+wraps = true
+
+[node name="PitchGauge" type="Node3D" parent="Stations/Pilot"]
+position = Vector3(0.55, 1.2, -5.74)
+script = ExtResource("3")
+readout = &"pitch_deg"
+title = "PITCH"
+min_value = -30.0
+max_value = 30.0
+sweep_deg = 120.0
+
+[node name="Engineering" type="Node3D" parent="Stations"]
+
+[node name="Telegraph" parent="Stations/Engineering" instance=ExtResource("1")]
 position = Vector3(1.2, 0.9, 4)
 rotation = Vector3(0, 1.5708, 0)
-label = "engine (test)"
 
-[node name="EngineSign" type="Label3D" parent="Stations"]
-position = Vector3(1.48, 1.6, 4)
+[node name="EngineGauge" type="Node3D" parent="Stations/Engineering"]
+position = Vector3(1.48, 1.55, 4.6)
+rotation = Vector3(0, -1.5708, 0)
+script = ExtResource("3")
+readout = &"engine_output"
+title = "ENGINE"
+min_value = -1.0
+max_value = 1.0
+sweep_deg = 180.0
+
+[node name="EngineSign" type="Label3D" parent="Stations/Engineering"]
+position = Vector3(1.48, 2.0, 4)
 rotation = Vector3(0, -1.5708, 0)
 pixel_size = 0.003
-text = "ENGINE"
+text = "ENGINEERING"
 modulate = Color(0.9, 0.85, 0.6, 1)
 
-[node name="BallastValve" parent="Stations" instance=ExtResource("2")]
-position = Vector3(-1.38, 1.3, 0)
-rotation = Vector3(0, 1.5708, 0)
-label = "ballast (test)"
+[node name="Ballast" type="Node3D" parent="Stations"]
 
-[node name="BallastSign" type="Label3D" parent="Stations"]
-position = Vector3(-1.48, 1.75, 0)
+[node name="FloodValve" parent="Stations/Ballast" instance=ExtResource("2")]
+position = Vector3(-1.38, 1.2, -0.5)
+rotation = Vector3(0, 1.5708, 0)
+turns_full_range = 2.0
+label = "flood"
+
+[node name="BlowValve" parent="Stations/Ballast" instance=ExtResource("2")]
+position = Vector3(-1.38, 1.2, 0.5)
+rotation = Vector3(0, 1.5708, 0)
+turns_full_range = 2.0
+label = "blow"
+
+[node name="FloodLabel" type="Label3D" parent="Stations/Ballast"]
+position = Vector3(-1.48, 0.9, -0.5)
+rotation = Vector3(0, 1.5708, 0)
+pixel_size = 0.002
+text = "FLOOD"
+modulate = Color(0.5, 0.75, 0.95, 1)
+
+[node name="BlowLabel" type="Label3D" parent="Stations/Ballast"]
+position = Vector3(-1.48, 0.9, 0.5)
+rotation = Vector3(0, 1.5708, 0)
+pixel_size = 0.002
+text = "BLOW"
+modulate = Color(0.95, 0.6, 0.45, 1)
+
+[node name="TankGauge" type="Node3D" parent="Stations/Ballast"]
+position = Vector3(-1.48, 1.75, -0.35)
+rotation = Vector3(0, 1.5708, 0)
+script = ExtResource("3")
+readout = &"tank_fraction"
+title = "TANK"
+max_value = 1.0
+sweep_deg = 180.0
+
+[node name="AirGauge" type="Node3D" parent="Stations/Ballast"]
+position = Vector3(-1.48, 1.75, 0.35)
+rotation = Vector3(0, 1.5708, 0)
+script = ExtResource("3")
+readout = &"air_fraction"
+title = "HP AIR"
+max_value = 1.0
+sweep_deg = 180.0
+
+[node name="BallastSign" type="Label3D" parent="Stations/Ballast"]
+position = Vector3(-1.48, 2.15, 0)
 rotation = Vector3(0, 1.5708, 0)
 pixel_size = 0.003
 text = "BALLAST"

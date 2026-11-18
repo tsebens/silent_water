@@ -72,21 +72,32 @@ func begin_interaction() -> void:
 func drag(relative: Vector2) -> void:
 	if not _local_grabbing:
 		return
-	var target: float = state.clamp_value(_drag_to_value(state.value, relative))
-	if is_equal_approx(target, state.value):
+	drive_to(_drag_to_value(state.value, relative))
+
+
+## Moves a control the local player holds straight to [param target]. Used by
+## controls driven by keys rather than mouse drags.
+func drive_to(target: float) -> void:
+	if not _local_grabbing:
 		return
-	_set_local(target)
+	var clamped: float = state.clamp_value(target)
+	if is_equal_approx(clamped, state.value):
+		return
+	_set_local(clamped)
 	if not multiplayer.is_server():
-		_rpc_request.rpc_id(1, target)
+		_rpc_request.rpc_id(1, clamped)
 	else:
-		_host_apply(Net.local_id(), target)
+		_host_apply(Net.local_id(), clamped)
 
 
 func end_interaction() -> void:
 	if not _local_grabbing:
 		return
+	var final_value: float = state.clamp_value(_release_value(state.value))
+	if not is_equal_approx(final_value, state.value):
+		_set_local(final_value)
 	_local_grabbing = false
-	_rpc_release.rpc_id(1, state.value)
+	_rpc_release.rpc_id(1, final_value)
 
 
 ## Host only: sets the value from game logic (not a player), e.g. a reset.
@@ -101,6 +112,11 @@ func host_set_value(v: float) -> void:
 
 ## Maps a mouse drag to a new value. Override.
 func _drag_to_value(current: float, _relative: Vector2) -> float:
+	return current
+
+
+## Value to settle on when released (e.g. snap to a detent). Override.
+func _release_value(current: float) -> float:
 	return current
 
 
