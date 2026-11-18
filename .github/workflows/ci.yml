@@ -1,0 +1,42 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      GODOT_VERSION: "4.7.2"
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Cache Godot
+        id: cache-godot
+        uses: actions/cache@v4
+        with:
+          path: ~/godot
+          key: godot-${{ env.GODOT_VERSION }}-linux-x86_64
+
+      - name: Download Godot
+        if: steps.cache-godot.outputs.cache-hit != 'true'
+        run: |
+          mkdir -p ~/godot
+          curl -sSL -o /tmp/godot.zip "https://downloads.godotengine.org/?version=${GODOT_VERSION}&flavor=stable&slug=linux.x86_64.zip"
+          unzip -q /tmp/godot.zip -d ~/godot
+
+      - name: Check project
+        run: |
+          export GODOT=~/godot/Godot_v${GODOT_VERSION}-stable_linux.x86_64
+          export LOG_DIR="$RUNNER_TEMP/godot-logs"
+          mkdir -p "$LOG_DIR"
+          tools/check.sh
+
+      - name: Upload logs
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: godot-logs
+          path: ${{ runner.temp }}/godot-logs
