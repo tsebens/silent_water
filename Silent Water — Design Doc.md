@@ -114,6 +114,7 @@ Noise is the core system, and every other system feeds into it.
 
 - **Sources:** voices, footsteps, engine speed, pumps, fans, controls moved quickly, repairs (welding is loudest), active sonar, and accidents like dropped tools or hull strikes.
 - **One number for the sub.** The sub is tiny next to the monster, so every source inside it sums to a single noise level at the sub's position. It falls off with distance and is blocked by terrain.
+- **Sum intensity, not decibels.** Sources add as acoustic intensity (proportional to sound pressure squared). Decibels and raw pascals don't add directly. Convert the total back to a level for gauges and creatures.
 - Creatures build suspicion from what they hear, which drives the escalation ladder (see Threats).
 - **The mix tells the truth.** What the crew hears inside the sub matches what creatures hear outside.
 - Optional: regular, rhythmic machine sounds are easier to pick out than irregular natural ones, which is how real passive sonar finds machinery.
@@ -175,6 +176,12 @@ Each step must be audible or felt, so death is never unannounced.
 3. **Hunting:** searches where it last heard the sub.
 4. **Committed:** charges; this is the last window to break contact.
 5. **Contact:** the sub is lost.
+
+**Suspicion decays in tiers, much faster than a real predator's would.** The aim is a monster that never feels like a constant existential threat.
+
+- **Aroused (Hunting, Committed)** is transient. It drops back about 30 seconds after the last conclusive signal.
+- **Heightened patrol** sits between Unaware and Curious. The monster moves faster around the map, not necessarily toward the sub, and takes about one to two minutes to settle.
+- Decay is non-linear: fast from aroused down to patrol, slow from patrol down to calm.
 
 ### Senses
 
@@ -268,6 +275,8 @@ Low-poly models with crisp, clean rendering. No grain, static, dither or fuzzy f
 
 Decide this on day one: the crew moves in the sub's own frame of reference, so the sub's motion never slides players around. Tilt changes the apparent direction of gravity, which also makes trim easy to build.
 
+**Decided:** the interior is a still scene. The sub's hull model moves through the outside world, and the view outside is composed from the sub's transform. Player positions sync in sub-local space, never world space.
+
 ### Interactables
 
 One reusable component for every physical control: a value, a range, a noise profile tied to how fast it changes, and network sync. The player moving it sees the response immediately, and the host confirms it.
@@ -275,7 +284,7 @@ One reusable component for every physical control: a value, a range, a noise pro
 ### Noise system
 
 - Runs on the host. Sources register their loudness, which sums into the sub's noise level. Ambient zones add background, and creatures query the result.
-- Voice loudness is measured on the host from the voice data it receives, so no client can fake being quiet.
+- Voice loudness is measured on the host from the voice data it receives, so no client can fake being quiet. **Under review:** the prototype has no in-game voice, so it measures on each player's machine. Where it lives long-term is tracked in issue #8.
 
 ### Voice
 
@@ -307,6 +316,7 @@ The prototype answers one question: is it tense and fun to coordinate a sub when
 - [ ] One recurring leak with a field patch
 - [ ] The noise system and two-needle gauge, with each player's mic loudness feeding the noise level
 - [ ] One blind, sound-hunting apex monster with the full escalation ladder
+- [ ] Minimal passive sonar: a hydrophone the operator turns, with directional audio only they hear. No active ping and no 3D display. This is the hardest system to calibrate, so expect to rework it many times.
 - [ ] One small vertical map with two or three shelves
 - [ ] One objective: a scan taken from the sub
 - [ ] A played descent and ascent; the dive ends on surfacing
@@ -332,7 +342,7 @@ Steam integration and in-game voice, expeditions, cargo, divers, facilities, upg
 - Whether the thermocline and rhythmic-detection mechanics make the cut
 - The field patch mini-game
 - Whether charts stays its own station
-- Support for crews of two
+- Whether to lock out crews of two. The lean is no lock, but no design effort goes toward two-person crews: target four, keep three viable.
 - Distinct sub types and hardware variants
 
 ### Watch in playtesting
