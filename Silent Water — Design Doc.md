@@ -284,7 +284,7 @@ One reusable component for every physical control: a value, a range, a noise pro
 ### Noise system
 
 - Runs on the host. Sources register their loudness, which sums into the sub's noise level. Ambient zones add background, and creatures query the result.
-- Voice loudness is measured on the host from the voice data it receives, so no client can fake being quiet. **Under review:** the prototype has no in-game voice, so it measures on each player's machine. Where it lives long-term is tracked in issue #8.
+- Voice loudness is measured on the host from the voice data it receives, so no client can fake being quiet. **Decided (#8):** the prototype has no in-game voice, so each player's machine measures its own mic and sends the loudness to the host. Once Steam Voice is in, the same function moves to the host. The first playtest runs uncalibrated; a "speak normally" calibration step is a deferred option (#17) if mic differences prove unfair.
 
 ### Voice
 
