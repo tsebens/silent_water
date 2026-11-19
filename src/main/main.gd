@@ -10,6 +10,7 @@ var _mic: MicMeter = null
 
 
 func _ready() -> void:
+	AudioBuses.ensure()
 	Net.hosting_started.connect(_start_game)
 	Net.connected_to_host.connect(_start_game)
 	Net.session_ended.connect(_end_game)

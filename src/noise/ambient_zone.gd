@@ -14,6 +14,16 @@ extends Node3D
 
 func _ready() -> void:
 	add_to_group(&"ambient_zones")
+	add_to_group(&"outside_sources")
+
+
+## Outside-audio hook: the sonar operator can hear (and be blinded by) it.
+func outside_db() -> float:
+	return source_db if active else -INF
+
+
+func outside_stream() -> AudioStream:
+	return ProceduralSounds.vent()
 
 
 func intensity_at(world_point: Vector3) -> float:

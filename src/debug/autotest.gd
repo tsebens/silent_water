@@ -12,7 +12,9 @@ extends Node
 ##     toward astern. The host must reject this. At 3.6 Crew3 sits in the pilot
 ##     seat and holds A (rudder to port) from 4.0.
 ##   Crew1 (host) opens the flood valve about 1.5 turns between 2.0 and 3.0.
-##   Crew2 "talks" at 75 dB from 4.0 on (simulated mic level).
+##   Crew2 "talks" at 75 dB from 4.0 on (simulated mic level) and puts on
+##   the sonar headset at 4.5 (it's on the starboard side; the cord check
+##   uses distance, so Crew2 is moved next to it first).
 ##   At 7.0 the host tells every instance to report at once; clients then
 ##   quit, and the host quits once they are gone.
 
@@ -58,6 +60,11 @@ func _physics_process(delta: float) -> void:
 			_once("release", 3.5, func() -> void: telegraph.end_interaction())
 			if _t > 4.0:
 				Acoustics.report_voice(NoiseLevel.from_db(75.0))
+			if me != null:
+				_once("headset", 4.5, func() -> void:
+					var headset: Wearable = _node("Sonar/Headset") as Wearable
+					me.teleport(headset.global_position + Vector3(-0.8, -1.4, 0))
+					me.put_on(headset))
 		"Crew3":
 			_once("grab", 2.5, func() -> void: telegraph.begin_interaction())
 			if _t > 2.6 and _t < 3.2:
@@ -85,6 +92,10 @@ func _once(key: String, at: float, action: Callable) -> void:
 	if _t >= at and not _done.has(key):
 		_done.append(key)
 		action.call()
+
+
+static func _vec(v: Vector3) -> Array:
+	return [snappedf(v.x, 0.01), snappedf(v.y, 0.01), snappedf(v.z, 0.01)]
 
 
 @rpc("authority", "call_local", "reliable")
@@ -115,6 +126,9 @@ func _report() -> void:
 		"tank": snappedf(controller.tank_fraction, 0.001),
 		"depth": snappedf(controller.depth, 0.01),
 		"sub_db": snappedf(Acoustics.sub_db(), 0.01),
+		"headset_holder": (_node("Sonar/Headset") as Interactable).state.holder,
+		"apex_state": (_game.get_node("World/Apex") as ApexMonster).state(),
+		"apex_pos": _vec((_game.get_node("World/Apex") as ApexMonster).position),
 		"ambient_db": snappedf(Acoustics.ambient_db(), 0.01),
 	}
 	if Net.is_host():

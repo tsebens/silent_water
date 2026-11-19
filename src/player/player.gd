@@ -47,9 +47,12 @@ var bot_move: Vector2 = Vector2.ZERO
 var _sub_frame: SubFrame
 var _held: Interactable = null
 var _seat: PilotSeat = null
+var _worn: Wearable = null
 var _stride: float = 0.0
 ## Smoothed movement speed, measured the same way on every peer.
 var _speed: float = 0.0
+## Camera shake amplitude (radians), set by threat cues.
+var _shake: float = 0.0
 var _last_position: Vector3 = Vector3.ZERO
 
 
@@ -150,6 +153,8 @@ func _simulate(delta: float) -> void:
 		velocity += gravity * delta
 	var before: Vector3 = position
 	move_and_slide()
+	if _worn != null and position.distance_to(_worn.global_position) > _worn.cord_length:
+		take_off()
 	if not INTERIOR_BOUNDS.has_point(position):
 		push_warning("Player %s left the interior at %s; moving back inside" % [name, position])
 		position = RESCUE_POINT
@@ -159,6 +164,38 @@ func _simulate(delta: float) -> void:
 		if _stride >= STRIDE_M:
 			_stride = 0.0
 			footstep.emit(clampf(_speed / WALK_SPEED, 0.0, 1.0))
+
+
+## Moves this player (on its owner) to a sub-local point, letting go of
+## everything first.
+func teleport(spot: Vector3) -> void:
+	_release_held()
+	stand_up()
+	take_off()
+	position = spot
+	velocity = Vector3.ZERO
+	sync_position = spot
+
+
+@rpc("any_peer", "call_local", "reliable")
+func rpc_teleport(spot: Vector3) -> void:
+	if multiplayer.get_remote_sender_id() not in [0, 1]:
+		return
+	if is_multiplayer_authority():
+		teleport(spot)
+
+
+func set_shake(amount: float) -> void:
+	_shake = amount
+
+
+func _process(_delta: float) -> void:
+	if not is_multiplayer_authority():
+		return
+	if _shake > 0.0001:
+		_camera.rotation = Vector3(randf_range(-1, 1), randf_range(-1, 1), randf_range(-1, 1) * 0.5) * _shake
+	elif _camera.rotation != Vector3.ZERO:
+		_camera.rotation = Vector3.ZERO
 
 
 func _track_speed(delta: float) -> void:
@@ -204,6 +241,12 @@ func _try_grab() -> void:
 	if node is PilotSeat:
 		sit_in(node as PilotSeat)
 		return
+	if node is Wearable:
+		if _worn == node:
+			take_off()
+		else:
+			put_on(node as Wearable)
+		return
 	_held = node as Interactable
 	_held.begin_interaction()
 
@@ -226,6 +269,28 @@ func stand_up() -> void:
 	seat.end_interaction()
 	# Step out of the chair, back toward the corridor.
 	position = seat.seat_transform().origin + seat.seat_transform().basis.z * 0.6
+
+
+## Puts on a wearable (the sonar headset). Takes off any other first.
+func put_on(item: Wearable) -> void:
+	take_off()
+	_worn = item
+	_worn.holder_changed.connect(_on_worn_holder_changed)
+	_worn.begin_interaction()
+
+
+func take_off() -> void:
+	if _worn == null:
+		return
+	var item: Wearable = _worn
+	_worn = null
+	item.holder_changed.disconnect(_on_worn_holder_changed)
+	item.end_interaction()
+
+
+func _on_worn_holder_changed(peer_id: int) -> void:
+	if peer_id != Net.local_id() and peer_id != InteractableState.NO_HOLDER:
+		take_off()
 
 
 func is_seated() -> bool:

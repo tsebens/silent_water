@@ -1,0 +1,57 @@
+[gd_scene load_steps=8 format=3]
+
+[ext_resource type="Script" path="res://src/sonar/hydrophone_wheel.gd" id="1"]
+[ext_resource type="Script" path="res://src/interact/noise_profile.gd" id="2"]
+
+[sub_resource type="Resource" id="noise"]
+script = ExtResource("2")
+idle_intensity = 0.0
+max_intensity = 0.02
+clank_rate = 1.0
+exponent = 2.0
+
+[sub_resource type="TorusMesh" id="rim"]
+inner_radius = 0.16
+outer_radius = 0.2
+
+[sub_resource type="BoxMesh" id="spoke"]
+size = Vector3(0.36, 0.025, 0.025)
+
+[sub_resource type="CylinderMesh" id="stem"]
+top_radius = 0.03
+bottom_radius = 0.03
+height = 0.2
+
+[sub_resource type="CylinderShape3D" id="grab"]
+height = 0.12
+radius = 0.22
+
+[node name="HydrophoneWheel" type="Node3D" node_paths=PackedStringArray("wheel")]
+script = ExtResource("1")
+noise_profile = SubResource("noise")
+wheel = NodePath("Wheel")
+
+[node name="Stem" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, -4.37114e-08, -1, 0, 1, -4.37114e-08, 0, 0, -0.1)
+mesh = SubResource("stem")
+
+[node name="Wheel" type="Node3D" parent="."]
+
+[node name="Rim" type="MeshInstance3D" parent="Wheel"]
+transform = Transform3D(1, 0, 0, 0, -4.37114e-08, -1, 0, 1, -4.37114e-08, 0, 0, 0)
+mesh = SubResource("rim")
+
+[node name="Spoke1" type="MeshInstance3D" parent="Wheel"]
+mesh = SubResource("spoke")
+
+[node name="Spoke2" type="MeshInstance3D" parent="Wheel"]
+transform = Transform3D(-4.37114e-08, -1, 0, 1, -4.37114e-08, 0, 0, 0, 1, 0, 0, 0)
+mesh = SubResource("spoke")
+
+[node name="Grab" type="StaticBody3D" parent="."]
+collision_layer = 2
+collision_mask = 0
+
+[node name="Shape" type="CollisionShape3D" parent="Grab"]
+transform = Transform3D(1, 0, 0, 0, -4.37114e-08, -1, 0, 1, -4.37114e-08, 0, 0, 0)
+shape = SubResource("grab")

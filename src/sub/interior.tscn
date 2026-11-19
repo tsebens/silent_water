@@ -8,6 +8,9 @@
 [ext_resource type="PackedScene" path="res://src/noise/noise_gauge.tscn" id="6"]
 [ext_resource type="PackedScene" path="res://src/damage/leak.tscn" id="7"]
 [ext_resource type="PackedScene" path="res://src/interact/bilge_pump.tscn" id="8"]
+[ext_resource type="Script" path="res://src/sonar/sonar_station.gd" id="9"]
+[ext_resource type="PackedScene" path="res://src/sonar/headset.tscn" id="10"]
+[ext_resource type="PackedScene" path="res://src/sonar/hydrophone_wheel.tscn" id="11"]
 
 [sub_resource type="StandardMaterial3D" id="hull"]
 albedo_color = Color(0.32, 0.34, 0.33, 1)
@@ -123,6 +126,11 @@ position = Vector3(-1.2, 0.45, 4)
 size = Vector3(0.6, 0.9, 0.8)
 material = SubResource("console")
 
+[node name="SonarConsole" type="CSGBox3D" parent="Hull"]
+position = Vector3(1.2, 0.45, 0.4)
+size = Vector3(0.6, 0.9, 1.0)
+material = SubResource("console")
+
 [node name="EngineConsole" type="CSGBox3D" parent="Hull"]
 position = Vector3(1.2, 0.45, 4)
 size = Vector3(0.6, 0.9, 1)
@@ -175,9 +183,10 @@ omni_range = 6.0
 [node name="Headlight" type="SpotLight3D" parent="Lights"]
 position = Vector3(0, 0.6, -6.7)
 light_color = Color(0.9, 0.95, 1, 1)
-light_energy = 6.0
-spot_range = 40.0
-spot_angle = 30.0
+light_energy = 16.0
+spot_range = 70.0
+spot_attenuation = 0.6
+spot_angle = 28.0
 shadow_enabled = true
 
 [node name="Stations" type="Node3D" parent="."]
@@ -396,3 +405,36 @@ rotation = Vector3(-1.5708, 0, 0)
 [node name="StbdFore" parent="Leaks" instance=ExtResource("7")]
 position = Vector3(1.45, 1.7, -1.2)
 rotation = Vector3(0, -1.5708, 0)
+
+[node name="Sonar" type="Node3D" parent="Stations" node_paths=PackedStringArray("headset", "wheel")]
+script = ExtResource("9")
+headset = NodePath("Headset")
+wheel = NodePath("Wheel")
+
+[node name="Headset" parent="Stations/Sonar" instance=ExtResource("10")]
+position = Vector3(1.42, 1.55, 0.95)
+rotation = Vector3(0, -1.5708, 0)
+
+[node name="Wheel" parent="Stations/Sonar" instance=ExtResource("11")]
+position = Vector3(1.2, 1.0, 0.35)
+rotation = Vector3(-1.5708, 0, 0)
+label = "hydrophone"
+
+[node name="BearingGauge" type="Node3D" parent="Stations/Sonar"]
+position = Vector3(1.48, 1.5, 0.25)
+rotation = Vector3(0, -1.5708, 0)
+script = ExtResource("3")
+source_group = &"sonar_readouts"
+readout = &"bearing"
+title = "BEARING"
+max_value = 360.0
+wraps = true
+wrap_labels = PackedStringArray("FWD", "STBD", "AFT", "PORT")
+radius = 0.14
+
+[node name="SonarSign" type="Label3D" parent="Stations/Sonar"]
+position = Vector3(1.48, 2.0, 0.4)
+rotation = Vector3(0, -1.5708, 0)
+pixel_size = 0.003
+text = "SONAR"
+modulate = Color(0.9, 0.85, 0.6, 1)

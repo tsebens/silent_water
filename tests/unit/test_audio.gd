@@ -16,6 +16,14 @@ func test_sounds_generate_with_sane_levels() -> void:
 		"clank": ProceduralSounds.clank(),
 		"thud": ProceduralSounds.thud(),
 		"step": ProceduralSounds.step(),
+		"swim": ProceduralSounds.swim(),
+		"moan": ProceduralSounds.moan(),
+		"pulse": ProceduralSounds.pulse(),
+		"grunt": ProceduralSounds.grunt(),
+		"roar": ProceduralSounds.roar(),
+		"vent": ProceduralSounds.vent(),
+		"rumble": ProceduralSounds.rumble(),
+		"creak": ProceduralSounds.creak(),
 	}
 	for key: String in sounds:
 		var wav: AudioStreamWAV = sounds[key]

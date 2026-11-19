@@ -18,6 +18,8 @@ extends Node3D
 @export var radius: float = 0.12
 ## Wraps the value around the dial (compass).
 @export var wraps: bool = false
+## Labels at 0°, 90°, 180°, 270° on a wrapping dial.
+@export var wrap_labels: PackedStringArray = ["N", "E", "S", "W"]
 ## Needle smoothing (1/s); gauges have mechanical lag.
 @export var needle_response: float = 6.0
 
@@ -105,10 +107,9 @@ func _build() -> void:
 		_add_label(_fmt(max_value), Vector3(cos(a1), sin(a1), 0) * radius * 0.72 + Vector3(0, 0, 0.012), 0.0009)
 		_add_label(_fmt((min_value + max_value) * 0.5), Vector3(0, radius * 0.72, 0.012), 0.0009)
 	elif wraps:
-		_add_label("N", Vector3(0, radius * 0.75, 0.012), 0.0009)
-		_add_label("S", Vector3(0, -radius * 0.75, 0.012), 0.0009)
-		_add_label("E", Vector3(radius * 0.75, 0, 0.012), 0.0009)
-		_add_label("W", Vector3(-radius * 0.75, 0, 0.012), 0.0009)
+		var spots: Array[Vector3] = [Vector3(0, 1, 0), Vector3(1, 0, 0), Vector3(0, -1, 0), Vector3(-1, 0, 0)]
+		for i: int in range(mini(wrap_labels.size(), 4)):
+			_add_label(wrap_labels[i], spots[i] * radius * 0.72 + Vector3(0, 0, 0.012), 0.0008)
 
 
 func _make_needle(mat: StandardMaterial3D, z: float) -> Node3D:

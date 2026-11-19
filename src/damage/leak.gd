@@ -35,6 +35,7 @@ func _ready() -> void:
 	_hiss = AudioStreamPlayer3D.new()
 	_hiss.stream = ProceduralSounds.hiss()
 	_hiss.unit_size = SubAudio.UNIT_SIZE
+	_hiss.bus = AudioBuses.INSIDE
 	_hiss.pitch_scale = 1.4
 	add_child(_hiss)
 	set_open(false)

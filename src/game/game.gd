@@ -17,6 +17,7 @@ var _active: bool = false
 
 
 func _ready() -> void:
+	AudioBuses.ensure()
 	sub_frame.add_to_group(&"sub_frame")
 	Net.peer_joined.connect(_on_peer_joined)
 	Net.peer_left.connect(_on_peer_left)
@@ -37,6 +38,21 @@ func end_session() -> void:
 	for child: Node in players.get_children():
 		child.queue_free()
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+
+
+## Host: sends every crew member back to a spawn point.
+func respawn_players() -> void:
+	var i: int = 0
+	for child: Node in players.get_children():
+		var p: Player = child as Player
+		if p == null:
+			continue
+		var spot: Vector3 = SPAWN_POINTS[i % SPAWN_POINTS.size()]
+		i += 1
+		if p.get_multiplayer_authority() == Net.local_id():
+			p.teleport(spot)
+		else:
+			p.rpc_teleport.rpc_id(p.get_multiplayer_authority(), spot)
 
 
 func local_player() -> Player:

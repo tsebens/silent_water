@@ -60,6 +60,18 @@ func _ready() -> void:
 	add_to_group(&"noise_sources")
 
 
+## Host: back to the start of the dive with every control at rest.
+func reset_dive() -> void:
+	model = SubPhysicsModel.new()
+	model.position = start_position
+	for control: Interactable in [telegraph, rudder, planes, flood_valve, blow_valve]:
+		if control != null:
+			control.host_set_value(0.0)
+	sub_frame.set_pose(model.transform(), Vector3.ZERO)
+	_update_readouts()
+	enabled = true
+
+
 func _physics_process(delta: float) -> void:
 	if not enabled or not is_multiplayer_authority() or sub_frame == null:
 		return

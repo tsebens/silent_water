@@ -121,6 +121,12 @@ func _drag_to_value(current: float, _relative: Vector2) -> float:
 	return current
 
 
+## Called when the host gave this control to someone else while the local
+## player thought they held it. Override to undo local effects.
+func _on_lost_hold() -> void:
+	pass
+
+
 ## Value to settle on when released (e.g. snap to a detent). Override.
 func _release_value(current: float) -> float:
 	return current
@@ -179,8 +185,9 @@ func _rpc_holder(peer_id: int) -> void:
 	if state.holder == peer_id:
 		return
 	state.holder = peer_id
-	if peer_id != Net.local_id():
+	if peer_id != Net.local_id() and _local_grabbing:
 		_local_grabbing = false
+		_on_lost_hold()
 	holder_changed.emit(peer_id)
 
 

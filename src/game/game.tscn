@@ -6,6 +6,10 @@
 [ext_resource type="Script" path="res://src/world/marine_snow.gd" id="6"]
 [ext_resource type="Script" path="res://src/audio/sub_audio.gd" id="7"]
 [ext_resource type="Script" path="res://src/damage/leak_system.gd" id="8"]
+[ext_resource type="PackedScene" path="res://src/creature/apex_monster.tscn" id="9"]
+[ext_resource type="Script" path="res://src/sonar/outside_audio.gd" id="10"]
+[ext_resource type="Script" path="res://src/creature/threat_cues.gd" id="11"]
+[ext_resource type="Script" path="res://src/dive/dive_director.gd" id="12"]
 [ext_resource type="PackedScene" path="res://src/sub/interior.tscn" id="4"]
 [ext_resource type="PackedScene" path="res://src/world/exterior.tscn" id="5"]
 
@@ -86,6 +90,8 @@ replication_config = SubResource("readout_repl")
 
 [node name="Exterior" parent="World" instance=ExtResource("5")]
 
+[node name="Apex" parent="World" instance=ExtResource("9")]
+
 [node name="MarineSnow" type="MeshInstance3D" parent="World"]
 script = ExtResource("6")
 
@@ -109,6 +115,23 @@ controller = NodePath("../SubController")
 leaks_root = NodePath("../Interior/Leaks")
 pump = NodePath("../Interior/Stations/Bilge/Pump")
 pump_point = NodePath("../Interior/Stations/Bilge/Pump")
+
+[node name="OutsideAudio" type="Node" parent="."]
+script = ExtResource("10")
+
+[node name="ThreatCues" type="Node" parent="." node_paths=PackedStringArray("lights", "players")]
+script = ExtResource("11")
+lights = NodePath("../Interior/Lights")
+players = NodePath("../Players")
+
+[node name="DiveDirector" type="Node" parent="." node_paths=PackedStringArray("game", "controller", "leaks", "apex", "cues", "interior_lights")]
+script = ExtResource("12")
+game = NodePath("..")
+controller = NodePath("../SubController")
+leaks = NodePath("../LeakSystem")
+apex = NodePath("../World/Apex")
+cues = NodePath("../ThreatCues")
+interior_lights = NodePath("../Interior/Lights")
 
 [node name="Environment" type="WorldEnvironment" parent="."]
 environment = SubResource("env")

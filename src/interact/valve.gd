@@ -19,6 +19,11 @@ func begin_interaction() -> void:
 
 
 func _drag_to_value(current: float, relative: Vector2) -> float:
+	return current + _swept_turns(relative) / turns_full_range * (max_value - min_value)
+
+
+## Turns swept by a mouse drag around the virtual orbit (clockwise positive).
+func _swept_turns(relative: Vector2) -> float:
 	var before: float = _cursor.angle()
 	_cursor += relative
 	# Keep the virtual cursor on the orbit so tiny jitters near the centre
@@ -26,10 +31,8 @@ func _drag_to_value(current: float, relative: Vector2) -> float:
 	if _cursor.length() < 1.0:
 		_cursor = Vector2(orbit_radius_px, 0.0)
 	_cursor = _cursor.normalized() * orbit_radius_px
-	var swept: float = wrapf(_cursor.angle() - before, -PI, PI)
 	# Screen y points down, so a positive swept angle is clockwise on screen.
-	var turns: float = swept / TAU
-	return current + turns / turns_full_range * (max_value - min_value)
+	return wrapf(_cursor.angle() - before, -PI, PI) / TAU
 
 
 func _apply_visual(v: float) -> void:

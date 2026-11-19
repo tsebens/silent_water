@@ -128,13 +128,17 @@ func _physics_process(delta: float) -> void:
 
 
 func _ambient_at_sub() -> float:
-	var total: float = NoiseLevel.from_db(OCEAN_BASE_DB)
 	var frame: SubFrame = get_tree().get_first_node_in_group(&"sub_frame") as SubFrame
 	if frame == null:
-		return total
-	var sub_pos: Vector3 = frame.sub_transform.origin
+		return NoiseLevel.from_db(OCEAN_BASE_DB)
+	return ambient_at(frame.sub_transform.origin)
+
+
+## Background noise at a world point: base ocean plus nearby ambient zones.
+func ambient_at(world_point: Vector3) -> float:
+	var total: float = NoiseLevel.from_db(OCEAN_BASE_DB)
 	for zone: Node in get_tree().get_nodes_in_group(&"ambient_zones"):
-		total += float(zone.call(&"intensity_at", sub_pos))
+		total += float(zone.call(&"intensity_at", world_point))
 	return total
 
 

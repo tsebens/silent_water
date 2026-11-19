@@ -44,6 +44,7 @@ func _ready() -> void:
 	_pump_audio = AudioStreamPlayer3D.new()
 	_pump_audio.stream = ProceduralSounds.gurgle()
 	_pump_audio.unit_size = SubAudio.UNIT_SIZE
+	_pump_audio.bus = AudioBuses.INSIDE
 	_pump_audio.pitch_scale = 1.6
 	(pump_point if pump_point != null else self as Node).add_child(_pump_audio)
 
@@ -78,6 +79,16 @@ func _physics_process(delta: float) -> void:
 	_timer -= delta
 	if _timer <= 0.0 and open_index == -1:
 		open_random_leak()
+
+
+## Host: closes everything and restarts the leak clock.
+func reset() -> void:
+	if not multiplayer.is_server():
+		return
+	_set_leak.rpc(-1)
+	if pump != null:
+		pump.host_set_value(0.0)
+	_timer = _rng.randf_range(FIRST_LEAK_DELAY.x, FIRST_LEAK_DELAY.y)
 
 
 ## Host: opens a leak at a random point (if none is open).

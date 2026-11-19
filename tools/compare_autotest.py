@@ -51,12 +51,21 @@ def main() -> int:
             errors.append(f"host hears Crew2's voice at {crew2_voice} dB, expected 75")
         if host["sub_db"] < 75.0:
             errors.append(f"sub noise {host['sub_db']} dB should include Crew2's 75 dB voice")
+    if "Crew2" in by_role:
+        for r in reports:
+            if r["headset_holder"] != by_role["Crew2"]["peer"]:
+                errors.append(f"{r['role']} thinks the headset is on {r['headset_holder']}, expected Crew2")
     if reports:
         ref = reports[0]
         for r in reports[1:]:
             for key, tol in (("telegraph", 0.001), ("flood", 0.005), ("rudder", 0.05), ("depth", 0.5), ("tank", 0.02), ("sub_db", 1.5), ("ambient_db", 0.1)):
                 if not near(r[key], ref[key], tol):
                     errors.append(f"{key} disagrees: {ref['role']}={ref[key]} {r['role']}={r[key]}")
+            if r["apex_state"] != ref["apex_state"]:
+                errors.append(f"apex state disagrees: {ref['role']}={ref['apex_state']} {r['role']}={r['apex_state']}")
+            apex_gap = sum((a - b) ** 2 for a, b in zip(r["apex_pos"], ref["apex_pos"])) ** 0.5
+            if apex_gap > 3.0:
+                errors.append(f"apex position disagrees by {apex_gap:.1f} m ({ref['role']} vs {r['role']})")
             for pid, pos in ref["players"].items():
                 other = r["players"].get(pid)
                 if other is None:

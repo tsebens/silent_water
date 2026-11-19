@@ -39,6 +39,7 @@ func _ready() -> void:
 	_blow = _loop(ProceduralSounds.hiss(), blow_point)
 	_flood = _loop(ProceduralSounds.gurgle(), flood_point)
 	_strike = AudioStreamPlayer.new()
+	_strike.bus = AudioBuses.FELT
 	_strike.stream = ProceduralSounds.thud()
 	add_child(_strike)
 	if controller != null:
@@ -111,6 +112,7 @@ func _rpc_strike(speed: float) -> void:
 func _loop(stream: AudioStream, at: Node3D) -> AudioStreamPlayer3D:
 	var p: AudioStreamPlayer3D = AudioStreamPlayer3D.new()
 	p.stream = stream
+	p.bus = AudioBuses.INSIDE
 	p.unit_size = UNIT_SIZE
 	p.max_db = 6.0
 	if at != null:
@@ -129,6 +131,7 @@ func _one_shot(stream: AudioStream, at: Vector3, intensity: float, pitch: float 
 	p.unit_size = UNIT_SIZE
 	p.max_db = 6.0
 	p.volume_db = db
+	p.bus = AudioBuses.INSIDE
 	p.pitch_scale = pitch
 	add_child(p)
 	p.global_position = at
