@@ -29,6 +29,7 @@ var _path: String = ""
 var _noise_band: int = -999
 var _noise_gap: float = 0.0
 var _apex_hears: bool = false
+var _apex_active: bool = true
 
 
 func _ready() -> void:
@@ -108,7 +109,10 @@ func _log_noise_steps(delta: float) -> void:
 
 ## Developer console: when the apex starts and stops hearing the sub.
 func _log_apex_hearing() -> void:
-	var hears: bool = apex.brain.last_snr_db > 0.0
+	if apex.active != _apex_active:
+		_apex_active = apex.active
+		write("APEX %s (developer switch)" % ("ENABLED" if apex.active else "DISABLED"))
+	var hears: bool = apex.active and apex.brain.last_snr_db > 0.0
 	if hears == _apex_hears:
 		return
 	_apex_hears = hears

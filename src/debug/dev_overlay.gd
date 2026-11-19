@@ -1,6 +1,7 @@
 class_name DevOverlay
 extends CanvasLayer
 ## Developer overlay, toggled with F1 in development builds (or with `--dev`).
+## F4 switches the apex off and on for everyone (host decides).
 ## Drawn over the normal view:
 ##   left       console: engine output, warnings, errors and game events
 ##              (host events reach clients too)
@@ -49,8 +50,15 @@ func _ready() -> void:
 
 
 func _unhandled_input(event: InputEvent) -> void:
-	if event.is_action_pressed(&"dev_overlay") and allowed():
+	if not allowed():
+		return
+	if event.is_action_pressed(&"dev_overlay"):
 		visible = not visible
+		get_viewport().set_input_as_handled()
+	elif event.is_action_pressed(&"dev_toggle_apex") and game != null:
+		var apex: ApexMonster = game.get_node_or_null("World/Apex") as ApexMonster
+		if apex != null:
+			apex.request_active(not apex.active)
 		get_viewport().set_input_as_handled()
 
 
@@ -177,6 +185,7 @@ func _update_map(delta: float) -> void:
 	var apex: ApexMonster = game.get_node_or_null("World/Apex") as ApexMonster
 	if apex != null:
 		_apex_blip.position = apex.position
+		_apex_blip.visible = apex.active
 	var target: Node3D = game.get_node_or_null("World/ScanTarget") as Node3D
 	if target != null:
 		_array_blip.position = target.position
@@ -254,9 +263,11 @@ static func stats_text(g: Game) -> String:
 			Acoustics.sub_db(), Acoustics.ambient_db(), "masked" if margin < 0.0 else "EXPOSED", margin])
 	lines.append("  loudest: %s" % (Acoustics.top_text if Acoustics.top_text != "" else "nothing"))
 	var apex: ApexMonster = g.get_node_or_null("World/Apex") as ApexMonster
-	if apex != null:
+	if apex != null and not apex.active:
+		lines.append("APEX  DISABLED  (F4 to enable)")
+	elif apex != null:
 		var dist: float = apex.position.distance_to(g.sub_frame.sub_transform.origin)
-		lines.append("APEX  %s" % SuspicionModel.state_name(apex.state() as SuspicionModel.State))
+		lines.append("APEX  %s  (F4 to disable)" % SuspicionModel.state_name(apex.state() as SuspicionModel.State))
 		lines.append("  distance %.0f m   speed %.1f m/s   depth %.0f m" % [dist, apex.speed, -apex.position.y])
 		lines.append("  suspicion %.0f   last SNR %s   alertness %.2f" % [
 			apex.sync_suspicion, ("%+.1f dB" % apex.sync_snr) if apex.sync_snr > -99.0 else "none", apex.sync_alertness])

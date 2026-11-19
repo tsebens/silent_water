@@ -30,7 +30,7 @@ func _ready() -> void:
 
 ## Distance (m) from the sub to the nearest part of the apex, or INF.
 func apex_distance() -> float:
-	if _apex == null:
+	if _apex == null or not _apex.active:
 		return INF
 	# In render space the sub sits at the origin.
 	return maxf(_apex.global_position.length() - ApexMonster.LENGTH_M * 0.4, 0.0)

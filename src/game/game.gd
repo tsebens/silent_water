@@ -30,6 +30,8 @@ func start_session() -> void:
 	_active = true
 	if multiplayer.is_server():
 		(get_node("SessionLog") as SessionLog).open_log()
+		if OS.get_cmdline_user_args().has("--no-apex"):
+			(get_node("World/Apex") as ApexMonster).set_active(false)
 		_spawn_player(Net.local_id())
 		for peer_id: int in multiplayer.get_peers():
 			_spawn_player(peer_id)

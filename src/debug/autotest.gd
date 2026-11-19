@@ -15,10 +15,10 @@ extends Node
 ##   Crew2 "talks" at 75 dB from 4.0 on (simulated mic level) and puts on
 ##   the sonar headset at 4.5 (it's on the starboard side; the cord check
 ##   uses distance, so Crew2 is moved next to it first).
-##   At 7.0 the host tells every instance to report at once; clients then
+##   At 10.0 (engine fully spooled, so noise is steady) the host tells every instance to report at once; clients then
 ##   quit, and the host quits once they are gone.
 
-const REPORT_AT: float = 7.0
+const REPORT_AT: float = 10.0
 const STATIONS: String = "Interior/Stations/"
 
 var role: String = ""
@@ -94,6 +94,14 @@ func _once(key: String, at: float, action: Callable) -> void:
 		action.call()
 
 
+static func _count_host_events() -> int:
+	var n: int = 0
+	for entry: Array in DevLog.lines:
+		if String(entry[1]).begins_with("[host]"):
+			n += 1
+	return n
+
+
 static func _vec(v: Vector3) -> Array:
 	return [snappedf(v.x, 0.01), snappedf(v.y, 0.01), snappedf(v.z, 0.01)]
 
@@ -126,6 +134,7 @@ func _report() -> void:
 		"tank": snappedf(controller.tank_fraction, 0.001),
 		"depth": snappedf(controller.depth, 0.01),
 		"sub_db": snappedf(Acoustics.sub_db(), 0.01),
+		"host_events": _count_host_events(),
 		"headset_holder": (_node("Sonar/Headset") as Interactable).state.holder,
 		"apex_state": (_game.get_node("World/Apex") as ApexMonster).state(),
 		"apex_pos": _vec((_game.get_node("World/Apex") as ApexMonster).position),

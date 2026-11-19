@@ -24,6 +24,9 @@ properties/5/replication_mode = 1
 properties/6/path = NodePath(".:sync_alertness")
 properties/6/spawn = true
 properties/6/replication_mode = 1
+properties/7/path = NodePath(".:active")
+properties/7/spawn = true
+properties/7/replication_mode = 2
 
 [node name="Apex" type="Node3D"]
 script = ExtResource("1")

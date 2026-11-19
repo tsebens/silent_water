@@ -104,6 +104,7 @@ Arousal fades about 30 seconds after you go quiet. Patrolling lasts a minute or 
 | Key | What it does |
 | --- | --- |
 | F1 | Developer overlay: console (engine output and game events, including the host's on clients), 3D minimap (sub green, apex red, array yellow), and live sub, noise, apex and dive stats. Launch with `-- --dev-overlay` to start with it on. |
+| F4 | Switch the apex off or on for everyone (the host decides). While it's off, it's gone: no body, no sound, no hearing, no contact. Start the host with `-- --no-apex` to dive without it from the start. |
 | F3 | Simulate normal speech on your mic |
 | Shift+F3 | Simulate a shout |
 

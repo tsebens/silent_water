@@ -51,6 +51,9 @@ def main() -> int:
             errors.append(f"host hears Crew2's voice at {crew2_voice} dB, expected 75")
         if host["sub_db"] < 75.0:
             errors.append(f"sub noise {host['sub_db']} dB should include Crew2's 75 dB voice")
+    for r in reports:
+        if not r.get("is_host") and r.get("host_events", 0) < 1:
+            errors.append(f"{r['role']} got no host game events in its developer log")
     if "Crew2" in by_role:
         for r in reports:
             if r["headset_holder"] != by_role["Crew2"]["peer"]:

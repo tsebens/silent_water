@@ -10,6 +10,7 @@ const ACTIONS: Dictionary = {
 	&"sneak": [KEY_SHIFT],
 	&"release_mouse": [KEY_ESCAPE],
 	&"dev_overlay": [KEY_F1],
+	&"dev_toggle_apex": [KEY_F4],
 }
 const MOUSE_ACTIONS: Dictionary = {
 	&"interact": MOUSE_BUTTON_LEFT,
