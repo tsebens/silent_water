@@ -171,7 +171,8 @@ func _step_ballast(delta: float, flood: float, blow: float) -> void:
 	# The vent sits high on the hull: it only floods once it's under water.
 	if position.y + HULL_TOP > 0.5:
 		flooded = 0.0
-	var blown: float = minf(blow * blow_rate_t * delta, air_t)
+	# Air only goes out with water: an empty tank uses no more air.
+	var blown: float = minf(minf(blow * blow_rate_t * delta, air_t), tank_water_t + flooded)
 	tank_water_t = clampf(tank_water_t + flooded - blown, 0.0, tank_capacity_t)
 	air_t = maxf(air_t - blown, 0.0)
 

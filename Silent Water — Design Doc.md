@@ -308,18 +308,18 @@ The prototype answers one question: is it tense and fun to coordinate a sub when
 
 ### In scope
 
-- [ ] Two to four players over local ENet networking
-- [ ] Walking inside the sub in its own frame of reference
-- [ ] Pilot steering and diving planes on WASD
-- [ ] Engine order telegraph at the engineering station
-- [ ] Ballast valves that flood and blow the tanks
-- [ ] One recurring leak with a field patch
-- [ ] The noise system and two-needle gauge, with each player's mic loudness feeding the noise level
-- [ ] One blind, sound-hunting apex monster with the full escalation ladder
-- [ ] Minimal passive sonar: a hydrophone the operator turns, with directional audio only they hear. No active ping and no 3D display. This is the hardest system to calibrate, so expect to rework it many times.
-- [ ] One small vertical map with two or three shelves
-- [ ] One objective: a scan taken from the sub
-- [ ] A played descent and ascent; the dive ends on surfacing
+- [x] Two to four players over local ENet networking
+- [x] Walking inside the sub in its own frame of reference
+- [x] Pilot steering and diving planes on WASD
+- [x] Engine order telegraph at the engineering station
+- [x] Ballast valves that flood and blow the tanks
+- [x] One recurring leak with a field patch
+- [x] The noise system and two-needle gauge, with each player's mic loudness feeding the noise level
+- [x] One blind, sound-hunting apex monster with the full escalation ladder
+- [x] Minimal passive sonar: a hydrophone the operator turns, with directional audio only they hear. No active ping and no 3D display. This is the hardest system to calibrate, so expect to rework it many times.
+- [x] One small vertical map with two or three shelves
+- [x] One objective: a scan taken from the sub
+- [x] A played descent and ascent; the dive ends on surfacing
 
 ### Out of scope
 
@@ -352,7 +352,7 @@ Steam integration and in-game voice, expeditions, cargo, divers, facilities, upg
 - Sonar becoming a chore
 - Too many creatures cluttering the tension
 - Whether every loss feels earned rather than random
-- Whether dives actually land near 30 minutes
+- Whether dives actually land near 30 minutes. A scripted autopilot with no monster finishes the prototype dive in about 8 minutes (4 sinking to 130 m, 1 crossing, 25 s scanning, 2 rising). A real crew hiding from the apex will take longer, but the prototype site is likely well short of 30.
 
 ## Sources
 

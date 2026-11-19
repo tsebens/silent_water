@@ -8,12 +8,16 @@ const GAME_SCENE: PackedScene = preload("res://src/game/game.tscn")
 const TIME_LIMIT_SEC: float = 20.0 * 60.0
 ## Hover point near the array, off the wall, a little above the shelf.
 const HOVER: Vector3 = Vector3(24, CanyonSite.SHELF2_TOP + 10.0, -250)
+## Close enough to the hover point to start scanning (the scanner reaches 30 m).
+const ARRIVE_M: float = 20.0
 
 var game: Game
 var c: SubController
 var scan: ScanObjective
 var director: DiveDirector
 var completed: bool = false
+var _stuck_time: float = 0.0
+var _backing: float = 0.0
 
 
 func before_each() -> void:
@@ -60,11 +64,26 @@ func _steer_to(target: Vector3) -> float:
 	var desired_yaw: float = atan2(-to.x, -to.z)
 	var err: float = wrapf(desired_yaw - c.model.angles.y, -PI, PI)
 	_put("Pilot/Rudder", clampf(-err * 3.0, -1.0, 1.0))
-	var order: float = 3.0 if flat > 80.0 else (1.0 if flat > 15.0 else 0.0)
-	if flat < 15.0 and c.speed > 0.4:
+	# Full ahead in transit, slow on approach, then coast in and brake.
+	var order: float = 3.0 if flat > 90.0 else (1.0 if flat > 45.0 else 0.0)
+	if flat < 45.0 and c.speed > 0.7:
 		order = -1.0
-	if absf(err) > 1.2 and flat > 15.0:
+	if flat < 45.0 and c.speed < 0.25 and flat > ARRIVE_M:
+		order = 1.0  # Nudge closer.
+	if absf(err) > 1.2 and flat > 45.0:
 		order = 1.0  # Slow down to turn.
+	# Pinned against rock with way on ordered: back off like a pilot would.
+	if order > 0.0 and absf(c.speed) < 0.15:
+		_stuck_time += 1.0 / 60.0
+	else:
+		_stuck_time = 0.0
+	if _stuck_time > 8.0:
+		_backing = 10.0
+		_stuck_time = 0.0
+	if _backing > 0.0:
+		_backing -= 1.0 / 60.0
+		order = -2.0
+		_put("Pilot/Rudder", 0.0)
 	_put("Engineering/Telegraph", order)
 	return flat
 
@@ -76,10 +95,17 @@ func test_autopilot_completes_a_dive() -> void:
 	var phase: String = "descend"
 	while t < TIME_LIMIT_SEC and not completed:
 		match phase:
-			"descend", "transit":
+			"descend":
+				# Sink in place to working depth first, then cross at depth.
+				_put("Engineering/Telegraph", 0.0)
+				_put("Pilot/Rudder", 0.0)
+				_hold_depth(HOVER.y)
+				if absf(c.model.position.y - HOVER.y) < 8.0:
+					phase = "transit"
+			"transit":
 				var flat: float = _steer_to(HOVER)
-				_hold_depth(HOVER.y if flat < 120.0 else maxf(HOVER.y, -90.0))
-				if flat < 15.0 and absf(c.model.position.y - HOVER.y) < 6.0:
+				_hold_depth(HOVER.y)
+				if flat < ARRIVE_M and absf(c.model.position.y - HOVER.y) < 6.0:
 					phase = "scan"
 			"scan":
 				_steer_to(HOVER)
@@ -98,6 +124,8 @@ func test_autopilot_completes_a_dive() -> void:
 				_put("Ballast/BlowValve", 1.0 if not c.surfaced else 0.0)
 		await runner.get_tree().physics_frame
 		t += dt
+		if fmod(t, 60.0) < dt:
+			print("[full dive] t=%.0f %s pos=%s speed=%.2f" % [t, phase, c.model.position.snapped(Vector3.ONE), c.speed])
 	print("[full dive] %s after %.0f s (scan began %.0f s), air left %.0f%%, max depth %.0f m" % [
 		"complete" if completed else "stuck in phase " + phase, t, scan_started_at, c.air_fraction * 100.0, director.max_depth])
 	expect(completed, "autopilot should finish the dive (stuck in %s at %s)" % [phase, c.model.position])

@@ -122,3 +122,10 @@ func test_collide_removes_inward_velocity() -> void:
 	var impact: float = m.collide(Vector3.UP)
 	expect_near(impact, 2.0)
 	expect(m.velocity.y >= 0.0)
+
+
+func test_blowing_an_empty_tank_uses_no_air() -> void:
+	m.tank_water_t = 1.0
+	_run(10.0, 0.0, 0.0, 0.0, 0.0, 1.0)
+	expect_eq(m.tank_water_t, 0.0)
+	expect_near(m.air_capacity_t - m.air_t, 1.0, 0.01, "only the water's worth of air is used")
