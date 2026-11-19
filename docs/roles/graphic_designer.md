@@ -43,6 +43,8 @@ Instructions for the agent that designs and models Silent Water's 3D assets. Rea
 
 ### Picking up work
 
+- An hourly scheduled task starts a fresh session that runs this workflow. Its prompt is in [`graphic_designer_scheduled_prompt.md`](graphic_designer_scheduled_prompt.md); keep it in sync with this file.
+
 - When an issue moves to In review, immediately pick up the next **Ready** issue with the `3d_asset` label. Don't wait for the review.
 - Pick the highest Priority first: **Critical, then Important, then Standard, then Low.** An issue with no priority counts as Standard. Break ties with the oldest issue.
 - Tristan reprioritises by changing an issue's priority, not by interrupting. Re-check the board each time you pick up work.
