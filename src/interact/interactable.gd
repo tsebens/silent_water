@@ -6,7 +6,8 @@ extends Node3D
 ## requested values while dragging. The local holder sees its own movement
 ## immediately (prediction); the host clamps, accepts only the holder's
 ## requests, and broadcasts the result. Only one player can hold a control at a
-## time, which resolves conflicting input. Releasing sends a reliable final value.
+## time, which resolves conflicting input. Releasing sends a reliable final value,
+## and so does a held control that stops moving (see [constant SETTLE_TIME]).
 ##
 ## Subclasses override [method _drag_to_value] (mouse drag -> new value) and
 ## [method _apply_visual] (value -> pose of the mesh).
@@ -23,7 +24,16 @@ signal holder_changed(peer_id: int)
 
 var state: InteractableState
 
+## A held control that has been still this long (s) sends its value reliably.
+## Streamed requests are unreliable, so the last few can be lost or arrive
+## before the grab; a key-driven control that then stays put (a throttle at
+## full) would leave the host behind for good without this.
+const SETTLE_TIME: float = 0.1
+
 var _local_grabbing: bool = false
+## Client: a streamed request hasn't been confirmed by a reliable settle yet.
+var _unsettled: bool = false
+var _still_time: float = 0.0
 
 
 func _init() -> void:
@@ -41,6 +51,11 @@ func _ready() -> void:
 
 func _physics_process(delta: float) -> void:
 	state.tick(delta)
+	if _unsettled and _local_grabbing:
+		_still_time += delta
+		if _still_time >= SETTLE_TIME:
+			_unsettled = false
+			_rpc_settle.rpc_id(1, state.value)
 
 
 ## Current value (predicted for the local holder, authoritative otherwise).
@@ -103,6 +118,8 @@ func drive_to(target: float, silent: bool = false) -> void:
 	_set_local(clamped, silent)
 	if not multiplayer.is_server():
 		_rpc_request.rpc_id(1, clamped, silent)
+		_unsettled = true
+		_still_time = 0.0
 	else:
 		_host_apply(Net.local_id(), clamped, silent)
 
@@ -114,6 +131,7 @@ func end_interaction() -> void:
 	if not is_equal_approx(final_value, state.value):
 		_set_local(final_value)
 	_local_grabbing = false
+	_unsettled = false
 	_rpc_release.rpc_id(1, final_value)
 
 
@@ -180,6 +198,15 @@ func _rpc_release(final_value: float) -> void:
 func _rpc_request(v: float, silent: bool) -> void:
 	if multiplayer.is_server():
 		_host_apply(_sender(), v, silent)
+
+
+## Reliable: the holder's value once its control has stopped moving. Silent:
+## the movement already made its noise through the stream, and a catch-up
+## after lost packets mustn't sound like a slam.
+@rpc("any_peer", "reliable")
+func _rpc_settle(v: float) -> void:
+	if multiplayer.is_server():
+		_host_apply(_sender(), v, true)
 
 
 @rpc("authority", "call_remote", "unreliable_ordered")
