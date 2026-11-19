@@ -33,6 +33,10 @@ Instructions for the agent that designs and models Silent Water's 3D assets. Rea
 - **Blender:** the official build is at `/opt/blender/blender` and runs headless (`-b`). Use it for modeling, especially organic shapes. Write every model as a Python (`bpy`) script so it can be regenerated and tweaked.
 - **Godot 4.7.2:** used to check that an exported model imports and to render it in game lighting (Forward+, volumetric fog). It needs a display, so wrap it in `xvfb-run -a -s "-screen 0 1280x720x24"` and pass `--rendering-driver vulkan`. The software Vulkan driver (`mesa-vulkan-drivers`) provides that.
 - **Render cost:** everything renders on the CPU. Keep Cycles samples modest and always use the denoiser. Use Eevee or Godot for quick iteration.
+- **Pipeline gotchas:**
+  - Export glTF with `export_vertex_color="ACTIVE"` if the model uses vertex colors.
+  - Godot imports vertex colors but doesn't apply them, so the delivered `.tscn` must set `vertex_color_use_as_albedo` on those materials, or the colors must be baked to a texture.
+  - Use the official Blender build, not Ubuntu's `blender` package. That package lacks numpy, which breaks glTF export, and lacks the denoiser.
 - The cloud environment's setup script installs Blender and the Vulkan driver. If either is missing, the setup script needs fixing; note that on the issue.
 
 ## Workflow
