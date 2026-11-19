@@ -44,6 +44,18 @@ List open issues in `tsebens/silent_water` with the `3d_asset` label, and their 
 
 After moving an issue to In review, go back to step 2 and pick up the next Ready issue. Stop when nothing is Ready.
 
+## Notifying Tristan
+
+Send a push notification (the `PushNotification` tool) **only when something is wrong and needs Tristan**:
+- a tool or the environment is broken
+- GitHub or board access fails
+- an issue is blocked on a decision or missing reference
+- a render or export keeps failing
+
+Keep it to one line under 200 characters, leading with what needs doing.
+
+**Never notify** that a run started, that nothing was Ready, or that work went well.
+
 ## Rules
 
 - Never close an issue, or move it to Done, yourself; the reviewer does that after choosing a variation.
