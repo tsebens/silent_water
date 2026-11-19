@@ -61,7 +61,7 @@ A second pair of eyes before one misread concept fans out into several wasted de
 
 ### Dispatcher
 
-A workflow in `.github/workflows/dispatch.yml`, running on `issues` (labeled, closed), `pull_request` (closed) and a 15-minute cron. It is plain shell against the GitHub API, which keeps it cheap, fast and predictable. Each run:
+A workflow in `.github/workflows/dispatch.yml`, running on `issues` (labeled `ready`, closed), `pull_request` (closed) and a 15-minute cron. It is plain shell against the GitHub API (`.github/scripts/dispatch.sh`, unit-tested by `test_dispatch.sh` in CI, dry-runnable from the Actions tab), which keeps it cheap, fast and predictable. Each run:
 
 1. Exits immediately if the repository variable `PIPELINE_PAUSED` is `true`.
 2. **Mirrors the board.** Arcs whose board Status is Ready but which lack the `ready` label get it (so Tristan can promote work from the board UI). Arcs that are Done on the board but still open are flagged in the run log.
@@ -230,4 +230,4 @@ There is no native "at most N runs" setting anywhere in the chain: Actions concu
 - Confirm native issue-trigger filters and payload (setup step 7); until then the organization and plan-review hops are specified with both options.
 - **Deferred: a fallback rework agent.** If a subscribed development session fails to wake (container reclaimed, subscription lost, session died) a PR could sit with `changes-requested` indefinitely. The fix would be a dispatcher check for `changes-requested` PRs with no push for 30+ minutes that fires a rework task to take over. Not built until it is observed to be a problem; until then such a PR surfaces in the dispatcher's run log and Tristan re-fires or resumes the session by hand.
 - Decide whether `Blocked by:` lines in the body or GitHub's native issue dependencies are the source for the dispatcher. Body lines are simpler to read from shell; native dependencies show on the board. The dispatcher can read both and treat the union as blocking.
-- The fire API is marked experimental. Keep the curl in one composite action so a header change is a one-line fix.
+- The fire API is marked experimental. The curl lives in exactly one place, `.github/scripts/fire.sh`, so a header change is a one-line fix.
