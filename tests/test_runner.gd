@@ -1,6 +1,6 @@
 extends Node
 ## Headless test entry point:
-##   godot --headless --path . res://tests/test_runner.tscn
+##   godot --headless --path . res://tests/test_runner.tscn [-- --only <name>]
 ## 1. Loads every script under res://src to catch parse errors.
 ## 2. Runs every `test_*.gd` under res://tests/unit.
 ## Exits with code 1 on any failure.
@@ -36,6 +36,9 @@ func _run_unit_tests(dir: String) -> int:
 	for path: String in _find_files(dir, ".gd"):
 		if not path.get_file().begins_with("test_"):
 			continue
+		var only: String = _only_filter()
+		if only != "" and not path.get_file().contains(only):
+			continue
 		var script: GDScript = load(path) as GDScript
 		if script == null or not script.can_instantiate():
 			printerr("PARSE FAIL %s" % path)
@@ -64,6 +67,13 @@ func _run_unit_tests(dir: String) -> int:
 				failures += 1
 	print("%d test(s) passed" % passed)
 	return failures
+
+
+## `-- --only <substring>` runs just the matching test files.
+func _only_filter() -> String:
+	var args: PackedStringArray = OS.get_cmdline_user_args()
+	var i: int = args.find("--only")
+	return args[i + 1] if i != -1 and i + 1 < args.size() else ""
 
 
 func _find_files(dir: String, ext: String) -> PackedStringArray:
