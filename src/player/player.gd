@@ -18,6 +18,9 @@ const MOUSE_SENSITIVITY: float = 0.0025
 const STRIDE_M: float = 0.7
 const INTERACT_RANGE_M: float = 2.0
 const REMOTE_SMOOTHING: float = 15.0
+## Footstep noise at walking speed (~75 dB); scales with speed cubed, so
+## sneaking (~1.1 m/s) is ~11 dB quieter.
+const FOOTSTEP_INTENSITY: float = 3e-3
 const LAYER_INTERACTABLE: int = 1 << 1
 ## Deck tilt past which boots lose grip and the crew slides.
 const SLIDE_ANGLE_DEG: float = 30.0
@@ -45,6 +48,9 @@ var _sub_frame: SubFrame
 var _held: Interactable = null
 var _seat: PilotSeat = null
 var _stride: float = 0.0
+## Smoothed movement speed, measured the same way on every peer.
+var _speed: float = 0.0
+var _last_position: Vector3 = Vector3.ZERO
 
 
 func _enter_tree() -> void:
@@ -64,6 +70,8 @@ func _ready() -> void:
 		sync_position = position
 	else:
 		position = sync_position
+	_last_position = position
+	add_to_group(&"noise_sources")
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -104,6 +112,7 @@ func _physics_process(delta: float) -> void:
 		position = position.lerp(sync_position, w)
 		rotation.y = lerp_angle(rotation.y, sync_yaw, w)
 		_head.rotation.x = lerp_angle(_head.rotation.x, sync_pitch, w)
+	_track_speed(delta)
 
 
 func _simulate(delta: float) -> void:
@@ -149,7 +158,31 @@ func _simulate(delta: float) -> void:
 		_stride += (position - before).length()
 		if _stride >= STRIDE_M:
 			_stride = 0.0
-			footstep.emit(0.3 if sneaking else 1.0)
+			footstep.emit(clampf(_speed / WALK_SPEED, 0.0, 1.0))
+
+
+func _track_speed(delta: float) -> void:
+	if delta <= 0.0:
+		return
+	var moved: Vector3 = position - _last_position
+	_last_position = position
+	var instant: float = Vector2(moved.x, moved.z).length() / delta
+	_speed = lerpf(_speed, instant, 1.0 - exp(-8.0 * delta))
+	# Remote players get footstep events from their replicated movement, so
+	# everyone hears everyone's steps.
+	if not is_multiplayer_authority():
+		_stride += instant * delta
+		if _stride >= STRIDE_M:
+			_stride = 0.0
+			footstep.emit(clampf(_speed / WALK_SPEED, 0.0, 1.0))
+
+
+## Movement noise (linear intensity). The host polls this for every player,
+## using replicated movement, so a client can't fake being quiet.
+func noise_intensity() -> float:
+	if _seat != null or _speed < 0.2:
+		return 0.0
+	return FOOTSTEP_INTENSITY * pow(_speed / WALK_SPEED, 3.0)
 
 
 func _look(relative: Vector2) -> void:

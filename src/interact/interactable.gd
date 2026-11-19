@@ -33,6 +33,7 @@ func _init() -> void:
 func _ready() -> void:
 	state = InteractableState.new(min_value, max_value, initial_value)
 	add_to_group(&"interactables")
+	add_to_group(&"noise_sources")
 	Net.peer_joined.connect(_on_peer_joined)
 	Net.peer_left.connect(_on_peer_left)
 	_apply_visual(state.value)
@@ -56,6 +57,11 @@ func get_noise_intensity() -> float:
 	if noise_profile == null:
 		return 0.0
 	return noise_profile.intensity_for_rate(state.normalized_rate)
+
+
+## Noise system hook (polled on the host).
+func noise_intensity() -> float:
+	return get_noise_intensity()
 
 
 func is_held_locally() -> bool:

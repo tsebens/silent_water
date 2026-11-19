@@ -5,6 +5,9 @@
 [ext_resource type="Script" path="res://src/interact/gauge.gd" id="3"]
 [ext_resource type="Script" path="res://src/interact/pilot_seat.gd" id="4"]
 [ext_resource type="Script" path="res://src/interact/spring_axis.gd" id="5"]
+[ext_resource type="PackedScene" path="res://src/noise/noise_gauge.tscn" id="6"]
+[ext_resource type="PackedScene" path="res://src/damage/leak.tscn" id="7"]
+[ext_resource type="PackedScene" path="res://src/interact/bilge_pump.tscn" id="8"]
 
 [sub_resource type="StandardMaterial3D" id="hull"]
 albedo_color = Color(0.32, 0.34, 0.33, 1)
@@ -113,6 +116,11 @@ material = SubResource("console")
 [node name="GaugePanel" type="CSGBox3D" parent="Hull"]
 position = Vector3(0, 1.15, -5.85)
 size = Vector3(1.6, 0.36, 0.2)
+material = SubResource("console")
+
+[node name="PumpConsole" type="CSGBox3D" parent="Hull"]
+position = Vector3(-1.2, 0.45, 4)
+size = Vector3(0.6, 0.9, 0.8)
 material = SubResource("console")
 
 [node name="EngineConsole" type="CSGBox3D" parent="Hull"]
@@ -329,3 +337,62 @@ rotation = Vector3(0, 1.5708, 0)
 pixel_size = 0.003
 text = "BALLAST"
 modulate = Color(0.9, 0.85, 0.6, 1)
+
+[node name="NoiseGauges" type="Node3D" parent="Stations"]
+
+[node name="Pilot" parent="Stations/NoiseGauges" instance=ExtResource("6")]
+position = Vector3(1.48, 1.45, -4.9)
+rotation = Vector3(0, -1.5708, 0)
+
+[node name="Engineering" parent="Stations/NoiseGauges" instance=ExtResource("6")]
+position = Vector3(1.48, 1.55, 3.4)
+rotation = Vector3(0, -1.5708, 0)
+
+[node name="Ballast" parent="Stations/NoiseGauges" instance=ExtResource("6")]
+position = Vector3(-1.48, 1.75, -1.1)
+rotation = Vector3(0, 1.5708, 0)
+
+[node name="Bilge" parent="Stations/NoiseGauges" instance=ExtResource("6")]
+position = Vector3(-1.48, 1.55, 3.4)
+rotation = Vector3(0, 1.5708, 0)
+
+[node name="Bilge" type="Node3D" parent="Stations"]
+
+[node name="Pump" parent="Stations/Bilge" instance=ExtResource("8")]
+position = Vector3(-1.2, 0.9, 4)
+rotation = Vector3(0, -1.5708, 0)
+label = "bilge pump"
+
+[node name="BilgeGauge" type="Node3D" parent="Stations/Bilge"]
+position = Vector3(-1.48, 1.55, 4.6)
+rotation = Vector3(0, 1.5708, 0)
+script = ExtResource("3")
+readout = &"bilge_fraction"
+title = "BILGE"
+max_value = 1.0
+sweep_deg = 180.0
+
+[node name="BilgeSign" type="Label3D" parent="Stations/Bilge"]
+position = Vector3(-1.48, 2.0, 4)
+rotation = Vector3(0, 1.5708, 0)
+pixel_size = 0.003
+text = "BILGE"
+modulate = Color(0.9, 0.85, 0.6, 1)
+
+[node name="Leaks" type="Node3D" parent="."]
+
+[node name="PortFore" parent="Leaks" instance=ExtResource("7")]
+position = Vector3(-1.45, 1.9, -3.4)
+rotation = Vector3(0, 1.5708, 0)
+
+[node name="StbdLow" parent="Leaks" instance=ExtResource("7")]
+position = Vector3(1.45, 0.5, 1.8)
+rotation = Vector3(0, -1.5708, 0)
+
+[node name="Overhead" parent="Leaks" instance=ExtResource("7")]
+position = Vector3(0.4, 2.35, 1.2)
+rotation = Vector3(-1.5708, 0, 0)
+
+[node name="StbdFore" parent="Leaks" instance=ExtResource("7")]
+position = Vector3(1.45, 1.7, -1.2)
+rotation = Vector3(0, -1.5708, 0)

@@ -12,6 +12,7 @@ extends Node
 ##     toward astern. The host must reject this. At 3.6 Crew3 sits in the pilot
 ##     seat and holds A (rudder to port) from 4.0.
 ##   Crew1 (host) opens the flood valve about 1.5 turns between 2.0 and 3.0.
+##   Crew2 "talks" at 75 dB from 4.0 on (simulated mic level).
 ##   At 7.0 the host tells every instance to report at once; clients then
 ##   quit, and the host quits once they are gone.
 
@@ -55,6 +56,8 @@ func _physics_process(delta: float) -> void:
 			if _t > 2.1 and _t < 3.3:
 				telegraph.drag(Vector2(0, -8))
 			_once("release", 3.5, func() -> void: telegraph.end_interaction())
+			if _t > 4.0:
+				Acoustics.report_voice(NoiseLevel.from_db(75.0))
 		"Crew3":
 			_once("grab", 2.5, func() -> void: telegraph.begin_interaction())
 			if _t > 2.6 and _t < 3.2:
@@ -111,7 +114,14 @@ func _report() -> void:
 		"engine": snappedf(controller.engine_output, 0.01),
 		"tank": snappedf(controller.tank_fraction, 0.001),
 		"depth": snappedf(controller.depth, 0.01),
+		"sub_db": snappedf(Acoustics.sub_db(), 0.01),
+		"ambient_db": snappedf(Acoustics.ambient_db(), 0.01),
 	}
+	if Net.is_host():
+		var voices: Dictionary = {}
+		for peer: int in multiplayer.get_peers():
+			voices[str(peer)] = snappedf(NoiseLevel.to_db(Acoustics.voice_intensity(peer)), 0.1)
+		report["voices_db"] = voices
 	print("AUTOTEST_REPORT " + JSON.stringify(report))
 	if not Net.is_host():
 		await get_tree().create_timer(0.5).timeout

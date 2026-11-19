@@ -4,7 +4,11 @@ extends Node3D
 ## [member min_value]..[member max_value] of a readout on the node in the
 ## `sub_readouts` group. Builds its own simple meshes so a gauge is one node.
 
+## Group of the node that provides `readout(name) -> float`.
+@export var source_group: StringName = &"sub_readouts"
 @export var readout: StringName = &"depth"
+## Optional second needle (e.g. ocean background on the noise gauge).
+@export var readout_b: StringName = &""
 @export var title: String = "DEPTH"
 @export var min_value: float = 0.0
 @export var max_value: float = 100.0
@@ -18,8 +22,10 @@ extends Node3D
 @export var needle_response: float = 6.0
 
 var _needle: Node3D
+var _needle_b: Node3D
 var _source: Node
 var _shown: float = 0.0
+var _shown_b: float = 0.0
 
 
 func _ready() -> void:
@@ -28,20 +34,29 @@ func _ready() -> void:
 
 func _process(delta: float) -> void:
 	if _source == null or not is_instance_valid(_source):
-		_source = get_tree().get_first_node_in_group(&"sub_readouts")
+		_source = get_tree().get_first_node_in_group(source_group)
 		if _source == null:
 			return
+	var w: float = 1.0 - exp(-needle_response * delta)
 	var v: float = float(_source.call(&"readout", readout))
-	var t: float
 	if wraps:
-		t = fposmod(v - min_value, max_value - min_value) / (max_value - min_value)
-		var target_angle: float = t * TAU
-		_shown = lerp_angle(_shown, target_angle, 1.0 - exp(-needle_response * delta))
+		var t_wrap: float = fposmod(v - min_value, max_value - min_value) / (max_value - min_value)
+		_shown = lerp_angle(_shown, t_wrap * TAU, w)
 		_needle.rotation.z = -_shown
 		return
-	t = clampf(inverse_lerp(min_value, max_value, v), 0.0, 1.0)
-	_shown = lerpf(_shown, t, 1.0 - exp(-needle_response * delta))
-	_needle.rotation.z = deg_to_rad(sweep_deg * 0.5) - deg_to_rad(sweep_deg) * _shown
+	_shown = lerpf(_shown, _fraction(v), w)
+	_needle.rotation.z = _angle_for(_shown)
+	if _needle_b != null:
+		_shown_b = lerpf(_shown_b, _fraction(float(_source.call(&"readout", readout_b))), w)
+		_needle_b.rotation.z = _angle_for(_shown_b)
+
+
+func _fraction(v: float) -> float:
+	return clampf(inverse_lerp(min_value, max_value, v), 0.0, 1.0)
+
+
+func _angle_for(t: float) -> float:
+	return deg_to_rad(sweep_deg * 0.5) - deg_to_rad(sweep_deg) * t
 
 
 func _build() -> void:
@@ -74,16 +89,11 @@ func _build() -> void:
 	rim.rotation.x = PI / 2.0
 	add_child(rim)
 
-	_needle = Node3D.new()
-	_needle.position = Vector3(0, 0, 0.015)
-	add_child(_needle)
-	var needle: MeshInstance3D = MeshInstance3D.new()
-	var needle_mesh: BoxMesh = BoxMesh.new()
-	needle_mesh.size = Vector3(0.008, radius * 0.85, 0.004)
-	needle_mesh.material = needle_mat
-	needle.mesh = needle_mesh
-	needle.position = Vector3(0, radius * 0.4, 0)
-	_needle.add_child(needle)
+	_needle = _make_needle(needle_mat, 0.015)
+	if readout_b != &"":
+		var mat_b: StandardMaterial3D = StandardMaterial3D.new()
+		mat_b.albedo_color = Color(0.05, 0.35, 0.45)
+		_needle_b = _make_needle(mat_b, 0.011)
 
 	# Title sits on a plate below the dial so it never collides with the scale.
 	var title_label: Label3D = _add_label(title, Vector3(0, -radius * 1.35, 0.005), 0.0011)
@@ -99,6 +109,20 @@ func _build() -> void:
 		_add_label("S", Vector3(0, -radius * 0.75, 0.012), 0.0009)
 		_add_label("E", Vector3(radius * 0.75, 0, 0.012), 0.0009)
 		_add_label("W", Vector3(-radius * 0.75, 0, 0.012), 0.0009)
+
+
+func _make_needle(mat: StandardMaterial3D, z: float) -> Node3D:
+	var pivot: Node3D = Node3D.new()
+	pivot.position = Vector3(0, 0, z)
+	add_child(pivot)
+	var needle: MeshInstance3D = MeshInstance3D.new()
+	var needle_mesh: BoxMesh = BoxMesh.new()
+	needle_mesh.size = Vector3(0.008, radius * 0.85, 0.004)
+	needle_mesh.material = mat
+	needle.mesh = needle_mesh
+	needle.position = Vector3(0, radius * 0.4, 0)
+	pivot.add_child(needle)
+	return pivot
 
 
 func _add_label(text: String, pos: Vector3, pixel: float) -> Label3D:

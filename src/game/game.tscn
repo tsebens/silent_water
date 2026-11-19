@@ -4,6 +4,8 @@
 [ext_resource type="Script" path="res://src/sub/sub_frame.gd" id="2"]
 [ext_resource type="Script" path="res://src/sub/sub_controller.gd" id="3"]
 [ext_resource type="Script" path="res://src/world/marine_snow.gd" id="6"]
+[ext_resource type="Script" path="res://src/audio/sub_audio.gd" id="7"]
+[ext_resource type="Script" path="res://src/damage/leak_system.gd" id="8"]
 [ext_resource type="PackedScene" path="res://src/sub/interior.tscn" id="4"]
 [ext_resource type="PackedScene" path="res://src/world/exterior.tscn" id="5"]
 
@@ -37,6 +39,9 @@ properties/5/replication_mode = 1
 properties/6/path = NodePath(".:air_fraction")
 properties/6/spawn = true
 properties/6/replication_mode = 1
+properties/7/path = NodePath(".:bilge_fraction")
+properties/7/spawn = true
+properties/7/replication_mode = 1
 
 [sub_resource type="Environment" id="env"]
 background_mode = 1
@@ -89,6 +94,21 @@ script = ExtResource("6")
 [node name="PlayerSpawner" type="MultiplayerSpawner" parent="."]
 _spawnable_scenes = PackedStringArray("res://src/player/player.tscn")
 spawn_path = NodePath("../Players")
+
+[node name="SubAudio" type="Node" parent="." node_paths=PackedStringArray("controller", "players", "engine_point", "blow_point", "flood_point")]
+script = ExtResource("7")
+controller = NodePath("../SubController")
+players = NodePath("../Players")
+engine_point = NodePath("../Interior/Stations/Engineering/Telegraph")
+blow_point = NodePath("../Interior/Stations/Ballast/BlowValve")
+flood_point = NodePath("../Interior/Stations/Ballast/FloodValve")
+
+[node name="LeakSystem" type="Node" parent="." node_paths=PackedStringArray("controller", "leaks_root", "pump", "pump_point")]
+script = ExtResource("8")
+controller = NodePath("../SubController")
+leaks_root = NodePath("../Interior/Leaks")
+pump = NodePath("../Interior/Stations/Bilge/Pump")
+pump_point = NodePath("../Interior/Stations/Bilge/Pump")
 
 [node name="Environment" type="WorldEnvironment" parent="."]
 environment = SubResource("env")

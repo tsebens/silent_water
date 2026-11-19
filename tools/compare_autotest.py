@@ -44,10 +44,17 @@ def main() -> int:
         pos = crew3["players"].get(str(crew3["peer"]))
         if pos and sum((a - b) ** 2 for a, b in zip(pos, crew3["seat_point"])) ** 0.5 > 0.05:
             errors.append(f"Crew3 is at {pos}, not in the seat {crew3['seat_point']}")
+    host = next((r for r in reports if r.get("is_host")), None)
+    if host and "Crew2" in by_role:
+        crew2_voice = host.get("voices_db", {}).get(str(by_role["Crew2"]["peer"]))
+        if crew2_voice is None or not near(crew2_voice, 75.0, 0.5):
+            errors.append(f"host hears Crew2's voice at {crew2_voice} dB, expected 75")
+        if host["sub_db"] < 75.0:
+            errors.append(f"sub noise {host['sub_db']} dB should include Crew2's 75 dB voice")
     if reports:
         ref = reports[0]
         for r in reports[1:]:
-            for key, tol in (("telegraph", 0.001), ("flood", 0.005), ("rudder", 0.05), ("depth", 0.5), ("tank", 0.02)):
+            for key, tol in (("telegraph", 0.001), ("flood", 0.005), ("rudder", 0.05), ("depth", 0.5), ("tank", 0.02), ("sub_db", 1.5), ("ambient_db", 0.1)):
                 if not near(r[key], ref[key], tol):
                     errors.append(f"{key} disagrees: {ref['role']}={ref[key]} {r['role']}={r[key]}")
             for pid, pos in ref["players"].items():

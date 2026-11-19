@@ -1,0 +1,14 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://src/interact/gauge.gd" id="1"]
+
+[node name="NoiseGauge" type="Node3D"]
+script = ExtResource("1")
+source_group = &"acoustics_readouts"
+readout = &"sub_db"
+readout_b = &"ambient_db"
+title = "NOISE dB"
+min_value = 40.0
+max_value = 120.0
+radius = 0.13
+needle_response = 10.0

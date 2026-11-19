@@ -6,6 +6,7 @@ const DEV_MENU_SCENE: PackedScene = preload("res://src/main/dev_menu.tscn")
 
 @onready var _game: Game = $Game
 var _menu: DevMenu = null
+var _mic: MicMeter = null
 
 
 func _ready() -> void:
@@ -56,11 +57,19 @@ func _start_game() -> void:
 		_menu.queue_free()
 		_menu = null
 	print("[net] session up as %s (peer %d)" % ["host" if Net.is_host() else "client", Net.local_id()])
+	Acoustics.reset()
 	_game.start_session()
+	if _mic == null:
+		_mic = MicMeter.new()
+		_mic.name = "MicMeter"
+		add_child(_mic)
 
 
 func _end_game() -> void:
 	_game.end_session()
+	if _mic != null:
+		_mic.queue_free()
+		_mic = null
 	_show_menu()
 
 

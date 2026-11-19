@@ -32,6 +32,11 @@ var blow_rate_t: float = 0.7
 var air_capacity_t: float = 60.0
 var air_t: float = 60.0
 
+# --- Bilge -------------------------------------------------------------------
+## Water that has leaked into the hull (tonnes). Adds weight; pumped out.
+var bilge_water_t: float = 0.0
+var bilge_capacity_t: float = 8.0
+
 # --- Engine ------------------------------------------------------------------
 ## Normalized engine output, -1 (full astern) .. 1 (full ahead).
 var engine: float = 0.0
@@ -73,7 +78,14 @@ func transform() -> Transform3D:
 
 
 func total_mass_t() -> float:
-	return dry_mass_t + payload_t + tank_water_t
+	return dry_mass_t + payload_t + tank_water_t + bilge_water_t
+
+
+## Adds (positive) or pumps out (negative) bilge water. Returns the change.
+func change_bilge(delta_t: float) -> float:
+	var before: float = bilge_water_t
+	bilge_water_t = clampf(bilge_water_t + delta_t, 0.0, bilge_capacity_t)
+	return bilge_water_t - before
 
 
 ## Net vertical acceleration from buoyancy alone (positive rises).

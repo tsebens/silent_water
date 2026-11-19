@@ -15,6 +15,18 @@ const HULL_CENTER: Vector3 = Vector3(0, 1.2, 0)
 ## Minimum impact speed that counts as a strike.
 const STRIKE_THRESHOLD: float = 0.15
 
+# Noise at 1 m (linear intensity; 1.0 = 100 dB). See docs/noise.md.
+## Engine at full output (~80 dB); falls off with the square of output.
+const ENGINE_FULL_INTENSITY: float = 0.01
+## Machinery hum whenever the engine is turning (~50 dB).
+const ENGINE_IDLE_INTENSITY: float = 1e-5
+## Blowing ballast with the valve fully open (~90 dB). Compressed air is loud.
+const BLOW_INTENSITY: float = 0.1
+## Flooding with the vent fully open (~70 dB).
+const FLOOD_INTENSITY: float = 0.001
+## Hull strike impulse per (m/s)² of impact (~95 dB at 1 m/s).
+const STRIKE_INTENSITY: float = 0.3
+
 @export var sub_frame: SubFrame
 @export var telegraph: Telegraph
 @export var rudder: SpringAxis
@@ -34,6 +46,7 @@ var pitch_deg: float = 0.0
 var engine_output: float = 0.0
 var tank_fraction: float = 0.5
 var air_fraction: float = 1.0
+var bilge_fraction: float = 0.0
 
 var model: SubPhysicsModel = SubPhysicsModel.new()
 
@@ -44,6 +57,7 @@ func _ready() -> void:
 	model.position = start_position
 	_hull_shape.size = HULL_SIZE
 	add_to_group(&"sub_readouts")
+	add_to_group(&"noise_sources")
 
 
 func _physics_process(delta: float) -> void:
@@ -114,6 +128,7 @@ func _resolve_collision(before: Vector3) -> void:
 	var impact: float = model.collide(normal_world.normalized())
 	if impact > STRIKE_THRESHOLD:
 		hull_strike.emit(impact)
+		Acoustics.add_impulse(STRIKE_INTENSITY * impact * impact, 1.5)
 		print("[sub] hull strike %.2f m/s" % impact)
 
 
@@ -125,6 +140,28 @@ func _update_readouts() -> void:
 	engine_output = model.engine
 	tank_fraction = model.tank_water_t / model.tank_capacity_t
 	air_fraction = model.air_t / model.air_capacity_t
+	bilge_fraction = model.bilge_water_t / model.bilge_capacity_t
+
+
+## Engine noise (linear intensity). Valid on every peer from replicated readouts.
+func engine_intensity() -> float:
+	var e: float = absf(engine_output)
+	if e < 0.01:
+		return 0.0
+	return ENGINE_IDLE_INTENSITY + ENGINE_FULL_INTENSITY * e * e
+
+
+func blow_intensity() -> float:
+	return BLOW_INTENSITY * (blow_valve.get_normalized() if blow_valve != null and model.air_t > 0.0 else 0.0)
+
+
+func flood_intensity() -> float:
+	return FLOOD_INTENSITY * (flood_valve.get_normalized() if flood_valve != null else 0.0)
+
+
+## Noise system hook (polled on the host).
+func noise_intensity() -> float:
+	return engine_intensity() + blow_intensity() + flood_intensity()
 
 
 ## Reads a replicated readout by name, for gauges.
