@@ -89,7 +89,7 @@ Only one session may hold a PR's event stream, so no other role subscribes to ar
 
 Fires only on a PR that CI has already passed (see the trigger table). Reviews for correctness against the arc's acceptance criteria, adherence to CLAUDE.md and the design doc, test coverage, and whether the branch is up to date with `dev`. Then one of:
 
-- **Accept:** comments a short review, applies `approved`, squash-merges into `dev` with the arc title as the commit subject, deletes the branch, moves the arc to Done and confirms it is closed. Nothing fires after a merge except the dispatcher.
+- **Accept:** comments a short review, applies `approved`, squash-merges into `dev` with the arc title as the commit subject, deletes the branch, moves the arc to Done and confirms it is closed. If that was the concept's last open arc, it closes the concept as Done too. Nothing fires after a merge except the dispatcher.
 - **Request changes:** comments the specific, actionable changes, increments the rework counter (`rework:1` → `rework:2` → `rework:3`), applies `changes-requested`, and moves the arc to In progress. A merge conflict with `dev`, or stale CI, is a request-changes outcome, never something the review agent fixes.
 - **Escalate:** if the PR already carries `rework:3`, it does not request changes again. It applies `needs-human`, assigns Tristan, summarises why the PR keeps failing, and sends a push notification.
 
@@ -134,9 +134,9 @@ Rework is done by the development agent that opened the PR, woken through its su
 | --- | --- | --- |
 | Backlog | Awaiting breakdown or plan review | `blocked` |
 | Ready | Not used | `ready` |
-| In progress | Not used | `claimed`, or PR has `changes-requested` |
+| In progress | `plan-approved`, arcs in flight | `claimed`, or PR has `changes-requested` |
 | In review | Not used | `in-review` and PR awaiting CI or review |
-| Done | `plan-approved` and all arcs Done | Merged and closed |
+| Done | All arcs Done (the review agent closes it with the last arc) | Merged and closed |
 
 ## State machine
 
@@ -181,7 +181,7 @@ Each Claude role is a scheduled task on Tristan's Claude account, configured in 
 
 > You are the *&lt;role&gt;* in the Silent Water pipeline. Read `.github/agents/<role>.md` in the repository and follow it exactly. Your input is in the fire payload or, for pull request events, the checked-out branch.
 
-Everything else is in the repo.
+Everything else is in the repo: the exact stub text and the conventions shared by all roles are in [`.github/agents/README.md`](../.github/agents/README.md).
 
 | Role | Event | Filter | How fired | Input the session gets |
 | --- | --- | --- | --- | --- |
