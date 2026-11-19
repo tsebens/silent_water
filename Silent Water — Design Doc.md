@@ -256,9 +256,12 @@ Low-poly models with crisp, clean rendering. No grain, static, dither or fuzzy f
 - **Marine snow** drifting through the lights reads instantly as deep ocean.
 - **Strong silhouettes.** With little visible detail, creatures and structures are recognized by shape, so shape matters more than texture.
 - **Light is gameplay.** The difference between white and red light should be obvious at a glance.
-- **Infrastructure looks overbuilt:** rivets, heavy hatches, clear labels, backup systems, maintenance logs. Industrial, never sleek.
+- **Infrastructure looks overbuilt:** rivets, heavy hatches, clear labels, backup systems, maintenance logs. Industrial, never sleek. The feel (industrial, utilitarian, competent) matters more than any specific detail.
+- **Brutalist architecture:** Raindrop builds in smooth, angular concrete and steel. Its stations have massive stacked slabs, cantilevered tiers, splayed struts, repeated ribs, and deep-set ribbon windows. Hard angular structures stand against soft, sloping organic terrain.
+- **Soft neon on the architecture:** orange, blue and green light in lines, slots and windows, fading quickly into the dark. It sets the infrastructure apart from nature and shows how vast and isolating the ocean is. The sub's working lights stay white or red.
 - **The sub is modern and utilitarian (M7).** A near-future research sub: matte, muted surfaces, backlit gauges, cool neon strips tracing the ribs, holographic map displays, a glass dome over the pilot. Cabin lights dim so the crew can see out. The model is built in Onshape and converted with `tools/convert_sub.py`.
 - **Terrain reads as real seabed.** Dive sites are continuous heightfields (a sculpted profile plus noise), not stacked boxes.
+- Full detail and references are in [Art direction](docs/art_direction.md).
 
 ## Technical architecture
 
