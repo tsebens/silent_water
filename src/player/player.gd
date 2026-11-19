@@ -93,6 +93,12 @@ func _unhandled_input(event: InputEvent) -> void:
 		stand_up()
 		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 		return
+	if _seat is MapTable:
+		# The table handles its own mouse and keys; only E leaves it.
+		if event.is_action_pressed(&"activate"):
+			_activate()
+			get_viewport().set_input_as_handled()
+		return
 	if Input.mouse_mode != Input.MOUSE_MODE_CAPTURED:
 		if event is InputEventMouseButton and (event as InputEventMouseButton).pressed:
 			Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
@@ -214,9 +220,16 @@ func set_shake(amount: float) -> void:
 	_shake = amount
 
 
-func _process(_delta: float) -> void:
+func _process(delta: float) -> void:
 	if not is_multiplayer_authority():
 		return
+	if _seat is MapTable:
+		# Lean over the table: ease the camera to the table's view.
+		var want: Transform3D = (_seat as MapTable).view_transform()
+		_camera.global_transform = _camera.global_transform.interpolate_with(want, 1.0 - exp(-8.0 * delta))
+		return
+	if _camera.position != Vector3.ZERO:
+		_camera.transform = Transform3D.IDENTITY
 	if _shake > 0.0001:
 		_camera.rotation = Vector3(randf_range(-1, 1), randf_range(-1, 1), randf_range(-1, 1) * 0.5) * _shake
 	elif _camera.rotation != Vector3.ZERO:

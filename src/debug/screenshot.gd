@@ -52,9 +52,25 @@ func _run() -> void:
 	if me != null and _has_at:
 		me.position = Vector3(_at.x, 0.1, _at.y)
 	if me != null and _sit != "":
-		var seat_path: String = "Interior/Stations/Pilot/Seat" if _sit == "pilot" else "Interior/Stations/Sonar/Seat"
+		var seats: Dictionary = {
+			"pilot": "Interior/Stations/Pilot/Seat", "sonar": "Interior/Stations/Sonar/Seat",
+			"table": "Interior/Stations/Maps/MapTable",
+		}
+		var seat_path: String = seats.get(_sit, seats["pilot"])
 		me.sit_in(_game.get_node(seat_path) as StationSeat)
 		await get_tree().create_timer(0.3).timeout
+	if OS.get_cmdline_user_args().has("--demo-map"):
+		# A few pins and a manned hydrophone so the charts have something to show.
+		var chart: MapModel = _game.get_node("MapModel") as MapModel
+		var sub_pos: Vector3 = _game.sub_frame.sub_transform.origin
+		chart.add_pin(sub_pos + Vector3(30, -20, -90), MapModel.Kind.WAYPOINT)
+		chart.add_pin(sub_pos + Vector3(-25, -40, -160), MapModel.Kind.DANGER)
+		chart.add_pin(sub_pos + Vector3(10, -60, -230), MapModel.Kind.APEX)
+		chart.add_pin(sub_pos + Vector3(60, -10, -60), MapModel.Kind.CONTACT)
+		(_game.get_node("Interior/Stations/Sonar/Wheel") as Interactable).host_set_value(40.0)
+		if me != null:
+			me.put_on(_game.get_node("Interior/Stations/Sonar/Headset") as Wearable)
+		await get_tree().create_timer(0.2).timeout
 	if me != null and _has_look:
 		me.rotation.y += deg_to_rad(_look.x) if _sit != "" else 0.0
 		if _sit == "":

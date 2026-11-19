@@ -31,9 +31,11 @@ func _ready() -> void:
 func _process(_delta: float) -> void:
 	var me: Player = game.local_player() if game != null else null
 	var captured: bool = Input.mouse_mode == Input.MOUSE_MODE_CAPTURED
-	visible = me != null and captured
+	var at_table: bool = me != null and me.seat() is MapTable
+	visible = me != null and (captured or at_table)
 	if not visible:
 		return
+	_dot.visible = not at_table
 	var target: Interactable = me.held_control()
 	var holding: bool = target != null
 	if target == null and me.seat() == null:

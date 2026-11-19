@@ -60,6 +60,8 @@ func _physics_process(delta: float) -> void:
 			_once("release", 3.5, func() -> void: lever.end_interaction())
 			# Through the mic meter, so it's the only thing reporting this voice.
 			MicMeter.forced_db = 75.0 if _t > 4.0 else -1.0
+			_once("pin", 5.0, func() -> void:
+				(_game.get_node("MapModel") as MapModel).add_pin(Vector3(5, -30, -80), MapModel.Kind.DANGER))
 			if me != null:
 				_once("headset", 4.5, func() -> void:
 					var headset: Wearable = _node("Sonar/Headset") as Wearable
@@ -136,6 +138,7 @@ func _report() -> void:
 		"depth": snappedf(controller.depth, 0.01),
 		"sub_db": snappedf(Acoustics.sub_db(), 0.01),
 		"host_events": _count_host_events(),
+		"pins": (_game.get_node("MapModel") as MapModel).pins.size(),
 		"headset_holder": (_node("Sonar/Headset") as Interactable).state.holder,
 		"apex_state": (_game.get_node("World/Apex") as ApexMonster).state(),
 		"apex_pos": _vec((_game.get_node("World/Apex") as ApexMonster).position),
