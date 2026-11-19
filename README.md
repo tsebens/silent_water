@@ -4,6 +4,7 @@ First-person co-op submarine stealth game. See [the design doc](Silent%20Water%2
 
 ## Docs
 
+- [Art direction](docs/art_direction.md): the visual theme, brutalist architecture and soft neon, with references
 - [Playtest guide](docs/playtest.md): running a session, stations, controls, what to watch for
 - [Noise system](docs/noise.md): the model and every source's level
 - [The apex and passive sonar](docs/apex_and_sonar.md): hearing, the escalation ladder, tells, sonar

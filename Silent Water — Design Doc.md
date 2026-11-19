@@ -256,7 +256,10 @@ Low-poly models with crisp, clean rendering. No grain, static, dither or fuzzy f
 - **Marine snow** drifting through the lights reads instantly as deep ocean.
 - **Strong silhouettes.** With little visible detail, creatures and structures are recognized by shape, so shape matters more than texture.
 - **Light is gameplay.** The difference between white and red light should be obvious at a glance.
-- **Infrastructure looks overbuilt:** rivets, heavy hatches, clear labels, backup systems, maintenance logs. Industrial, never sleek.
+- **Infrastructure looks overbuilt:** rivets, heavy hatches, clear labels, backup systems, maintenance logs. Industrial, never sleek. The feel (industrial, utilitarian, competent) matters more than any specific detail.
+- **Brutalist architecture:** Raindrop builds in smooth, angular concrete and steel. Its stations have massive stacked slabs, cantilevered tiers, splayed struts, repeated ribs, and deep-set ribbon windows. Hard angular structures stand against soft, sloping organic terrain.
+- **Soft neon on the architecture:** orange, blue and green light in lines, slots and windows, fading quickly into the dark. It sets the infrastructure apart from nature and shows how vast and isolating the ocean is. The sub's working lights stay white or red.
+- Full detail and references are in [Art direction](docs/art_direction.md).
 
 ## Technical architecture
 
