@@ -5,6 +5,9 @@ extends Node
 ## it for a time that scales with patch quality; then it reopens (the prototype
 ## has one recurring leak). Also runs the bilge pump.
 
+signal leak_opened(where: String)
+signal leak_patched(quality: float, hold_sec: float)
+
 ## Hiss of an open leak (~73 dB).
 const LEAK_INTENSITY: float = 2e-3
 ## Bilge pump running (~78 dB).
@@ -60,6 +63,13 @@ func noise_intensity() -> float:
 	return total
 
 
+func noise_breakdown() -> Dictionary:
+	return {
+		"leak hiss": LEAK_INTENSITY if open_index != -1 else 0.0,
+		"bilge pump": PUMP_INTENSITY if pump_on() else 0.0,
+	}
+
+
 func _process(_delta: float) -> void:
 	var want: bool = pump_on()
 	if want and not _pump_audio.playing:
@@ -96,7 +106,7 @@ func open_random_leak() -> void:
 	if not multiplayer.is_server() or _leaks.is_empty() or open_index != -1:
 		return
 	_set_leak.rpc(_rng.randi_range(0, _leaks.size() - 1))
-	print("[leak] opened at %s" % _leaks[open_index].name)
+	leak_opened.emit(String(_leaks[open_index].name))
 
 
 ## Host: called with patch requests from whoever held the leak.
@@ -114,7 +124,7 @@ func _rpc_request_patch(index: int, quality: float) -> void:
 	_timer = lerpf(PATCH_HOLD_SEC.x, PATCH_HOLD_SEC.y, clampf(quality, 0.0, 1.0))
 	_set_leak.rpc(-1)
 	leak.host_set_value(0.0)
-	print("[leak] patched, quality %.2f, holds %.0f s" % [quality, _timer])
+	leak_patched.emit(quality, _timer)
 
 
 @rpc("authority", "call_local", "reliable")

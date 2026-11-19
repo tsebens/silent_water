@@ -2,6 +2,13 @@
 
 First-person co-op submarine stealth game. See [the design doc](Silent%20Water%20—%20Design%20Doc.md) for the game, and the [project board](https://github.com/users/tsebens/projects/1) for current work.
 
+## Docs
+
+- [Playtest guide](docs/playtest.md): running a session, stations, controls, what to watch for
+- [Noise system](docs/noise.md): the model and every source's level
+- [The apex and passive sonar](docs/apex_and_sonar.md): hearing, the escalation ladder, tells, sonar
+- [Sub frame](docs/sub_frame.md): why the interior never moves
+
 ## Development
 
 Requires **Godot 4.7.2** (standard build, not .NET). Scripts are typed GDScript.
@@ -29,5 +36,5 @@ Launch arguments go after `--`: `--host`, `--join [address]`, `--port <n>`, `--n
 | `src/` | Game code and scenes, one folder per system |
 | `tests/unit/` | Unit tests (`test_*.gd`, extend `TestCase`) |
 | `tests/` | Test runner and network smoke test |
-| `tools/` | Launch and check scripts |
+| `tools/` | Launch and check scripts; `compare_autotest.py` checks multi-instance runs |
 | `docs/` | Architecture notes |

@@ -56,3 +56,11 @@ func test_slow_movement_is_quiet_fast_is_loud() -> void:
 	expect_near(p.intensity_for_rate(0.2), 0.01)
 	expect_near(p.intensity_for_rate(2.0), 1.0)
 	expect_near(p.intensity_for_rate(10.0), 1.0, 0.0001, "clamped")
+
+
+func test_silent_set_makes_no_noise() -> void:
+	var s: InteractableState = InteractableState.new(0.0, 1.0, 0.0)
+	s.set_value_silent(1.0)
+	s.tick(1.0 / 60.0)
+	expect_eq(s.value, 1.0)
+	expect_eq(s.normalized_rate, 0.0)

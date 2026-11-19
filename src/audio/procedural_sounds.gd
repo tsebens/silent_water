@@ -246,6 +246,32 @@ static func creak() -> AudioStreamWAV:
 		return _wav(s, false))
 
 
+## Acoustic pinger on a Raindrop instrument: a clean tone burst every 2 s.
+static func pinger() -> AudioStreamWAV:
+	return _cached(&"pinger", func() -> AudioStreamWAV:
+		var n: int = RATE * 2
+		var s: PackedFloat32Array = PackedFloat32Array()
+		s.resize(n)
+		for i: int in range(n):
+			var t: float = float(i) / RATE
+			var env: float = exp(-t * 18.0) if t < 0.3 else 0.0
+			s[i] = sin(TAU * 1500.0 * t) * env * 0.9
+		return _wav(s, true))
+
+
+## The scanner sweeping: a rising whirr with a ticking pulse.
+static func scanner() -> AudioStreamWAV:
+	return _cached(&"scanner", func() -> AudioStreamWAV:
+		var n: int = RATE  # 1 s: 220 Hz, 440 Hz and 8 Hz all fit.
+		var s: PackedFloat32Array = PackedFloat32Array()
+		s.resize(n)
+		for i: int in range(n):
+			var t: float = float(i) / RATE
+			var tick: float = pow(0.5 + 0.5 * sin(TAU * 8.0 * t), 6.0)
+			s[i] = (sin(TAU * 220.0 * t) * 0.4 + sin(TAU * 440.0 * t) * 0.25 + tick * sin(TAU * 1760.0 * t) * 0.3) * 0.9
+		return _wav(s, true))
+
+
 static func _cached(key: StringName, make: Callable) -> AudioStreamWAV:
 	if not _cache.has(key):
 		_cache[key] = make.call()

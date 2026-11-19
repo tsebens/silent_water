@@ -28,6 +28,7 @@ func start_session() -> void:
 		return
 	_active = true
 	if multiplayer.is_server():
+		(get_node("SessionLog") as SessionLog).open_log()
 		_spawn_player(Net.local_id())
 		for peer_id: int in multiplayer.get_peers():
 			_spawn_player(peer_id)
@@ -35,6 +36,7 @@ func start_session() -> void:
 
 func end_session() -> void:
 	_active = false
+	(get_node("SessionLog") as SessionLog).close_log()
 	for child: Node in players.get_children():
 		child.queue_free()
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE

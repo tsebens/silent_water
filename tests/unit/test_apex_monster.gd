@@ -17,7 +17,7 @@ func before_each() -> void:
 	Acoustics.reset()
 	apex = game.get_node("World/Apex") as ApexMonster
 	controller = game.get_node("SubController") as SubController
-	controller.model.position = Vector3(0, -40, 0)
+	controller.model.position = Vector3(0, -80, -200)
 	controller.model.tank_water_t = controller.model.tank_capacity_t * 0.5
 	contacts = 0
 	near_misses = 0
@@ -44,15 +44,15 @@ func _commit_toward(point: Vector3) -> void:
 
 
 func test_quiet_sub_is_not_noticed() -> void:
-	apex.position = Vector3(150, -40, 0)
+	apex.position = Vector3(0, -80, -350)
 	await _frames(60 * 10)
 	expect_eq(apex.state(), SuspicionModel.State.UNAWARE as int, "state %s" % SuspicionModel.state_name(apex.state()))
 
 
 func test_loud_sub_draws_the_monster() -> void:
-	# Above the rock field (tops at y = -10) so nothing blocks the sound.
-	controller.model.position = Vector3(0, -6, 0)
-	apex.position = Vector3(150, -6, 0)
+	# Mid-canyon, open water between them.
+	controller.model.position = Vector3(0, -80, -200)
+	apex.position = Vector3(0, -80, -350)
 	for i: int in range(60 * 8):
 		Acoustics.report_voice(NoiseLevel.from_db(85.0))  # Shouting.
 		await runner.get_tree().physics_frame
@@ -61,7 +61,7 @@ func test_loud_sub_draws_the_monster() -> void:
 
 
 func test_charge_at_sub_makes_contact() -> void:
-	apex.position = Vector3(0, -40, 120)
+	apex.position = controller.model.position + Vector3(0, 0, 120)
 	apex.basis = Basis.looking_at(Vector3(0, 0, -1))
 	_commit_toward(controller.model.position)
 	var state_at_contact: Array[int] = [-1]
@@ -72,7 +72,7 @@ func test_charge_at_sub_makes_contact() -> void:
 
 
 func test_charge_at_stale_position_misses() -> void:
-	apex.position = Vector3(0, -40, 120)
+	apex.position = controller.model.position + Vector3(0, 0, 120)
 	apex.basis = Basis.looking_at(Vector3(0, 0, -1))
 	# It heard us 25 m to the side of where we really are.
 	_commit_toward(controller.model.position + Vector3(25, 0, 0))
@@ -98,7 +98,7 @@ func test_contact_loses_the_sub_then_resets_the_dive() -> void:
 	expect_eq(director.phase, DiveDirector.Phase.LOST)
 	expect(not lights.visible, "lights die on contact")
 	await _frames(int(60 * (DiveDirector.LOST_HOLD_SEC + 0.5)))
-	expect_eq(director.phase, DiveDirector.Phase.RUNNING)
+	expect_eq(director.phase, DiveDirector.Phase.DIVING)
 	expect(lights.visible, "lights back after reset")
 	expect_eq(controller.model.bilge_water_t, 0.0, "sub reset")
 	expect(controller.enabled)

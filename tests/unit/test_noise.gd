@@ -33,7 +33,8 @@ func test_ambient_zone_falls_off() -> void:
 	var z: AmbientZone = AmbientZone.new()
 	z.source_db = 110.0
 	z.max_range = 50.0
-	expect_near(NoiseLevel.to_db(z.intensity_at(Vector3(10, 0, 0))), 95.0, 0.01)
+	expect_near(NoiseLevel.to_db(z.intensity_at(Vector3(10, 0, 0))), 95.0, 0.01, "inside the fade-free zone")
+	expect(z.intensity_at(Vector3(45, 0, 0)) < NoiseLevel.attenuate(NoiseLevel.from_db(110.0), 45.0), "fading near the edge")
 	expect_eq(z.intensity_at(Vector3(60, 0, 0)), 0.0)
 	z.active = false
 	expect_eq(z.intensity_at(Vector3(1, 0, 0)), 0.0)

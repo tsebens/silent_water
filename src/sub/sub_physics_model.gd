@@ -90,9 +90,25 @@ func change_bilge(delta_t: float) -> float:
 
 ## Net vertical acceleration from buoyancy alone (positive rises).
 func buoyancy_accel() -> float:
-	var submerged: float = clampf(0.5 - position.y / 2.0, 0.0, 1.0) if position.y > -2.0 else 1.0
-	var lift_t: float = displacement_t * submerged
+	var lift_t: float = displacement_t * submerged_fraction()
 	return (lift_t - total_mass_t()) / total_mass_t() * G
+
+
+## Hull extent above and below the sub's origin (m).
+const HULL_BOTTOM: float = -0.4
+const HULL_TOP: float = 2.8
+## Vertical damping while the hull is partly out of the water (1/s).
+const SURFACE_DAMPING: float = 1.5
+
+
+## Fraction of the hull below the surface (y = 0).
+func submerged_fraction() -> float:
+	return clampf((0.0 - (position.y + HULL_BOTTOM)) / (HULL_TOP - HULL_BOTTOM), 0.0, 1.0)
+
+
+## True when the top of the hull breaks the surface.
+func is_surfaced() -> bool:
+	return position.y + HULL_TOP > 0.0
 
 
 func depth() -> float:
@@ -139,7 +155,12 @@ func step(delta: float, ordered_engine: float, rudder: float, planes: float, flo
 	angles.x = clampf(angles.x, -max_pitch, max_pitch)
 	angles.y = wrapf(angles.y, -PI, PI)
 
-	# Surface: float at y = 0, level out.
+	# Near the surface, waves and wake damp bobbing quickly.
+	var awash: float = submerged_fraction()
+	if awash < 1.0:
+		velocity.y -= velocity.y * SURFACE_DAMPING * delta
+
+	# Backstop: never fly out of the water.
 	if position.y > 0.0:
 		position.y = 0.0
 		velocity.y = minf(velocity.y, 0.0)
@@ -147,8 +168,8 @@ func step(delta: float, ordered_engine: float, rudder: float, planes: float, flo
 
 func _step_ballast(delta: float, flood: float, blow: float) -> void:
 	var flooded: float = flood * flood_rate_t * delta
-	# The vent only floods while submerged or awash.
-	if position.y > 0.5:
+	# The vent sits high on the hull: it only floods once it's under water.
+	if position.y + HULL_TOP > 0.5:
 		flooded = 0.0
 	var blown: float = minf(blow * blow_rate_t * delta, air_t)
 	tank_water_t = clampf(tank_water_t + flooded - blown, 0.0, tank_capacity_t)

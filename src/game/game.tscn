@@ -10,8 +10,11 @@
 [ext_resource type="Script" path="res://src/sonar/outside_audio.gd" id="10"]
 [ext_resource type="Script" path="res://src/creature/threat_cues.gd" id="11"]
 [ext_resource type="Script" path="res://src/dive/dive_director.gd" id="12"]
+[ext_resource type="Script" path="res://src/objective/scan_target.gd" id="13"]
+[ext_resource type="Script" path="res://src/objective/scan_objective.gd" id="14"]
+[ext_resource type="Script" path="res://src/dive/session_log.gd" id="15"]
 [ext_resource type="PackedScene" path="res://src/sub/interior.tscn" id="4"]
-[ext_resource type="PackedScene" path="res://src/world/exterior.tscn" id="5"]
+[ext_resource type="PackedScene" path="res://src/site/canyon_site.tscn" id="5"]
 
 [sub_resource type="SceneReplicationConfig" id="sub_repl"]
 properties/0/path = NodePath(".:sub_transform")
@@ -46,6 +49,14 @@ properties/6/replication_mode = 1
 properties/7/path = NodePath(".:bilge_fraction")
 properties/7/spawn = true
 properties/7/replication_mode = 1
+
+[sub_resource type="SceneReplicationConfig" id="scan_repl"]
+properties/0/path = NodePath(".:progress")
+properties/0/spawn = true
+properties/0/replication_mode = 1
+properties/1/path = NodePath(".:complete")
+properties/1/spawn = true
+properties/1/replication_mode = 2
 
 [sub_resource type="Environment" id="env"]
 background_mode = 1
@@ -88,9 +99,15 @@ replication_config = SubResource("readout_repl")
 
 [node name="World" type="Node3D" parent="."]
 
-[node name="Exterior" parent="World" instance=ExtResource("5")]
+[node name="Site" parent="World" instance=ExtResource("5")]
 
 [node name="Apex" parent="World" instance=ExtResource("9")]
+territory = AABB(-56, -226, -450, 112, 196, 500)
+spawn_position = Vector3(0, -190, -400)
+
+[node name="ScanTarget" type="Node3D" parent="World"]
+position = Vector3(36, -140, -250)
+script = ExtResource("13")
 
 [node name="MarineSnow" type="MeshInstance3D" parent="World"]
 script = ExtResource("6")
@@ -124,7 +141,18 @@ script = ExtResource("11")
 lights = NodePath("../Interior/Lights")
 players = NodePath("../Players")
 
-[node name="DiveDirector" type="Node" parent="." node_paths=PackedStringArray("game", "controller", "leaks", "apex", "cues", "interior_lights")]
+[node name="ScanObjective" type="Node" parent="." node_paths=PackedStringArray("controller", "switch", "target", "scanner_point")]
+script = ExtResource("14")
+controller = NodePath("../SubController")
+switch = NodePath("../Interior/Stations/Scanner/Switch")
+target = NodePath("../World/ScanTarget")
+scanner_point = NodePath("../Interior/Stations/Scanner/Switch")
+
+[node name="Sync" type="MultiplayerSynchronizer" parent="ScanObjective"]
+replication_interval = 0.2
+replication_config = SubResource("scan_repl")
+
+[node name="DiveDirector" type="Node" parent="." node_paths=PackedStringArray("game", "controller", "leaks", "apex", "cues", "interior_lights", "scan", "status_board")]
 script = ExtResource("12")
 game = NodePath("..")
 controller = NodePath("../SubController")
@@ -132,6 +160,16 @@ leaks = NodePath("../LeakSystem")
 apex = NodePath("../World/Apex")
 cues = NodePath("../ThreatCues")
 interior_lights = NodePath("../Interior/Lights")
+scan = NodePath("../ScanObjective")
+status_board = NodePath("../Interior/Stations/StatusBoard")
+
+[node name="SessionLog" type="Node" parent="." node_paths=PackedStringArray("controller", "apex", "leaks", "scan", "director")]
+script = ExtResource("15")
+controller = NodePath("../SubController")
+apex = NodePath("../World/Apex")
+leaks = NodePath("../LeakSystem")
+scan = NodePath("../ScanObjective")
+director = NodePath("../DiveDirector")
 
 [node name="Environment" type="WorldEnvironment" parent="."]
 environment = SubResource("env")

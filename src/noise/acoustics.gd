@@ -33,6 +33,10 @@ var sub_intensity: float = 0.0
 ## Ocean background at the sub (linear intensity).
 var ambient_intensity: float = NoiseLevel.from_db(OCEAN_BASE_DB)
 
+## What made up the last sum (host only): label -> intensity. Labels are the
+## node name for sources, "voice:<peer>" for voices, "impact" for bursts.
+var breakdown: Dictionary = {}
+
 ## Per-peer voice intensity and when it was last reported (host only).
 var _voices: Dictionary = {}
 var _voice_times: Dictionary = {}
@@ -103,20 +107,40 @@ func _physics_process(delta: float) -> void:
 		return
 	_time += delta
 	var total: float = 0.0
+	breakdown.clear()
 	for node: Node in get_tree().get_nodes_in_group(&"noise_sources"):
-		total += maxf(float(node.call(&"noise_intensity")), 0.0)
+		var i_src: float = maxf(float(node.call(&"noise_intensity")), 0.0)
+		total += i_src
+		if i_src <= 0.0:
+			continue
+		# Composite sources can name their parts for the session log.
+		if node.has_method(&"noise_breakdown"):
+			var parts: Dictionary = node.call(&"noise_breakdown")
+			for part: String in parts:
+				if float(parts[part]) > 0.0:
+					breakdown[part] = float(breakdown.get(part, 0.0)) + float(parts[part])
+		else:
+			var label: String = _label_for(node)
+			breakdown[label] = float(breakdown.get(label, 0.0)) + i_src
+	var impulse_total: float = 0.0
 	for i: int in range(_impulses.size() - 1, -1, -1):
 		var imp: PackedFloat32Array = _impulses[i]
-		total += imp[0] * (imp[1] / imp[2])
+		impulse_total += imp[0] * (imp[1] / imp[2])
 		imp[1] -= delta
 		if imp[1] <= 0.0:
 			_impulses.remove_at(i)
 		else:
 			_impulses[i] = imp
+	if impulse_total > 0.0:
+		breakdown["impact"] = impulse_total
+	total += impulse_total
 	for peer: int in _voices.keys():
 		if _time - float(_voice_times.get(peer, 0.0)) > VOICE_TIMEOUT:
 			_voices[peer] = 0.0
-		total += float(_voices[peer])
+		var v: float = float(_voices[peer])
+		if v > 0.0:
+			breakdown["voice:%d" % peer] = v
+		total += v
 	sub_intensity = total
 	ambient_intensity = _ambient_at_sub()
 	levels_changed.emit(sub_db(), ambient_db())
@@ -125,6 +149,24 @@ func _physics_process(delta: float) -> void:
 		if _broadcast_accum >= 1.0 / BROADCAST_HZ:
 			_broadcast_accum = 0.0
 			_rpc_levels.rpc(sub_intensity, ambient_intensity)
+
+
+## The loudest contributors right now, loudest first: [[label, dB], ...].
+func top_sources(count: int = 3) -> Array:
+	var items: Array = []
+	for label: String in breakdown:
+		items.append([label, NoiseLevel.to_db(float(breakdown[label]))])
+	items.sort_custom(func(a: Array, b: Array) -> bool: return float(a[1]) > float(b[1]))
+	return items.slice(0, count)
+
+
+func _label_for(node: Node) -> String:
+	var label: Variant = node.get(&"label")
+	if label is String and (label as String) != "":
+		return label as String
+	if node is Player:
+		return "footsteps:%s" % node.name
+	return String(node.name)
 
 
 func _ambient_at_sub() -> float:
@@ -173,6 +215,7 @@ func _rpc_levels(sub: float, ambient: float) -> void:
 
 ## Clears transient state between sessions.
 func reset() -> void:
+	breakdown.clear()
 	_voices.clear()
 	_voice_times.clear()
 	_impulses.clear()

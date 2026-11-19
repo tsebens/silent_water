@@ -34,7 +34,9 @@ const STRIKE_INTENSITY: float = 0.3
 @export var flood_valve: Interactable
 @export var blow_valve: Interactable
 ## Starting position in the world.
-@export var start_position: Vector3 = Vector3(0, -15, 0)
+@export var start_position: Vector3 = CanyonSite.START_POSITION
+## Ballast water at the start of a dive (tonnes). Empty: the sub floats.
+@export var start_tank_t: float = 0.0
 ## When false the model is not stepped (tests that drive the pose directly).
 @export var enabled: bool = true
 
@@ -47,6 +49,7 @@ var engine_output: float = 0.0
 var tank_fraction: float = 0.5
 var air_fraction: float = 1.0
 var bilge_fraction: float = 0.0
+var surfaced: bool = false
 
 var model: SubPhysicsModel = SubPhysicsModel.new()
 
@@ -55,6 +58,7 @@ var _hull_shape: BoxShape3D = BoxShape3D.new()
 
 func _ready() -> void:
 	model.position = start_position
+	model.tank_water_t = start_tank_t
 	_hull_shape.size = HULL_SIZE
 	add_to_group(&"sub_readouts")
 	add_to_group(&"noise_sources")
@@ -64,6 +68,7 @@ func _ready() -> void:
 func reset_dive() -> void:
 	model = SubPhysicsModel.new()
 	model.position = start_position
+	model.tank_water_t = start_tank_t
 	for control: Interactable in [telegraph, rudder, planes, flood_valve, blow_valve]:
 		if control != null:
 			control.host_set_value(0.0)
@@ -141,11 +146,11 @@ func _resolve_collision(before: Vector3) -> void:
 	if impact > STRIKE_THRESHOLD:
 		hull_strike.emit(impact)
 		Acoustics.add_impulse(STRIKE_INTENSITY * impact * impact, 1.5)
-		print("[sub] hull strike %.2f m/s" % impact)
 
 
 func _update_readouts() -> void:
 	depth = model.depth()
+	surfaced = model.is_surfaced()
 	speed = model.forward_speed()
 	heading_deg = fposmod(-rad_to_deg(model.angles.y), 360.0)
 	pitch_deg = rad_to_deg(model.angles.x)
@@ -174,6 +179,10 @@ func flood_intensity() -> float:
 ## Noise system hook (polled on the host).
 func noise_intensity() -> float:
 	return engine_intensity() + blow_intensity() + flood_intensity()
+
+
+func noise_breakdown() -> Dictionary:
+	return {"engine": engine_intensity(), "blowing ballast": blow_intensity(), "flooding ballast": flood_intensity()}
 
 
 ## Reads a replicated readout by name, for gauges.

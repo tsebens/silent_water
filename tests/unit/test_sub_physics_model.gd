@@ -84,6 +84,13 @@ func test_righting_levels_the_hull() -> void:
 	expect(absf(m.angles.x) < 0.05 and absf(m.angles.z) < 0.05, "hull should level, got %s" % m.angles)
 
 
+func test_vent_does_not_flood_while_riding_high() -> void:
+	m.position = Vector3(0, 0, 0)
+	m.tank_water_t = 0.0
+	m.step(DT, 0, 0, 0, 1.0, 0)
+	expect_eq(m.tank_water_t, 0.0)
+
+
 func test_flood_and_blow() -> void:
 	m.tank_water_t = 0.0
 	_run(10.0, 0.0, 0.0, 0.0, 1.0)
@@ -106,7 +113,8 @@ func test_floats_at_surface() -> void:
 	m.position = Vector3(0, -5, 0)
 	m.tank_water_t = 0.0
 	_run(60.0)
-	expect(m.position.y <= 0.0 and m.position.y > -1.5, "surfaced, y=%f" % m.position.y)
+	expect(m.is_surfaced(), "surfaced, y=%f" % m.position.y)
+	expect(m.position.y < 0.0, "a sub rides low in the water")
 
 
 func test_collide_removes_inward_velocity() -> void:

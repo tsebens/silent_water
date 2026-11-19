@@ -107,9 +107,10 @@ func end_interaction() -> void:
 
 
 ## Host only: sets the value from game logic (not a player), e.g. a reset.
+## Makes no noise.
 func host_set_value(v: float) -> void:
 	assert(multiplayer.is_server())
-	state.set_value(v)
+	state.set_value_silent(v)
 	_after_change()
 	_rpc_value.rpc(state.value, true)
 

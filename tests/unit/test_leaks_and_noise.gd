@@ -16,7 +16,8 @@ func before_each() -> void:
 	Acoustics.reset()
 	leaks = game.get_node("LeakSystem") as LeakSystem
 	controller = game.get_node("SubController") as SubController
-	controller.model.position = Vector3(0, -15, 0)
+	controller.model.position = Vector3(0, -40, -100)
+	controller.model.tank_water_t = controller.model.tank_capacity_t * 0.5
 
 
 func after_each() -> void:

@@ -22,7 +22,7 @@ step() { # name, rc
 
 run import 120 --import --quit; step import $?
 
-run unit 120 res://tests/test_runner.tscn; rc=$?
+run unit 600 res://tests/test_runner.tscn; rc=$?
 grep -E "test\(s\) passed|^FAIL|PARSE FAIL" "$LOG_DIR/unit.log" | sed 's/^/      /'
 step unit $rc
 

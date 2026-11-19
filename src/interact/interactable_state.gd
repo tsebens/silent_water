@@ -59,6 +59,14 @@ func set_value(v: float) -> void:
 	value = clamped
 
 
+## Sets the value without recording movement (game logic, not a hand on
+## the control), so it makes no noise.
+func set_value_silent(v: float) -> void:
+	value = clamp_value(v)
+	_pending_delta = 0.0
+	normalized_rate = 0.0
+
+
 ## Advances rate tracking by [param delta] seconds. Call once per tick.
 func tick(delta: float) -> void:
 	if delta <= 0.0:
