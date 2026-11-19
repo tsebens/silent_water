@@ -171,6 +171,15 @@ func _build_terrain() -> void:
 		return
 	_terrain_built = true
 	var mat: ShaderMaterial = _holo_material(color, 0.025, 0.03)
+	# The site offers a lighter surface for maps; the rest is copied as-is.
+	if site.has_method(&"map_meshes"):
+		for pair: Array in site.call(&"map_meshes"):
+			var mi: MeshInstance3D = MeshInstance3D.new()
+			mi.mesh = pair[0] as Mesh
+			mi.transform = site.transform * (pair[1] as Transform3D)
+			mi.material_override = mat
+			mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+			_content.add_child(mi)
 	_copy_meshes(site, site.transform, mat)
 	var water: MeshInstance3D = MeshInstance3D.new()
 	var plane: PlaneMesh = PlaneMesh.new()
@@ -184,8 +193,8 @@ func _build_terrain() -> void:
 func _copy_meshes(node: Node, xform: Transform3D, mat: ShaderMaterial) -> void:
 	for child: Node in node.get_children():
 		var n3: Node3D = child as Node3D
-		if n3 == null:
-			continue
+		if n3 == null or n3.name == &"Terrain":
+			continue  # The full-detail surface; maps use map_meshes().
 		var t: Transform3D = xform * n3.transform
 		var mi: MeshInstance3D = n3 as MeshInstance3D
 		if mi != null and mi.mesh != null:

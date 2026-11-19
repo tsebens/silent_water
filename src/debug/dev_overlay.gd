@@ -156,9 +156,16 @@ func _populate_map() -> void:
 		return
 	_map_built = true
 	var rock: StandardMaterial3D = _map_material(Color(0.55, 0.6, 0.65, 0.16))
+	if site.has_method(&"map_meshes"):
+		for pair: Array in site.call(&"map_meshes"):
+			var surface: MeshInstance3D = MeshInstance3D.new()
+			surface.mesh = pair[0] as Mesh
+			surface.transform = pair[1] as Transform3D
+			surface.material_override = rock
+			_map_world_root.add_child(surface)
 	for child: Node in site.get_children():
 		var body: StaticBody3D = child as StaticBody3D
-		if body == null:
+		if body == null or body.name == &"Terrain":
 			continue
 		for part: Node in body.get_children():
 			var mi: MeshInstance3D = part as MeshInstance3D

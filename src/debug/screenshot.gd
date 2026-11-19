@@ -15,6 +15,8 @@ var _at: Vector2 = Vector2.ZERO
 var _has_at: bool = false
 var _game: Game
 var _sit: String = ""
+var _sub_at: Vector3 = Vector3.ZERO
+var _has_sub_at: bool = false
 var _apex_rel: Vector3 = Vector3.ZERO
 var _has_apex: bool = false
 
@@ -31,6 +33,10 @@ func setup(game: Game, args: PackedStringArray) -> void:
 				var p: PackedStringArray = args[i + 1].split(",")
 				_look = Vector2(float(p[0]), float(p[1]))
 				_has_look = true
+			"--sub-at":
+				var w: PackedStringArray = args[i + 1].split(",")
+				_sub_at = Vector3(float(w[0]), float(w[1]), float(w[2]))
+				_has_sub_at = true
 			"--sit":
 				_sit = args[i + 1]
 			"--apex-rel":
@@ -48,6 +54,13 @@ func setup(game: Game, args: PackedStringArray) -> void:
 
 func _run() -> void:
 	await get_tree().create_timer(0.3).timeout
+	if _has_sub_at:
+		# Park the sub: neutral ballast, engine stopped.
+		var c: SubController = _game.get_node("SubController") as SubController
+		c.model.position = _sub_at
+		c.model.velocity = Vector3.ZERO
+		c.model.tank_water_t = c.model.tank_capacity_t * 0.5
+		await get_tree().create_timer(0.3).timeout
 	var me: Player = _game.local_player()
 	if me != null and _has_at:
 		me.position = Vector3(_at.x, 0.1, _at.y)
