@@ -131,3 +131,15 @@ func test_dev_log_captures_engine_output() -> void:
 		if String(entry[1]).contains("dev log probe 7731"):
 			found = true
 	expect(found)
+
+
+func test_neon_strips_dim_with_the_cabin_lights() -> void:
+	var neon: NeonStrips = game.get_node("Interior/Lights/Neon") as NeonStrips
+	expect(neon.get_child_count() >= 10, "ribs, frames and edges built (%d)" % neon.get_child_count())
+	var mat: StandardMaterial3D = (neon.get_child(0) as MeshInstance3D).mesh.surface_get_material(0) as StandardMaterial3D
+	var dimmer: Lever = game.get_node("Interior/Stations/Pilot/Dimmer") as Lever
+	await _frames(2)
+	var full: float = mat.emission_energy_multiplier
+	dimmer.host_set_value(0.0)
+	await _frames(2)
+	expect_near(mat.emission_energy_multiplier, full * CabinLights.MIN_LEVEL, 0.001, "strips dim to near dark")

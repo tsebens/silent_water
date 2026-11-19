@@ -13,6 +13,7 @@
 [ext_resource type="PackedScene" path="res://src/sonar/hydrophone_wheel.tscn" id="11"]
 [ext_resource type="PackedScene" path="res://src/interact/lever.tscn" id="12"]
 [ext_resource type="Script" path="res://src/sonar/sonar_seat.gd" id="13"]
+[ext_resource type="Script" path="res://src/sub/neon_strips.gd" id="14"]
 
 [sub_resource type="StandardMaterial3D" id="fitting"]
 albedo_color = Color(0.2, 0.22, 0.24, 1)
@@ -98,17 +99,8 @@ light_color = Color(0.6, 0.8, 0.85, 1)
 light_energy = 0.9
 omni_range = 3.0
 
-[node name="StripPort" type="MeshInstance3D" parent="Lights"]
-position = Vector3(-1.5, 0.02, 0.85)
-mesh = SubResource("strip_long")
-
-[node name="StripStbd" type="MeshInstance3D" parent="Lights"]
-position = Vector3(1.5, 0.02, 0.85)
-mesh = SubResource("strip_long")
-
-[node name="StripCeiling" type="MeshInstance3D" parent="Lights"]
-position = Vector3(0, 2.92, 0.85)
-mesh = SubResource("strip_long")
+[node name="Neon" type="Node3D" parent="Lights"]
+script = ExtResource("14")
 
 [node name="Headlight" type="SpotLight3D" parent="Lights"]
 position = Vector3(0, -0.8, -4.3)
