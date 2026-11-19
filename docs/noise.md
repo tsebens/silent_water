@@ -22,12 +22,13 @@ Noise is the core system. Everything the crew does feeds one number: how loud th
 | Open leak hissing | `LeakSystem.LEAK_INTENSITY` | 73 dB |
 | Normal speech (RMS ≈ 0.07) | `VoiceLoudness` | ~75 dB |
 | Walking (2.6 m/s) | `Player.FOOTSTEP_INTENSITY` | 75 dB |
+| Side thrusters, full turn | `SubController.THRUSTER_INTENSITY` | 73 dB (∝ rudder input) |
 | Bilge pump running | `LeakSystem.PUMP_INTENSITY` | 78 dB |
 | Engine, full ahead | `SubController.ENGINE_FULL_INTENSITY` | 80 dB (∝ output²) |
 | Shout (RMS ≈ 0.3) | `VoiceLoudness` | ~87 dB |
 | Blowing ballast, valve fully open | `SubController.BLOW_INTENSITY` | 90 dB |
 | Hull strike at 1 m/s | `SubController.STRIKE_INTENSITY` | 95 dB, decays over 1.5 s (∝ speed²) |
-| Lever or telegraph slammed | `NoiseProfile` on each control | up to ~97 dB; easing it is near silent |
+| Lever or valve slammed | `NoiseProfile` on each control | up to ~97 dB; easing it is near silent |
 
 All of these are first-pass numbers to tune in playtests.
 

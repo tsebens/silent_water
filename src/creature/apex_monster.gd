@@ -52,11 +52,19 @@ const SWIM_DB_AT_2MS: float = 100.0
 @export var turn_rate_deg: float = 25.0
 @export var accel: float = 1.5
 
+## Developer switch: when false the apex is gone from the dive (no body, no
+## sound, no hearing, no contact). Replicated; only the host changes it.
+var active: bool = true
+
 # Replicated (written by the host).
 var sync_state: int = SuspicionModel.State.UNAWARE
 var speed: float = 0.0
 var sync_position: Vector3 = Vector3.ZERO
 var sync_rotation: Quaternion = Quaternion.IDENTITY
+# Brain readouts for the developer overlay.
+var sync_suspicion: float = 0.0
+var sync_snr: float = -100.0
+var sync_alertness: float = 0.0
 
 var brain: SuspicionModel
 ## Host can disable the brain (tests drive it directly).
@@ -87,6 +95,9 @@ func reset_to_spawn() -> void:
 	basis = Basis.looking_at(Vector3(-1, 0, 1).normalized())
 	sync_position = position
 	sync_rotation = basis.get_rotation_quaternion()
+	sync_suspicion = brain.suspicion
+	sync_snr = maxf(brain.last_snr_db, -100.0)
+	sync_alertness = brain.alertness
 	speed = 0.0
 	brain.reset()
 	sync_state = brain.state
@@ -107,7 +118,32 @@ func state() -> int:
 	return sync_state
 
 
+## Host: turns the apex on or off for everyone. Turning it off also calms it
+## and sends it home, so turning it back on starts it fresh.
+func set_active(on: bool) -> void:
+	if not multiplayer.is_server() or on == active:
+		return
+	active = on
+	reset_to_spawn()
+	print("[apex] %s by developer" % ("enabled" if on else "disabled"))
+
+
+## Any peer: ask the host to switch the apex. Used by the developer overlay.
+func request_active(on: bool) -> void:
+	if multiplayer.is_server():
+		set_active(on)
+	else:
+		_rpc_request_active.rpc_id(1, on)
+
+
+@rpc("any_peer", "reliable")
+func _rpc_request_active(on: bool) -> void:
+	if multiplayer.is_server() and DevOverlay.allowed():
+		set_active(on)
+
+
 func _process(delta: float) -> void:
+	visible = active
 	if multiplayer.is_server():
 		return
 	# Clients smooth toward the replicated pose.
@@ -123,6 +159,9 @@ func _physics_process(delta: float) -> void:
 		_sub_frame = get_tree().get_first_node_in_group(&"sub_frame") as SubFrame
 		if _sub_frame == null:
 			return
+	if not active:
+		speed = 0.0
+		return
 	var sub_pos: Vector3 = _sub_frame.sub_transform.origin
 	if brain_enabled:
 		var heard: float = Acoustics.heard_at(position, _sub_frame)
@@ -142,12 +181,17 @@ func _physics_process(delta: float) -> void:
 	_check_sub(delta, sub_pos)
 	sync_position = position
 	sync_rotation = basis.get_rotation_quaternion()
+	sync_suspicion = brain.suspicion
+	sync_snr = maxf(brain.last_snr_db, -100.0)
+	sync_alertness = brain.alertness
 
 
 # --- Sound -------------------------------------------------------------------
 
 ## Outside-audio hook: swimming noise, louder the faster it goes.
 func outside_db() -> float:
+	if not active:
+		return -INF
 	return SWIM_DB_AT_2MS + 20.0 * log(maxf(speed, 0.3) / 2.0) / log(10.0)
 
 
@@ -181,6 +225,8 @@ func _update_calls(delta: float) -> void:
 
 @rpc("authority", "call_local", "reliable")
 func _rpc_call(kind: int) -> void:
+	if not active:
+		return
 	var outside: OutsideAudio = get_tree().get_first_node_in_group(&"outside_audio") as OutsideAudio
 	if outside == null:
 		return

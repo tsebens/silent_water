@@ -12,6 +12,9 @@ const REPORT_HZ: float = 10.0
 const FAKE_TALK_DB: float = 75.0
 const FAKE_SHOUT_DB: float = 87.0
 
+## When set (>= 0), report this level instead of the mic (automated tests).
+static var forced_db: float = -1.0
+
 var _capture: AudioEffectCapture
 var _player: AudioStreamPlayer
 var _accum: float = 0.0
@@ -65,6 +68,8 @@ func _process(delta: float) -> void:
 func _current_intensity() -> float:
 	if Input.is_key_pressed(KEY_F3):
 		return NoiseLevel.from_db(FAKE_SHOUT_DB if Input.is_key_pressed(KEY_SHIFT) else FAKE_TALK_DB)
+	if forced_db >= 0.0:
+		return NoiseLevel.from_db(forced_db)
 	if _fake_db > 0.0:
 		return NoiseLevel.from_db(_fake_db)
 	return VoiceLoudness.intensity_from_samples(_samples)

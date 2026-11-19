@@ -13,6 +13,10 @@
 [ext_resource type="Script" path="res://src/objective/scan_target.gd" id="13"]
 [ext_resource type="Script" path="res://src/objective/scan_objective.gd" id="14"]
 [ext_resource type="Script" path="res://src/dive/session_log.gd" id="15"]
+[ext_resource type="Script" path="res://src/ui/reticle.gd" id="16"]
+[ext_resource type="Script" path="res://src/sub/cabin_lights.gd" id="17"]
+[ext_resource type="Script" path="res://src/debug/dev_overlay.gd" id="18"]
+[ext_resource type="Script" path="res://src/map/map_model.gd" id="19"]
 [ext_resource type="PackedScene" path="res://src/sub/interior.tscn" id="4"]
 [ext_resource type="PackedScene" path="res://src/site/canyon_site.tscn" id="5"]
 
@@ -49,6 +53,15 @@ properties/6/replication_mode = 1
 properties/7/path = NodePath(".:bilge_fraction")
 properties/7/spawn = true
 properties/7/replication_mode = 1
+properties/8/path = NodePath(".:surfaced")
+properties/8/spawn = true
+properties/8/replication_mode = 1
+properties/9/path = NodePath(".:buoyancy")
+properties/9/spawn = true
+properties/9/replication_mode = 1
+properties/10/path = NodePath(".:vertical_speed")
+properties/10/spawn = true
+properties/10/replication_mode = 1
 
 [sub_resource type="SceneReplicationConfig" id="scan_repl"]
 properties/0/path = NodePath(".:progress")
@@ -66,6 +79,10 @@ ambient_light_color = Color(0.1, 0.16, 0.2, 1)
 ambient_light_energy = 0.15
 tonemap_mode = 2
 glow_enabled = true
+glow_intensity = 1.1
+glow_strength = 1.15
+glow_bloom = 0.05
+glow_hdr_threshold = 0.9
 fog_enabled = true
 fog_light_color = Color(0.01, 0.04, 0.05, 1)
 fog_density = 0.035
@@ -82,10 +99,10 @@ world_root = NodePath("../World")
 replication_interval = 0.05
 replication_config = SubResource("sub_repl")
 
-[node name="SubController" type="Node" parent="." node_paths=PackedStringArray("sub_frame", "telegraph", "rudder", "planes", "flood_valve", "blow_valve")]
+[node name="SubController" type="Node" parent="." node_paths=PackedStringArray("sub_frame", "throttle", "rudder", "planes", "flood_valve", "blow_valve")]
 script = ExtResource("3")
 sub_frame = NodePath("../SubFrame")
-telegraph = NodePath("../Interior/Stations/Engineering/Telegraph")
+throttle = NodePath("../Interior/Stations/Pilot/Throttle")
 rudder = NodePath("../Interior/Stations/Pilot/Rudder")
 planes = NodePath("../Interior/Stations/Pilot/Planes")
 flood_valve = NodePath("../Interior/Stations/Ballast/FloodValve")
@@ -122,7 +139,7 @@ spawn_path = NodePath("../Players")
 script = ExtResource("7")
 controller = NodePath("../SubController")
 players = NodePath("../Players")
-engine_point = NodePath("../Interior/Stations/Engineering/Telegraph")
+engine_point = NodePath("../Interior/Stations/Engineering/EngineGauge")
 blow_point = NodePath("../Interior/Stations/Ballast/BlowValve")
 flood_point = NodePath("../Interior/Stations/Ballast/FloodValve")
 
@@ -170,6 +187,23 @@ apex = NodePath("../World/Apex")
 leaks = NodePath("../LeakSystem")
 scan = NodePath("../ScanObjective")
 director = NodePath("../DiveDirector")
+
+[node name="CabinLights" type="Node" parent="." node_paths=PackedStringArray("lights_root", "dimmer", "excluded")]
+script = ExtResource("17")
+lights_root = NodePath("../Interior/Lights")
+dimmer = NodePath("../Interior/Stations/Pilot/Dimmer")
+excluded = [NodePath("../Interior/Lights/Headlight")]
+
+[node name="MapModel" type="Node" parent="."]
+script = ExtResource("19")
+
+[node name="Reticle" type="CanvasLayer" parent="." node_paths=PackedStringArray("game")]
+script = ExtResource("16")
+game = NodePath("..")
+
+[node name="DevOverlay" type="CanvasLayer" parent="." node_paths=PackedStringArray("game")]
+script = ExtResource("18")
+game = NodePath("..")
 
 [node name="Environment" type="WorldEnvironment" parent="."]
 environment = SubResource("env")

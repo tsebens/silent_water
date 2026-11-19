@@ -14,6 +14,15 @@ func _init() -> void:
 	initial_value = 0.0
 
 
+func _ready() -> void:
+	super._ready()
+	# When driving a mesh from the sub model, hide this scene's own wheel.
+	for n: String in ["Wheel", "Stem"]:
+		var own: Node3D = get_node_or_null(n) as Node3D
+		if own != null and own != wheel:
+			own.visible = false
+
+
 func bearing_deg() -> float:
 	return fposmod(get_value(), 360.0)
 
@@ -25,3 +34,7 @@ func _drag_to_value(current: float, relative: Vector2) -> float:
 func _apply_visual(v: float) -> void:
 	if wheel != null:
 		wheel.rotation.z = -deg_to_rad(v / degrees_per_turn * 360.0)
+
+
+func interaction_hint() -> String:
+	return "hold click, circle the mouse to train the hydrophone"

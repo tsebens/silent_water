@@ -18,7 +18,7 @@ var _apex: ApexMonster
 var _rumble: AudioStreamPlayer
 var _creak_timer: float = 3.0
 var _jolt: float = 0.0
-var _light_energy: Dictionary = {}
+var _cabin: CabinLights
 
 
 func _ready() -> void:
@@ -26,15 +26,11 @@ func _ready() -> void:
 	_rumble.stream = ProceduralSounds.rumble()
 	_rumble.bus = AudioBuses.FELT
 	add_child(_rumble)
-	if lights != null:
-		for l: Node in lights.get_children():
-			if l is Light3D:
-				_light_energy[l.get_instance_id()] = (l as Light3D).light_energy
 
 
 ## Distance (m) from the sub to the nearest part of the apex, or INF.
 func apex_distance() -> float:
-	if _apex == null:
+	if _apex == null or not _apex.active:
 		return INF
 	# In render space the sub sits at the origin.
 	return maxf(_apex.global_position.length() - ApexMonster.LENGTH_M * 0.4, 0.0)
@@ -99,14 +95,14 @@ func _shake_players(amount: float) -> void:
 
 
 func _flicker(amount: float) -> void:
-	if lights == null:
-		return
-	for l: Node in lights.get_children():
-		var light: Light3D = l as Light3D
-		if light == null or not _light_energy.has(light.get_instance_id()):
-			continue
-		var base: float = float(_light_energy[light.get_instance_id()])
+	if _cabin == null:
+		_cabin = get_tree().get_first_node_in_group(&"cabin_lights") as CabinLights
+		if _cabin == null:
+			return
+	for light: Light3D in _cabin.cabin_lights():
+		var id: int = light.get_instance_id()
+		var current: float = float(_cabin.flicker.get(id, 1.0))
 		if amount > 0.0 and randf() < amount * 0.25:
-			light.light_energy = base * randf_range(0.2, 0.9)
+			_cabin.flicker[id] = randf_range(0.2, 0.9)
 		else:
-			light.light_energy = lerpf(light.light_energy, base, 0.3)
+			_cabin.flicker[id] = lerpf(current, 1.0, 0.3)
