@@ -26,14 +26,14 @@ func test_bearing_of_points() -> void:
 func test_wheel_turns_bearing() -> void:
 	var w: HydrophoneWheel = HydrophoneWheel.new()
 	w.degrees_per_turn = 120.0
-	w._cursor = Vector2(w.orbit_radius_px, 0)
 	var v: float = 0.0
-	var r: float = w.orbit_radius_px
+	var r: float = 120.0
 	for i: int in range(64):
 		var a0: float = TAU * float(i) / 64.0
 		var a1: float = TAU * float(i + 1) / 64.0
 		v = w._drag_to_value(v, Vector2(cos(a1), sin(a1)) * r - Vector2(cos(a0), sin(a0)) * r)
-	expect_near(v, 120.0, 1.0, "one clockwise turn = 120°")
+	# The first mouse step only sets the direction, so one step is uncounted.
+	expect_near(v, 120.0, 3.0, "one clockwise turn = 120°")
 	w.free()
 
 

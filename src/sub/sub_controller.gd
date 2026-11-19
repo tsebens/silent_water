@@ -10,8 +10,8 @@ signal hull_strike(speed: float)
 
 const LAYER_EXTERIOR: int = 1 << 3
 ## Hull collision box in sub-local space (matches the interior's outer shell).
-const HULL_SIZE: Vector3 = Vector3(3.8, 3.2, 12.8)
-const HULL_CENTER: Vector3 = Vector3(0, 1.2, 0)
+const HULL_SIZE: Vector3 = Vector3(4.0, 4.0, 10.0)
+const HULL_CENTER: Vector3 = Vector3(0, 0.98, 0)
 ## Minimum impact speed that counts as a strike.
 const STRIKE_THRESHOLD: float = 0.15
 
@@ -24,11 +24,14 @@ const ENGINE_IDLE_INTENSITY: float = 1e-5
 const BLOW_INTENSITY: float = 0.1
 ## Flooding with the vent fully open (~70 dB).
 const FLOOD_INTENSITY: float = 0.001
+## Side thrusters at full turn (~73 dB).
+const THRUSTER_INTENSITY: float = 0.002
 ## Hull strike impulse per (m/s)² of impact (~95 dB at 1 m/s).
 const STRIKE_INTENSITY: float = 0.3
 
 @export var sub_frame: SubFrame
-@export var telegraph: Telegraph
+## Pilot throttle, -1 (full astern) .. 1 (full ahead).
+@export var throttle: SpringAxis
 @export var rudder: SpringAxis
 @export var planes: SpringAxis
 @export var flood_valve: Interactable
@@ -50,6 +53,9 @@ var tank_fraction: float = 0.5
 var air_fraction: float = 1.0
 var bilge_fraction: float = 0.0
 var surfaced: bool = false
+## Net vertical acceleration from buoyancy (m/s²): + rises, − sinks.
+var buoyancy: float = 0.0
+var vertical_speed: float = 0.0
 
 var model: SubPhysicsModel = SubPhysicsModel.new()
 
@@ -69,7 +75,7 @@ func reset_dive() -> void:
 	model = SubPhysicsModel.new()
 	model.position = start_position
 	model.tank_water_t = start_tank_t
-	for control: Interactable in [telegraph, rudder, planes, flood_valve, blow_valve]:
+	for control: Interactable in [throttle, rudder, planes, flood_valve, blow_valve]:
 		if control != null:
 			control.host_set_value(0.0)
 	sub_frame.set_pose(model.transform(), Vector3.ZERO)
@@ -83,7 +89,7 @@ func _physics_process(delta: float) -> void:
 	var before: Vector3 = model.position
 	model.step(
 		delta,
-		telegraph.engine_order() if telegraph != null else 0.0,
+		throttle.get_value() if throttle != null else 0.0,
 		rudder.get_value() if rudder != null else 0.0,
 		planes.get_value() if planes != null else 0.0,
 		flood_valve.get_normalized() if flood_valve != null else 0.0,
@@ -151,6 +157,8 @@ func _resolve_collision(before: Vector3) -> void:
 func _update_readouts() -> void:
 	depth = model.depth()
 	surfaced = model.is_surfaced()
+	buoyancy = model.buoyancy_accel()
+	vertical_speed = model.velocity.y
 	speed = model.forward_speed()
 	heading_deg = fposmod(-rad_to_deg(model.angles.y), 360.0)
 	pitch_deg = rad_to_deg(model.angles.x)
@@ -178,11 +186,19 @@ func flood_intensity() -> float:
 
 ## Noise system hook (polled on the host).
 func noise_intensity() -> float:
-	return engine_intensity() + blow_intensity() + flood_intensity()
+	return engine_intensity() + blow_intensity() + flood_intensity() + thruster_intensity()
 
 
 func noise_breakdown() -> Dictionary:
-	return {"engine": engine_intensity(), "blowing ballast": blow_intensity(), "flooding ballast": flood_intensity()}
+	return {
+		"engine": engine_intensity(), "blowing ballast": blow_intensity(),
+		"flooding ballast": flood_intensity(), "thrusters": thruster_intensity(),
+	}
+
+
+## Side thrusters whirring while the pilot turns (~73 dB at full).
+func thruster_intensity() -> float:
+	return THRUSTER_INTENSITY * absf(rudder.get_value()) if rudder != null else 0.0
 
 
 ## Reads a replicated readout by name, for gauges.

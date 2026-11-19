@@ -44,14 +44,26 @@ Not yet decided. One option:
 
 Fixed roles would let players read a site's state from a distance.
 
-## The sub and props
+## The sub
 
-The same feel at a smaller scale:
-- heavy, chunky, modular parts with a clear purpose
-- worn by age and pressure, never sloppy
-- the Onshape sub concept (`assets/media/sub/`) sets the layout
+The sub is a different object from the stations. Per M7 it's a **modern, utilitarian near-future research sub**:
+- matte, muted surfaces
+- backlit gauges
+- cool neon strips tracing the ribs
+- holographic map displays
+- a glass dome over the pilot
 
-Interior props share the architecture's angular, slab-like language rather than soft rounded shapes.
+Its hull is built in Onshape (`assets/media/sub/`) and converted with `tools/convert_sub.py`, so the hull shape is set there, not here.
+
+The sub and the stations still share one feel: industrial, utilitarian, competent. The sub is the crew's well-kept working tool; the stations are the massive, aging network it serves. Brutalist massing belongs to the stations, not the sub.
+
+## Props and equipment
+
+Props inside the sub follow the sub. They're compact and purposeful, matching its matte finish and lighting, with heavy-duty modular parts and a clear function at a glance.
+
+Equipment that belongs to the network, such as sensor arrays, cable junctions, buoys and station hardware, follows the architecture: angular, slab-like, overbuilt.
+
+Everything is worn by age and pressure, never sloppy.
 
 ## References
 
@@ -65,4 +77,4 @@ Kept in `assets/media/architecture/` (to be added):
 | `underwater_station.jpg` | Concept art from the film *Underwater* (2020) | A heavy station on the seafloor, truss tower and tracked modules; small cool lights in near-total dark; diver for scale |
 | `rosander_seafloor_modules.jpg` | Concept art by Patrik Rosander | Monolithic ribbed angular modules on a sloping seabed; tiny warm window lights; fog swallowing distance |
 
-The earlier mood board in `assets/media/` (currently on `claude/serene-dijkstra-pnr9gr`) remains a reference for lighting, palette and underwater atmosphere. Where it shows sleek, rounded forms, this file takes precedence.
+The earlier mood board in `assets/media/` remains a reference for lighting, palette and underwater atmosphere. Where it shows sleek, rounded forms, this file takes precedence.

@@ -3,7 +3,8 @@ extends Node
 ## Debug capture, enabled with `--screenshot <path>`. Waits `--screenshot-delay`
 ## seconds (default 3) after the session starts, optionally points the local
 ## player's view with `--look <yaw_deg>,<pitch_deg>` and moves them with
-## `--at <x>,<z>`, places the apex with `--apex-rel <x>,<y>,<z>` (sub-local),
+## `--at <x>,<z>`, sits with `--sit pilot|sonar` (then --look is relative),
+## places the apex with `--apex-rel <x>,<y>,<z>` (sub-local),
 ## saves the frame as PNG, then quits.
 
 var _path: String = ""
@@ -13,6 +14,9 @@ var _has_look: bool = false
 var _at: Vector2 = Vector2.ZERO
 var _has_at: bool = false
 var _game: Game
+var _sit: String = ""
+var _sub_at: Vector3 = Vector3.ZERO
+var _has_sub_at: bool = false
 var _apex_rel: Vector3 = Vector3.ZERO
 var _has_apex: bool = false
 
@@ -29,6 +33,12 @@ func setup(game: Game, args: PackedStringArray) -> void:
 				var p: PackedStringArray = args[i + 1].split(",")
 				_look = Vector2(float(p[0]), float(p[1]))
 				_has_look = true
+			"--sub-at":
+				var w: PackedStringArray = args[i + 1].split(",")
+				_sub_at = Vector3(float(w[0]), float(w[1]), float(w[2]))
+				_has_sub_at = true
+			"--sit":
+				_sit = args[i + 1]
 			"--apex-rel":
 				var r: PackedStringArray = args[i + 1].split(",")
 				_apex_rel = Vector3(float(r[0]), float(r[1]), float(r[2]))
@@ -44,11 +54,40 @@ func setup(game: Game, args: PackedStringArray) -> void:
 
 func _run() -> void:
 	await get_tree().create_timer(0.3).timeout
+	if _has_sub_at:
+		# Park the sub: neutral ballast, engine stopped.
+		var c: SubController = _game.get_node("SubController") as SubController
+		c.model.position = _sub_at
+		c.model.velocity = Vector3.ZERO
+		c.model.tank_water_t = c.model.tank_capacity_t * 0.5
+		await get_tree().create_timer(0.3).timeout
 	var me: Player = _game.local_player()
 	if me != null and _has_at:
 		me.position = Vector3(_at.x, 0.1, _at.y)
+	if me != null and _sit != "":
+		var seats: Dictionary = {
+			"pilot": "Interior/Stations/Pilot/Seat", "sonar": "Interior/Stations/Sonar/Seat",
+			"table": "Interior/Stations/Maps/MapTable",
+		}
+		var seat_path: String = seats.get(_sit, seats["pilot"])
+		me.sit_in(_game.get_node(seat_path) as StationSeat)
+		await get_tree().create_timer(0.3).timeout
+	if OS.get_cmdline_user_args().has("--demo-map"):
+		# A few pins and a manned hydrophone so the charts have something to show.
+		var chart: MapModel = _game.get_node("MapModel") as MapModel
+		var sub_pos: Vector3 = _game.sub_frame.sub_transform.origin
+		chart.add_pin(sub_pos + Vector3(30, -20, -90), MapModel.Kind.WAYPOINT)
+		chart.add_pin(sub_pos + Vector3(-25, -40, -160), MapModel.Kind.DANGER)
+		chart.add_pin(sub_pos + Vector3(10, -60, -230), MapModel.Kind.APEX)
+		chart.add_pin(sub_pos + Vector3(60, -10, -60), MapModel.Kind.CONTACT)
+		(_game.get_node("Interior/Stations/Sonar/Wheel") as Interactable).host_set_value(40.0)
+		if me != null:
+			me.put_on(_game.get_node("Interior/Stations/Sonar/Headset") as Wearable)
+		await get_tree().create_timer(0.2).timeout
 	if me != null and _has_look:
-		me.rotation.y = deg_to_rad(_look.x)
+		me.rotation.y += deg_to_rad(_look.x) if _sit != "" else 0.0
+		if _sit == "":
+			me.rotation.y = deg_to_rad(_look.x)
 		(me.get_node("Head") as Node3D).rotation.x = deg_to_rad(_look.y)
 	if _has_apex:
 		var apex: ApexMonster = _game.get_node("World/Apex") as ApexMonster
@@ -56,6 +95,7 @@ func _run() -> void:
 		apex.speed_unaware = 0.0
 		apex.position = _game.sub_frame.sub_transform * _apex_rel
 		apex.basis = Basis.looking_at(Vector3(1, 0, 0.3).normalized())
+	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 	await get_tree().create_timer(_delay).timeout
 	await RenderingServer.frame_post_draw
 	var img: Image = get_viewport().get_texture().get_image()

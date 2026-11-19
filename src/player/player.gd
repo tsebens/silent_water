@@ -21,6 +21,9 @@ const REMOTE_SMOOTHING: float = 15.0
 ## Footstep noise at walking speed (~75 dB); scales with speed cubed, so
 ## sneaking (~1.1 m/s) is ~11 dB quieter.
 const FOOTSTEP_INTENSITY: float = 3e-3
+## Faster than anyone can walk: movement this quick is a teleport.
+const TELEPORT_SPEED: float = 8.0
+const STANDING_EYE_HEIGHT: float = 1.6
 const LAYER_INTERACTABLE: int = 1 << 1
 ## Deck tilt past which boots lose grip and the crew slides.
 const SLIDE_ANGLE_DEG: float = 30.0
@@ -28,8 +31,8 @@ const SLIDE_ANGLE_DEG: float = 30.0
 const SLOPE_SPEED_EFFECT: float = 1.5
 ## Interior bounds (sub-local). A player outside them is put back inside;
 ## this guards against physics glitches pushing someone through the hull.
-const INTERIOR_BOUNDS: AABB = AABB(Vector3(-1.5, -0.5, -6.0), Vector3(3.0, 3.0, 12.0))
-const RESCUE_POINT: Vector3 = Vector3(0, 0.1, 0)
+const INTERIOR_BOUNDS: AABB = AABB(Vector3(-2.0, -0.8, -3.4), Vector3(4.0, 3.8, 8.4))
+const RESCUE_POINT: Vector3 = Vector3(-0.9, 0.1, 1.2)
 
 ## Replicated pose (sub-local). Written by the owning peer.
 @export var sync_position: Vector3 = Vector3.ZERO
@@ -41,12 +44,16 @@ const RESCUE_POINT: Vector3 = Vector3(0, 0.1, 0)
 @onready var _ray: RayCast3D = $Head/Camera3D/InteractRay
 @onready var _body_mesh: MeshInstance3D = $Body
 
-## Scripted movement input for automated tests; overrides the keyboard when set.
+## Scripted input for automated tests; overrides the keyboard when set.
 var bot_move: Vector2 = Vector2.ZERO
+var bot_planes: float = 0.0
+var bot_ballast: float = 0.0
 
 var _sub_frame: SubFrame
 var _held: Interactable = null
-var _seat: PilotSeat = null
+## True while the interact button is down: the view holds still.
+var _interact_down: bool = false
+var _seat: StationSeat = null
 var _worn: Wearable = null
 var _stride: float = 0.0
 ## Smoothed movement speed, measured the same way on every peer.
@@ -81,26 +88,36 @@ func _unhandled_input(event: InputEvent) -> void:
 	if not is_multiplayer_authority():
 		return
 	if event.is_action_pressed(&"release_mouse"):
+		_interact_down = false
 		_release_held()
 		stand_up()
 		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+		return
+	if _seat is MapTable:
+		# The table handles its own mouse and keys; only E leaves it.
+		if event.is_action_pressed(&"activate"):
+			_activate()
+			get_viewport().set_input_as_handled()
 		return
 	if Input.mouse_mode != Input.MOUSE_MODE_CAPTURED:
 		if event is InputEventMouseButton and (event as InputEventMouseButton).pressed:
 			Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 		return
+	if event.is_action_pressed(&"activate"):
+		_activate()
+		return
 	if event.is_action_pressed(&"interact"):
-		if _seat != null:
-			stand_up()
-		else:
+		_interact_down = true
+		if _seat == null or _seat.allows_grabbing:
 			_try_grab()
 	elif event.is_action_released(&"interact"):
+		_interact_down = false
 		_release_held()
 	var motion: InputEventMouseMotion = event as InputEventMouseMotion
 	if motion != null:
 		if _held != null:
 			_held.drag(motion.relative)
-		else:
+		elif not _interact_down:
 			_look(motion.relative)
 
 
@@ -125,9 +142,21 @@ func _simulate(delta: float) -> void:
 	var input: Vector2 = bot_move
 	if input == Vector2.ZERO and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
 		input = Input.get_vector(&"move_left", &"move_right", &"move_forward", &"move_back")
+	if _seat != null and not (_seat is PilotSeat):
+		position = _seat.seat_transform().origin
+		velocity = Vector3.ZERO
+		return
 	if _seat != null:
-		# Seated: WASD flies the sub; the body stays in the chair.
-		_seat.drive(input, delta)
+		# Seated: the helm. W/S throttle, A/D rudder, R/F planes, and in
+		# single-player mode Numpad 8/2 blow and flood.
+		var planes: float = 0.0
+		var ballast: float = 0.0
+		if Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
+			planes = Input.get_axis(&"pilot_planes_rise", &"pilot_planes_dive")
+			ballast = Input.get_axis(&"pilot_flood", &"pilot_blow")
+		planes += bot_planes
+		ballast += bot_ballast
+		(_seat as PilotSeat).drive(-input.y, input.x, clampf(planes, -1.0, 1.0), clampf(ballast, -1.0, 1.0), delta)
 		position = _seat.seat_transform().origin
 		velocity = Vector3.ZERO
 		return
@@ -175,6 +204,8 @@ func teleport(spot: Vector3) -> void:
 	position = spot
 	velocity = Vector3.ZERO
 	sync_position = spot
+	_last_position = spot
+	_speed = 0.0
 
 
 @rpc("any_peer", "call_local", "reliable")
@@ -189,9 +220,16 @@ func set_shake(amount: float) -> void:
 	_shake = amount
 
 
-func _process(_delta: float) -> void:
+func _process(delta: float) -> void:
 	if not is_multiplayer_authority():
 		return
+	if _seat is MapTable:
+		# Lean over the table: ease the camera to the table's view.
+		var want: Transform3D = (_seat as MapTable).view_transform()
+		_camera.global_transform = _camera.global_transform.interpolate_with(want, 1.0 - exp(-8.0 * delta))
+		return
+	if _camera.position != Vector3.ZERO:
+		_camera.transform = Transform3D.IDENTITY
 	if _shake > 0.0001:
 		_camera.rotation = Vector3(randf_range(-1, 1), randf_range(-1, 1), randf_range(-1, 1) * 0.5) * _shake
 	elif _camera.rotation != Vector3.ZERO:
@@ -204,6 +242,10 @@ func _track_speed(delta: float) -> void:
 	var moved: Vector3 = position - _last_position
 	_last_position = position
 	var instant: float = Vector2(moved.x, moved.z).length() / delta
+	if instant > TELEPORT_SPEED:
+		# A teleport (respawn, debug placement), not a footstep.
+		_speed = 0.0
+		return
 	_speed = lerpf(_speed, instant, 1.0 - exp(-8.0 * delta))
 	# Remote players get footstep events from their replicated movement, so
 	# everyone hears everyone's steps.
@@ -229,46 +271,84 @@ func _look(relative: Vector2) -> void:
 	)
 
 
-func _try_grab() -> void:
+## The control under the aiming point, or null.
+func aim_target() -> Interactable:
 	_ray.force_raycast_update()
 	if not _ray.is_colliding():
-		return
+		return null
 	var node: Node = _ray.get_collider() as Node
 	while node != null and not (node is Interactable):
 		node = node.get_parent()
-	if node == null:
+	return node as Interactable
+
+
+## The control this player is working right now (held, worn or sat in).
+func held_control() -> Interactable:
+	return _held
+
+
+func seat() -> StationSeat:
+	return _seat
+
+
+func worn() -> Wearable:
+	return _worn
+
+
+## E: take or leave a station (pilot seat, sonar headset).
+func _activate() -> void:
+	if _seat != null:
+		stand_up()
 		return
-	if node is PilotSeat:
-		sit_in(node as PilotSeat)
-		return
-	if node is Wearable:
+	var node: Interactable = aim_target()
+	if node is StationSeat:
+		_release_held()
+		sit_in(node as StationSeat)
+	elif node is Wearable:
 		if _worn == node:
 			take_off()
 		else:
 			put_on(node as Wearable)
-		return
-	_held = node as Interactable
+	elif _worn != null:
+		take_off()
+
+
+func _try_grab() -> void:
+	var node: Interactable = aim_target()
+	if node == null or node is StationSeat or node is Wearable:
+		return  # Stations are taken with E, not grabbed.
+	_held = node
 	_held.begin_interaction()
 
 
 ## Sits in the pilot's chair. Stands up again if someone else got there first.
-func sit_in(seat: PilotSeat) -> void:
+func sit_in(seat: StationSeat) -> void:
 	if _seat != null:
 		return
 	_seat = seat
 	_seat.holder_changed.connect(_on_seat_holder_changed)
 	_seat.begin_interaction()
+	_head.position.y = seat.eye_height
+	# Face the station.
+	rotation.y = seat.seat_transform().basis.get_euler().y
+	_head.rotation.x = 0.0
+	if seat is SonarSeat and (seat as SonarSeat).headset != null:
+		put_on((seat as SonarSeat).headset)
 
 
 func stand_up() -> void:
 	if _seat == null:
 		return
-	var seat: PilotSeat = _seat
+	var seat: StationSeat = _seat
 	_seat = null
 	seat.holder_changed.disconnect(_on_seat_holder_changed)
 	seat.end_interaction()
-	# Step out of the chair, back toward the corridor.
-	position = seat.seat_transform().origin + seat.seat_transform().basis.z * 0.6
+	_head.position.y = STANDING_EYE_HEIGHT
+	if seat is SonarSeat:
+		take_off()
+	# Step out of the seat, backward from the way it faces, onto the deck.
+	var out: Vector3 = seat.seat_transform().origin + seat.seat_transform().basis.z * 0.7
+	position = Vector3(out.x, maxf(out.y, 0.0) + 0.05, out.z)
 
 
 ## Puts on a wearable (the sonar headset). Takes off any other first.

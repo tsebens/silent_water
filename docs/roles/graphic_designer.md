@@ -26,7 +26,7 @@ Instructions for the agent that designs and models Silent Water's 3D assets. Rea
   - light beams through volumetric fog, marine snow
 - **The genre pulls sleek and cyberpunk.** Borrow its lighting and polish, not its smooth consumer-product shapes. When the two clash, offer both as separate variations and let the reviewer choose.
 - **Light is gameplay.** Assets should read under both white and red light.
-- **Reference media:** architecture references go in `assets/media/architecture/` (see the art direction doc). The original mood board lives in `assets/media/`. Until `claude/serene-dijkstra-pnr9gr` merges, read it from that branch, for example `git archive origin/claude/serene-dijkstra-pnr9gr assets/media | tar -x -C <scratch>`. The Onshape sub concept (`assets/media/sub/`) sets the sub's layout and proportions.
+- **Reference media:** the original mood board lives in `assets/media/`, and architecture references go in `assets/media/architecture/` (see the art direction doc). The Onshape sub (`assets/media/sub/`) sets the sub's layout and proportions.
 
 ## Tools
 
@@ -74,7 +74,7 @@ Instructions for the agent that designs and models Silent Water's 3D assets. Rea
    - Add a person-sized figure where scale isn't obvious.
    - Name images `<asset>_var<N>_img<M>.png`, e.g. `porthole_var2_img3.png`.
 5. **Attach and review.**
-   - GitHub's API can't upload attachments, so commit the PNGs to `concepts/<asset>/` (with a `.gdignore`) and embed them by commit-SHA permalink: `https://github.com/tsebens/silent_water/blob/<sha>/concepts/<asset>/<file>.png?raw=true`.
+   - GitHub's API can't upload attachments, so commit the PNGs to `concepts/<asset>/` and embed them by commit-SHA permalink: `https://github.com/tsebens/silent_water/blob/<sha>/concepts/<asset>/<file>.png?raw=true`.
    - SHA links keep working after the files are deleted.
    - Move the issue to **In review**, then pick up the next issue.
 6. **Review outcome.**
@@ -94,6 +94,10 @@ Instructions for the agent that designs and models Silent Water's 3D assets. Rea
 
 Whenever something goes wrong or the workflow is slow, note it on that asset's issue: a tool limit, slow renders, unclear requests, a missing reference. These notes are reviewed periodically to adjust the workflow, and this file is updated with the outcome.
 
-## Planned changes
+## Where files live
 
-- After `claude/serene-dijkstra-pnr9gr` merges, concept art moves to the agreed long-term home and the reference media is read from `main`.
+| Path | Contents |
+| --- | --- |
+| `concepts/<asset>/` | Concept screenshots for review. `concepts/.gdignore` keeps Godot from importing them. Commit them on the session's branch and link by commit SHA. Delete unchosen variations once a choice is recorded. |
+| `assets/models/<asset>/` | Delivered final models: the generating script, the `.glb` and the `.tscn`. |
+| `assets/media/` | Reference media: the mood board, the Onshape sub, and `architecture/` references. |

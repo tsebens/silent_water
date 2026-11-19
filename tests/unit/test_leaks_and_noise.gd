@@ -99,8 +99,8 @@ func test_bilge_water_makes_sub_heavier() -> void:
 
 
 func test_engine_noise_reaches_about_80_db_at_full() -> void:
-	var telegraph: Telegraph = game.get_node("Interior/Stations/Engineering/Telegraph") as Telegraph
-	telegraph.host_set_value(3.0)
+	var throttle: SpringAxis = game.get_node("Interior/Stations/Pilot/Throttle") as SpringAxis
+	throttle.host_set_value(1.0)
 	await _frames(60 * 7)
 	expect_near(Acoustics.sub_db(), 80.0, 1.0)
 	expect(not Acoustics.is_masked(), "full ahead is not masked")

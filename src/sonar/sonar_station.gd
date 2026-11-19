@@ -43,6 +43,16 @@ static func beam_gain_db(source_bearing: float, trained: float) -> float:
 	return NoiseLevel.to_db(maxf(g, 1e-9)) - NoiseLevel.REF_DB
 
 
+## World direction (horizontal, unit) of a bearing relative to the bow.
+static func bearing_to_world(sub_transform: Transform3D, bearing: float) -> Vector3:
+	var fwd: Vector3 = sub_transform.basis * Vector3.FORWARD
+	fwd.y = 0.0
+	if fwd.length_squared() < 1e-6:
+		fwd = Vector3.FORWARD
+	# Clockwise seen from above is a negative turn about +Y.
+	return Basis(Vector3.UP, -deg_to_rad(bearing)) * fwd.normalized()
+
+
 ## Bearing (degrees, clockwise from the bow) of a point in render space,
 ## where the sub sits at the origin facing -Z.
 static func bearing_of(render_point: Vector3) -> float:

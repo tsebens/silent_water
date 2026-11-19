@@ -4,6 +4,7 @@
 
 ## How it works
 
+- The sub's geometry comes from the Onshape concept: `tools/convert_sub.py` turns `assets/media/sub/Assembly 1.gltf` into `assets/sub/sub_model.glb` (Godot axes, origin on the main cabin floor at the centreline, bow toward -Z, simplified meshes, named parts). `SubModel` gives the parts their materials and collision. The hull is about 10 m × 4 m; the pilot well is 0.6 m below the cabin floor.
 - `Game/Interior` sits at the origin with an identity transform, permanently. Players, controls, interior lights, and the sub's exterior lights (the headlight) live here. Everything inside the sub is in **sub-local space**.
 - `Game/World` holds everything outside the sub: terrain, creatures, objectives. Its children use **world space** as their local space.
 - `SubFrame` owns the sub's pose in the world (`sub_transform`, host-authoritative, replicated). Each frame it sets `World.transform = sub_transform.affine_inverse()`. In render space the sub is always at the origin, and the world moves past it.

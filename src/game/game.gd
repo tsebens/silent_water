@@ -7,7 +7,7 @@ extends Node3D
 const PLAYER_SCENE: PackedScene = preload("res://src/player/player.tscn")
 ## Spawn points along the corridor, sub-local.
 const SPAWN_POINTS: Array[Vector3] = [
-	Vector3(0, 0.1, -1.0), Vector3(0, 0.1, 1.0), Vector3(0.8, 0.1, 2.5), Vector3(-0.8, 0.1, -2.5),
+	Vector3(-0.9, 0.1, 1.2), Vector3(-0.9, 0.1, 0.3), Vector3(0.3, 0.1, 1.3), Vector3(0.9, 0.1, 0.1),
 ]
 
 @onready var sub_frame: SubFrame = $SubFrame
@@ -18,6 +18,7 @@ var _active: bool = false
 
 func _ready() -> void:
 	AudioBuses.ensure()
+	InputSetup.ensure_actions()
 	sub_frame.add_to_group(&"sub_frame")
 	Net.peer_joined.connect(_on_peer_joined)
 	Net.peer_left.connect(_on_peer_left)
@@ -29,6 +30,12 @@ func start_session() -> void:
 	_active = true
 	if multiplayer.is_server():
 		(get_node("SessionLog") as SessionLog).open_log()
+		# Alone in a development build: the helm runs the ballast too.
+		if DevOverlay.allowed() and multiplayer.get_peers().is_empty() and not OS.get_cmdline_user_args().has("--crew"):
+			DevSettings.single_player = true
+			print("[dev] single-player mode on (alone; F5 toggles)")
+		if OS.get_cmdline_user_args().has("--no-apex"):
+			(get_node("World/Apex") as ApexMonster).set_active(false)
 		_spawn_player(Net.local_id())
 		for peer_id: int in multiplayer.get_peers():
 			_spawn_player(peer_id)

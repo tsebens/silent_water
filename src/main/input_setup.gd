@@ -9,6 +9,15 @@ const ACTIONS: Dictionary = {
 	&"move_right": [KEY_D],
 	&"sneak": [KEY_SHIFT],
 	&"release_mouse": [KEY_ESCAPE],
+	&"dev_overlay": [KEY_F1],
+	&"dev_toggle_apex": [KEY_F4],
+	&"dev_single_player": [KEY_F5],
+	&"activate": [KEY_E],
+	&"sonar_mark": [KEY_M],
+	&"pilot_planes_rise": [KEY_R],
+	&"pilot_planes_dive": [KEY_F],
+	&"pilot_blow": [KEY_KP_8, KEY_PAGEUP],
+	&"pilot_flood": [KEY_KP_2, KEY_PAGEDOWN],
 }
 const MOUSE_ACTIONS: Dictionary = {
 	&"interact": MOUSE_BUTTON_LEFT,

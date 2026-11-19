@@ -6,7 +6,8 @@ extends Node3D
 ## requested values while dragging. The local holder sees its own movement
 ## immediately (prediction); the host clamps, accepts only the holder's
 ## requests, and broadcasts the result. Only one player can hold a control at a
-## time, which resolves conflicting input. Releasing sends a reliable final value.
+## time, which resolves conflicting input. Releasing sends a reliable final value,
+## and so does a held control that stops moving (see [constant SETTLE_TIME]).
 ##
 ## Subclasses override [method _drag_to_value] (mouse drag -> new value) and
 ## [method _apply_visual] (value -> pose of the mesh).
@@ -23,7 +24,16 @@ signal holder_changed(peer_id: int)
 
 var state: InteractableState
 
+## A held control that has been still this long (s) sends its value reliably.
+## Streamed requests are unreliable, so the last few can be lost or arrive
+## before the grab; a key-driven control that then stays put (a throttle at
+## full) would leave the host behind for good without this.
+const SETTLE_TIME: float = 0.1
+
 var _local_grabbing: bool = false
+## Client: a streamed request hasn't been confirmed by a reliable settle yet.
+var _unsettled: bool = false
+var _still_time: float = 0.0
 
 
 func _init() -> void:
@@ -41,6 +51,11 @@ func _ready() -> void:
 
 func _physics_process(delta: float) -> void:
 	state.tick(delta)
+	if _unsettled and _local_grabbing:
+		_still_time += delta
+		if _still_time >= SETTLE_TIME:
+			_unsettled = false
+			_rpc_settle.rpc_id(1, state.value)
 
 
 ## Current value (predicted for the local holder, authoritative otherwise).
@@ -57,6 +72,16 @@ func get_noise_intensity() -> float:
 	if noise_profile == null:
 		return 0.0
 	return noise_profile.intensity_for_rate(state.normalized_rate)
+
+
+## Name shown at the aiming point.
+func display_name() -> String:
+	return label.to_upper() if label != "" else String(name).to_upper()
+
+
+## How to use it, shown under the name. Override per control.
+func interaction_hint() -> String:
+	return "hold click and move the mouse"
 
 
 ## Noise system hook (polled on the host).
@@ -82,18 +107,21 @@ func drag(relative: Vector2) -> void:
 
 
 ## Moves a control the local player holds straight to [param target]. Used by
-## controls driven by keys rather than mouse drags.
-func drive_to(target: float) -> void:
+## controls driven by keys rather than mouse drags. [param silent]: actuated
+## electrically, so moving it makes no handling noise.
+func drive_to(target: float, silent: bool = false) -> void:
 	if not _local_grabbing:
 		return
 	var clamped: float = state.clamp_value(target)
 	if is_equal_approx(clamped, state.value):
 		return
-	_set_local(clamped)
+	_set_local(clamped, silent)
 	if not multiplayer.is_server():
-		_rpc_request.rpc_id(1, clamped)
+		_rpc_request.rpc_id(1, clamped, silent)
+		_unsettled = true
+		_still_time = 0.0
 	else:
-		_host_apply(Net.local_id(), clamped)
+		_host_apply(Net.local_id(), clamped, silent)
 
 
 func end_interaction() -> void:
@@ -103,6 +131,7 @@ func end_interaction() -> void:
 	if not is_equal_approx(final_value, state.value):
 		_set_local(final_value)
 	_local_grabbing = false
+	_unsettled = false
 	_rpc_release.rpc_id(1, final_value)
 
 
@@ -166,9 +195,18 @@ func _rpc_release(final_value: float) -> void:
 
 
 @rpc("any_peer", "unreliable_ordered")
-func _rpc_request(v: float) -> void:
+func _rpc_request(v: float, silent: bool) -> void:
 	if multiplayer.is_server():
-		_host_apply(_sender(), v)
+		_host_apply(_sender(), v, silent)
+
+
+## Reliable: the holder's value once its control has stopped moving. Silent:
+## the movement already made its noise through the stream, and a catch-up
+## after lost packets mustn't sound like a slam.
+@rpc("any_peer", "reliable")
+func _rpc_settle(v: float) -> void:
+	if multiplayer.is_server():
+		_host_apply(_sender(), v, true)
 
 
 @rpc("authority", "call_remote", "unreliable_ordered")
@@ -192,8 +230,12 @@ func _rpc_holder(peer_id: int) -> void:
 	holder_changed.emit(peer_id)
 
 
-func _host_apply(sender: int, v: float) -> void:
-	if not state.request(sender, v):
+func _host_apply(sender: int, v: float, silent: bool = false) -> void:
+	if state.holder != sender:
+		return
+	if silent:
+		state.set_value_silent(v)
+	elif not state.request(sender, v):
 		return
 	_after_change()
 	_rpc_value_stream.rpc(state.value)
@@ -209,8 +251,11 @@ func _receive_value(v: float, authoritative: bool) -> void:
 	_set_local(v)
 
 
-func _set_local(v: float) -> void:
-	state.set_value(v)
+func _set_local(v: float, silent: bool = false) -> void:
+	if silent:
+		state.set_value_silent(v)
+	else:
+		state.set_value(v)
 	_after_change()
 
 

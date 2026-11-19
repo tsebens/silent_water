@@ -26,10 +26,12 @@ def main() -> int:
         who = r["role"]
         if len(r["players"]) != expected:
             errors.append(f"{who} sees {len(r['players'])} players, expected {expected}")
-        if not near(r["telegraph"], 3.0, 0.001):
-            errors.append(f"{who} telegraph={r['telegraph']} (expected Full Ahead 3; Crew3 must be rejected)")
-        if r["telegraph_holder"] != 0:
-            errors.append(f"{who} telegraph still held by {r['telegraph_holder']}")
+        if not near(r["lever"], 0.0, 0.001):
+            errors.append(f"{who} cabin lights lever={r['lever']} (expected 0: Crew3 must be rejected)")
+        if r["lever_holder"] != 0:
+            errors.append(f"{who} cabin lights lever still held by {r['lever_holder']}")
+        if r["throttle"] < 0.9:
+            errors.append(f"{who} throttle={r['throttle']} (Crew3 held W from the helm)")
         if not near(r["flood"], 0.75, 0.1):
             errors.append(f"{who} flood={r['flood']} (expected ~0.75)")
         if r["rudder"] > -0.8:
@@ -51,6 +53,11 @@ def main() -> int:
             errors.append(f"host hears Crew2's voice at {crew2_voice} dB, expected 75")
         if host["sub_db"] < 75.0:
             errors.append(f"sub noise {host['sub_db']} dB should include Crew2's 75 dB voice")
+    for r in reports:
+        if r.get("pins") != 1:
+            errors.append(f"{r['role']} sees {r.get('pins')} chart pins, expected Crew2's one")
+        if not r.get("is_host") and r.get("host_events", 0) < 1:
+            errors.append(f"{r['role']} got no host game events in its developer log")
     if "Crew2" in by_role:
         for r in reports:
             if r["headset_holder"] != by_role["Crew2"]["peer"]:
@@ -58,7 +65,7 @@ def main() -> int:
     if reports:
         ref = reports[0]
         for r in reports[1:]:
-            for key, tol in (("telegraph", 0.001), ("flood", 0.005), ("rudder", 0.05), ("depth", 0.5), ("tank", 0.02), ("sub_db", 1.5), ("ambient_db", 0.1)):
+            for key, tol in (("lever", 0.001), ("throttle", 0.01), ("flood", 0.005), ("rudder", 0.05), ("depth", 0.5), ("tank", 0.02), ("sub_db", 1.5), ("ambient_db", 0.1)):
                 if not near(r[key], ref[key], tol):
                     errors.append(f"{key} disagrees: {ref['role']}={ref[key]} {r['role']}={r[key]}")
             if r["apex_state"] != ref["apex_state"]:
