@@ -94,10 +94,10 @@ world_root = NodePath("../World")
 replication_interval = 0.05
 replication_config = SubResource("sub_repl")
 
-[node name="SubController" type="Node" parent="." node_paths=PackedStringArray("sub_frame", "telegraph", "rudder", "planes", "flood_valve", "blow_valve")]
+[node name="SubController" type="Node" parent="." node_paths=PackedStringArray("sub_frame", "throttle", "rudder", "planes", "flood_valve", "blow_valve")]
 script = ExtResource("3")
 sub_frame = NodePath("../SubFrame")
-telegraph = NodePath("../Interior/Stations/Engineering/Telegraph")
+throttle = NodePath("../Interior/Stations/Pilot/Throttle")
 rudder = NodePath("../Interior/Stations/Pilot/Rudder")
 planes = NodePath("../Interior/Stations/Pilot/Planes")
 flood_valve = NodePath("../Interior/Stations/Ballast/FloodValve")
@@ -134,7 +134,7 @@ spawn_path = NodePath("../Players")
 script = ExtResource("7")
 controller = NodePath("../SubController")
 players = NodePath("../Players")
-engine_point = NodePath("../Interior/Stations/Engineering/Telegraph")
+engine_point = NodePath("../Interior/Stations/Engineering/EngineGauge")
 blow_point = NodePath("../Interior/Stations/Ballast/BlowValve")
 flood_point = NodePath("../Interior/Stations/Ballast/FloodValve")
 

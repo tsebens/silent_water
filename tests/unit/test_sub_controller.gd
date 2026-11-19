@@ -38,9 +38,9 @@ func test_sinking_sub_strikes_and_rests_on_shelf() -> void:
 	expect(absf(controller.model.velocity.y) < 0.1, "sub should come to rest, vy=%f" % controller.model.velocity.y)
 
 
-func test_telegraph_drives_engine() -> void:
-	var telegraph: Telegraph = game.get_node("Interior/Stations/Engineering/Telegraph") as Telegraph
-	telegraph.host_set_value(3.0)
+func test_throttle_drives_engine() -> void:
+	var throttle: SpringAxis = game.get_node("Interior/Stations/Pilot/Throttle") as SpringAxis
+	throttle.host_set_value(1.0)
 	await _physics_frames(60 * 3)
 	expect(controller.engine_output > 0.4, "engine output %f" % controller.engine_output)
 	expect(controller.speed > 0.0, "sub should be moving ahead")

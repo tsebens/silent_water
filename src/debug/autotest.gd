@@ -6,11 +6,11 @@ extends Node
 ## compares the reports from every instance (tools/compare_autotest.py).
 ##
 ## Scenario (seconds after the session starts):
-##   Crew2 walks forward for 1.5 s, grabs the telegraph at 2.0, drags it up to
-##     Full Ahead and releases at 3.5 (it snaps to the detent).
-##   Crew3 tries to grab the telegraph at 2.5 while Crew2 holds it and drags it
-##     toward astern. The host must reject this. At 3.6 Crew3 sits in the pilot
-##     seat and holds A (rudder to port) from 4.0.
+##   Crew2 walks forward for 1.5 s, grabs the cabin lights lever at 2.0, drags
+##     it all the way down and releases at 3.5.
+##   Crew3 tries to grab the same lever at 2.5 while Crew2 holds it and drags
+##     it up. The host must reject this. At 3.6 Crew3 takes the helm and holds
+##     W (throttle ahead) and A (rudder to port) from 4.0.
 ##   Crew1 (host) opens the flood valve about 1.5 turns between 2.0 and 3.0.
 ##   Crew2 "talks" at 75 dB from 4.0 on (simulated mic level) and puts on
 ##   the sonar headset at 4.5 (it's on the starboard side; the cord check
@@ -47,32 +47,32 @@ func _physics_process(delta: float) -> void:
 		return
 	_t += delta
 	var me: Player = _game.local_player()
-	var telegraph: Interactable = _node("Engineering/Telegraph") as Interactable
+	var lever: Interactable = _node("Pilot/Dimmer") as Interactable
 	var flood: Interactable = _node("Ballast/FloodValve") as Interactable
 	var seat: PilotSeat = _node("Pilot/Seat") as PilotSeat
 	match role:
 		"Crew2":
 			if me != null:
 				me.bot_move = Vector2(0, -1) if _t < 1.5 else Vector2.ZERO
-			_once("grab", 2.0, func() -> void: telegraph.begin_interaction())
+			_once("grab", 2.0, func() -> void: lever.begin_interaction())
 			if _t > 2.1 and _t < 3.3:
-				telegraph.drag(Vector2(0, -8))
-			_once("release", 3.5, func() -> void: telegraph.end_interaction())
-			if _t > 4.0:
-				Acoustics.report_voice(NoiseLevel.from_db(75.0))
+				lever.drag(Vector2(0, 8))
+			_once("release", 3.5, func() -> void: lever.end_interaction())
+			# Through the mic meter, so it's the only thing reporting this voice.
+			MicMeter.forced_db = 75.0 if _t > 4.0 else -1.0
 			if me != null:
 				_once("headset", 4.5, func() -> void:
 					var headset: Wearable = _node("Sonar/Headset") as Wearable
 					me.teleport(headset.global_position + Vector3(-0.8, -1.4, 0))
 					me.put_on(headset))
 		"Crew3":
-			_once("grab", 2.5, func() -> void: telegraph.begin_interaction())
+			_once("grab", 2.5, func() -> void: lever.begin_interaction())
 			if _t > 2.6 and _t < 3.2:
-				telegraph.drag(Vector2(0, 8))
-			_once("release", 3.4, func() -> void: telegraph.end_interaction())
+				lever.drag(Vector2(0, -8))
+			_once("release", 3.4, func() -> void: lever.end_interaction())
 			if me != null:
 				_once("sit", 3.6, func() -> void: me.sit_in(seat))
-				me.bot_move = Vector2(-1, 0) if _t > 4.0 else Vector2.ZERO
+				me.bot_move = Vector2(-1, -1) if _t > 4.0 else Vector2.ZERO
 		"Crew1":
 			_once("grab", 2.0, func() -> void: flood.begin_interaction())
 			if _t > 2.0 and _t < 3.0:
@@ -124,8 +124,9 @@ func _report() -> void:
 		"peer": Net.local_id(),
 		"is_host": Net.is_host(),
 		"players": positions,
-		"telegraph": snappedf((_node("Engineering/Telegraph") as Interactable).get_value(), 0.001),
-		"telegraph_holder": (_node("Engineering/Telegraph") as Interactable).state.holder,
+		"lever": snappedf((_node("Pilot/Dimmer") as Interactable).get_value(), 0.001),
+		"lever_holder": (_node("Pilot/Dimmer") as Interactable).state.holder,
+		"throttle": snappedf((_node("Pilot/Throttle") as Interactable).get_value(), 0.001),
 		"flood": snappedf((_node("Ballast/FloodValve") as Interactable).get_value(), 0.001),
 		"rudder": snappedf((_node("Pilot/Rudder") as Interactable).get_value(), 0.001),
 		"seat_holder": seat.state.holder,

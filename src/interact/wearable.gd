@@ -26,4 +26,4 @@ func _on_lost_hold() -> void:
 
 
 func interaction_hint() -> String:
-	return "click to put on · click again to take off"
+	return "press E to put on · E again to take off"

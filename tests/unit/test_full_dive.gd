@@ -84,7 +84,7 @@ func _steer_to(target: Vector3) -> float:
 		_backing -= 1.0 / 60.0
 		order = -2.0
 		_put("Pilot/Rudder", 0.0)
-	_put("Engineering/Telegraph", order)
+	_put("Pilot/Throttle", order / 3.0)
 	return flat
 
 
@@ -97,7 +97,7 @@ func test_autopilot_completes_a_dive() -> void:
 		match phase:
 			"descend":
 				# Sink in place to working depth first, then cross at depth.
-				_put("Engineering/Telegraph", 0.0)
+				_put("Pilot/Throttle", 0.0)
 				_put("Pilot/Rudder", 0.0)
 				_hold_depth(HOVER.y)
 				if absf(c.model.position.y - HOVER.y) < 8.0:
@@ -117,7 +117,7 @@ func test_autopilot_completes_a_dive() -> void:
 				if scan.complete:
 					phase = "ascend"
 			"ascend":
-				_put("Engineering/Telegraph", 0.0)
+				_put("Pilot/Throttle", 0.0)
 				_put("Pilot/Rudder", 0.0)
 				_put("Pilot/Planes", 0.0)
 				_put("Ballast/FloodValve", 0.0)

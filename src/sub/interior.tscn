@@ -1,6 +1,5 @@
 [gd_scene format=3]
 
-[ext_resource type="PackedScene" path="res://src/interact/telegraph.tscn" id="1"]
 [ext_resource type="PackedScene" path="res://src/interact/valve.tscn" id="2"]
 [ext_resource type="Script" path="res://src/interact/gauge.gd" id="3"]
 [ext_resource type="Script" path="res://src/interact/pilot_seat.gd" id="4"]
@@ -199,11 +198,14 @@ shadow_enabled = true
 
 [node name="Pilot" type="Node3D" parent="Stations"]
 
-[node name="Seat" type="Node3D" parent="Stations/Pilot" node_paths=PackedStringArray("rudder", "planes", "sit_point")]
+[node name="Seat" type="Node3D" parent="Stations/Pilot" node_paths=PackedStringArray("throttle", "rudder", "planes", "flood_valve", "blow_valve", "sit_point")]
 position = Vector3(0, 0, -4.4)
 script = ExtResource("4")
+throttle = NodePath("../Throttle")
 rudder = NodePath("../Rudder")
 planes = NodePath("../Planes")
+flood_valve = NodePath("../../Ballast/FloodValve")
+blow_valve = NodePath("../../Ballast/BlowValve")
 sit_point = NodePath("SitPoint")
 label = "pilot seat"
 
@@ -254,14 +256,14 @@ transform = Transform3D(1, 0, 0, 0, -4.37114e-08, -1, 0, 1, -4.37114e-08, 0, 0, 
 mesh = SubResource("yoke_wheel")
 
 [node name="DepthGauge" type="Node3D" parent="Stations/Pilot"]
-position = Vector3(-0.55, 1.2, -5.74)
+position = Vector3(-0.6, 1.2, -5.74)
 script = ExtResource("3")
 readout = &"depth"
 title = "DEPTH m"
 max_value = 250.0
 
 [node name="HeadingGauge" type="Node3D" parent="Stations/Pilot"]
-position = Vector3(0, 1.2, -5.74)
+position = Vector3(-0.2, 1.2, -5.74)
 script = ExtResource("3")
 readout = &"heading_deg"
 title = "HEADING"
@@ -269,7 +271,7 @@ max_value = 360.0
 wraps = true
 
 [node name="PitchGauge" type="Node3D" parent="Stations/Pilot"]
-position = Vector3(0.55, 1.2, -5.74)
+position = Vector3(0.2, 1.2, -5.74)
 script = ExtResource("3")
 readout = &"pitch_deg"
 title = "PITCH"
@@ -278,10 +280,6 @@ max_value = 30.0
 sweep_deg = 120.0
 
 [node name="Engineering" type="Node3D" parent="Stations"]
-
-[node name="Telegraph" parent="Stations/Engineering" instance=ExtResource("1")]
-position = Vector3(1.2, 0.9, 4)
-rotation = Vector3(0, 1.5708, 0)
 
 [node name="EngineGauge" type="Node3D" parent="Stations/Engineering"]
 position = Vector3(1.48, 1.55, 4.6)
@@ -492,4 +490,37 @@ position = Vector3(1.48, 1.62, -4.1)
 rotation = Vector3(0, -1.5708, 0)
 pixel_size = 0.0022
 text = "CABIN LIGHTS"
+modulate = Color(0.9, 0.85, 0.6, 1)
+
+[node name="SpeedGauge" type="Node3D" parent="Stations/Pilot"]
+position = Vector3(0.6, 1.2, -5.74)
+script = ExtResource("3")
+readout = &"speed"
+title = "SPEED m/s"
+min_value = -1.5
+max_value = 3.0
+sweep_deg = 240.0
+
+[node name="Throttle" type="Node3D" parent="Stations/Pilot" node_paths=PackedStringArray("indicator")]
+position = Vector3(0.5, 1.0, -5.3)
+script = ExtResource("5")
+indicator = NodePath("Lever")
+indicator_axis = Vector3(-1, 0, 0)
+indicator_max_deg = 40.0
+actuator_rate = 0.6
+return_rate = 0.0
+center_detent = 0.06
+label = "throttle"
+
+[node name="Lever" type="Node3D" parent="Stations/Pilot/Throttle"]
+
+[node name="Shaft" type="MeshInstance3D" parent="Stations/Pilot/Throttle/Lever"]
+position = Vector3(0, 0.12, 0)
+mesh = SubResource("yoke_column")
+
+[node name="ThrottleSign" type="Label3D" parent="Stations/Pilot"]
+position = Vector3(0.5, 1.02, -5.05)
+rotation = Vector3(-1.2, 0, 0)
+pixel_size = 0.0016
+text = "THROTTLE"
 modulate = Color(0.9, 0.85, 0.6, 1)

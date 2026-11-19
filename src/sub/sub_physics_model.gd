@@ -24,10 +24,11 @@ var payload_t: float = 0.36
 var tank_capacity_t: float = 20.0
 ## Water in the main ballast tank, 0..tank_capacity_t.
 var tank_water_t: float = 10.0
-## Flood rate with the vent fully open (tonnes/s).
-var flood_rate_t: float = 0.35
+## Flood rate with the vent fully open (tonnes/s). Flood and blow rates were
+## doubled in M7 (#50) so depth changes start twice as fast.
+var flood_rate_t: float = 0.7
 ## Blow rate with the blow valve fully open (tonnes/s).
-var blow_rate_t: float = 0.7
+var blow_rate_t: float = 1.4
 ## High-pressure air, measured in tonnes of water it can still expel.
 var air_capacity_t: float = 60.0
 var air_t: float = 60.0
@@ -41,14 +42,16 @@ var bilge_capacity_t: float = 8.0
 ## Normalized engine output, -1 (full astern) .. 1 (full ahead).
 var engine: float = 0.0
 ## How fast engine output follows the ordered speed (per second).
-var engine_spool_rate: float = 0.2
+var engine_spool_rate: float = 0.4
 ## Forward acceleration at full ahead (m/s²). Astern gives half.
-var thrust_accel: float = 0.15
+## Thrust and fore/aft drag were both doubled in M7 (#50): same top speed,
+## twice as quick to speed up and slow down.
+var thrust_accel: float = 0.3
 
 # --- Hydrodynamics -----------------------------------------------------------
 ## Quadratic drag coefficients in the body frame: x = sideways, y = vertical,
 ## z = fore/aft. Chosen for ~3 m/s top speed and ~1 m/s terminal sink rate.
-var drag: Vector3 = Vector3(0.5, 0.6, 0.0167)
+var drag: Vector3 = Vector3(0.5, 0.6, 0.0333)
 ## Yaw acceleration per unit rudder per m/s of forward speed (rad/s² ).
 var rudder_authority: float = 0.02
 ## Pitch acceleration per unit planes per m/s of forward speed (rad/s²).

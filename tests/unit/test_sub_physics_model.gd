@@ -49,7 +49,7 @@ func test_full_ahead_top_speed_about_3() -> void:
 
 func test_engine_spools_slowly() -> void:
 	_run(1.0, 1.0)
-	expect(m.engine < 0.3, "engine should not jump to full (%f)" % m.engine)
+	expect(m.engine < 0.5, "engine should not jump to full (%f)" % m.engine)
 	_run(5.0, 1.0)
 	expect_near(m.engine, 1.0, 0.001)
 
@@ -94,11 +94,11 @@ func test_vent_does_not_flood_while_riding_high() -> void:
 func test_flood_and_blow() -> void:
 	m.tank_water_t = 0.0
 	_run(10.0, 0.0, 0.0, 0.0, 1.0)
-	expect_near(m.tank_water_t, 3.5, 0.1, "flooded")
+	expect_near(m.tank_water_t, 7.0, 0.1, "flooded")
 	var air_before: float = m.air_t
 	_run(2.0, 0.0, 0.0, 0.0, 0.0, 1.0)
-	expect_near(m.tank_water_t, 2.1, 0.1, "blown")
-	expect_near(air_before - m.air_t, 1.4, 0.1, "air used")
+	expect_near(m.tank_water_t, 4.2, 0.1, "blown")
+	expect_near(air_before - m.air_t, 2.8, 0.1, "air used")
 
 
 func test_blow_stops_when_air_runs_out() -> void:
@@ -129,3 +129,17 @@ func test_blowing_an_empty_tank_uses_no_air() -> void:
 	_run(10.0, 0.0, 0.0, 0.0, 0.0, 1.0)
 	expect_eq(m.tank_water_t, 0.0)
 	expect_near(m.air_capacity_t - m.air_t, 1.0, 0.01, "only the water's worth of air is used")
+
+
+func test_responsive_speed_up_and_slow_down() -> void:
+	# M7: twice as quick to reach speed and to coast down, same top speed.
+	var t: float = 0.0
+	while m.forward_speed() < 2.5 and t < 120.0:
+		m.step(DT, 1.0, 0, 0, 0, 0)
+		t += DT
+	expect(t < 20.0, "reaches 2.5 m/s in %f s" % t)
+	_run(40.0, 1.0)
+	_run(10.0, 0.0)
+	# Quadratic drag: v = v0 / (1 + k v0 t). With k doubled, ~1.5 m/s after 10 s
+	# (it was ~2.0). Throttling astern brakes harder still.
+	expect(m.forward_speed() < 1.8, "coasts down quickly (%f m/s after 10 s)" % m.forward_speed())

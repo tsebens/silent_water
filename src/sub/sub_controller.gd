@@ -28,7 +28,8 @@ const FLOOD_INTENSITY: float = 0.001
 const STRIKE_INTENSITY: float = 0.3
 
 @export var sub_frame: SubFrame
-@export var telegraph: Telegraph
+## Pilot throttle, -1 (full astern) .. 1 (full ahead).
+@export var throttle: SpringAxis
 @export var rudder: SpringAxis
 @export var planes: SpringAxis
 @export var flood_valve: Interactable
@@ -72,7 +73,7 @@ func reset_dive() -> void:
 	model = SubPhysicsModel.new()
 	model.position = start_position
 	model.tank_water_t = start_tank_t
-	for control: Interactable in [telegraph, rudder, planes, flood_valve, blow_valve]:
+	for control: Interactable in [throttle, rudder, planes, flood_valve, blow_valve]:
 		if control != null:
 			control.host_set_value(0.0)
 	sub_frame.set_pose(model.transform(), Vector3.ZERO)
@@ -86,7 +87,7 @@ func _physics_process(delta: float) -> void:
 	var before: Vector3 = model.position
 	model.step(
 		delta,
-		telegraph.engine_order() if telegraph != null else 0.0,
+		throttle.get_value() if throttle != null else 0.0,
 		rudder.get_value() if rudder != null else 0.0,
 		planes.get_value() if planes != null else 0.0,
 		flood_valve.get_normalized() if flood_valve != null else 0.0,

@@ -40,8 +40,8 @@ func _process(_delta: float) -> void:
 		target = me.aim_target()
 	_active = target != null
 	if me.seat() != null:
-		_name.text = "PILOT SEAT"
-		_hint.text = "WASD flies · click to stand"
+		_name.text = "HELM" + ("  · SINGLE-PLAYER" if DevSettings.single_player else "")
+		_hint.text = PilotSeat.helm_hint()
 	elif target != null:
 		_name.text = target.display_name() + ("  (holding)" if holding else "")
 		_hint.text = target.interaction_hint()

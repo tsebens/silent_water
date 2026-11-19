@@ -43,8 +43,10 @@ const RESCUE_POINT: Vector3 = Vector3(0, 0.1, 0)
 @onready var _ray: RayCast3D = $Head/Camera3D/InteractRay
 @onready var _body_mesh: MeshInstance3D = $Body
 
-## Scripted movement input for automated tests; overrides the keyboard when set.
+## Scripted input for automated tests; overrides the keyboard when set.
 var bot_move: Vector2 = Vector2.ZERO
+var bot_planes: float = 0.0
+var bot_ballast: float = 0.0
 
 var _sub_frame: SubFrame
 var _held: Interactable = null
@@ -94,11 +96,12 @@ func _unhandled_input(event: InputEvent) -> void:
 		if event is InputEventMouseButton and (event as InputEventMouseButton).pressed:
 			Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 		return
+	if event.is_action_pressed(&"activate"):
+		_activate()
+		return
 	if event.is_action_pressed(&"interact"):
 		_interact_down = true
-		if _seat != null:
-			stand_up()
-		else:
+		if _seat == null:
 			_try_grab()
 	elif event.is_action_released(&"interact"):
 		_interact_down = false
@@ -133,8 +136,16 @@ func _simulate(delta: float) -> void:
 	if input == Vector2.ZERO and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
 		input = Input.get_vector(&"move_left", &"move_right", &"move_forward", &"move_back")
 	if _seat != null:
-		# Seated: WASD flies the sub; the body stays in the chair.
-		_seat.drive(input, delta)
+		# Seated: the helm. W/S throttle, A/D rudder, R/F planes, and in
+		# single-player mode Numpad 8/2 blow and flood.
+		var planes: float = 0.0
+		var ballast: float = 0.0
+		if Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
+			planes = Input.get_axis(&"pilot_planes_rise", &"pilot_planes_dive")
+			ballast = Input.get_axis(&"pilot_flood", &"pilot_blow")
+		planes += bot_planes
+		ballast += bot_ballast
+		_seat.drive(-input.y, input.x, clampf(planes, -1.0, 1.0), clampf(ballast, -1.0, 1.0), delta)
 		position = _seat.seat_transform().origin
 		velocity = Vector3.ZERO
 		return
@@ -266,19 +277,28 @@ func worn() -> Wearable:
 	return _worn
 
 
-func _try_grab() -> void:
+## E: take or leave a station (pilot seat, sonar headset).
+func _activate() -> void:
+	if _seat != null:
+		stand_up()
+		return
 	var node: Interactable = aim_target()
-	if node == null:
-		return
 	if node is PilotSeat:
+		_release_held()
 		sit_in(node as PilotSeat)
-		return
-	if node is Wearable:
+	elif node is Wearable:
 		if _worn == node:
 			take_off()
 		else:
 			put_on(node as Wearable)
-		return
+	elif _worn != null:
+		take_off()
+
+
+func _try_grab() -> void:
+	var node: Interactable = aim_target()
+	if node == null or node is PilotSeat or node is Wearable:
+		return  # Stations are taken with E, not grabbed.
 	_held = node
 	_held.begin_interaction()
 

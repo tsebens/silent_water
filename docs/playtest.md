@@ -44,10 +44,10 @@ A dive ends when you surface after the scan (success) or when it reaches you (lo
 
 | Station | Where | What you do |
 | --- | --- | --- |
-| **Pilot** | Bow | **Cabin lights** lever on the starboard wall dims the cabin, so you can see out. Click the seat to sit. **A/D** rudder, **W/S** dive planes (W noses down). The planes only work with water moving over them. Gauges: depth, heading, pitch. You can't work other stations while seated, so call your orders out. |
-| **Engineering** | Aft, starboard | The **engine order telegraph**: drag up for ahead, down for astern. It snaps to the nearest order. The engine takes a few seconds to respond. |
+| **Pilot** | Bow | **Cabin lights** lever on the starboard wall dims the cabin, so you can see out. Press **E** at the seat to take the helm (E again to stand). **W/S** throttle (it stays where you leave it), **A/D** rudder, **R/F** dive planes (F noses down). The planes and rudder only work with water moving over them. Gauges: depth, heading, pitch, speed. You can't work other stations while seated, so call your orders out. |
+| **Engineering** | Aft, starboard | Engine gauge. The pilot now sets speed; engineering's future job is engine upkeep. |
 | **Ballast** | Midships, port | **FLOOD** valve (quiet) makes the sub heavier. **BLOW** valve (very loud, uses limited HP air) makes it lighter. Turn the handwheels by circling the mouse. Gauges: tank, HP air. |
-| **Sonar** | Midships, starboard | Click the **headset** to put it on (it comes off if you walk away). Circle the mouse on the **hydrophone wheel** to turn the listening bearing; the dial shows where you're listening. Only you hear the hydrophone, and you must say what you hear out loud. |
+| **Sonar** | Midships, starboard | Press **E** at the **headset** to put it on (it comes off if you walk away). Circle the mouse on the **hydrophone wheel** to turn the listening bearing; the dial shows where you're listening. Only you hear the hydrophone, and you must say what you hear out loud. |
 | **Bilge** | Aft, port | **Pump** switch: removes leak water, but it's loud. |
 | **Scanner** | Forward, port | **Scanner** switch: within ~30 m of the array, nearly stopped, it fills the SCAN gauge in ~25 s. It's **loud** the whole time it's on. |
 
@@ -61,8 +61,10 @@ A dive ends when you surface after the scan (success) or when it reaches you (lo
 | --- | --- |
 | Mouse | Look. The dot at screen centre lights up over anything usable and says what it is and how to use it. |
 | Click (hold) on a control | Grab it; move the mouse to work it. The view holds still while the button is down. Ease it for quiet, slam it for a clank. |
-| Click | Sit or stand (pilot seat), put on or take off (sonar headset) |
-| WASD | Walk, or fly the sub when seated |
+| E | Take or leave a station: the helm, the sonar headset |
+| WASD | Walk; at the helm, W/S throttle and A/D rudder |
+| R / F | At the helm: dive planes (R rises, F dives) |
+| Numpad 8 / 2 | At the helm in single-player mode: blow / flood while held |
 | Shift | Sneak (quieter footsteps) |
 | Esc | Release the mouse and let go of everything |
 
@@ -104,6 +106,7 @@ Arousal fades about 30 seconds after you go quiet. Patrolling lasts a minute or 
 | Key | What it does |
 | --- | --- |
 | F1 | Developer overlay: console (engine output and game events, including the host's on clients), 3D minimap (sub green, apex red, array yellow), and live sub, noise, apex and dive stats. Launch with `-- --dev-overlay` to start with it on. |
+| F5 | Single-player mode: the helm also runs the ballast (Numpad 8 blow, Numpad 2 flood). Start with `-- --solo`. |
 | F4 | Switch the apex off or on for everyone (the host decides). While it's off, it's gone: no body, no sound, no hearing, no contact. Start the host with `-- --no-apex` to dive without it from the start. |
 | F3 | Simulate normal speech on your mic |
 | Shift+F3 | Simulate a shout |

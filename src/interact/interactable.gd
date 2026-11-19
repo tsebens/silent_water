@@ -92,18 +92,19 @@ func drag(relative: Vector2) -> void:
 
 
 ## Moves a control the local player holds straight to [param target]. Used by
-## controls driven by keys rather than mouse drags.
-func drive_to(target: float) -> void:
+## controls driven by keys rather than mouse drags. [param silent]: actuated
+## electrically, so moving it makes no handling noise.
+func drive_to(target: float, silent: bool = false) -> void:
 	if not _local_grabbing:
 		return
 	var clamped: float = state.clamp_value(target)
 	if is_equal_approx(clamped, state.value):
 		return
-	_set_local(clamped)
+	_set_local(clamped, silent)
 	if not multiplayer.is_server():
-		_rpc_request.rpc_id(1, clamped)
+		_rpc_request.rpc_id(1, clamped, silent)
 	else:
-		_host_apply(Net.local_id(), clamped)
+		_host_apply(Net.local_id(), clamped, silent)
 
 
 func end_interaction() -> void:
@@ -176,9 +177,9 @@ func _rpc_release(final_value: float) -> void:
 
 
 @rpc("any_peer", "unreliable_ordered")
-func _rpc_request(v: float) -> void:
+func _rpc_request(v: float, silent: bool) -> void:
 	if multiplayer.is_server():
-		_host_apply(_sender(), v)
+		_host_apply(_sender(), v, silent)
 
 
 @rpc("authority", "call_remote", "unreliable_ordered")
@@ -202,8 +203,12 @@ func _rpc_holder(peer_id: int) -> void:
 	holder_changed.emit(peer_id)
 
 
-func _host_apply(sender: int, v: float) -> void:
-	if not state.request(sender, v):
+func _host_apply(sender: int, v: float, silent: bool = false) -> void:
+	if state.holder != sender:
+		return
+	if silent:
+		state.set_value_silent(v)
+	elif not state.request(sender, v):
 		return
 	_after_change()
 	_rpc_value_stream.rpc(state.value)
@@ -219,8 +224,11 @@ func _receive_value(v: float, authoritative: bool) -> void:
 	_set_local(v)
 
 
-func _set_local(v: float) -> void:
-	state.set_value(v)
+func _set_local(v: float, silent: bool = false) -> void:
+	if silent:
+		state.set_value_silent(v)
+	else:
+		state.set_value(v)
 	_after_change()
 
 

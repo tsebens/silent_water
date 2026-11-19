@@ -11,6 +11,12 @@ const ACTIONS: Dictionary = {
 	&"release_mouse": [KEY_ESCAPE],
 	&"dev_overlay": [KEY_F1],
 	&"dev_toggle_apex": [KEY_F4],
+	&"dev_single_player": [KEY_F5],
+	&"activate": [KEY_E],
+	&"pilot_planes_rise": [KEY_R],
+	&"pilot_planes_dive": [KEY_F],
+	&"pilot_blow": [KEY_KP_8],
+	&"pilot_flood": [KEY_KP_2],
 }
 const MOUSE_ACTIONS: Dictionary = {
 	&"interact": MOUSE_BUTTON_LEFT,
