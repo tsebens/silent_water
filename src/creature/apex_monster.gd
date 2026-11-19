@@ -57,6 +57,10 @@ var sync_state: int = SuspicionModel.State.UNAWARE
 var speed: float = 0.0
 var sync_position: Vector3 = Vector3.ZERO
 var sync_rotation: Quaternion = Quaternion.IDENTITY
+# Brain readouts for the developer overlay.
+var sync_suspicion: float = 0.0
+var sync_snr: float = -100.0
+var sync_alertness: float = 0.0
 
 var brain: SuspicionModel
 ## Host can disable the brain (tests drive it directly).
@@ -87,6 +91,9 @@ func reset_to_spawn() -> void:
 	basis = Basis.looking_at(Vector3(-1, 0, 1).normalized())
 	sync_position = position
 	sync_rotation = basis.get_rotation_quaternion()
+	sync_suspicion = brain.suspicion
+	sync_snr = maxf(brain.last_snr_db, -100.0)
+	sync_alertness = brain.alertness
 	speed = 0.0
 	brain.reset()
 	sync_state = brain.state
@@ -142,6 +149,9 @@ func _physics_process(delta: float) -> void:
 	_check_sub(delta, sub_pos)
 	sync_position = position
 	sync_rotation = basis.get_rotation_quaternion()
+	sync_suspicion = brain.suspicion
+	sync_snr = maxf(brain.last_snr_db, -100.0)
+	sync_alertness = brain.alertness
 
 
 # --- Sound -------------------------------------------------------------------

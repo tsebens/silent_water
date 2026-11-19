@@ -21,6 +21,8 @@ const REMOTE_SMOOTHING: float = 15.0
 ## Footstep noise at walking speed (~75 dB); scales with speed cubed, so
 ## sneaking (~1.1 m/s) is ~11 dB quieter.
 const FOOTSTEP_INTENSITY: float = 3e-3
+## Faster than anyone can walk: movement this quick is a teleport.
+const TELEPORT_SPEED: float = 8.0
 const LAYER_INTERACTABLE: int = 1 << 1
 ## Deck tilt past which boots lose grip and the crew slides.
 const SLIDE_ANGLE_DEG: float = 30.0
@@ -46,6 +48,8 @@ var bot_move: Vector2 = Vector2.ZERO
 
 var _sub_frame: SubFrame
 var _held: Interactable = null
+## True while the interact button is down: the view holds still.
+var _interact_down: bool = false
 var _seat: PilotSeat = null
 var _worn: Wearable = null
 var _stride: float = 0.0
@@ -81,6 +85,7 @@ func _unhandled_input(event: InputEvent) -> void:
 	if not is_multiplayer_authority():
 		return
 	if event.is_action_pressed(&"release_mouse"):
+		_interact_down = false
 		_release_held()
 		stand_up()
 		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
@@ -90,17 +95,19 @@ func _unhandled_input(event: InputEvent) -> void:
 			Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 		return
 	if event.is_action_pressed(&"interact"):
+		_interact_down = true
 		if _seat != null:
 			stand_up()
 		else:
 			_try_grab()
 	elif event.is_action_released(&"interact"):
+		_interact_down = false
 		_release_held()
 	var motion: InputEventMouseMotion = event as InputEventMouseMotion
 	if motion != null:
 		if _held != null:
 			_held.drag(motion.relative)
-		else:
+		elif not _interact_down:
 			_look(motion.relative)
 
 
@@ -175,6 +182,8 @@ func teleport(spot: Vector3) -> void:
 	position = spot
 	velocity = Vector3.ZERO
 	sync_position = spot
+	_last_position = spot
+	_speed = 0.0
 
 
 @rpc("any_peer", "call_local", "reliable")
@@ -204,6 +213,10 @@ func _track_speed(delta: float) -> void:
 	var moved: Vector3 = position - _last_position
 	_last_position = position
 	var instant: float = Vector2(moved.x, moved.z).length() / delta
+	if instant > TELEPORT_SPEED:
+		# A teleport (respawn, debug placement), not a footstep.
+		_speed = 0.0
+		return
 	_speed = lerpf(_speed, instant, 1.0 - exp(-8.0 * delta))
 	# Remote players get footstep events from their replicated movement, so
 	# everyone hears everyone's steps.
@@ -229,13 +242,32 @@ func _look(relative: Vector2) -> void:
 	)
 
 
-func _try_grab() -> void:
+## The control under the aiming point, or null.
+func aim_target() -> Interactable:
 	_ray.force_raycast_update()
 	if not _ray.is_colliding():
-		return
+		return null
 	var node: Node = _ray.get_collider() as Node
 	while node != null and not (node is Interactable):
 		node = node.get_parent()
+	return node as Interactable
+
+
+## The control this player is working right now (held, worn or sat in).
+func held_control() -> Interactable:
+	return _held
+
+
+func seat() -> PilotSeat:
+	return _seat
+
+
+func worn() -> Wearable:
+	return _worn
+
+
+func _try_grab() -> void:
+	var node: Interactable = aim_target()
 	if node == null:
 		return
 	if node is PilotSeat:
@@ -247,7 +279,7 @@ func _try_grab() -> void:
 		else:
 			put_on(node as Wearable)
 		return
-	_held = node as Interactable
+	_held = node
 	_held.begin_interaction()
 
 

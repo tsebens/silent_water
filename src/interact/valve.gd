@@ -40,3 +40,7 @@ func _apply_visual(v: float) -> void:
 		return
 	var t: float = inverse_lerp(min_value, max_value, v)
 	wheel.rotation.z = -t * turns_full_range * TAU
+
+
+func interaction_hint() -> String:
+	return "hold click, circle the mouse (clockwise opens)"

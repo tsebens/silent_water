@@ -41,3 +41,7 @@ func _apply_visual(v: float) -> void:
 	super._apply_visual(v)
 	if order_label != null:
 		order_label.text = order_name(roundi(v))
+
+
+func interaction_hint() -> String:
+	return "hold click, drag up for ahead, down for astern"

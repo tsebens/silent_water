@@ -35,3 +35,7 @@ func drive_input(direction: float, delta: float) -> void:
 func _apply_visual(v: float) -> void:
 	if indicator != null:
 		indicator.transform.basis = Basis(indicator_axis.normalized(), deg_to_rad(indicator_max_deg) * v)
+
+
+func interaction_hint() -> String:
+	return "flown from the pilot seat"

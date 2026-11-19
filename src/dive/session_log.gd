@@ -10,6 +10,9 @@ extends Node
 
 const LOUD_DB: float = 85.0
 const LOUD_COOLDOWN_SEC: float = 5.0
+## Noise changes are logged in steps of this many dB (developer console).
+const NOISE_STEP_DB: float = 5.0
+const NOISE_LOG_MIN_GAP_SEC: float = 1.0
 
 @export var controller: SubController
 @export var apex: ApexMonster
@@ -23,6 +26,9 @@ var _file: FileAccess
 var _t: float = 0.0
 var _loud_cooldown: float = 0.0
 var _path: String = ""
+var _noise_band: int = -999
+var _noise_gap: float = 0.0
+var _apex_hears: bool = false
 
 
 func _ready() -> void:
@@ -65,6 +71,7 @@ func write(line: String) -> void:
 		return
 	var entry: String = "[%s] %s" % [_clock(_t), line]
 	print("[log] " + entry)
+	DevLog.broadcast_event(entry)
 	if _file != null:
 		_file.store_line(entry)
 		_file.flush()
@@ -78,6 +85,38 @@ func _physics_process(delta: float) -> void:
 	if Acoustics.sub_db() >= LOUD_DB and _loud_cooldown <= 0.0:
 		_loud_cooldown = LOUD_COOLDOWN_SEC
 		write("LOUD  %.0f dB: %s" % [Acoustics.sub_db(), _top_sources_text()])
+	_log_noise_steps(delta)
+	_log_apex_hearing()
+
+
+## Developer console: a line whenever the sub's noise crosses a 5 dB step.
+func _log_noise_steps(delta: float) -> void:
+	_noise_gap = maxf(_noise_gap - delta, 0.0)
+	var band: int = int(floor(Acoustics.sub_db() / NOISE_STEP_DB))
+	if band == _noise_band or _noise_gap > 0.0:
+		return
+	var rising: bool = band > _noise_band
+	_noise_band = band
+	_noise_gap = NOISE_LOG_MIN_GAP_SEC
+	var masked: String = "masked" if Acoustics.is_masked() else "EXPOSED"
+	if Acoustics.sub_intensity <= 0.0:
+		write("NOISE silent")
+		return
+	write("NOISE %s %.0f dB (ocean %.0f, %s): %s" % [
+		"up to" if rising else "down to", Acoustics.sub_db(), Acoustics.ambient_db(), masked, _top_sources_text()])
+
+
+## Developer console: when the apex starts and stops hearing the sub.
+func _log_apex_hearing() -> void:
+	var hears: bool = apex.brain.last_snr_db > 0.0
+	if hears == _apex_hears:
+		return
+	_apex_hears = hears
+	if hears:
+		write("APEX HEARS US  %+.0f dB SNR at %.0f m. Loudest aboard: %s" % [
+			apex.brain.last_snr_db, apex.position.distance_to(controller.model.position), _top_sources_text()])
+	else:
+		write("APEX LOST US  (below its noise floor)")
 
 
 func _on_apex_state(new_state: int) -> void:

@@ -59,6 +59,16 @@ func get_noise_intensity() -> float:
 	return noise_profile.intensity_for_rate(state.normalized_rate)
 
 
+## Name shown at the aiming point.
+func display_name() -> String:
+	return label.to_upper() if label != "" else String(name).to_upper()
+
+
+## How to use it, shown under the name. Override per control.
+func interaction_hint() -> String:
+	return "hold click and move the mouse"
+
+
 ## Noise system hook (polled on the host).
 func noise_intensity() -> float:
 	return get_noise_intensity()

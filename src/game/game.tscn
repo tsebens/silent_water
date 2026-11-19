@@ -13,6 +13,9 @@
 [ext_resource type="Script" path="res://src/objective/scan_target.gd" id="13"]
 [ext_resource type="Script" path="res://src/objective/scan_objective.gd" id="14"]
 [ext_resource type="Script" path="res://src/dive/session_log.gd" id="15"]
+[ext_resource type="Script" path="res://src/ui/reticle.gd" id="16"]
+[ext_resource type="Script" path="res://src/sub/cabin_lights.gd" id="17"]
+[ext_resource type="Script" path="res://src/debug/dev_overlay.gd" id="18"]
 [ext_resource type="PackedScene" path="res://src/sub/interior.tscn" id="4"]
 [ext_resource type="PackedScene" path="res://src/site/canyon_site.tscn" id="5"]
 
@@ -49,6 +52,15 @@ properties/6/replication_mode = 1
 properties/7/path = NodePath(".:bilge_fraction")
 properties/7/spawn = true
 properties/7/replication_mode = 1
+properties/8/path = NodePath(".:surfaced")
+properties/8/spawn = true
+properties/8/replication_mode = 1
+properties/9/path = NodePath(".:buoyancy")
+properties/9/spawn = true
+properties/9/replication_mode = 1
+properties/10/path = NodePath(".:vertical_speed")
+properties/10/spawn = true
+properties/10/replication_mode = 1
 
 [sub_resource type="SceneReplicationConfig" id="scan_repl"]
 properties/0/path = NodePath(".:progress")
@@ -170,6 +182,20 @@ apex = NodePath("../World/Apex")
 leaks = NodePath("../LeakSystem")
 scan = NodePath("../ScanObjective")
 director = NodePath("../DiveDirector")
+
+[node name="CabinLights" type="Node" parent="." node_paths=PackedStringArray("lights_root", "dimmer", "excluded")]
+script = ExtResource("17")
+lights_root = NodePath("../Interior/Lights")
+dimmer = NodePath("../Interior/Stations/Pilot/Dimmer")
+excluded = [NodePath("../Interior/Lights/Headlight")]
+
+[node name="Reticle" type="CanvasLayer" parent="." node_paths=PackedStringArray("game")]
+script = ExtResource("16")
+game = NodePath("..")
+
+[node name="DevOverlay" type="CanvasLayer" parent="." node_paths=PackedStringArray("game")]
+script = ExtResource("18")
+game = NodePath("..")
 
 [node name="Environment" type="WorldEnvironment" parent="."]
 environment = SubResource("env")

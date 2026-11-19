@@ -32,3 +32,7 @@ func drive(input: Vector2, delta: float) -> void:
 
 func seat_transform() -> Transform3D:
 	return sit_point.global_transform if sit_point != null else global_transform
+
+
+func interaction_hint() -> String:
+	return "click to sit · WASD flies · click again to stand"

@@ -50,6 +50,9 @@ var tank_fraction: float = 0.5
 var air_fraction: float = 1.0
 var bilge_fraction: float = 0.0
 var surfaced: bool = false
+## Net vertical acceleration from buoyancy (m/s²): + rises, − sinks.
+var buoyancy: float = 0.0
+var vertical_speed: float = 0.0
 
 var model: SubPhysicsModel = SubPhysicsModel.new()
 
@@ -151,6 +154,8 @@ func _resolve_collision(before: Vector3) -> void:
 func _update_readouts() -> void:
 	depth = model.depth()
 	surfaced = model.is_surfaced()
+	buoyancy = model.buoyancy_accel()
+	vertical_speed = model.velocity.y
 	speed = model.forward_speed()
 	heading_deg = fposmod(-rad_to_deg(model.angles.y), 360.0)
 	pitch_deg = rad_to_deg(model.angles.x)

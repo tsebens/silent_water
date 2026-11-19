@@ -33,7 +33,7 @@ swing_deg = 120.0
 sensitivity = 0.004
 pivot = NodePath("Pivot")
 noise_profile = SubResource("noise")
-label = "telegraph"
+label = "engine telegraph"
 
 [node name="Drum" type="MeshInstance3D" parent="."]
 transform = Transform3D(-4.37114e-08, -1, 0, 1, -4.37114e-08, 0, 0, 0, 1, 0, 0, 0)

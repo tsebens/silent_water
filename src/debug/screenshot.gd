@@ -56,6 +56,7 @@ func _run() -> void:
 		apex.speed_unaware = 0.0
 		apex.position = _game.sub_frame.sub_transform * _apex_rel
 		apex.basis = Basis.looking_at(Vector3(1, 0, 0.3).normalized())
+	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 	await get_tree().create_timer(_delay).timeout
 	await RenderingServer.frame_post_draw
 	var img: Image = get_viewport().get_texture().get_image()

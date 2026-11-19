@@ -44,7 +44,7 @@ A dive ends when you surface after the scan (success) or when it reaches you (lo
 
 | Station | Where | What you do |
 | --- | --- | --- |
-| **Pilot** | Bow | Click the seat to sit. **A/D** rudder, **W/S** dive planes (W noses down). The planes only work with water moving over them. Gauges: depth, heading, pitch. You can't work other stations while seated, so call your orders out. |
+| **Pilot** | Bow | **Cabin lights** lever on the starboard wall dims the cabin, so you can see out. Click the seat to sit. **A/D** rudder, **W/S** dive planes (W noses down). The planes only work with water moving over them. Gauges: depth, heading, pitch. You can't work other stations while seated, so call your orders out. |
 | **Engineering** | Aft, starboard | The **engine order telegraph**: drag up for ahead, down for astern. It snaps to the nearest order. The engine takes a few seconds to respond. |
 | **Ballast** | Midships, port | **FLOOD** valve (quiet) makes the sub heavier. **BLOW** valve (very loud, uses limited HP air) makes it lighter. Turn the handwheels by circling the mouse. Gauges: tank, HP air. |
 | **Sonar** | Midships, starboard | Click the **headset** to put it on (it comes off if you walk away). Circle the mouse on the **hydrophone wheel** to turn the listening bearing; the dial shows where you're listening. Only you hear the hydrophone, and you must say what you hear out loud. |
@@ -59,8 +59,8 @@ A dive ends when you surface after the scan (success) or when it reaches you (lo
 
 | Input | Action |
 | --- | --- |
-| Mouse | Look |
-| Click (hold) on a control | Grab it; move the mouse to work it. Ease it for quiet, slam it for a clank. |
+| Mouse | Look. The dot at screen centre lights up over anything usable and says what it is and how to use it. |
+| Click (hold) on a control | Grab it; move the mouse to work it. The view holds still while the button is down. Ease it for quiet, slam it for a clank. |
 | Click | Sit or stand (pilot seat), put on or take off (sonar headset) |
 | WASD | Walk, or fly the sub when seated |
 | Shift | Sneak (quieter footsteps) |
@@ -103,6 +103,7 @@ Arousal fades about 30 seconds after you go quiet. Patrolling lasts a minute or 
 
 | Key | What it does |
 | --- | --- |
+| F1 | Developer overlay: console (engine output and game events, including the host's on clients), 3D minimap (sub green, apex red, array yellow), and live sub, noise, apex and dive stats. Launch with `-- --dev-overlay` to start with it on. |
 | F3 | Simulate normal speech on your mic |
 | Shift+F3 | Simulate a shout |
 

@@ -25,3 +25,7 @@ func _drag_to_value(current: float, relative: Vector2) -> float:
 func _apply_visual(v: float) -> void:
 	if wheel != null:
 		wheel.rotation.z = -deg_to_rad(v / degrees_per_turn * 360.0)
+
+
+func interaction_hint() -> String:
+	return "hold click, circle the mouse to train the hydrophone"

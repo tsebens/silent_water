@@ -84,3 +84,11 @@ func test_player_slides_on_steep_deck() -> void:
 	var start: Vector3 = me.position
 	await _physics_frames(60)
 	expect(me.position.z - start.z > 0.3, "player should slide aft on a 40° deck")
+
+
+func test_teleport_makes_no_footstep_noise() -> void:
+	await _physics_frames(10)
+	var me: Player = game.local_player()
+	me.position = Vector3(0, 0.1, 4.0)  # A jump, like a respawn.
+	await _physics_frames(3)
+	expect_eq(me.noise_intensity(), 0.0, "teleporting isn't walking")

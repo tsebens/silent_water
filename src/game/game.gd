@@ -18,6 +18,7 @@ var _active: bool = false
 
 func _ready() -> void:
 	AudioBuses.ensure()
+	InputSetup.ensure_actions()
 	sub_frame.add_to_group(&"sub_frame")
 	Net.peer_joined.connect(_on_peer_joined)
 	Net.peer_left.connect(_on_peer_left)

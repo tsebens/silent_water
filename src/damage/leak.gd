@@ -91,3 +91,7 @@ func _physics_process(delta: float) -> void:
 ## Holding a patch in place is quiet; the leak itself is counted by LeakSystem.
 func noise_intensity() -> float:
 	return 0.0
+
+
+func interaction_hint() -> String:
+	return "hold click and keep the mouse still to patch"

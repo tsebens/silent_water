@@ -33,6 +33,10 @@ var sub_intensity: float = 0.0
 ## Ocean background at the sub (linear intensity).
 var ambient_intensity: float = NoiseLevel.from_db(OCEAN_BASE_DB)
 
+## Loudest sources as text, e.g. "engine 78 dB, voice:2 70 dB". Built on the
+## host, replicated with the levels (developer overlay).
+var top_text: String = ""
+
 ## What made up the last sum (host only): label -> intensity. Labels are the
 ## node name for sources, "voice:<peer>" for voices, "impact" for bursts.
 var breakdown: Dictionary = {}
@@ -143,12 +147,13 @@ func _physics_process(delta: float) -> void:
 		total += v
 	sub_intensity = total
 	ambient_intensity = _ambient_at_sub()
+	top_text = _top_text()
 	levels_changed.emit(sub_db(), ambient_db())
 	if Net.is_online():
 		_broadcast_accum += delta
 		if _broadcast_accum >= 1.0 / BROADCAST_HZ:
 			_broadcast_accum = 0.0
-			_rpc_levels.rpc(sub_intensity, ambient_intensity)
+			_rpc_levels.rpc(sub_intensity, ambient_intensity, top_text)
 
 
 ## The loudest contributors right now, loudest first: [[label, dB], ...].
@@ -158,6 +163,13 @@ func top_sources(count: int = 3) -> Array:
 		items.append([label, NoiseLevel.to_db(float(breakdown[label]))])
 	items.sort_custom(func(a: Array, b: Array) -> bool: return float(a[1]) > float(b[1]))
 	return items.slice(0, count)
+
+
+func _top_text() -> String:
+	var parts: PackedStringArray = PackedStringArray()
+	for item: Array in top_sources(3):
+		parts.append("%s %.0f" % [String(item[0]), float(item[1])])
+	return ", ".join(parts)
 
 
 func _label_for(node: Node) -> String:
@@ -207,9 +219,10 @@ func _rpc_voice(intensity: float) -> void:
 
 
 @rpc("authority", "call_remote", "unreliable_ordered")
-func _rpc_levels(sub: float, ambient: float) -> void:
+func _rpc_levels(sub: float, ambient: float, top: String) -> void:
 	sub_intensity = sub
 	ambient_intensity = ambient
+	top_text = top
 	levels_changed.emit(sub_db(), ambient_db())
 
 

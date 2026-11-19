@@ -23,3 +23,7 @@ func end_interaction() -> void:
 
 func _on_lost_hold() -> void:
 	worn_changed.emit(false)
+
+
+func interaction_hint() -> String:
+	return "click to put on · click again to take off"
