@@ -73,21 +73,21 @@ There are more jobs than people, so the crew keeps moving between stations, and 
 
 | Load | Station | What it involves |
 | --- | --- | --- |
-| Constant | Pilot | Steering and diving planes; rarely leaves the seat |
+| Constant | Pilot | Steering, diving planes and engine speed (throttle); rarely leaves the seat |
 | Dominant | Sonar | Hands-on listening and pinging; the only person on the hydrophone |
-| Midway | Engineering | Sets engine speed from the pilot's calls on an engine order telegraph |
+| Midway | Engineering | Engine upkeep and power; no longer sets speed (decided in M7) |
 | Rounds | Ballast | Valves that flood and blow the tanks for big depth changes |
 | Rounds | Life support | Scrubber canisters, fans, O2 |
 | Rounds | Bilge and leaks | Pumps and patching |
 | Rounds | Countermeasures | Decoys and noisemakers; replaces the original concept's weapons station |
 
-The original concept also had a charts station. It may merge with sonar or hold the terrain display.
+The original concept also had a charts station. It became the **map table** (M7): a holographic terrain display midships that anyone can lean over to pan, zoom and drop pins. The pilot has a smaller heading-up hologram of the same shared chart.
 
 ### Controls
 
 - **Physical by default:** valves, levers, switches and sliders worked with the mouse.
-- **Keys only for continuous fine control** that a mouse would make clunky. That covers the pilot's steering and diving planes.
-- **Discrete, occasional actions stay physical**, even ones the pilot needs, like engine speed and ballast. Big moves take a second person.
+- **Keys only for continuous fine control** that a mouse would make clunky. That covers the pilot's steering, diving planes and throttle.
+- **Discrete, occasional actions stay physical**, even ones the pilot needs, like ballast. Big moves take a second person. (Engine speed moved to the pilot's throttle in M7: an order telegraph made driving feel sluggish. Side thrusters let the sub turn in place, at a noise cost.)
 - **Speed of movement sets noise.** Easing a lever is quiet; slamming it clanks.
 - **No HUD by default.** In-world screens the camera zooms into, like Helldivers 2's map table, are fine where a physical version is impractical. Prefer handling cargo physically over grid inventories.
 
@@ -256,7 +256,12 @@ Low-poly models with crisp, clean rendering. No grain, static, dither or fuzzy f
 - **Marine snow** drifting through the lights reads instantly as deep ocean.
 - **Strong silhouettes.** With little visible detail, creatures and structures are recognized by shape, so shape matters more than texture.
 - **Light is gameplay.** The difference between white and red light should be obvious at a glance.
-- **Infrastructure looks overbuilt:** rivets, heavy hatches, clear labels, backup systems, maintenance logs. Industrial, never sleek.
+- **Infrastructure looks overbuilt:** rivets, heavy hatches, clear labels, backup systems, maintenance logs. Industrial, never sleek. The feel (industrial, utilitarian, competent) matters more than any specific detail.
+- **Brutalist architecture:** Raindrop builds in smooth, angular concrete and steel. Its stations have massive stacked slabs, cantilevered tiers, splayed struts, repeated ribs, and deep-set ribbon windows. Hard angular structures stand against soft, sloping organic terrain.
+- **Soft neon on the architecture:** orange, blue and green light in lines, slots and windows, fading quickly into the dark. It sets the infrastructure apart from nature and shows how vast and isolating the ocean is. The sub's working lights stay white or red.
+- **The sub is modern and utilitarian (M7).** A near-future research sub: matte, muted surfaces, backlit gauges, cool neon strips tracing the ribs, holographic map displays, a glass dome over the pilot. Cabin lights dim so the crew can see out. The model is built in Onshape and converted with `tools/convert_sub.py`.
+- **Terrain reads as real seabed.** Dive sites are continuous heightfields (a sculpted profile plus noise), not stacked boxes.
+- Full detail and references are in [Art direction](docs/art_direction.md).
 
 ## Technical architecture
 
@@ -311,7 +316,7 @@ The prototype answers one question: is it tense and fun to coordinate a sub when
 - [x] Two to four players over local ENet networking
 - [x] Walking inside the sub in its own frame of reference
 - [x] Pilot steering and diving planes on WASD
-- [x] Engine order telegraph at the engineering station
+- [x] Engine order telegraph at the engineering station (replaced in M7 by a throttle at the helm)
 - [x] Ballast valves that flood and blow the tanks
 - [x] One recurring leak with a field patch
 - [x] The noise system and two-needle gauge, with each player's mic loudness feeding the noise level
@@ -341,7 +346,7 @@ Steam integration and in-game voice, expeditions, cargo, divers, facilities, upg
 - Whether recoveries get a hard cap, or the sub's condition alone ends an expedition
 - Whether the thermocline and rhythmic-detection mechanics make the cut
 - The field patch mini-game
-- Whether charts stays its own station
+- ~~Whether charts stays its own station~~ Decided in M7: the map table is a shared holographic chart anyone can use; the pilot has a heading-up copy.
 - Whether to lock out crews of two. The lean is no lock, but no design effort goes toward two-person crews: target four, keep three viable.
 - Distinct sub types and hardware variants
 
@@ -352,7 +357,7 @@ Steam integration and in-game voice, expeditions, cargo, divers, facilities, upg
 - Sonar becoming a chore
 - Too many creatures cluttering the tension
 - Whether every loss feels earned rather than random
-- Whether dives actually land near 30 minutes. A scripted autopilot with no monster finishes the prototype dive in about 8 minutes (4 sinking to 130 m, 1 crossing, 25 s scanning, 2 rising). A real crew hiding from the apex will take longer, but the prototype site is likely well short of 30.
+- Whether dives actually land near 30 minutes. A scripted autopilot with no monster finishes the prototype dive in about 7.5 minutes (it was about 8 before M7 doubled the sub's responsiveness). A real crew hiding from the apex will take longer, but the prototype site is likely well short of 30.
 
 ## Sources
 

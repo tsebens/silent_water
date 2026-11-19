@@ -29,18 +29,21 @@ func _physics_frames(n: int) -> void:
 
 func test_sinking_sub_strikes_and_rests_on_shelf() -> void:
 	# Over the middle of shelf 1, clear of its boulders' worst.
-	controller.model.position = Vector3(-30, CanyonSite.SHELF1_TOP + 10.0, -60)
+	controller.model.position = Vector3(-42, CanyonSite.SHELF1_TOP + 10.0, -100)
 	controller.model.tank_water_t = controller.model.tank_capacity_t
 	await _physics_frames(60 * 20)
 	expect(strikes.size() > 0, "expected a hull strike on the shelf")
 	# The hull bottom is 0.4 m below the origin.
-	expect(controller.model.position.y > CanyonSite.SHELF1_TOP - 0.5, "sub sank through the shelf to %f" % controller.model.position.y)
+	var site: CanyonSite = game.get_node("World/Site") as CanyonSite
+	var ground: float = site.height_at(-42, -100)
+	# The hull's lowest point is 1 m below the sub's origin.
+	expect(controller.model.position.y > ground - 0.5, "sub sank through the shelf to %f (ground %f)" % [controller.model.position.y, ground])
 	expect(absf(controller.model.velocity.y) < 0.1, "sub should come to rest, vy=%f" % controller.model.velocity.y)
 
 
-func test_telegraph_drives_engine() -> void:
-	var telegraph: Telegraph = game.get_node("Interior/Stations/Engineering/Telegraph") as Telegraph
-	telegraph.host_set_value(3.0)
+func test_throttle_drives_engine() -> void:
+	var throttle: SpringAxis = game.get_node("Interior/Stations/Pilot/Throttle") as SpringAxis
+	throttle.host_set_value(1.0)
 	await _physics_frames(60 * 3)
 	expect(controller.engine_output > 0.4, "engine output %f" % controller.engine_output)
 	expect(controller.speed > 0.0, "sub should be moving ahead")

@@ -95,3 +95,83 @@ func test_surfacing_without_scan_does_not_complete() -> void:
 	controller.model.position = Vector3(0, -0.2, 30)
 	await _frames(60 * 5)
 	expect_eq(director.phase, DiveDirector.Phase.DIVING)
+
+
+func test_cabin_dimmer_dims_cabin_but_not_headlight() -> void:
+	var cabin: CabinLights = game.get_node("CabinLights") as CabinLights
+	var dimmer: Lever = game.get_node("Interior/Stations/Pilot/Dimmer") as Lever
+	var fore: OmniLight3D = game.get_node("Interior/Lights/Fore") as OmniLight3D
+	var head: SpotLight3D = game.get_node("Interior/Lights/Headlight") as SpotLight3D
+	await _frames(2)
+	var bright: float = fore.light_energy
+	var head_before: float = head.light_energy
+	dimmer.host_set_value(0.0)
+	await _frames(2)
+	expect_near(fore.light_energy, bright * CabinLights.MIN_LEVEL, 0.001, "dimmed to near dark")
+	expect_eq(head.light_energy, head_before, "headlight untouched")
+	expect(cabin.cabin_lights().size() == 4, "four cabin lights")
+
+
+func test_dev_overlay_stats_cover_sub_noise_and_apex() -> void:
+	controller.model.position = Vector3(0, -50, -100)
+	controller.model.tank_water_t = controller.model.tank_capacity_t
+	await _frames(30)
+	var text: String = DevOverlay.stats_text(game)
+	for needle: String in ["depth", "speed", "buoyancy NEGATIVE", "sub ", "ocean", "APEX", "distance", "suspicion", "DIVE"]:
+		expect(text.contains(needle), "stats should mention '%s':\n%s" % [needle, text])
+
+
+func test_dev_log_captures_engine_output() -> void:
+	var before: int = DevLog.revision
+	print("dev log probe 7731")
+	await runner.get_tree().process_frame
+	expect(DevLog.revision > before, "a print should reach the developer log")
+	var found: bool = false
+	for entry: Array in DevLog.lines:
+		if String(entry[1]).contains("dev log probe 7731"):
+			found = true
+	expect(found)
+
+
+func test_neon_strips_dim_with_the_cabin_lights() -> void:
+	var neon: NeonStrips = game.get_node("Interior/Lights/Neon") as NeonStrips
+	expect(neon.get_child_count() >= 10, "ribs, frames and edges built (%d)" % neon.get_child_count())
+	var mat: StandardMaterial3D = (neon.get_child(0) as MeshInstance3D).mesh.surface_get_material(0) as StandardMaterial3D
+	var dimmer: Lever = game.get_node("Interior/Stations/Pilot/Dimmer") as Lever
+	await _frames(2)
+	var full: float = mat.emission_energy_multiplier
+	dimmer.host_set_value(0.0)
+	await _frames(2)
+	expect_near(mat.emission_energy_multiplier, full * CabinLights.MIN_LEVEL, 0.001, "strips dim to near dark")
+
+
+func test_single_player_helm_runs_the_ballast() -> void:
+	DevSettings.single_player = true
+	var me: Player = game.local_player()
+	var helm: PilotSeat = game.get_node("Interior/Stations/Pilot/Seat") as PilotSeat
+	var blow: Interactable = game.get_node("Interior/Stations/Ballast/BlowValve") as Interactable
+	var flood: Interactable = game.get_node("Interior/Stations/Ballast/FloodValve") as Interactable
+	me.sit_in(helm)
+	me.bot_ballast = 1.0
+	await _frames(40)
+	expect(blow.get_normalized() > 0.9, "blow key opens the blow valve (%f)" % blow.get_normalized())
+	expect(blow.get_noise_intensity() < 0.001, "and turns it silently")
+	me.bot_ballast = -1.0
+	await _frames(40)
+	expect(flood.get_normalized() > 0.9 and blow.get_normalized() < 0.1, "flood key floods, blow closes")
+	me.bot_ballast = 0.0
+	await _frames(40)
+	expect(flood.get_normalized() < 0.1, "releasing closes it")
+	me.stand_up()
+	DevSettings.single_player = false
+
+
+func test_crew_mode_helm_leaves_the_ballast_alone() -> void:
+	DevSettings.single_player = false
+	var me: Player = game.local_player()
+	me.sit_in(game.get_node("Interior/Stations/Pilot/Seat") as PilotSeat)
+	me.bot_ballast = 1.0
+	await _frames(30)
+	expect_near((game.get_node("Interior/Stations/Ballast/BlowValve") as Interactable).get_normalized(), 0.0, 0.001)
+	me.bot_ballast = 0.0
+	me.stand_up()

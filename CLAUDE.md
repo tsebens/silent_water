@@ -22,6 +22,12 @@ The `github-projects` MCP server in `.mcp.json` provides `projects_list`, `proje
 
 Create issues and sub-issues with the regular GitHub MCP tools (`issue_write` with `parent_issue_number`).
 
+## Roles
+
+Agents with a specific role follow their role doc in addition to this file:
+
+- **Graphic designer and 3D asset modeler:** [`docs/roles/graphic_designer.md`](docs/roles/graphic_designer.md)
+
 ## Tech
 
 - **Engine:** Godot 4.7.2. The cloud environment's setup script installs it as `godot` on `PATH`. Run headless with `godot --headless`.

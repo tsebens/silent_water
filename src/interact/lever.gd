@@ -18,3 +18,7 @@ func _apply_visual(v: float) -> void:
 		return
 	var t: float = inverse_lerp(min_value, max_value, v)
 	pivot.rotation.x = deg_to_rad(lerpf(swing_deg * 0.5, -swing_deg * 0.5, t))
+
+
+func interaction_hint() -> String:
+	return "hold click, drag up or down"

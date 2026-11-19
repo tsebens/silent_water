@@ -24,10 +24,11 @@ var payload_t: float = 0.36
 var tank_capacity_t: float = 20.0
 ## Water in the main ballast tank, 0..tank_capacity_t.
 var tank_water_t: float = 10.0
-## Flood rate with the vent fully open (tonnes/s).
-var flood_rate_t: float = 0.35
+## Flood rate with the vent fully open (tonnes/s). Flood and blow rates were
+## doubled in M7 (#50) so depth changes start twice as fast.
+var flood_rate_t: float = 0.7
 ## Blow rate with the blow valve fully open (tonnes/s).
-var blow_rate_t: float = 0.7
+var blow_rate_t: float = 1.4
 ## High-pressure air, measured in tonnes of water it can still expel.
 var air_capacity_t: float = 60.0
 var air_t: float = 60.0
@@ -41,16 +42,22 @@ var bilge_capacity_t: float = 8.0
 ## Normalized engine output, -1 (full astern) .. 1 (full ahead).
 var engine: float = 0.0
 ## How fast engine output follows the ordered speed (per second).
-var engine_spool_rate: float = 0.2
+var engine_spool_rate: float = 0.4
 ## Forward acceleration at full ahead (m/s²). Astern gives half.
-var thrust_accel: float = 0.15
+## Thrust and fore/aft drag were both doubled in M7 (#50): same top speed,
+## twice as quick to speed up and slow down.
+var thrust_accel: float = 0.3
 
 # --- Hydrodynamics -----------------------------------------------------------
 ## Quadratic drag coefficients in the body frame: x = sideways, y = vertical,
 ## z = fore/aft. Chosen for ~3 m/s top speed and ~1 m/s terminal sink rate.
-var drag: Vector3 = Vector3(0.5, 0.6, 0.0167)
+var drag: Vector3 = Vector3(0.5, 0.6, 0.0333)
 ## Yaw acceleration per unit rudder per m/s of forward speed (rad/s² ).
 var rudder_authority: float = 0.02
+## Yaw acceleration from the side thrusters at full rudder input (rad/s²).
+## They turn the sub even when stopped (~8.6°/s at full, steady state);
+## the rudder adds more once there's way on.
+var thruster_yaw_accel: float = 0.09
 ## Pitch acceleration per unit planes per m/s of forward speed (rad/s²).
 var planes_authority: float = 0.02
 ## Righting (metacentric) stiffness for pitch and roll (1/s²).
@@ -95,8 +102,8 @@ func buoyancy_accel() -> float:
 
 
 ## Hull extent above and below the sub's origin (m).
-const HULL_BOTTOM: float = -0.4
-const HULL_TOP: float = 2.8
+const HULL_BOTTOM: float = -1.0
+const HULL_TOP: float = 2.96
 ## Vertical damping while the hull is partly out of the water (1/s).
 const SURFACE_DAMPING: float = 1.5
 
@@ -121,7 +128,7 @@ func forward_speed() -> float:
 
 
 ## Advances the model.
-## [param ordered_engine]: telegraph order, -1..1.
+## [param ordered_engine]: the pilot's throttle, -1..1.
 ## [param rudder], [param planes]: -1..1. Positive rudder turns to starboard;
 ## positive planes pitch the nose down (dive).
 ## [param flood], [param blow]: valve openings 0..1.
@@ -144,7 +151,7 @@ func step(delta: float, ordered_engine: float, rudder: float, planes: float, flo
 	# Angular: control surfaces need water flowing over them.
 	var flow: float = absf(fwd_speed)
 	var flow_sign: float = signf(fwd_speed) if fwd_speed != 0.0 else 1.0
-	var yaw_acc: float = -rudder * rudder_authority * flow * flow_sign
+	var yaw_acc: float = -rudder * (rudder_authority * flow * flow_sign + thruster_yaw_accel)
 	var pitch_acc: float = -planes * planes_authority * flow * flow_sign - righting * sin(angles.x)
 	var roll_acc: float = -righting * sin(angles.z) - heel_factor * angular_velocity.y * fwd_speed
 	angular_velocity += Vector3(pitch_acc, yaw_acc, roll_acc) * delta

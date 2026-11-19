@@ -84,3 +84,47 @@ func test_player_slides_on_steep_deck() -> void:
 	var start: Vector3 = me.position
 	await _physics_frames(60)
 	expect(me.position.z - start.z > 0.3, "player should slide aft on a 40° deck")
+
+
+func test_teleport_makes_no_footstep_noise() -> void:
+	await _physics_frames(10)
+	var me: Player = game.local_player()
+	me.position = Vector3(0, 0.1, 4.0)  # A jump, like a respawn.
+	await _physics_frames(3)
+	expect_eq(me.noise_intensity(), 0.0, "teleporting isn't walking")
+
+
+func test_crew_can_walk_aft_through_the_bulkhead_door() -> void:
+	await _physics_frames(20)
+	var me: Player = game.local_player()
+	me.teleport(Vector3(0, 0.1, 1.0))
+	me.rotation.y = PI  # Face aft (+Z).
+	await _physics_frames(5)
+	me.bot_move = Vector2(0, -1)
+	await _physics_frames(90)
+	me.bot_move = Vector2.ZERO
+	expect(me.position.z > 2.6, "walked through the door into the aft compartment (z=%f)" % me.position.z)
+	expect(absf(me.position.y) < 0.2, "still on the deck (y=%f)" % me.position.y)
+
+
+func test_sitting_and_standing_at_stations() -> void:
+	await _physics_frames(20)
+	var me: Player = game.local_player()
+	var helm: PilotSeat = game.get_node("Interior/Stations/Pilot/Seat") as PilotSeat
+	me.sit_in(helm)
+	await _physics_frames(5)
+	expect(me.position.distance_to(helm.seat_transform().origin) < 0.05, "in the pilot seat")
+	me.stand_up()
+	await _physics_frames(30)
+	expect(INTERIOR_OK(me.position), "stood up somewhere inside (%s)" % me.position)
+	var sonar: SonarSeat = game.get_node("Interior/Stations/Sonar/Seat") as SonarSeat
+	me.sit_in(sonar)
+	await _physics_frames(5)
+	expect(me.worn() == sonar.headset, "sitting at sonar puts the headset on")
+	me.stand_up()
+	await _physics_frames(5)
+	expect(me.worn() == null, "standing takes it off")
+
+
+func INTERIOR_OK(p: Vector3) -> bool:
+	return Player.INTERIOR_BOUNDS.has_point(p) and p.y > -0.7

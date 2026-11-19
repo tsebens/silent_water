@@ -104,3 +104,29 @@ func test_contact_loses_the_sub_then_resets_the_dive() -> void:
 	expect(controller.enabled)
 	expect_eq(apex.state(), SuspicionModel.State.UNAWARE as int)
 	expect(apex.position.distance_to(apex.spawn_position) < 20.0, "monster back at its spawn")
+
+
+func test_disabled_apex_is_gone() -> void:
+	apex.set_active(false)
+	expect(not apex.active)
+	expect(apex.outside_db() < -1000.0, "silent")
+	# Put it right on top of the sub and shout: nothing may happen.
+	apex.position = controller.model.position + Vector3(0, 0, 5)
+	for i: int in range(60 * 5):
+		Acoustics.report_voice(NoiseLevel.from_db(90.0))
+		await runner.get_tree().physics_frame
+	expect_eq(contacts, 0, "no contact while disabled")
+	expect_eq(apex.state(), SuspicionModel.State.UNAWARE as int, "no hearing while disabled")
+	var cues: ThreatCues = game.get_node("ThreatCues") as ThreatCues
+	await runner.get_tree().process_frame
+	expect_eq(cues.proximity(), 0.0, "no felt cues while disabled")
+	expect(not apex.visible, "hidden")
+
+
+func test_reenabled_apex_starts_fresh() -> void:
+	apex.set_active(false)
+	apex.set_active(true)
+	await _frames(2)
+	expect(apex.active and apex.visible)
+	expect(apex.position.distance_to(apex.spawn_position) < 5.0, "back home")
+	expect_eq(apex.state(), SuspicionModel.State.UNAWARE as int)

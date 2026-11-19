@@ -85,6 +85,9 @@ func reset_dive() -> void:
 	leaks.reset()
 	apex.reset_to_spawn()
 	scan.reset()
+	var chart: MapModel = get_tree().get_first_node_in_group(&"map_model") as MapModel
+	if chart != null:
+		chart.clear()
 	Acoustics.reset()
 	game.respawn_players()
 	dive_time = 0.0

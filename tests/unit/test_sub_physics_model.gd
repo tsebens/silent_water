@@ -49,7 +49,7 @@ func test_full_ahead_top_speed_about_3() -> void:
 
 func test_engine_spools_slowly() -> void:
 	_run(1.0, 1.0)
-	expect(m.engine < 0.3, "engine should not jump to full (%f)" % m.engine)
+	expect(m.engine < 0.5, "engine should not jump to full (%f)" % m.engine)
 	_run(5.0, 1.0)
 	expect_near(m.engine, 1.0, 0.001)
 
@@ -59,14 +59,21 @@ func test_astern_is_slower() -> void:
 	expect(m.forward_speed() < -1.5 and m.forward_speed() > -2.6, "astern speed %f" % m.forward_speed())
 
 
-func test_rudder_needs_flow() -> void:
+func test_thrusters_turn_in_place() -> void:
 	_run(10.0, 0.0, 1.0)
-	expect(absf(m.angles.y) < 0.01, "no turning while stopped")
-	before_each()
+	expect(m.angles.y < -deg_to_rad(45.0), "full rudder while stopped turns over 45° in 10 s (%f°)" % rad_to_deg(m.angles.y))
+	expect(m.velocity.length() < 0.05, "turning in place doesn't move the sub")
+
+
+func test_rudder_adds_turn_at_speed() -> void:
+	var still: SubPhysicsModel = SubPhysicsModel.new()
+	for i: int in range(int(5.0 / DT)):
+		still.step(DT, 0.0, 1.0, 0, 0, 0)
 	_run(60.0, 1.0)
 	var yaw0: float = m.angles.y
-	_run(10.0, 1.0, 1.0)
-	expect(m.angles.y < yaw0 - 0.3, "positive rudder turns to starboard (yaw decreases), got %f" % (m.angles.y - yaw0))
+	_run(5.0, 1.0, 1.0)
+	expect(m.angles.y - yaw0 < still.angles.y - 0.1, "turning is quicker with way on (%f vs %f)" % [m.angles.y - yaw0, still.angles.y])
+	expect(m.angles.y - yaw0 < -0.3, "positive rudder turns to starboard (yaw decreases)")
 
 
 func test_planes_dive_and_pitch_is_limited() -> void:
@@ -94,11 +101,11 @@ func test_vent_does_not_flood_while_riding_high() -> void:
 func test_flood_and_blow() -> void:
 	m.tank_water_t = 0.0
 	_run(10.0, 0.0, 0.0, 0.0, 1.0)
-	expect_near(m.tank_water_t, 3.5, 0.1, "flooded")
+	expect_near(m.tank_water_t, 7.0, 0.1, "flooded")
 	var air_before: float = m.air_t
 	_run(2.0, 0.0, 0.0, 0.0, 0.0, 1.0)
-	expect_near(m.tank_water_t, 2.1, 0.1, "blown")
-	expect_near(air_before - m.air_t, 1.4, 0.1, "air used")
+	expect_near(m.tank_water_t, 4.2, 0.1, "blown")
+	expect_near(air_before - m.air_t, 2.8, 0.1, "air used")
 
 
 func test_blow_stops_when_air_runs_out() -> void:
@@ -129,3 +136,17 @@ func test_blowing_an_empty_tank_uses_no_air() -> void:
 	_run(10.0, 0.0, 0.0, 0.0, 0.0, 1.0)
 	expect_eq(m.tank_water_t, 0.0)
 	expect_near(m.air_capacity_t - m.air_t, 1.0, 0.01, "only the water's worth of air is used")
+
+
+func test_responsive_speed_up_and_slow_down() -> void:
+	# M7: twice as quick to reach speed and to coast down, same top speed.
+	var t: float = 0.0
+	while m.forward_speed() < 2.5 and t < 120.0:
+		m.step(DT, 1.0, 0, 0, 0, 0)
+		t += DT
+	expect(t < 20.0, "reaches 2.5 m/s in %f s" % t)
+	_run(40.0, 1.0)
+	_run(10.0, 0.0)
+	# Quadratic drag: v = v0 / (1 + k v0 t). With k doubled, ~1.5 m/s after 10 s
+	# (it was ~2.0). Throttling astern brakes harder still.
+	expect(m.forward_speed() < 1.8, "coasts down quickly (%f m/s after 10 s)" % m.forward_speed())
