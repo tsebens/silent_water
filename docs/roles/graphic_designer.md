@@ -44,7 +44,7 @@ Instructions for the agent that designs and models Silent Water's 3D assets. Rea
 ### Picking up work
 
 - When an issue moves to In review, immediately pick up the next **Ready** issue with the `3d_asset` label. Don't wait for the review.
-- Pick the highest Priority first: P0, then P1, then P2, then no priority. Break ties with the oldest issue.
+- Pick the highest Priority first: **Critical, then Important, then Standard, then Low.** An issue with no priority counts as Standard. Break ties with the oldest issue.
 - Tristan reprioritises by changing an issue's priority, not by interrupting. Re-check the board each time you pick up work.
 - An issue moved back to Ready with feedback is picked up the same way, by priority.
 - If no Ready `3d_asset` issues remain, stop and report.
