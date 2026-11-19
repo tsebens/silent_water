@@ -128,7 +128,7 @@ func forward_speed() -> float:
 
 
 ## Advances the model.
-## [param ordered_engine]: telegraph order, -1..1.
+## [param ordered_engine]: the pilot's throttle, -1..1.
 ## [param rudder], [param planes]: -1..1. Positive rudder turns to starboard;
 ## positive planes pitch the nose down (dive).
 ## [param flood], [param blow]: valve openings 0..1.
