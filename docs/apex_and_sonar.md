@@ -1,0 +1,53 @@
+# The apex and passive sonar
+
+## The apex (`src/creature/`)
+
+A huge, blind hunter (`ApexMonster`, ~30 m) that lives under the world root. The host runs its brain and steering; clients get its pose and state through a `MultiplayerSynchronizer` and smooth toward them.
+
+### Hearing
+
+Each physics tick the host computes the sub's noise as heard at the monster (`Acoustics.heard_at`: spreading loss and terrain occlusion) and compares it with the background at the monster (`Acoustics.ambient_at`). The difference, plus the monster's `hearing_gain_db` (+30 dB, it's a sound hunter), is the SNR:
+
+| What the crew does | Distance where it's a conclusive signal (≥ 6 dB SNR, open water) |
+| --- | --- |
+| Whisper (~58 dB) | ~25 m |
+| Walking or normal speech (~75 dB) | ~300 m |
+| Engine full ahead (80 dB) | ~650 m |
+| Blowing ballast (90 dB) | ~3 km |
+
+A rock in the way costs 15 dB.
+
+### Ladder and decay (`SuspicionModel`, tuning in `SuspicionTuning`)
+
+| State | Suspicion | Behaviour |
+| --- | --- | --- |
+| Unaware | < 15 | Slow wandering; a distant moan every 40–80 s |
+| Patrol | < 15, after arousal | Faster roaming near where it last heard something; moans every 25–45 s |
+| Curious | 15–40 | Drifts toward the noise and stops short; grunts every 9–15 s |
+| Hunting | 40–75 | Circles the last-heard area; pulse trains every 5–8 s |
+| Committed | ≥ 75 and within 150 m | Roars and charges the **last-heard position** at 13 m/s |
+| Contact | jaws within 9 m of the sub | Sub lost |
+
+- Suspicion rises at 0.8 per second per dB of SNR. The last-heard position gets more accurate as the signal gets louder.
+- **Tiered decay:** after the last conclusive signal there's a 2 s grace period. Then aroused states (Hunting, Committed) fall back about **29 s** after the last signal. **Patrol** lingers about **90 s** after that. A charge is abandoned once suspicion drops below 60.
+- A committed charge goes where it *heard* the sub. A crew that goes silent and moves can make it miss. A near miss (body within 28 m at speed) jolts the crew and has a 60% chance of springing a leak.
+
+### Felt before heard (`ThreatCues`)
+
+- **Within 220 m:** a sub-bass rumble on the Felt bus, rising with proximity and speed.
+- **Within 70 m:** the view shakes, lights flicker, and the hull creaks.
+- **Through the hull:** calls and swimming are audible to everyone, heavily muffled (−35 dB, low-passed).
+
+## Passive sonar (`src/sonar/`)
+
+Minimal, and expected to change a lot.
+
+- **Headset** (`Wearable`): click to put on, click to take off. Walking more than 2.2 m away pulls it off. One operator at a time, and only the operator hears the hydrophone. Their headphones duck the room by 14 dB.
+- **Hydrophone handwheel** (`HydrophoneWheel`): one turn swings the bearing 120°. Bearings are relative to the bow, clockwise. The **bearing dial** shows where it's trained.
+- **Beam** (`SonarStation.beam_gain_db`): ((1 + cos Δ)/2)^8. On bearing is 0 dB, 30° off is about −2.4 dB, 60° off about −10 dB, and abeam about −24 dB.
+- **What's on the hydrophone** (`OutsideAudio`): the apex's swimming (louder with speed) and calls, ambient vents, the ocean background, and the sub's own noise. The sub's own noise masks distant contacts, so a noisy sub is also a deaf one.
+- Full scale on the hydrophone is 95 dB at the sub. Everything is a constant in `OutsideAudio` or `SonarStation`.
+
+## Losing the sub (`DiveDirector`)
+
+On contact: a roar and crunch, then the lights die. After 6 s the host resets the sub, leaks, monster, noise and crew positions, and the dive starts over. M5 adds objectives and surfacing.

@@ -1,0 +1,44 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://src/interact/wearable.gd" id="1"]
+
+[sub_resource type="StandardMaterial3D" id="mat"]
+albedo_color = Color(0.1, 0.1, 0.1, 1)
+roughness = 0.7
+
+[sub_resource type="TorusMesh" id="band"]
+inner_radius = 0.08
+outer_radius = 0.095
+material = SubResource("mat")
+
+[sub_resource type="CylinderMesh" id="cup"]
+top_radius = 0.045
+bottom_radius = 0.045
+height = 0.04
+material = SubResource("mat")
+
+[sub_resource type="BoxShape3D" id="grab"]
+size = Vector3(0.25, 0.25, 0.2)
+
+[node name="Headset" type="Node3D"]
+script = ExtResource("1")
+label = "sonar headset"
+
+[node name="Band" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, -4.37114e-08, -1, 0, 1, -4.37114e-08, 0, 0, 0)
+mesh = SubResource("band")
+
+[node name="CupL" type="MeshInstance3D" parent="."]
+transform = Transform3D(-4.37114e-08, -1, 0, 1, -4.37114e-08, 0, 0, 0, 1, -0.09, -0.06, 0)
+mesh = SubResource("cup")
+
+[node name="CupR" type="MeshInstance3D" parent="."]
+transform = Transform3D(-4.37114e-08, -1, 0, 1, -4.37114e-08, 0, 0, 0, 1, 0.09, -0.06, 0)
+mesh = SubResource("cup")
+
+[node name="Grab" type="StaticBody3D" parent="."]
+collision_layer = 2
+collision_mask = 0
+
+[node name="Shape" type="CollisionShape3D" parent="Grab"]
+shape = SubResource("grab")

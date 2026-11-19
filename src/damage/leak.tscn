@@ -1,0 +1,43 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://src/damage/leak.gd" id="1"]
+
+[sub_resource type="BoxShape3D" id="grab"]
+size = Vector3(0.35, 0.35, 0.35)
+
+[sub_resource type="StandardMaterial3D" id="drop_mat"]
+transparency = 1
+albedo_color = Color(0.75, 0.85, 0.9, 0.6)
+roughness = 0.1
+
+[sub_resource type="SphereMesh" id="drop"]
+material = SubResource("drop_mat")
+radius = 0.012
+height = 0.024
+radial_segments = 6
+rings = 3
+
+[node name="Leak" type="Node3D" node_paths=PackedStringArray("spray", "grab_shape")]
+script = ExtResource("1")
+spray = NodePath("Spray")
+grab_shape = NodePath("Grab/Shape")
+label = "leak"
+
+[node name="Spray" type="CPUParticles3D" parent="."]
+emitting = false
+amount = 120
+lifetime = 0.6
+mesh = SubResource("drop")
+direction = Vector3(0, 0, 1)
+spread = 12.0
+initial_velocity_min = 3.0
+initial_velocity_max = 4.5
+gravity = Vector3(0, -9.8, 0)
+
+[node name="Grab" type="StaticBody3D" parent="."]
+collision_layer = 2
+collision_mask = 0
+
+[node name="Shape" type="CollisionShape3D" parent="Grab"]
+shape = SubResource("grab")
+disabled = true

@@ -1,0 +1,52 @@
+[gd_scene load_steps=8 format=3]
+
+[ext_resource type="Script" path="res://src/interact/lever.gd" id="1"]
+[ext_resource type="Script" path="res://src/interact/noise_profile.gd" id="2"]
+
+[sub_resource type="Resource" id="noise"]
+script = ExtResource("2")
+idle_intensity = 0.0
+max_intensity = 0.5
+clank_rate = 2.0
+exponent = 2.0
+
+[sub_resource type="BoxMesh" id="base"]
+size = Vector3(0.3, 0.08, 0.2)
+
+[sub_resource type="CylinderMesh" id="shaft"]
+top_radius = 0.02
+bottom_radius = 0.02
+height = 0.5
+
+[sub_resource type="SphereMesh" id="knob"]
+radius = 0.05
+height = 0.1
+
+[sub_resource type="BoxShape3D" id="grab"]
+size = Vector3(0.2, 0.6, 0.2)
+
+[node name="Lever" type="Node3D" node_paths=PackedStringArray("pivot")]
+script = ExtResource("1")
+noise_profile = SubResource("noise")
+pivot = NodePath("Pivot")
+
+[node name="Base" type="MeshInstance3D" parent="."]
+mesh = SubResource("base")
+
+[node name="Pivot" type="Node3D" parent="."]
+
+[node name="Shaft" type="MeshInstance3D" parent="Pivot"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.25, 0)
+mesh = SubResource("shaft")
+
+[node name="Knob" type="MeshInstance3D" parent="Pivot"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.5, 0)
+mesh = SubResource("knob")
+
+[node name="Grab" type="StaticBody3D" parent="."]
+collision_layer = 2
+collision_mask = 0
+
+[node name="Shape" type="CollisionShape3D" parent="Grab"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.3, 0)
+shape = SubResource("grab")
