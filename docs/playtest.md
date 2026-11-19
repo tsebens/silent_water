@@ -44,8 +44,8 @@ A dive ends when you surface after the scan (success) or when it reaches you (lo
 
 | Station | Where | What you do |
 | --- | --- | --- |
-| **Helm** | Bow, in the pilot well under the glass dome | Press **E** at the seat to take the helm (E again to stand). **W/S** throttle (it stays where you leave it), **A/D** rudder, **R/F** dive planes (F noses down). The planes and rudder only work with water moving over them. Gauges either side: depth, pitch, noise, heading, speed. The **pilot's map** hologram in front of you is heading-up and centred on the sub (about 115 m around), with terrain, the objective, pins and sonar contacts. **Cabin lights** lever by your left hand dims the cabin so you can see out. You can't work other stations while seated, so call your orders out. |
-| **Ballast** | Port wall, forward cabin, by the bulkhead | **FLOOD** valve (quiet) makes the sub heavier. **BLOW** valve (very loud, uses limited HP air) makes it lighter. Turn the handwheels by circling the mouse. Gauges: tank, HP air. In single-player mode (F5) the helm runs these with Numpad 2/8. |
+| **Helm** | Bow, in the pilot well under the glass dome | Press **E** at the seat to take the helm (E again to stand). **W/S** throttle (it stays where you leave it), **A/D** rudder, **R/F** dive planes (F noses down). **A/D** turns even when stopped (side thrusters, which make some noise); the rudder adds more turn once you're moving. The dive planes only work with water moving over them. Gauges either side: depth, pitch, noise, heading, speed. The **pilot's map** hologram in front of you is heading-up and centred on the sub (about 115 m around), with terrain, the objective, pins and sonar contacts. **Cabin lights** lever by your left hand dims the cabin so you can see out. You can't work other stations while seated, so call your orders out. |
+| **Ballast** | Port wall, forward cabin, by the bulkhead | **FLOOD** valve (quiet) makes the sub heavier. **BLOW** valve (very loud, uses limited HP air) makes it lighter. Turn the handwheels by circling the mouse. Gauges: tank, HP air. In single-player mode the helm runs these with Numpad 8/2 or Page Up/Page Down. |
 | **Sonar** | Starboard desk, forward cabin, against the bulkhead | Press **E** at the seat to sit; that puts the headset on. Circle the mouse on the **hydrophone wheel** to turn the listening bearing; the dial on the bulkhead shows where you're listening, and both maps show it as a yellow fan. **Scroll** to set an estimated range, **M** to mark a contact at that bearing and range on the shared chart. Only you hear the hydrophone, and you must say what you hear out loud. |
 | **Map table** | Midships, behind the helm | Press **E** to lean over the hologram (cursor appears). **WASD** pan, **wheel** zoom, **F** follow the sub, **1-4** pin type (waypoint, danger, last seen: apex, note), **click** place a pin on the terrain, **right-click** remove one, **E** step back. North stays fixed to the table; the sub arrow shows the heading. Pins, sonar contacts and the yellow sonar fan show here and on the pilot's map. |
 | **Scanner** | Port wall, forward cabin | **Scanner** switch: within ~30 m of the array, nearly stopped, it fills the SCAN gauge in ~25 s. It's **loud** the whole time it's on. |
@@ -65,7 +65,7 @@ A dive ends when you surface after the scan (success) or when it reaches you (lo
 | E | Take or leave a station: the helm, the sonar headset |
 | WASD | Walk; at the helm, W/S throttle and A/D rudder |
 | R / F | At the helm: dive planes (R rises, F dives) |
-| Numpad 8 / 2 | At the helm in single-player mode: blow / flood while held |
+| Numpad 8 / 2 (or Page Up / Page Down) | At the helm in single-player mode: blow / flood while held |
 | Shift | Sneak (quieter footsteps) |
 | Esc | Release the mouse and let go of everything |
 
@@ -107,7 +107,7 @@ Arousal fades about 30 seconds after you go quiet. Patrolling lasts a minute or 
 | Key | What it does |
 | --- | --- |
 | F1 | Developer overlay: console (engine output and game events, including the host's on clients), 3D minimap (sub green, apex red, array yellow), and live sub, noise, apex and dive stats. Launch with `-- --dev-overlay` to start with it on. |
-| F5 | Single-player mode: the helm also runs the ballast (Numpad 8 blow, Numpad 2 flood). Start with `-- --solo`. |
+| F5 | Single-player mode: the helm also runs the ballast (Numpad 8 or Page Up to blow, Numpad 2 or Page Down to flood, while held). Turns on automatically when you host alone in a development build (start with `-- --crew` to skip that); F5 toggles it. |
 | F4 | Switch the apex off or on for everyone (the host decides). While it's off, it's gone: no body, no sound, no hearing, no contact. Start the host with `-- --no-apex` to dive without it from the start. |
 | F3 | Simulate normal speech on your mic |
 | Shift+F3 | Simulate a shout |

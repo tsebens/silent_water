@@ -143,3 +143,35 @@ func test_neon_strips_dim_with_the_cabin_lights() -> void:
 	dimmer.host_set_value(0.0)
 	await _frames(2)
 	expect_near(mat.emission_energy_multiplier, full * CabinLights.MIN_LEVEL, 0.001, "strips dim to near dark")
+
+
+func test_single_player_helm_runs_the_ballast() -> void:
+	DevSettings.single_player = true
+	var me: Player = game.local_player()
+	var helm: PilotSeat = game.get_node("Interior/Stations/Pilot/Seat") as PilotSeat
+	var blow: Interactable = game.get_node("Interior/Stations/Ballast/BlowValve") as Interactable
+	var flood: Interactable = game.get_node("Interior/Stations/Ballast/FloodValve") as Interactable
+	me.sit_in(helm)
+	me.bot_ballast = 1.0
+	await _frames(40)
+	expect(blow.get_normalized() > 0.9, "blow key opens the blow valve (%f)" % blow.get_normalized())
+	expect(blow.get_noise_intensity() < 0.001, "and turns it silently")
+	me.bot_ballast = -1.0
+	await _frames(40)
+	expect(flood.get_normalized() > 0.9 and blow.get_normalized() < 0.1, "flood key floods, blow closes")
+	me.bot_ballast = 0.0
+	await _frames(40)
+	expect(flood.get_normalized() < 0.1, "releasing closes it")
+	me.stand_up()
+	DevSettings.single_player = false
+
+
+func test_crew_mode_helm_leaves_the_ballast_alone() -> void:
+	DevSettings.single_player = false
+	var me: Player = game.local_player()
+	me.sit_in(game.get_node("Interior/Stations/Pilot/Seat") as PilotSeat)
+	me.bot_ballast = 1.0
+	await _frames(30)
+	expect_near((game.get_node("Interior/Stations/Ballast/BlowValve") as Interactable).get_normalized(), 0.0, 0.001)
+	me.bot_ballast = 0.0
+	me.stand_up()

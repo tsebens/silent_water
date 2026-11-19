@@ -63,7 +63,7 @@ func seated_hint() -> String:
 static func helm_hint() -> String:
 	var hint: String = "W/S throttle · A/D rudder · R/F planes · E to stand"
 	if DevSettings.single_player:
-		hint += " · Num8 blow · Num2 flood"
+		hint += " · Num8/PgUp blow · Num2/PgDn flood"
 	return hint
 
 

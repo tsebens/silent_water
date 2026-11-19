@@ -16,8 +16,8 @@ const ACTIONS: Dictionary = {
 	&"sonar_mark": [KEY_M],
 	&"pilot_planes_rise": [KEY_R],
 	&"pilot_planes_dive": [KEY_F],
-	&"pilot_blow": [KEY_KP_8],
-	&"pilot_flood": [KEY_KP_2],
+	&"pilot_blow": [KEY_KP_8, KEY_PAGEUP],
+	&"pilot_flood": [KEY_KP_2, KEY_PAGEDOWN],
 }
 const MOUSE_ACTIONS: Dictionary = {
 	&"interact": MOUSE_BUTTON_LEFT,

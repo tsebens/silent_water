@@ -24,6 +24,8 @@ const ENGINE_IDLE_INTENSITY: float = 1e-5
 const BLOW_INTENSITY: float = 0.1
 ## Flooding with the vent fully open (~70 dB).
 const FLOOD_INTENSITY: float = 0.001
+## Side thrusters at full turn (~73 dB).
+const THRUSTER_INTENSITY: float = 0.002
 ## Hull strike impulse per (m/s)² of impact (~95 dB at 1 m/s).
 const STRIKE_INTENSITY: float = 0.3
 
@@ -184,11 +186,19 @@ func flood_intensity() -> float:
 
 ## Noise system hook (polled on the host).
 func noise_intensity() -> float:
-	return engine_intensity() + blow_intensity() + flood_intensity()
+	return engine_intensity() + blow_intensity() + flood_intensity() + thruster_intensity()
 
 
 func noise_breakdown() -> Dictionary:
-	return {"engine": engine_intensity(), "blowing ballast": blow_intensity(), "flooding ballast": flood_intensity()}
+	return {
+		"engine": engine_intensity(), "blowing ballast": blow_intensity(),
+		"flooding ballast": flood_intensity(), "thrusters": thruster_intensity(),
+	}
+
+
+## Side thrusters whirring while the pilot turns (~73 dB at full).
+func thruster_intensity() -> float:
+	return THRUSTER_INTENSITY * absf(rudder.get_value()) if rudder != null else 0.0
 
 
 ## Reads a replicated readout by name, for gauges.

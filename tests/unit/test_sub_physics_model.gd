@@ -59,14 +59,21 @@ func test_astern_is_slower() -> void:
 	expect(m.forward_speed() < -1.5 and m.forward_speed() > -2.6, "astern speed %f" % m.forward_speed())
 
 
-func test_rudder_needs_flow() -> void:
+func test_thrusters_turn_in_place() -> void:
 	_run(10.0, 0.0, 1.0)
-	expect(absf(m.angles.y) < 0.01, "no turning while stopped")
-	before_each()
+	expect(m.angles.y < -deg_to_rad(45.0), "full rudder while stopped turns over 45° in 10 s (%f°)" % rad_to_deg(m.angles.y))
+	expect(m.velocity.length() < 0.05, "turning in place doesn't move the sub")
+
+
+func test_rudder_adds_turn_at_speed() -> void:
+	var still: SubPhysicsModel = SubPhysicsModel.new()
+	for i: int in range(int(5.0 / DT)):
+		still.step(DT, 0.0, 1.0, 0, 0, 0)
 	_run(60.0, 1.0)
 	var yaw0: float = m.angles.y
-	_run(10.0, 1.0, 1.0)
-	expect(m.angles.y < yaw0 - 0.3, "positive rudder turns to starboard (yaw decreases), got %f" % (m.angles.y - yaw0))
+	_run(5.0, 1.0, 1.0)
+	expect(m.angles.y - yaw0 < still.angles.y - 0.1, "turning is quicker with way on (%f vs %f)" % [m.angles.y - yaw0, still.angles.y])
+	expect(m.angles.y - yaw0 < -0.3, "positive rudder turns to starboard (yaw decreases)")
 
 
 func test_planes_dive_and_pitch_is_limited() -> void:

@@ -54,6 +54,10 @@ var thrust_accel: float = 0.3
 var drag: Vector3 = Vector3(0.5, 0.6, 0.0333)
 ## Yaw acceleration per unit rudder per m/s of forward speed (rad/s² ).
 var rudder_authority: float = 0.02
+## Yaw acceleration from the side thrusters at full rudder input (rad/s²).
+## They turn the sub even when stopped (~8.6°/s at full, steady state);
+## the rudder adds more once there's way on.
+var thruster_yaw_accel: float = 0.09
 ## Pitch acceleration per unit planes per m/s of forward speed (rad/s²).
 var planes_authority: float = 0.02
 ## Righting (metacentric) stiffness for pitch and roll (1/s²).
@@ -147,7 +151,7 @@ func step(delta: float, ordered_engine: float, rudder: float, planes: float, flo
 	# Angular: control surfaces need water flowing over them.
 	var flow: float = absf(fwd_speed)
 	var flow_sign: float = signf(fwd_speed) if fwd_speed != 0.0 else 1.0
-	var yaw_acc: float = -rudder * rudder_authority * flow * flow_sign
+	var yaw_acc: float = -rudder * (rudder_authority * flow * flow_sign + thruster_yaw_accel)
 	var pitch_acc: float = -planes * planes_authority * flow * flow_sign - righting * sin(angles.x)
 	var roll_acc: float = -righting * sin(angles.z) - heel_factor * angular_velocity.y * fwd_speed
 	angular_velocity += Vector3(pitch_acc, yaw_acc, roll_acc) * delta

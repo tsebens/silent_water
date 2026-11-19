@@ -30,6 +30,10 @@ func start_session() -> void:
 	_active = true
 	if multiplayer.is_server():
 		(get_node("SessionLog") as SessionLog).open_log()
+		# Alone in a development build: the helm runs the ballast too.
+		if DevOverlay.allowed() and multiplayer.get_peers().is_empty() and not OS.get_cmdline_user_args().has("--crew"):
+			DevSettings.single_player = true
+			print("[dev] single-player mode on (alone; F5 toggles)")
 		if OS.get_cmdline_user_args().has("--no-apex"):
 			(get_node("World/Apex") as ApexMonster).set_active(false)
 		_spawn_player(Net.local_id())
