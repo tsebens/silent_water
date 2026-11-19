@@ -23,6 +23,7 @@ const REMOTE_SMOOTHING: float = 15.0
 const FOOTSTEP_INTENSITY: float = 3e-3
 ## Faster than anyone can walk: movement this quick is a teleport.
 const TELEPORT_SPEED: float = 8.0
+const STANDING_EYE_HEIGHT: float = 1.6
 const LAYER_INTERACTABLE: int = 1 << 1
 ## Deck tilt past which boots lose grip and the crew slides.
 const SLIDE_ANGLE_DEG: float = 30.0
@@ -30,8 +31,8 @@ const SLIDE_ANGLE_DEG: float = 30.0
 const SLOPE_SPEED_EFFECT: float = 1.5
 ## Interior bounds (sub-local). A player outside them is put back inside;
 ## this guards against physics glitches pushing someone through the hull.
-const INTERIOR_BOUNDS: AABB = AABB(Vector3(-1.5, -0.5, -6.0), Vector3(3.0, 3.0, 12.0))
-const RESCUE_POINT: Vector3 = Vector3(0, 0.1, 0)
+const INTERIOR_BOUNDS: AABB = AABB(Vector3(-2.0, -0.8, -3.4), Vector3(4.0, 3.8, 8.4))
+const RESCUE_POINT: Vector3 = Vector3(-0.9, 0.1, 1.2)
 
 ## Replicated pose (sub-local). Written by the owning peer.
 @export var sync_position: Vector3 = Vector3.ZERO
@@ -52,7 +53,7 @@ var _sub_frame: SubFrame
 var _held: Interactable = null
 ## True while the interact button is down: the view holds still.
 var _interact_down: bool = false
-var _seat: PilotSeat = null
+var _seat: StationSeat = null
 var _worn: Wearable = null
 var _stride: float = 0.0
 ## Smoothed movement speed, measured the same way on every peer.
@@ -101,7 +102,7 @@ func _unhandled_input(event: InputEvent) -> void:
 		return
 	if event.is_action_pressed(&"interact"):
 		_interact_down = true
-		if _seat == null:
+		if _seat == null or _seat.allows_grabbing:
 			_try_grab()
 	elif event.is_action_released(&"interact"):
 		_interact_down = false
@@ -135,6 +136,10 @@ func _simulate(delta: float) -> void:
 	var input: Vector2 = bot_move
 	if input == Vector2.ZERO and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
 		input = Input.get_vector(&"move_left", &"move_right", &"move_forward", &"move_back")
+	if _seat != null and not (_seat is PilotSeat):
+		position = _seat.seat_transform().origin
+		velocity = Vector3.ZERO
+		return
 	if _seat != null:
 		# Seated: the helm. W/S throttle, A/D rudder, R/F planes, and in
 		# single-player mode Numpad 8/2 blow and flood.
@@ -145,7 +150,7 @@ func _simulate(delta: float) -> void:
 			ballast = Input.get_axis(&"pilot_flood", &"pilot_blow")
 		planes += bot_planes
 		ballast += bot_ballast
-		_seat.drive(-input.y, input.x, clampf(planes, -1.0, 1.0), clampf(ballast, -1.0, 1.0), delta)
+		(_seat as PilotSeat).drive(-input.y, input.x, clampf(planes, -1.0, 1.0), clampf(ballast, -1.0, 1.0), delta)
 		position = _seat.seat_transform().origin
 		velocity = Vector3.ZERO
 		return
@@ -269,7 +274,7 @@ func held_control() -> Interactable:
 	return _held
 
 
-func seat() -> PilotSeat:
+func seat() -> StationSeat:
 	return _seat
 
 
@@ -283,9 +288,9 @@ func _activate() -> void:
 		stand_up()
 		return
 	var node: Interactable = aim_target()
-	if node is PilotSeat:
+	if node is StationSeat:
 		_release_held()
-		sit_in(node as PilotSeat)
+		sit_in(node as StationSeat)
 	elif node is Wearable:
 		if _worn == node:
 			take_off()
@@ -297,30 +302,40 @@ func _activate() -> void:
 
 func _try_grab() -> void:
 	var node: Interactable = aim_target()
-	if node == null or node is PilotSeat or node is Wearable:
+	if node == null or node is StationSeat or node is Wearable:
 		return  # Stations are taken with E, not grabbed.
 	_held = node
 	_held.begin_interaction()
 
 
 ## Sits in the pilot's chair. Stands up again if someone else got there first.
-func sit_in(seat: PilotSeat) -> void:
+func sit_in(seat: StationSeat) -> void:
 	if _seat != null:
 		return
 	_seat = seat
 	_seat.holder_changed.connect(_on_seat_holder_changed)
 	_seat.begin_interaction()
+	_head.position.y = seat.eye_height
+	# Face the station.
+	rotation.y = seat.seat_transform().basis.get_euler().y
+	_head.rotation.x = 0.0
+	if seat is SonarSeat and (seat as SonarSeat).headset != null:
+		put_on((seat as SonarSeat).headset)
 
 
 func stand_up() -> void:
 	if _seat == null:
 		return
-	var seat: PilotSeat = _seat
+	var seat: StationSeat = _seat
 	_seat = null
 	seat.holder_changed.disconnect(_on_seat_holder_changed)
 	seat.end_interaction()
-	# Step out of the chair, back toward the corridor.
-	position = seat.seat_transform().origin + seat.seat_transform().basis.z * 0.6
+	_head.position.y = STANDING_EYE_HEIGHT
+	if seat is SonarSeat:
+		take_off()
+	# Step out of the seat, backward from the way it faces, onto the deck.
+	var out: Vector3 = seat.seat_transform().origin + seat.seat_transform().basis.z * 0.7
+	position = Vector3(out.x, maxf(out.y, 0.0) + 0.05, out.z)
 
 
 ## Puts on a wearable (the sonar headset). Takes off any other first.

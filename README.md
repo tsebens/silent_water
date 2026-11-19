@@ -27,6 +27,13 @@ tools/check.sh
 
 Set `GODOT=/path/to/godot` if the binary isn't on `PATH` as `godot`.
 
+After re-exporting the sub from Onshape (as a single assembly glTF to `assets/media/sub/Assembly 1.gltf`), rebuild the game model:
+
+```bash
+python3 -m pip install numpy trimesh fast-simplification
+python3 tools/convert_sub.py
+```
+
 Launch arguments go after `--`: `--host`, `--join [address]`, `--port <n>`, `--name <s>`. With no arguments the game opens a dev connect menu.
 
 ### Layout

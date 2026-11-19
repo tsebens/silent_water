@@ -39,9 +39,15 @@ func _process(_delta: float) -> void:
 	if target == null and me.seat() == null:
 		target = me.aim_target()
 	_active = target != null
-	if me.seat() != null:
-		_name.text = "HELM" + ("  · SINGLE-PLAYER" if DevSettings.single_player else "")
-		_hint.text = PilotSeat.helm_hint()
+	if me.seat() != null and me.held_control() == null:
+		var aimed: Interactable = me.aim_target() if me.seat().allows_grabbing else null
+		if aimed != null and not (aimed is StationSeat) and not (aimed is Wearable):
+			_name.text = aimed.display_name()
+			_hint.text = aimed.interaction_hint()
+			_active = true
+		else:
+			_name.text = me.seat().station_name()
+			_hint.text = me.seat().seated_hint()
 	elif target != null:
 		_name.text = target.display_name() + ("  (holding)" if holding else "")
 		_hint.text = target.interaction_hint()

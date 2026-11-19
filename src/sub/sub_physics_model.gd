@@ -98,8 +98,8 @@ func buoyancy_accel() -> float:
 
 
 ## Hull extent above and below the sub's origin (m).
-const HULL_BOTTOM: float = -0.4
-const HULL_TOP: float = 2.8
+const HULL_BOTTOM: float = -1.0
+const HULL_TOP: float = 2.96
 ## Vertical damping while the hull is partly out of the water (1/s).
 const SURFACE_DAMPING: float = 1.5
 

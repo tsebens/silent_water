@@ -44,12 +44,12 @@ A dive ends when you surface after the scan (success) or when it reaches you (lo
 
 | Station | Where | What you do |
 | --- | --- | --- |
-| **Pilot** | Bow | **Cabin lights** lever on the starboard wall dims the cabin, so you can see out. Press **E** at the seat to take the helm (E again to stand). **W/S** throttle (it stays where you leave it), **A/D** rudder, **R/F** dive planes (F noses down). The planes and rudder only work with water moving over them. Gauges: depth, heading, pitch, speed. You can't work other stations while seated, so call your orders out. |
-| **Engineering** | Aft, starboard | Engine gauge. The pilot now sets speed; engineering's future job is engine upkeep. |
-| **Ballast** | Midships, port | **FLOOD** valve (quiet) makes the sub heavier. **BLOW** valve (very loud, uses limited HP air) makes it lighter. Turn the handwheels by circling the mouse. Gauges: tank, HP air. |
-| **Sonar** | Midships, starboard | Press **E** at the **headset** to put it on (it comes off if you walk away). Circle the mouse on the **hydrophone wheel** to turn the listening bearing; the dial shows where you're listening. Only you hear the hydrophone, and you must say what you hear out loud. |
-| **Bilge** | Aft, port | **Pump** switch: removes leak water, but it's loud. |
-| **Scanner** | Forward, port | **Scanner** switch: within ~30 m of the array, nearly stopped, it fills the SCAN gauge in ~25 s. It's **loud** the whole time it's on. |
+| **Helm** | Bow, in the pilot well under the glass dome | Press **E** at the seat to take the helm (E again to stand). **W/S** throttle (it stays where you leave it), **A/D** rudder, **R/F** dive planes (F noses down). The planes and rudder only work with water moving over them. Gauges either side: depth, pitch, noise, heading, speed. **Cabin lights** lever by your left hand dims the cabin so you can see out. You can't work other stations while seated, so call your orders out. |
+| **Ballast** | Port wall, forward cabin, by the bulkhead | **FLOOD** valve (quiet) makes the sub heavier. **BLOW** valve (very loud, uses limited HP air) makes it lighter. Turn the handwheels by circling the mouse. Gauges: tank, HP air. In single-player mode (F5) the helm runs these with Numpad 2/8. |
+| **Sonar** | Starboard desk, forward cabin, against the bulkhead | Press **E** at the seat to sit; that puts the headset on. Circle the mouse on the **hydrophone wheel** to turn the listening bearing; the dial on the bulkhead shows where you're listening. Only you hear the hydrophone, and you must say what you hear out loud. |
+| **Scanner** | Port wall, forward cabin | **Scanner** switch: within ~30 m of the array, nearly stopped, it fills the SCAN gauge in ~25 s. It's **loud** the whole time it's on. |
+| **Engineering** | Aft compartment, through the bulkhead door | Engine gauge. The pilot sets speed; engineering's future job is engine upkeep. Life support is the rack of cylinders. |
+| **Bilge** | Aft compartment, port side | **Pump** switch: removes leak water, but it's loud. |
 
 **Leaks** hiss and spray. Find them by ear, then click and hold **steady** for 2 s to patch. A shaky patch doesn't last.
 

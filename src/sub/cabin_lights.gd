@@ -16,12 +16,25 @@ const MIN_LEVEL: float = 0.03
 var flicker: Dictionary = {}
 
 var _base: Dictionary = {}
+## Glowing strip materials and their full emission energy.
+var _strips: Dictionary = {}
 
 
 func _ready() -> void:
 	add_to_group(&"cabin_lights")
 	for l: Light3D in cabin_lights():
 		_base[l.get_instance_id()] = l.light_energy
+	if lights_root != null:
+		for n: Node in lights_root.get_children():
+			var mi: MeshInstance3D = n as MeshInstance3D
+			if mi == null or mi.mesh == null:
+				continue
+			var mat: StandardMaterial3D = mi.mesh.surface_get_material(0) as StandardMaterial3D
+			if mat != null and mat.emission_enabled:
+				# Own copy so dimming doesn't touch other users of the material.
+				mat = mat.duplicate() as StandardMaterial3D
+				mi.material_override = mat
+				_strips[mat] = mat.emission_energy_multiplier
 
 
 func cabin_lights() -> Array[Light3D]:
@@ -46,3 +59,5 @@ func _process(_delta: float) -> void:
 	for l: Light3D in cabin_lights():
 		var id: int = l.get_instance_id()
 		l.light_energy = float(_base.get(id, l.light_energy)) * lvl * float(flicker.get(id, 1.0))
+	for mat: StandardMaterial3D in _strips:
+		mat.emission_energy_multiplier = float(_strips[mat]) * lvl

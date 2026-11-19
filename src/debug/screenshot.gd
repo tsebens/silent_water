@@ -3,7 +3,8 @@ extends Node
 ## Debug capture, enabled with `--screenshot <path>`. Waits `--screenshot-delay`
 ## seconds (default 3) after the session starts, optionally points the local
 ## player's view with `--look <yaw_deg>,<pitch_deg>` and moves them with
-## `--at <x>,<z>`, places the apex with `--apex-rel <x>,<y>,<z>` (sub-local),
+## `--at <x>,<z>`, sits with `--sit pilot|sonar` (then --look is relative),
+## places the apex with `--apex-rel <x>,<y>,<z>` (sub-local),
 ## saves the frame as PNG, then quits.
 
 var _path: String = ""
@@ -13,6 +14,7 @@ var _has_look: bool = false
 var _at: Vector2 = Vector2.ZERO
 var _has_at: bool = false
 var _game: Game
+var _sit: String = ""
 var _apex_rel: Vector3 = Vector3.ZERO
 var _has_apex: bool = false
 
@@ -29,6 +31,8 @@ func setup(game: Game, args: PackedStringArray) -> void:
 				var p: PackedStringArray = args[i + 1].split(",")
 				_look = Vector2(float(p[0]), float(p[1]))
 				_has_look = true
+			"--sit":
+				_sit = args[i + 1]
 			"--apex-rel":
 				var r: PackedStringArray = args[i + 1].split(",")
 				_apex_rel = Vector3(float(r[0]), float(r[1]), float(r[2]))
@@ -47,8 +51,14 @@ func _run() -> void:
 	var me: Player = _game.local_player()
 	if me != null and _has_at:
 		me.position = Vector3(_at.x, 0.1, _at.y)
+	if me != null and _sit != "":
+		var seat_path: String = "Interior/Stations/Pilot/Seat" if _sit == "pilot" else "Interior/Stations/Sonar/Seat"
+		me.sit_in(_game.get_node(seat_path) as StationSeat)
+		await get_tree().create_timer(0.3).timeout
 	if me != null and _has_look:
-		me.rotation.y = deg_to_rad(_look.x)
+		me.rotation.y += deg_to_rad(_look.x) if _sit != "" else 0.0
+		if _sit == "":
+			me.rotation.y = deg_to_rad(_look.x)
 		(me.get_node("Head") as Node3D).rotation.x = deg_to_rad(_look.y)
 	if _has_apex:
 		var apex: ApexMonster = _game.get_node("World/Apex") as ApexMonster

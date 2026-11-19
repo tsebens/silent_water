@@ -10,8 +10,8 @@ uniform float flake_size = 0.035;
 uniform float fall_speed = 0.04;
 // Hull volume (sub-local) where no flakes may appear, and the sub's rotation.
 uniform mat3 sub_basis_inv = mat3(1.0);
-uniform vec3 hull_center = vec3(0.0, 1.2, 0.0);
-uniform vec3 hull_half_extents = vec3(2.0, 1.7, 6.5);
+uniform vec3 hull_center = vec3(0.0, 0.98, 0.0);
+uniform vec3 hull_half_extents = vec3(2.1, 2.1, 5.1);
 // Faint self-illumination so flakes read as a motion cue even outside the
 // lights. Lights still make them much brighter.
 uniform float self_glow = 0.35;

@@ -1,5 +1,5 @@
 class_name PilotSeat
-extends Interactable
+extends StationSeat
 ## The pilot's chair. Sitting in it (E) locks the player to [member sit_point]
 ## and gives them the helm: W/S throttle, A/D rudder, R/F dive planes. In
 ## single-player developer mode ([DevSettings]) the pilot also runs the
@@ -14,8 +14,6 @@ const BALLAST_KEY_RATE: float = 2.0
 @export var planes: SpringAxis
 @export var flood_valve: Interactable
 @export var blow_valve: Interactable
-## Where the seated player's feet go (sub-local, relative to this node).
-@export var sit_point: Node3D
 
 var _has_ballast: bool = false
 
@@ -49,12 +47,16 @@ func drive(throttle_dir: float, rudder_dir: float, planes_dir: float, ballast_di
 		flood_valve.drive_to(move_toward(flood_valve.get_normalized(), 1.0 if ballast_dir < 0.0 else 0.0, step), true)
 
 
-func seat_transform() -> Transform3D:
-	return sit_point.global_transform if sit_point != null else global_transform
-
-
 func interaction_hint() -> String:
 	return "press E to take the helm"
+
+
+func station_name() -> String:
+	return "HELM" + ("  · SINGLE-PLAYER" if DevSettings.single_player else "")
+
+
+func seated_hint() -> String:
+	return helm_hint()
 
 
 ## Controls hint shown while seated.

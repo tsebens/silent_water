@@ -9,6 +9,11 @@ signal worn_changed(worn_locally: bool)
 @export var cord_length: float = 2.2
 
 
+func _ready() -> void:
+	super._ready()
+	holder_changed.connect(func(peer_id: int) -> void: visible = peer_id == InteractableState.NO_HOLDER)
+
+
 func begin_interaction() -> void:
 	super.begin_interaction()
 	worn_changed.emit(true)

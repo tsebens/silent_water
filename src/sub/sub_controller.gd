@@ -10,8 +10,8 @@ signal hull_strike(speed: float)
 
 const LAYER_EXTERIOR: int = 1 << 3
 ## Hull collision box in sub-local space (matches the interior's outer shell).
-const HULL_SIZE: Vector3 = Vector3(3.8, 3.2, 12.8)
-const HULL_CENTER: Vector3 = Vector3(0, 1.2, 0)
+const HULL_SIZE: Vector3 = Vector3(4.0, 4.0, 10.0)
+const HULL_CENTER: Vector3 = Vector3(0, 0.98, 0)
 ## Minimum impact speed that counts as a strike.
 const STRIKE_THRESHOLD: float = 0.15
 

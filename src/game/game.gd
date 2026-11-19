@@ -7,7 +7,7 @@ extends Node3D
 const PLAYER_SCENE: PackedScene = preload("res://src/player/player.tscn")
 ## Spawn points along the corridor, sub-local.
 const SPAWN_POINTS: Array[Vector3] = [
-	Vector3(0, 0.1, -1.0), Vector3(0, 0.1, 1.0), Vector3(0.8, 0.1, 2.5), Vector3(-0.8, 0.1, -2.5),
+	Vector3(-0.9, 0.1, 1.2), Vector3(-0.9, 0.1, 0.3), Vector3(0.3, 0.1, 1.3), Vector3(0.9, 0.1, 0.1),
 ]
 
 @onready var sub_frame: SubFrame = $SubFrame
