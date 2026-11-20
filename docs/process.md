@@ -33,8 +33,8 @@ Six roles. Five are Claude sessions; the dispatcher is deterministic code.
 
 | Role | Runs as | Input | Output |
 | --- | --- | --- | --- |
-| **Head developer** | Interactive cloud session with Tristan | Conversation | A `concept` issue |
-| **Organization agent** | Scheduled task | A `concept` issue | A proposed breakdown into arcs, posted as a comment; `plan-proposed` |
+| **Head developer** | Interactive cloud session with Tristan | Conversation | A `concept` issue, labeled `plan-needed` when its breakdown is wanted |
+| **Organization agent** | Scheduled task | A concept carrying `plan-needed` | A proposed breakdown into arcs, posted as a comment; `plan-needed` cleared, `plan-proposed` applied |
 | **Plan-review agent** | Scheduled task | A `plan-proposed` concept | Either the arc issues (created under milestones) and `plan-approved`, or objections and `plan-rejected` |
 | **Dispatcher** | GitHub Action (no Claude) | Labels, PR merges, a 15-minute cron | Marks arcs `ready`, claims them up to the worker cap, fires development agents |
 | **Development agent** | Scheduled task, then subscribed to its PR | A `claimed` arc | An arc branch and a PR into `dev`; stays with the PR through CI and review until it merges |
@@ -43,6 +43,8 @@ Six roles. Five are Claude sessions; the dispatcher is deterministic code.
 ### Head developer
 
 Talks with Tristan about a feature, fix or adjustment until the idea is solid. Writes one `concept` issue per idea: the problem, the intended player experience, constraints, what is explicitly out of scope, and any design-doc sections it touches. Does not break the work down and does not write code. If the conversation settles an open design question, records it as a `Decision:` issue and in the design doc, as CLAUDE.md requires.
+
+When the concept is ready for breakdown, applies `plan-needed`. It goes on **last, in its own API call**, after `concept` and any other label the concept gets: one labeled event, one organization-agent run. `concept` itself is only the permanent marker of a concept issue and fires nothing.
 
 ### Organization agent
 
@@ -53,11 +55,11 @@ Reads the concept, the design doc, the open milestones and the open arcs. Decide
 - `Touches:` the systems or folders the arc will change (its blast radius)
 - `Blocked by:` other arcs it depends on, including arcs from the same concept and outstanding arcs already on the board. Two arcs with overlapping `Touches:` are chained even when logically independent, so only one of them is in flight at a time
 
-Posts the breakdown as a comment on the concept issue and applies `plan-proposed`. Creates no issues itself.
+Posts the breakdown as a comment on the concept issue, then in one step removes `plan-needed` (and `plan-rejected` if present) and applies `plan-proposed`. Creates no issues itself. If the concept already carries `plan-proposed` when the agent starts, the firing was late or a duplicate: it does nothing and ends.
 
 ### Plan-review agent
 
-A second pair of eyes before one misread concept fans out into several wasted development runs. Checks the proposal against the concept and the design doc: is anything missing, is anything out of scope, are the dependencies right, is each arc small enough to finish in one session, are the acceptance criteria testable. On approval it creates the arc issues as sub-issues of their milestones with the `arc` label, copies `Touches:` and `Blocked by:` into each body, adds them to the board in Backlog, labels unblocked arcs `ready` and the rest `blocked`, and applies `plan-approved` to the concept. On rejection it comments its objections and applies `plan-rejected`, which re-fires the organization agent. Two rejections on one concept escalate to `needs-human`.
+A second pair of eyes before one misread concept fans out into several wasted development runs. Checks the proposal against the concept and the design doc: is anything missing, is anything out of scope, are the dependencies right, is each arc small enough to finish in one session, are the acceptance criteria testable. On approval it creates the arc issues as sub-issues of their milestones with the `arc` label, copies `Touches:` and `Blocked by:` into each body, adds them to the board in Backlog, labels unblocked arcs `ready` and the rest `blocked`, and applies `plan-approved` to the concept. On rejection it comments its objections, removes `plan-proposed`, applies `plan-rejected`, and then applies `plan-needed` **last, in its own API call**; that final label is what fires the organization agent again. Two rejections on one concept escalate to `needs-human` instead, and the escalation does not apply `plan-needed`.
 
 ### Dispatcher
 
@@ -113,10 +115,11 @@ Rework is done by the development agent that opened the PR, woken through its su
 
 | Label | On | Meaning | Set by | Cleared by |
 | --- | --- | --- | --- | --- |
-| `concept` | issue | Input to the organization agent | Head developer | never |
+| `concept` | issue | Marks a concept issue; fires nothing | Head developer | never |
+| `plan-needed` | concept | Breakdown wanted now; fires the organization agent | Head developer, plan-review agent (on rejection); always last, in its own call | Organization agent |
 | `plan-proposed` | concept | Breakdown awaits plan review | Organization agent | Plan-review agent |
 | `plan-approved` | concept | Arcs created; concept is done when they are | Plan-review agent | never |
-| `plan-rejected` | concept | Breakdown sent back; counts toward the plan cap | Plan-review agent | Organization agent |
+| `plan-rejected` | concept | Breakdown sent back; counts toward the plan cap | Plan-review agent (before `plan-needed`) | Organization agent |
 | `arc` | issue | A unit of work | Plan-review agent | never |
 | `blocked` | arc | Waits on `Blocked by:` issues | Plan-review agent | Dispatcher |
 | `ready` | arc | Eligible for claiming | Plan-review agent, dispatcher, Tristan | Dispatcher |
@@ -143,18 +146,21 @@ Rework is done by the development agent that opened the PR, woken through its su
 ### Concept
 
 ```
-created(concept) ─► organization agent ─► plan-proposed ─► plan-review agent
-                                                              │
-                              ┌───────────────────────────────┤
-                              ▼                               ▼
-                       plan-rejected (×1)                plan-approved → arcs exist
-                              │
-                              ▼
-                       organization agent ─► plan-proposed ─► plan-review agent
-                                                              │
-                              ┌───────────────────────────────┤
-                              ▼                               ▼
-                       plan-rejected (×2) → needs-human  plan-approved
+created(concept) ─► plan-needed ─► organization agent ─► plan-proposed ─► plan-review agent
+                     (applied last,   (clears plan-needed)                       │
+                      on its own)                                                │
+                                              ┌──────────────────────────────────┤
+                                              ▼                                  ▼
+                                   plan-rejected (×1), then plan-needed    plan-approved → arcs exist
+                                              │
+                                              ▼
+                                   organization agent ─► plan-proposed ─► plan-review agent
+                                   (clears plan-needed,                          │
+                                    plan-rejected)                               │
+                                              ┌──────────────────────────────────┤
+                                              ▼                                  ▼
+                                   plan-rejected (×2) → needs-human        plan-approved
+                                   (no plan-needed; nothing fires)
 ```
 
 ### Arc
@@ -179,26 +185,27 @@ blocked ──(blockers closed)──► ready ──(dispatcher, cap)──► 
 
 Each Claude role is a scheduled task on Tristan's Claude account, configured in the Claude Code web UI, running in the `silent_water` cloud environment (which installs Godot). The task's stored prompt is a stub of the form:
 
-> You are the *&lt;role&gt;* in the Silent Water pipeline. Read `.github/agents/<role>.md` in the repository and follow it exactly. Your input is in the fire payload or, for pull request events, the checked-out branch.
+> You are the *&lt;role&gt;* in the Silent Water pipeline. Read `.github/agents/<role>.md` in the repository and follow it exactly. Your input is in the trigger context or fire payload or, for pull request events, the checked-out branch.
 
 Everything else is in the repo: the exact stub text and the conventions shared by all roles are in [`.github/agents/README.md`](../.github/agents/README.md).
 
 | Role | Event | Filter | How fired | Input the session gets |
 | --- | --- | --- | --- | --- |
-| Organization | `issues.labeled` | label = `concept` or `plan-rejected` | Native trigger if issue-label filters prove available; else `fire.yml` | Issue number (payload `text`) |
-| Plan review | `issues.labeled` | label = `plan-proposed` | Same as above | Issue number |
+| Organization | `issues.labeled` | label = `plan-needed` | Native trigger | Issue number, from `<github-trigger-context>` |
+| Plan review | `issues.labeled` | label = `plan-proposed` | Native trigger | Issue number, from `<github-trigger-context>` |
 | Dispatcher | `issues` labeled/closed, `pull_request` closed, cron `*/15` | — | GitHub Action | Event |
-| Development | Dispatcher claim | — | Dispatcher calls the fire API with `{"text": "arc #n"}`; the session then subscribes to its own PR and is woken by PR events, not re-fired | Arc number, then PR events |
+| Development | Dispatcher claim | — | Dispatcher calls the fire API with `{"text": "arc #n"}`; the session then subscribes to its own PR and is woken by PR events, not re-fired | Arc number, from `<routine-fire-payload>`; then PR events |
 | Review | `pull_request.labeled` | label = `ci-green`, base = `dev` | Native trigger | Checkout at PR head; PR found from branch |
 
 Notes:
 
 - Native pull-request triggers support filters on Author, Title, Body, Base branch, Head branch, Labels, Is draft and Is merged, and the session checks out the PR head. Every PR hop uses them.
-- The docs list no filters for issue events and do not say what context an issue-triggered session receives. The web UI may offer more than the docs. **Setup step 7** tests one native issue trigger; if the fired session can see the issue number and the label filter holds, the organization and plan-review rows use native triggers. Otherwise `fire.yml` (an Action with `if: github.event.label.name == '…'` that POSTs to the task's fire endpoint with the issue number as `text`) stands in. Either way the role prompts are unchanged.
+- Native issue triggers are confirmed (first end-to-end run, #74, recorded on #68). A label filter fires, and the session receives a `<github-trigger-context>` block with the event type, the repository, and the issue number and URL. It does **not** say which label was added. The filter matches on the labels **present** on the issue at the time of the event, not on the label just added, so a filter on a permanent label such as `concept` fires again on every later label change. That is why the organization hop filters on the transient `plan-needed`, and why `plan-needed` is always applied last, in its own call. The role reads the issue's current labels from GitHub to learn its state.
+- `fire.yml` (an Action that POSTs to a task's fire endpoint with the issue number as `text`) is not needed for the organization or plan-review hops. Whether to keep it as a general fallback is [#65](https://github.com/tsebens/silent_water/issues/65), Tristan's call.
 - CI gating: `ci.yml` removes `ci-green` at the start of every PR run and adds it on success. The label event, not the push, is what fires the review agent, so the review agent never looks at a red or pending PR.
 - PR subscriptions deliver review, comment, CI and merge events for one PR into the session that subscribed, waking it from idle with its context intact. This is how rework reaches the development agent without a fired session, so `changes-requested` has no trigger row.
 - Native GitHub triggers do not queue. Events over the hourly caps are dropped, and a run blocked by the concurrent-session ceiling does not start. The labels hold the state and the dispatcher's cron retries, so nothing is lost; it is at most late.
-- Events caused by a workflow's `GITHUB_TOKEN` do not start other **Actions** workflows (which is why `fire.yml` and `dispatch.yml` use the `GH_MCP_PAT` secret where they must chain), but they do reach the Claude GitHub App's webhooks, which is what the `ci-green` row relies on. Setup step 7 confirms this too.
+- Events caused by a workflow's `GITHUB_TOKEN` do not start other **Actions** workflows (which is why `fire.yml` and `dispatch.yml` use the `GH_MCP_PAT` secret where they must chain), but they do reach the Claude GitHub App's webhooks, which is what the `ci-green` row relies on. Setup step 7 confirms this.
 
 ## Worker pool
 
@@ -217,17 +224,17 @@ There is no native "at most N runs" setting anywhere in the chain: Actions concu
 ## One-time setup (Tristan)
 
 1. Create `dev` from `main`. Protect `dev` and `main`: PRs only, CI required. Keep `main` default.
-2. Create the labels in the table above.
+2. Create the labels in the table above: `concept`, `plan-needed`, `plan-proposed`, `plan-approved`, `plan-rejected`, `arc`, `blocked`, `ready`, `claimed`, `in-review`, `ci-green`, `changes-requested`, `rework:1`, `rework:2`, `rework:3`, `approved`, `needs-human`. The table is the single list; agents never create labels.
 3. Add repository variables `WORKER_CAP=2`, `PIPELINE_PAUSED=false`, and the secret `GH_MCP_PAT` (same value as the cloud environment's `GITHUB_MCP_PAT` used by `.mcp.json`; Actions reserves the `GITHUB_*` prefix for secrets. Needs issues read/write, pull requests read and user-projects read/write, or classic `repo` + `project`).
 4. Install the Claude GitHub App on `tsebens/silent_water` (required for native triggers).
 5. Create four scheduled tasks (organization, plan-review, development, review) in the Claude Code web UI, each with the stub prompt above, the `silent_water` environment, and the trigger from the table. The development task is API-only (no schedule, no GitHub trigger).
-6. Copy the development task's fire URL and token into repository secrets `FIRE_URL_DEV` and `FIRE_TOKEN_DEV`. If `fire.yml` is needed for issue events, do the same for the organization and plan-review tasks.
-7. **Verify** with a throwaway `concept` issue: does a native `issues.labeled` trigger with a label filter fire, and can the session see which issue fired it? Does `ci.yml` adding `ci-green` with `GITHUB_TOKEN` fire the review task? Does a development session that subscribed to its PR still wake after hours idle, and does a review posted under the same GitHub identity wake it? Record the answers in [#62](https://github.com/tsebens/silent_water/issues/62) and switch the trigger table rows accordingly.
+6. Copy the development task's fire URL and token into repository secrets `FIRE_URL_DEV` and `FIRE_TOKEN_DEV`. The organization and plan-review tasks use native issue triggers and need no fire secrets.
+7. **Verify** the remaining PR-side questions with a throwaway arc: does `ci.yml` adding `ci-green` with `GITHUB_TOKEN` fire the review task? Does a development session that subscribed to its PR still wake after hours idle, and does a review posted under the same GitHub identity wake it? Record the answers in [#62](https://github.com/tsebens/silent_water/issues/62). The issue-side question (do native `issues.labeled` triggers fire, and what does the session see) is answered; see the trigger-table notes.
 8. Run one deliberately tiny concept (a docs fix) end to end before trusting the pipeline with gameplay work.
 
 ## Open items
 
-- Confirm native issue-trigger filters and payload (setup step 7); until then the organization and plan-review hops are specified with both options.
+- **Answered:** native issue-trigger filters fire, the session receives the issue number in `<github-trigger-context>`, and the filter matches on labels present on the issue rather than the label just added (observed on #74, recorded on #68). The organization hop therefore fires on the transient `plan-needed`; see [#77](https://github.com/tsebens/silent_water/issues/77).
 - **Deferred: a fallback rework agent.** If a subscribed development session fails to wake (container reclaimed, subscription lost, session died) a PR could sit with `changes-requested` indefinitely. The fix would be a dispatcher check for `changes-requested` PRs with no push for 30+ minutes that fires a rework task to take over. Not built until it is observed to be a problem; until then such a PR surfaces in the dispatcher's run log and Tristan re-fires or resumes the session by hand.
 - Decide whether `Blocked by:` lines in the body or GitHub's native issue dependencies are the source for the dispatcher. Body lines are simpler to read from shell; native dependencies show on the board. The dispatcher can read both and treat the union as blocking.
 - The fire API is marked experimental. The curl lives in exactly one place, `.github/scripts/fire.sh`, so a header change is a one-line fix.
