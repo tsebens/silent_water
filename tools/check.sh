@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Headless project check: import, unit tests, and a two-process network smoke test.
+# Headless project check: import, unit tests, network smoke test, three-instance autotest.
 # Usage: tools/check.sh            (exits non-zero on any failure)
 # Env:   GODOT  path to the Godot binary (default: godot)
 set -uo pipefail
