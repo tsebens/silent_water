@@ -15,6 +15,10 @@ const SILENT_DB: float = -70.0
 ## A control has to be moving this loudly to clank (intensity).
 const CLANK_THRESHOLD: float = 0.03
 const CLANK_COOLDOWN: float = 0.35
+## Depth (m) below which the surface wash is silent.
+const WASH_DEPTH: float = 12.0
+## Wash intensity at the surface (same scale as other in-sub intensities).
+const WASH_INTENSITY: float = 0.01
 
 @export var controller: SubController
 @export var players: Node3D
@@ -26,8 +30,15 @@ var _engine: AudioStreamPlayer3D
 var _blow: AudioStreamPlayer3D
 var _flood: AudioStreamPlayer3D
 var _strike: AudioStreamPlayer
+var _wash: AudioStreamPlayer
 var _clank_cooldowns: Dictionary = {}
 var _connected_players: Dictionary = {}
+
+
+## Surface wash gain, 0..1: full at depth 0, falling smoothly to 0 at WASH_DEPTH.
+static func wash_gain(depth: float) -> float:
+	var f: float = clampf(1.0 - depth / WASH_DEPTH, 0.0, 1.0)
+	return f * f
 
 
 static func volume_for(intensity: float) -> float:
@@ -38,6 +49,10 @@ func _ready() -> void:
 	_engine = _loop(ProceduralSounds.engine_hum(), engine_point)
 	_blow = _loop(ProceduralSounds.hiss(), blow_point)
 	_flood = _loop(ProceduralSounds.gurgle(), flood_point)
+	_wash = AudioStreamPlayer.new()
+	_wash.bus = AudioBuses.INSIDE
+	_wash.stream = ProceduralSounds.surface_wash()
+	add_child(_wash)
 	_strike = AudioStreamPlayer.new()
 	_strike.bus = AudioBuses.FELT
 	_strike.stream = ProceduralSounds.thud()
@@ -53,6 +68,7 @@ func _process(delta: float) -> void:
 	_engine.pitch_scale = 0.8 + 0.5 * absf(controller.engine_output)
 	_drive(_blow, controller.blow_intensity())
 	_drive(_flood, controller.flood_intensity())
+	_drive_wash(controller.depth)
 	_update_clanks(delta)
 	_connect_players()
 
@@ -67,6 +83,17 @@ func _drive(player: AudioStreamPlayer3D, intensity: float) -> void:
 	player.volume_db = db
 	if not player.playing:
 		player.play(randf() * 0.5)
+
+
+func _drive_wash(depth: float) -> void:
+	var db: float = volume_for(WASH_INTENSITY * wash_gain(depth))
+	if wash_gain(depth) <= 0.0 or db < SILENT_DB:
+		if _wash.playing:
+			_wash.stop()
+		return
+	_wash.volume_db = db
+	if not _wash.playing:
+		_wash.play(randf() * 4.0)
 
 
 func _update_clanks(delta: float) -> void:

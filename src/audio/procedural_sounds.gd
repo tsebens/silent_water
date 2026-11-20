@@ -246,6 +246,33 @@ static func creak() -> AudioStreamWAV:
 		return _wav(s, false))
 
 
+## Water washing and slapping against the hull: a slow swell of low-passed
+## noise with sharp slaps. An 8 s loop; the swell is 0.25 Hz, so it tiles.
+static func surface_wash() -> AudioStreamWAV:
+	return _cached(&"surface_wash", func() -> AudioStreamWAV:
+		var n: int = RATE * 8
+		var s: PackedFloat32Array = PackedFloat32Array()
+		s.resize(n)
+		var rng: RandomNumberGenerator = _rng(12)
+		var low: float = 0.0
+		var slap: float = 0.0
+		for i: int in range(n):
+			var t: float = float(i) / RATE
+			low = lerpf(low, rng.randf_range(-1.0, 1.0), 0.08)
+			var swell: float = 0.55 + 0.45 * sin(TAU * 0.25 * t)
+			if rng.randf() < 0.00012:
+				slap = 1.0
+			slap *= 0.9992
+			s[i] = low * 1.6 * swell + rng.randf_range(-1.0, 1.0) * slap * 0.5
+		_fade_loop_edges(s, 2000)
+		var peak: float = 0.0
+		for v: float in s:
+			peak = maxf(peak, absf(v))
+		for i: int in range(n):
+			s[i] = s[i] / peak * 0.9
+		return _wav(s, true))
+
+
 ## Acoustic pinger on a Raindrop instrument: a clean tone burst every 2 s.
 static func pinger() -> AudioStreamWAV:
 	return _cached(&"pinger", func() -> AudioStreamWAV:
