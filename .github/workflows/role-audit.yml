@@ -55,8 +55,11 @@ jobs:
             echo "Created standing issue #$issue"
           fi
 
-          last=$(gh api "repos/$repo/issues/$issue/comments?per_page=100&sort=created&direction=desc" \
-            --jq '[.[] | .body | select(test("<!-- audit: ")) | capture("<!-- audit: (?<t>[^ ]+) -->").t] | first // empty')
+          # Comments come back oldest first and the endpoint ignores sort parameters; paginate,
+          # emit every marker, and take the latest timestamp (ISO-8601 UTC sorts lexically).
+          last=$(gh api --paginate "repos/$repo/issues/$issue/comments?per_page=100" \
+            --jq '.[] | .body | select(test("<!-- audit: ")) | capture("<!-- audit: (?<t>[^ ]+) -->").t' \
+            | sort | tail -n 1)
           if [ -z "$last" ]; then
             last=$(gh api "repos/$repo" --jq .created_at)
             echo "No previous audit; watermark is the repository creation time ($last)"
