@@ -127,6 +127,18 @@ func forward_speed() -> float:
 	return (basis().inverse() * velocity).dot(Vector3.FORWARD)
 
 
+## Maps the throttle lever position (-1..1) to the ordered engine (-1..1).
+## Inside ±[param dead_zone] of centre the order is exactly 0; beyond it the
+## order ramps linearly to ±1 at full travel, so there is no jump at the edge.
+static func throttle_order(lever: float, dead_zone: float) -> float:
+	var l: float = clampf(lever, -1.0, 1.0)
+	var dz: float = clampf(dead_zone, 0.0, 0.99)
+	var mag: float = absf(l)
+	if mag <= dz:
+		return 0.0
+	return signf(l) * (mag - dz) / (1.0 - dz)
+
+
 ## Advances the model.
 ## [param ordered_engine]: the pilot's throttle, -1..1.
 ## [param rudder], [param planes]: -1..1. Positive rudder turns to starboard;
