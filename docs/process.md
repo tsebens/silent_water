@@ -9,9 +9,9 @@ Tracked by [#62](https://github.com/tsebens/silent_water/issues/62).
 > | Role | Mechanism now |
 > | --- | --- |
 > | Review | **Actions**: `role-review.yml` on `pull_request_target.labeled` = `ci-green`, runs from the base branch, merges accepted PRs ([#95](https://github.com/tsebens/silent_water/issues/95)) |
-> | Development (build and rework) | **Actions**: `role-development.yml`. Build on `issues.labeled` = `ready` (arc issues; the label is the queue until the dispatcher is rebuilt, no worker cap) or `workflow_dispatch(arc)`; rework on `pull_request_target.labeled` = `changes-requested` on `arc/*` PRs, by the reviewer or by CI ([#101](https://github.com/tsebens/silent_water/issues/101)) |
+> | Development (build and rework) | **Actions**: `role-development.yml`. Build via `workflow_dispatch(arc)` from the dispatcher (or by hand); rework on `pull_request_target.labeled` = `changes-requested` on `arc/*` PRs, by the reviewer or by CI ([#101](https://github.com/tsebens/silent_water/issues/101)) |
 > | Organization, plan review | Not yet migrated; described below as scheduled tasks, currently off |
-> | Dispatcher | **Removed** for a clean slate ([#99](https://github.com/tsebens/silent_water/issues/99)). Until it is rebuilt under [#93](https://github.com/tsebens/silent_water/issues/93), the `ready` label is the queue: adding it starts a development build directly, with no worker cap and no board projection. Its last version (claim with `Touches:` overlap, worker cap, board projection) is on the `claude/admiring-hypatia-945m38` branch for reference |
+> | Dispatcher | **Actions**, rebuilt ([#107](https://github.com/tsebens/silent_water/issues/107)): label-change and close events plus a 30-minute cron; worker cap, `Touches:` overlap, unblocking, board projection. The only thing that starts builds |
 > | CI | Actions; applies `ci-green` with the PAT so the event starts the review job |
 >
 > Identity: roles act with the `GH_MCP_PAT` token (as Tristan) for now; a GitHub App token can replace it later as a secret swap. Configuration is files in this repo plus the secrets `CLAUDE_CODE_OAUTH_TOKEN` and `GH_MCP_PAT`. The sections below are rewritten role by role as each one migrates; until then, this note wins where they disagree.
@@ -75,14 +75,16 @@ A second pair of eyes before one misread concept fans out into several wasted de
 
 ### Dispatcher
 
-A workflow in `.github/workflows/dispatch.yml`, running on `issues` (labeled `ready`, closed), `pull_request` (closed) and a 15-minute cron. It is plain shell against the GitHub API (`.github/scripts/dispatch.sh`, unit-tested by `test_dispatch.sh` in CI, dry-runnable from the Actions tab), which keeps it cheap, fast and predictable. Each run:
+`.github/workflows/dispatch.yml` running `.github/scripts/dispatch.sh` (unit-tested by `test_dispatch.sh` in CI; dry-runnable from the Actions tab). Deterministic shell against the GitHub API, no Claude. It runs on every label change and close on issues and PRs (the primary clock: a merge or a new `ready` is handled within seconds) and on a 30-minute cron (recovery from a lost event). PR events use `pull_request_target`, so the workflow and script always come from `dev`; the job holds the PAT and must never run a PR's own copy of itself. Each run:
 
 1. Exits immediately if the repository variable `PIPELINE_PAUSED` is `true`.
-2. **Mirrors the board.** Arcs whose board Status is Ready but which lack the `ready` label get it (so Tristan can promote work from the board UI). Arcs that are Done on the board but still open are flagged in the run log.
-3. **Unblocks.** For each `blocked` arc, if every issue in its `Blocked by:` list is closed, swap `blocked` for `ready`.
-4. **Claims.** In-flight count = open arcs labeled `claimed` or `in-review`. While in-flight is below `WORKER_CAP` (repository variable, start at 2): take the oldest `ready` arc whose `Touches:` do not overlap any in-flight arc, swap `ready` for `claimed`, and fire the development task with `{"text": "arc #<n>"}`. Comment the returned session URL on the issue.
+2. **Mirrors the board.** Arcs whose board Status is Ready but which lack the `ready` label get it, so Tristan can promote work from the board UI.
+3. **Unblocks.** For each `blocked` arc, if every issue in its `Blocked by:` line and in GitHub's native blocked-by dependencies is closed, swap `blocked` for `ready`.
+4. **Claims.** In-flight count = open arcs labeled `claimed` or `in-review` (a PR awaiting review or rework still occupies its slice of `dev`). While in-flight is below `WORKER_CAP` (repository variable, start at 2): take the oldest `ready` arc whose `Touches:` do not overlap any in-flight arc (prefix-directory match; an arc with no `Touches:` line counts as touching everything), swap `ready` for `claimed`, start `role-development.yml` with `gh workflow run`, and comment the run URL on the arc. If the run cannot be started, revert to `ready`.
+5. **Projects labels onto the board**: arcs `blocked` → Backlog, `ready` → Ready, `claimed` → In progress, `in-review` → In review (or In progress while the PR carries `changes-requested`), closed → Done; concepts `plan-approved` → In progress, otherwise Backlog, closed → Done. Closed arcs also lose any stale state label. Items carrying `needs-human` are left where they are.
+6. **Logs anomalies**: an arc PR that has carried `changes-requested` for 30+ minutes with no rework run clearing it.
 
-Because the cron re-runs this from the labels alone, a dropped webhook or a session that never started is picked up within 15 minutes.
+The dispatcher is the only thing that starts builds: `ready` is a queue marker, not a trigger.
 
 ### Development agent
 
@@ -210,7 +212,7 @@ Everything else is in the repo: the exact stub text and the conventions shared b
 | --- | --- | --- | --- | --- |
 | Organization | `issues.labeled` | label = `plan-needed` | Native trigger | Issue number, from `<github-trigger-context>` |
 | Plan review | `issues.labeled` | label = `plan-proposed` | Native trigger | Issue number, from `<github-trigger-context>` |
-| Dispatcher | `issues` labeled/closed, `pull_request` closed, cron `*/15` | — | GitHub Action | Event |
+| Dispatcher | `issues` labeled/unlabeled/closed/reopened; `pull_request_target` labeled/unlabeled/closed; cron `*/30`; manual (dry run) | — | GitHub Action, PAT | Event |
 | Development | Dispatcher claim | — | Dispatcher calls the fire API with `{"text": "arc #n"}`; the session then subscribes to its own PR and is woken by PR events, not re-fired | Arc number, from `<routine-fire-payload>`; then PR events |
 | Review | `pull_request.labeled` | label = `ci-green`, base = `dev` | Native trigger | Checkout at PR head; PR found from branch |
 
