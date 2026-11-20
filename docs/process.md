@@ -10,7 +10,8 @@ Tracked by [#62](https://github.com/tsebens/silent_water/issues/62).
 > | --- | --- |
 > | Review | **Actions**: `role-review.yml` on `pull_request_target.labeled` = `ci-green`, runs from the base branch, merges accepted PRs ([#95](https://github.com/tsebens/silent_water/issues/95)) |
 > | Organization, plan review, development | Not yet migrated; described below as scheduled tasks, currently off |
-> | Dispatcher, CI | Actions, unchanged; CI applies `ci-green` with the PAT so the event starts the review job |
+> | Dispatcher | **Removed** for a clean slate; it is rebuilt when the development role migrates. Its last version (claim with `Touches:` overlap, worker cap, board projection) is on the `claude/admiring-hypatia-945m38` branch for reference |
+> | CI | Actions; applies `ci-green` with the PAT so the event starts the review job |
 >
 > Identity: roles act with the `GH_MCP_PAT` token (as Tristan) for now; a GitHub App token can replace it later as a secret swap. Configuration is files in this repo plus the secrets `CLAUDE_CODE_OAUTH_TOKEN` and `GH_MCP_PAT`. The sections below are rewritten role by role as each one migrates; until then, this note wins where they disagree.
 
