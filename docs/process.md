@@ -35,7 +35,7 @@ Six roles. Five are Claude sessions; the dispatcher is deterministic code.
 | --- | --- | --- | --- |
 | **Head developer** | Interactive cloud session with Tristan | Conversation | A `concept` issue, labeled `plan-needed` when its breakdown is wanted |
 | **Organization agent** | Scheduled task | A concept carrying `plan-needed` | A proposed breakdown into arcs, posted as a comment; `plan-needed` cleared, `plan-proposed` applied |
-| **Plan-review agent** | Scheduled task | A `plan-proposed` concept | Either the arc issues (created under milestones) and `plan-approved`, or objections and `plan-rejected` |
+| **Plan-review agent** | Scheduled task | A `plan-proposed` concept | Either the arc issues (created under milestones) and `plan-approved`, or objections, `plan-rejected`, then `plan-needed` |
 | **Dispatcher** | GitHub Action (no Claude) | Labels, PR merges, a 15-minute cron | Marks arcs `ready`, claims them up to the worker cap, fires development agents |
 | **Development agent** | Scheduled task, then subscribed to its PR | A `claimed` arc | An arc branch and a PR into `dev`; stays with the PR through CI and review until it merges |
 | **Review agent** | Scheduled task | A PR with green CI | Squash-merge and Done, or `changes-requested` with a rework counter |
