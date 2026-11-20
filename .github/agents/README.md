@@ -2,9 +2,9 @@
 
 One file per Claude role in the development pipeline. The spec is [`docs/process.md`](../../docs/process.md); when a role prompt and the spec disagree, the spec wins and the prompt is the bug.
 
-> **Migration in progress** ([#93](https://github.com/tsebens/silent_water/issues/93)). Roles are moving from Claude scheduled tasks to GitHub Actions jobs that run the Claude Code CLI directly, one role at a time, starting with the reviewer. **Migrated:** `review`, `development` (which also covers rework). **Not yet migrated** (their files still describe the scheduled-task mechanism, which is disabled): `organization`, `plan-review`. The conventions below apply to migrated roles.
+All roles run this way as of [#93](https://github.com/tsebens/silent_water/issues/93); the scheduled-task pipeline is retired.
 
-A migrated role runs as a **GitHub Actions job** (`.github/workflows/role-<name>.yml`) through the shared [`claude-role`](../actions/claude-role/action.yml) action, which installs Claude Code, builds the system prompt from this README plus the role file, and runs `claude -p` with the run's context as the user message. Nothing about a role is stored outside this repository.
+Each role runs as a **GitHub Actions job** (`.github/workflows/role-<name>.yml`) through the shared [`claude-role`](../actions/claude-role/action.yml) action, which installs Claude Code, builds the system prompt from this README plus the role file, and runs `claude -p` with the run's context as the user message. Nothing about a role is stored outside this repository.
 
 ## Shared conventions (every role)
 
@@ -27,7 +27,7 @@ A migrated role runs as a **GitHub Actions job** (`.github/workflows/role-<name>
 
 - Labels are the pipeline's only state. The full set and what each means is in `docs/process.md`. **Never create a label.** If one you need does not exist, stop and escalate.
 - Workflows fire on a label being **added**, so applying a label is starting a job. Apply exactly the labels your role file says, in the order it says, and no others.
-- Current triggers: `ready` on an arc issue queues it for the dispatcher, which claims it (`claimed`) and starts a development build; `ci-green` on a PR starts review; `changes-requested` on an `arc/*` PR starts development in rework mode.
+- Current triggers: `concept` or `plan-rejected` on an issue starts organization; `plan-proposed` starts plan review; `ready` on an arc queues it for the dispatcher, which claims it (`claimed`) and starts a development build; `ci-green` on a PR starts review; `changes-requested` on an `arc/*` PR starts development in rework mode.
 - Reference the issue in every commit and PR: `Refs #n` for work in progress, `Closes #n` in the PR body for an arc.
 
 ### Escalating to a human
@@ -67,6 +67,13 @@ gh pr comment N --body-file comment.md
 gh pr review N --comment --body-file review.md          # a review that neither approves nor blocks
 gh pr review N --request-changes --body-file review.md
 gh pr merge N --squash --delete-branch --subject 'Title' --body-file merge.md
+
+# Create an arc as a sub-issue of its milestone (plan-review agent)
+gh issue create --title 'M8.6 · Name' --label arc --label blocked --body-file body.md
+parent=$(gh api graphql -f query='{repository(owner:"tsebens",name:"silent_water"){issue(number:MILESTONE){id}}}' --jq .data.repository.issue.id)
+child=$(gh api graphql -f query='{repository(owner:"tsebens",name:"silent_water"){issue(number:NEW){id}}}' --jq .data.repository.issue.id)
+gh api graphql -H 'GraphQL-Features: sub_issues' -f query='mutation($p:ID!,$c:ID!){addSubIssue(input:{issueId:$p,subIssueId:$c}){issue{number}}}' -F p="$parent" -F c="$child"
+gh issue list --state all --search 'M8. in:title' --json number,title   # find the next free M<n>.<k>
 
 # Branches
 git fetch origin dev && git checkout -b arc/N-slug origin/dev
