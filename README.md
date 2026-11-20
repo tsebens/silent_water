@@ -20,7 +20,7 @@ Run a local crew of N players (1 host + N−1 clients, windows tiled):
 tools/launch.sh 4
 ```
 
-Run the headless checks (import, unit tests, two-process network smoke test):
+Run the headless checks (import, unit tests, network smoke test, three-instance autotest):
 
 ```bash
 tools/check.sh
