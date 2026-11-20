@@ -1,9 +1,9 @@
 class_name LeakSystem
 extends Node
 ## Host-side leak director. Opens one leak at a time at a random point, at a
-## depth-scaled random rate and after hull strikes. Water comes in while it's open. A patch closes
-## it for a time that scales with patch quality; then it reopens (the prototype
-## has one recurring leak). Also runs the bilge pump.
+## depth-scaled random rate and after hull strikes. Water comes in while it's
+## open. A patch closes it for a time that scales with patch quality; then it
+## reopens (the prototype has one recurring leak). Also runs the bilge pump.
 
 signal leak_opened(where: String)
 signal leak_patched(quality: float, hold_sec: float)

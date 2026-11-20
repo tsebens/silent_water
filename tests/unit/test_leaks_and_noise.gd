@@ -86,6 +86,7 @@ func test_leak_reopens_after_patch_wears_off() -> void:
 
 func test_spontaneous_rate_matches_mean_interval() -> void:
 	leaks._timer = 0.0
+	leaks._rng.seed = 12345  # deterministic: no random CI flake
 	var depth: float = LeakSystem.FLOOR_DEPTH
 	var dt: float = 0.5
 	var steps: int = 100000
@@ -94,7 +95,7 @@ func test_spontaneous_rate_matches_mean_interval() -> void:
 		if leaks.spontaneous_roll(dt, depth):
 			hits += 1
 	var expected: float = steps * dt * leaks.spontaneous_rate(depth)
-	expect(absf(hits - expected) < expected * 0.1, "hits %d vs expected %f" % [hits, expected])
+	expect(absf(hits - expected) < 5.0 * sqrt(expected), "hits %d vs expected %f" % [hits, expected])
 
 
 func test_depth_factor_monotonic_and_deeper_is_likelier() -> void:
