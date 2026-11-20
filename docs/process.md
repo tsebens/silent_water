@@ -75,7 +75,7 @@ A second pair of eyes before one misread concept fans out into several wasted de
 
 ### Dispatcher
 
-`.github/workflows/dispatch.yml` running `.github/scripts/dispatch.sh` (unit-tested by `test_dispatch.sh` in CI; dry-runnable from the Actions tab). Deterministic shell against the GitHub API, no Claude. It runs on every label change and close on issues and PRs (the primary clock: a merge or a new `ready` is handled within seconds) and on a 30-minute cron (recovery from a lost event). Each run:
+`.github/workflows/dispatch.yml` running `.github/scripts/dispatch.sh` (unit-tested by `test_dispatch.sh` in CI; dry-runnable from the Actions tab). Deterministic shell against the GitHub API, no Claude. It runs on every label change and close on issues and PRs (the primary clock: a merge or a new `ready` is handled within seconds) and on a 30-minute cron (recovery from a lost event). PR events use `pull_request_target`, so the workflow and script always come from `dev`; the job holds the PAT and must never run a PR's own copy of itself. Each run:
 
 1. Exits immediately if the repository variable `PIPELINE_PAUSED` is `true`.
 2. **Mirrors the board.** Arcs whose board Status is Ready but which lack the `ready` label get it, so Tristan can promote work from the board UI.

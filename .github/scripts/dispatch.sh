@@ -59,7 +59,11 @@ add_label()    { log "    #$1 +$2"; act gh issue edit "$1" -R "$REPO" --add-labe
 remove_label() { log "    #$1 -$2"; act gh issue edit "$1" -R "$REPO" --remove-label "$2" >/dev/null; }
 comment()      { act gh issue comment "$1" -R "$REPO" --body "$2" >/dev/null; }
 
-issue_is_closed() { [ "$(gh api "repos/$REPO/issues/$1" --jq .state)" = "closed" ]; }
+issue_is_closed() { # number -> 0 if closed. A failed lookup (deleted, inaccessible) counts as still open.
+  local state
+  state=$(gh api "repos/$REPO/issues/$1" --jq .state 2>/dev/null) || { log "    #$1: lookup failed; treating as open"; return 1; }
+  [ "$state" = "closed" ]
+}
 
 # "Touches: src/noise, src/sub/..." -> one normalised path per line.
 touches_of() {

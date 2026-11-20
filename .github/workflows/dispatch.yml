@@ -3,15 +3,17 @@ name: Dispatch
 # Pipeline dispatcher. Spec: docs/process.md, "Dispatcher". Logic: .github/scripts/dispatch.sh.
 #
 # Runs on every label change and close on issues and PRs (to project labels onto the board
-# and to claim newly ready arcs), and every 30 minutes as a safety net (events are the primary clock). Deterministic shell;
-# no Claude. Starts development runs with `gh workflow run`.
+# and to claim newly ready arcs), and every 30 minutes as a safety net (events are the primary
+# clock). Deterministic shell; no Claude. Starts development runs with `gh workflow run`.
 
 on:
   schedule:
     - cron: "*/30 * * * *"
   issues:
     types: [labeled, unlabeled, closed, reopened]
-  pull_request:
+  # pull_request_target, not pull_request: the workflow file and dispatch.sh must come from dev,
+  # never from a PR's own copy, because this job holds the PAT. It never needs the PR head.
+  pull_request_target:
     types: [labeled, unlabeled, closed]
   workflow_dispatch:
     inputs:
