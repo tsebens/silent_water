@@ -52,5 +52,6 @@ Launch arguments go after `--`: `--host`, `--join [address]`, `--port <n>`, `--n
 | `tools/` | Launch and check scripts; `compare_autotest.py` checks multi-instance runs; `convert_sub.py` builds the sub model |
 | `docs/` | Architecture notes |
 | `.github/agents/` | Pipeline role prompts, one per agent |
+| `.github/actions/` | Shared actions: `setup-godot` and `claude-role` (runs one pipeline agent with the Claude Code CLI) |
 | `.github/scripts/` | Dispatcher, its tests and the fire script |
 | `.github/workflows/` | CI and the dispatcher workflow |
