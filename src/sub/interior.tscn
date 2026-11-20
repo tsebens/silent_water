@@ -470,9 +470,9 @@ label = "bilge pump switch"
 position = Vector3(-1.9, 1.6, 2.8)
 rotation = Vector3(0, 1.5708, 0)
 script = ExtResource("3")
-readout = &"bilge_fraction"
+readout = &"bilge_water_t"
 title = "BILGE"
-max_value = 1.0
+max_value = 8.0
 sweep_deg = 180.0
 
 [node name="NoiseGauge" parent="Stations/Bilge" instance=ExtResource("6")]
