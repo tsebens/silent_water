@@ -1,0 +1,48 @@
+name: Dispatch
+
+# Pipeline dispatcher. Spec: docs/process.md, "Dispatcher". Logic: .github/scripts/dispatch.sh.
+#
+# Runs on every label change and close on issues and PRs (to project labels onto the board
+# and to claim newly ready arcs), and every 30 minutes as a safety net (events are the primary clock). Deterministic shell;
+# no Claude. Starts development runs with `gh workflow run`.
+
+on:
+  schedule:
+    - cron: "*/30 * * * *"
+  issues:
+    types: [labeled, unlabeled, closed, reopened]
+  pull_request:
+    types: [labeled, unlabeled, closed]
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: Log what would change without changing anything
+        type: boolean
+        default: true
+
+# Dispatcher runs must not interleave, or two runs could claim past the cap.
+# One pending run is enough: the latest run reconciles everything from the labels.
+concurrency:
+  group: dispatch
+  cancel-in-progress: false
+
+jobs:
+  dispatch:
+    if: vars.PIPELINE_PAUSED != 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    env:
+      # A PAT, not GITHUB_TOKEN: the board is a user project (unreachable with GITHUB_TOKEN)
+      # and the labels this run applies must start other workflows. Same value as the cloud
+      # environment's GITHUB_MCP_PAT; Actions reserves the GITHUB_* prefix for secrets.
+      GH_TOKEN: ${{ secrets.GH_MCP_PAT }}
+      WORKER_CAP: ${{ vars.WORKER_CAP || 2 }}
+      PIPELINE_PAUSED: ${{ vars.PIPELINE_PAUSED || 'false' }}
+      DRY_RUN: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run || 'false' }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: .github/scripts
+      - run: .github/scripts/dispatch.sh

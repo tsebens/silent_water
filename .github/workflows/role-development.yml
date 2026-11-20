@@ -4,14 +4,12 @@ name: "Role: development"
 # arc PR that was sent back by review or CI (rework mode). Same role, two triggers.
 # Spec: docs/process.md. Prompt: .github/agents/development.md.
 #
-# Build is started by `ready` being ADDED to an arc issue (the label is the queue until the
-# dispatcher is rebuilt) or by hand. Rework is started by `changes-requested` being ADDED to an
-# arc PR, by the reviewer or by CI. pull_request_target runs from the base branch, so the role's
-# instructions come from dev and the PR head is fetched as content.
+# Build is started by the dispatcher (gh workflow run) once it has claimed a `ready` arc, or by
+# hand. Rework is started by `changes-requested` being ADDED to an arc PR, by the reviewer or by
+# CI. pull_request_target runs from the base branch, so the role's instructions come from dev and
+# the PR head is fetched as content.
 
 on:
-  issues:
-    types: [labeled]
   pull_request_target:
     types: [labeled]
   workflow_dispatch:
@@ -30,12 +28,6 @@ jobs:
     if: >-
       vars.PIPELINE_PAUSED != 'true' && (
         github.event_name == 'workflow_dispatch' ||
-        (
-          github.event_name == 'issues' &&
-          github.event.label.name == 'ready' &&
-          contains(github.event.issue.labels.*.name, 'arc') &&
-          !contains(github.event.issue.labels.*.name, 'needs-human')
-        ) ||
         (
           github.event_name == 'pull_request_target' &&
           github.event.label.name == 'changes-requested' &&
@@ -60,8 +52,6 @@ jobs:
           EVENT: ${{ github.event_name }}
           LABEL: ${{ github.event.label.name }}
           ARC: ${{ github.event.issue.number || inputs.arc }}
-          ARC_TITLE: ${{ github.event.issue.title }}
-          ARC_LABELS: ${{ join(github.event.issue.labels.*.name, ', ') }}
           PR: ${{ github.event.pull_request.number }}
           PR_TITLE: ${{ github.event.pull_request.title }}
           PR_HEAD: ${{ github.event.pull_request.head.ref }}
@@ -79,13 +69,8 @@ jobs:
               echo "- The checkout is the base branch. Fetch and check out the head branch to work on it."
             else
               echo "- Mode: **build**"
-              if [ "$EVENT" = "workflow_dispatch" ]; then
-                echo "- Event: \`workflow_dispatch\` (manual start)"
-              else
-                echo "- Event: \`issues.labeled\`, label added: \`${LABEL}\`"
-                echo "- Labels on the issue now: ${ARC_LABELS}"
-              fi
-              echo "- Arc issue: #${ARC} \"${ARC_TITLE}\""
+              echo "- Event: \`workflow_dispatch\` (started by the dispatcher, or by hand)"
+              echo "- Arc issue: #${ARC}"
               echo "- Integration branch: \`dev\`"
             fi
             echo "__CTX__"

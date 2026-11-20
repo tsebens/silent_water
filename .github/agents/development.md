@@ -29,7 +29,7 @@ Stop conditions, against the issue's **current** state: comment why and end if t
 
 ### Steps
 
-1. **Claim.** `gh issue edit <n> --remove-label ready --add-label claimed` (the removal is a no-op after a manual start).
+1. **Claim.** The dispatcher normally swaps `ready` for `claimed` before starting you. If the arc still carries `ready` (a manual start), do it yourself: `gh issue edit <n> --remove-label ready --add-label claimed`.
 2. **Plan.** Comment on the arc with a short plan: files you will change or add, tests you will add, anything in the acceptance list you believe cannot be met as written.
 3. **Branch.** `git fetch origin dev && git checkout -b arc/<n>-<slug> origin/dev`.
 4. **Implement**, then **test** until `tools/check.sh` passes completely.

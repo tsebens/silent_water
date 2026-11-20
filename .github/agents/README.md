@@ -27,7 +27,7 @@ A migrated role runs as a **GitHub Actions job** (`.github/workflows/role-<name>
 
 - Labels are the pipeline's only state. The full set and what each means is in `docs/process.md`. **Never create a label.** If one you need does not exist, stop and escalate.
 - Workflows fire on a label being **added**, so applying a label is starting a job. Apply exactly the labels your role file says, in the order it says, and no others.
-- Current triggers: `ready` on an arc issue starts a development build; `ci-green` on a PR starts review; `changes-requested` on an `arc/*` PR starts development in rework mode.
+- Current triggers: `ready` on an arc issue queues it for the dispatcher, which claims it (`claimed`) and starts a development build; `ci-green` on a PR starts review; `changes-requested` on an `arc/*` PR starts development in rework mode.
 - Reference the issue in every commit and PR: `Refs #n` for work in progress, `Closes #n` in the PR body for an arc.
 
 ### Escalating to a human
