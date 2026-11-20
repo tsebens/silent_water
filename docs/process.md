@@ -68,7 +68,7 @@ Checks the proposal against the concept and the design doc: fidelity, design con
 2. **Mirrors the board.** Arcs whose board Status is Ready but which lack the `ready` label get it, so Tristan can promote work from the board UI.
 3. **Unblocks.** For each `blocked` arc, if every issue in its `Blocked by:` line and in GitHub's native blocked-by dependencies is closed, swap `blocked` for `ready`. A blocker that cannot be looked up counts as still open.
 4. **Claims.** In-flight count = open arcs labeled `claimed` or `in-review` (a PR awaiting review or rework still occupies its slice of `dev`). While in-flight is below `WORKER_CAP` (repository variable, start at 2): take the oldest `ready` arc whose `Touches:` do not overlap any in-flight arc (prefix-directory match; an arc with no `Touches:` line counts as touching everything), swap `ready` for `claimed`, start `role-development.yml` with `gh workflow run`, and comment the run URL on the arc. If the run cannot be started, revert to `ready`.
-5. **Projects labels onto the board**: arcs `blocked` → Backlog, `ready` → Ready, `claimed` → In progress, `in-review` → In review (or In progress while the PR carries `changes-requested`), closed → Done; concepts `plan-approved` → In progress, otherwise Backlog, closed → Done. Closed arcs also lose any stale state label. Items carrying `needs-human` are left where they are.
+5. **Projects labels onto the board**, first adding any arc or concept that is not yet a project item (plan review creates arcs without touching the board): arcs `blocked` → Backlog, `ready` → Ready, `claimed` → In progress, `in-review` → In review (or In progress while the PR carries `changes-requested`), closed → Done; concepts `plan-approved` → In progress, otherwise Backlog, closed → Done. Closed arcs also lose any stale state label. Items carrying `needs-human` are left where they are.
 6. **Logs anomalies**: an arc PR that has carried `changes-requested` for 30+ minutes with no rework run clearing it.
 
 The dispatcher is the only thing that starts builds: `ready` is a queue marker, not a trigger.
@@ -186,7 +186,7 @@ blocked ──(blockers closed)──► ready ──(dispatcher, cap)──► 
 | `role-review.yml` | `pull_request_target.labeled` | label is `ci-green`; base `dev`; same-repo head; not draft; lacks `needs-human` | yes |
 | `ci.yml` | `push` to `dev`/`main`; `pull_request` | — | yes |
 
-Every job also requires `vars.PIPELINE_PAUSED != 'true'`, has a `concurrency` group per issue or PR, and a `timeout-minutes`.
+Every job also requires `vars.PIPELINE_PAUSED != 'true'`, has a `concurrency` group per issue or PR (plan review's is repository-wide, so arc numbering cannot race), and a `timeout-minutes`.
 
 Notes:
 

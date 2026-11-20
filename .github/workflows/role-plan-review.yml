@@ -7,9 +7,12 @@ on:
   issues:
     types: [labeled]
 
+# One plan review at a time across the repository: each run picks "the next free M<n>.<k>"
+# number, and two concurrent runs picked the same one (#124 and #126 were both M9.1).
 concurrency:
-  group: plan-review-${{ github.event.issue.number }}
+  group: plan-review
   cancel-in-progress: false
+  queue: max   # keep every pending review; the default queue holds one and cancels the rest
 
 jobs:
   plan-review:
