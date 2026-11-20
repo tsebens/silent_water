@@ -2,6 +2,7 @@ name: CI
 
 on:
   push:
+    branches: [dev, main]
   pull_request:
 
 jobs:
@@ -10,46 +11,28 @@ jobs:
     timeout-minutes: 15
     permissions:
       contents: read
-      issues: write
-      pull-requests: write
     env:
-      GODOT_VERSION: "4.7.2"
-      GH_TOKEN: ${{ github.token }}
+      # ci-green is applied with the PAT, not GITHUB_TOKEN: label events made with
+      # GITHUB_TOKEN do not start other workflows, and the review role fires on this label.
+      GH_TOKEN: ${{ secrets.GH_MCP_PAT }}
+      PR: ${{ github.event.pull_request.number }}
+      IS_LOCAL_PR: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository }}
     steps:
       - uses: actions/checkout@v4
 
-      # The pipeline's review agent fires on the ci-green label (docs/process.md,
-      # "Triggers"). Drop it on every PR run so the label only ever describes the
-      # current head, and add it back below when the checks pass.
+      # The review role fires when ci-green is ADDED (docs/process.md, "Triggers"). Drop it on
+      # every PR run so the label only ever describes the current head; add it back on success.
       - name: Clear ci-green
-        if: github.event_name == 'pull_request'
+        if: env.IS_LOCAL_PR == 'true'
         run: gh pr edit "$PR" --repo "$GITHUB_REPOSITORY" --remove-label ci-green || true
-        env:
-          PR: ${{ github.event.pull_request.number }}
 
       - name: Dispatcher unit tests
         run: .github/scripts/test_dispatch.sh
 
-      - name: Cache Godot
-        id: cache-godot
-        uses: actions/cache@v4
-        with:
-          path: ~/godot
-          key: godot-${{ env.GODOT_VERSION }}-linux-x86_64
-
-      - name: Download Godot
-        if: steps.cache-godot.outputs.cache-hit != 'true'
-        run: |
-          mkdir -p ~/godot
-          curl -sSL -o /tmp/godot.zip "https://downloads.godotengine.org/?version=${GODOT_VERSION}&flavor=stable&slug=linux.x86_64.zip"
-          unzip -q /tmp/godot.zip -d ~/godot
+      - uses: ./.github/actions/setup-godot
 
       - name: Check project
-        run: |
-          export GODOT=~/godot/Godot_v${GODOT_VERSION}-stable_linux.x86_64
-          export LOG_DIR="$RUNNER_TEMP/godot-logs"
-          mkdir -p "$LOG_DIR"
-          tools/check.sh
+        run: tools/check.sh
 
       - name: Upload logs
         if: failure()
@@ -59,7 +42,5 @@ jobs:
           path: ${{ runner.temp }}/godot-logs
 
       - name: Mark ci-green
-        if: success() && github.event_name == 'pull_request'
+        if: success() && env.IS_LOCAL_PR == 'true'
         run: gh pr edit "$PR" --repo "$GITHUB_REPOSITORY" --add-label ci-green
-        env:
-          PR: ${{ github.event.pull_request.number }}
