@@ -336,6 +336,29 @@ wraps = true
 wrap_labels = PackedStringArray("FWD", "STBD", "AFT", "PORT")
 radius = 0.13
 
+[node name="SignalGauge" type="Node3D" parent="Stations/Sonar"]
+position = Vector3(0.05, 1.4, 1.84)
+rotation = Vector3(0, 3.14159, 0)
+script = ExtResource("3")
+source_group = &"sonar_readouts"
+readout = &"signal"
+title = "SIGNAL"
+min_value = 40.0
+max_value = 110.0
+radius = 0.13
+
+[node name="BearingRateGauge" type="Node3D" parent="Stations/Sonar"]
+position = Vector3(0.75, 1.4, 1.84)
+rotation = Vector3(0, 3.14159, 0)
+script = ExtResource("3")
+source_group = &"sonar_readouts"
+readout = &"bearing_rate"
+title = "BRG RATE"
+min_value = -120.0
+max_value = 120.0
+sweep_deg = 180.0
+radius = 0.13
+
 [node name="NoiseGauge" parent="Stations/Sonar" instance=ExtResource("6")]
 position = Vector3(0.4, 1.85, 1.84)
 rotation = Vector3(0, 3.14159, 0)

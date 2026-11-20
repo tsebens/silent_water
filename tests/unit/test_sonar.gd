@@ -84,3 +84,83 @@ func test_wheel_mesh_spins_about_its_axle() -> void:
 	expect(is_equal_approx(w.bearing_deg(), 0.0), "bearing_deg untouched by visual")
 	w.free()
 	mi.free()
+
+
+func _rate_for(p0: Vector3, p1: Vector3, dt: float) -> float:
+	return SonarReadouts.rate_deg_per_min(SonarStation.bearing_of(p0), SonarStation.bearing_of(p1), dt)
+
+
+func test_bearing_rate_tangential() -> void:
+	# 100 m dead ahead, moving 1 m/s to starboard: atan(0.01) rad/s ≈ 34.4 deg/min.
+	var r: float = _rate_for(Vector3(0, 0, -100), Vector3(0.01, 0, -100), 0.01)
+	expect_near(r, 34.38, 0.2, "starboard-going contact")
+	expect(r > 0.0, "positive = clockwise")
+	var m: float = _rate_for(Vector3(0, 0, -100), Vector3(-0.01, 0, -100), 0.01)
+	expect_near(m, -r, 0.01, "mirrored motion flips sign")
+	# Across the 0/360 seam.
+	expect(_rate_for(Vector3(-0.01, 0, -100), Vector3(0.01, 0, -100), 0.02) > 0.0, "wraps through north")
+
+
+func test_bearing_rate_radial_is_zero() -> void:
+	expect_near(_rate_for(Vector3(30, 0, -40), Vector3(27, 0, -36), 1.0), 0.0, 0.001, "closing")
+
+
+func _station() -> SonarStation:
+	var s: SonarStation = SonarStation.new()
+	return s
+
+
+func test_bearing_rate_rests_below_threshold() -> void:
+	# A faint source (level at sub below threshold) leaves the needle at 0.
+	var s: SonarStation = _station()
+	var src: _FakeSource = _FakeSource.new(40.0)
+	src.position = Vector3(0, 0, -100)
+	s.add_child(src)
+	Engine.get_main_loop().root.add_child(s)
+	s._measure(0.1)
+	src.position = Vector3(5, 0, -100)
+	s._measure(0.1)
+	expect_near(s.bearing_rate, 0.0, 0.0001, "below threshold")
+	# Loud enough: the rate moves off zero in the right sense.
+	src.db = 140.0
+	for i: int in range(20):
+		src.position += Vector3(2, 0, 0)
+		s._measure(0.1)
+	expect(s.bearing_rate > 1.0, "above threshold: %f" % s.bearing_rate)
+	s.get_parent().remove_child(s)
+	s.free()
+
+
+func test_signal_strength_monotonic() -> void:
+	var near_p: Vector3 = Vector3(0, 0, -100)
+	var base: float = SonarReadouts.received_db(100.0, near_p, 0.0)
+	expect(SonarReadouts.received_db(110.0, near_p, 0.0) > base, "louder")
+	expect(SonarReadouts.received_db(100.0, Vector3(0, 0, -50), 0.0) > base, "nearer")
+	expect(SonarReadouts.received_db(100.0, near_p, 40.0) < base, "off beam")
+	expect(SonarReadouts.received_db(100.0, near_p, 20.0) > SonarReadouts.received_db(100.0, near_p, 40.0), "closer to beam")
+	var one: float = SonarReadouts.sum_db(PackedFloat32Array([60.0]), 0.0)
+	var two: float = SonarReadouts.sum_db(PackedFloat32Array([60.0, 60.0]), 0.0)
+	expect_near(two - one, 3.01, 0.05, "intensities sum")
+
+
+func test_readouts_replicate_to_client() -> void:
+	var host: SonarStation = _station()
+	host.signal_db = 77.0
+	host.bearing_rate = -42.0
+	var client: SonarStation = _station()
+	client._rpc_readouts(host.signal_db, host.bearing_rate)
+	expect_near(client.readout(&"signal"), host.readout(&"signal"), 0.0001, "signal")
+	expect_near(client.readout(&"bearing_rate"), host.readout(&"bearing_rate"), 0.0001, "rate")
+	host.free()
+	client.free()
+
+
+class _FakeSource extends Node3D:
+	var db: float
+
+	func _init(d: float) -> void:
+		db = d
+		add_to_group(&"outside_sources")
+
+	func outside_db() -> float:
+		return db
