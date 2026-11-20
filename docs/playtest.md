@@ -111,8 +111,13 @@ Arousal fades about 30 seconds after you go quiet. Patrolling lasts a minute or 
 | F5 | Single-player mode: the helm also runs the ballast (Numpad 8 or Page Up to blow, Numpad 2 or Page Down to flood, while held). Turns on automatically when you host alone in a development build (start with `-- --crew` to skip that); F5 toggles it. |
 | F4 | Switch the apex off or on for everyone (the host decides). While it's off, it's gone: no body, no sound, no hearing, no contact. Start the host with `-- --no-apex` to dive without it from the start. |
 | F6 | Switch spontaneous leaks off or on for everyone (the host decides). Hull-strike leaks still open. Start the host with `-- --no-leaks` to dive without them. |
+| F7 | Flip the surface light preset between day (default) and night. Start with `-- --night` for night. |
 | F3 | Simulate normal speech on your mic |
 | Shift+F3 | Simulate a shout |
+
+## Surfacing light
+
+Ascend slowly through the last 40 m. By day the water should visibly brighten well before the depth gauge reads near zero; by night (F7) the same cue should be there but subtle. Report whether either is too strong, too weak or too late. Presets live in `src/world/presets/`.
 
 ## During and after
 

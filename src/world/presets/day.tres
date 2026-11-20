@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="LightPreset" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://src/world/light_preset.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+preset_name = "day"
+sky_color = Color(0.3, 0.6, 0.75, 1)
+light_color = Color(0.85, 0.95, 1, 1)
+sun_energy = 1.2
+ambient_energy = 0.7
+surface_top_color = Color(0.1, 0.45, 0.6, 1)
+surface_under_color = Color(0.6, 0.9, 0.95, 1)
