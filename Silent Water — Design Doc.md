@@ -136,6 +136,7 @@ This is the highest-risk system. Prototype several versions.
 
 - **Terrain is always known** from the expedition ship's pre-dive survey and shown at the charts station or pin-table. Sonar adds what moves: creatures, vents and objectives.
 - **Passive (default)** is a listening job. The operator hears directional audio in their headphones and turns the hydrophone to locate sounds. It is vague and silent, and only the operator hears it.
+- **Bearing display:** the sonar station's main bezel shows a non-interactive heading-up hologram of the chart with a cone on the current hydrophone bearing and fading blobs where the operator has marked contacts. It is a memory aid for the operator, not a sonar picture.
 - **Active** pings paint a 3D cloud of points that fades over a few seconds, similar to Scanner Sombre. It is clear but loud, and gives the sub away.
 - **Wide or narrow:** a wide ping is blurry and announces you everywhere; a narrow beam is sharper and quieter but shows only a slice.
 - **Display options:** a phosphor point cloud, or a mechanical pin-table that rises into the shape of the terrain.
@@ -321,7 +322,7 @@ The prototype answers one question: is it tense and fun to coordinate a sub when
 - [x] One recurring leak with a field patch
 - [x] The noise system and two-needle gauge, with each player's mic loudness feeding the noise level
 - [x] One blind, sound-hunting apex monster with the full escalation ladder
-- [x] Minimal passive sonar: a hydrophone the operator turns, with directional audio only they hear. No active ping and no 3D display. This is the hardest system to calibrate, so expect to rework it many times.
+- [x] Minimal passive sonar: a hydrophone the operator turns, with directional audio only they hear. No active ping and no 3D display. (Later, the bearing display on the station bezel adds a chart overlay of marks; there is still no sonar picture.) This is the hardest system to calibrate, so expect to rework it many times.
 - [x] One small vertical map with two or three shelves
 - [x] One objective: a scan taken from the sub
 - [x] A played descent and ascent; the dive ends on surfacing

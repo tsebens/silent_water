@@ -33,6 +33,10 @@ const CONE_FLATTEN: float = 0.25
 @export var color: Color = Color(0.3, 0.85, 0.95)
 ## Scale of markers (display metres).
 @export var marker_size: float = 0.03
+## Draw the fading sonar-mark blobs ([member MapModel.marks]).
+@export var show_marks: bool = false
+## Blob radius for sonar marks (display metres).
+@export var mark_blob_size: float = 0.035
 
 ## World position at the centre of the display when not following the sub.
 var focus: Vector3 = Vector3(0, -110, -200)
@@ -40,6 +44,7 @@ var focus: Vector3 = Vector3(0, -110, -200)
 var _content: Node3D
 var _markers: Node3D
 var _pins_root: Node3D
+var _marks_root: Node3D
 var _materials: Array[ShaderMaterial] = []
 var _terrain_built: bool = false
 var _sub_arrow: MeshInstance3D
@@ -63,6 +68,9 @@ func _ready() -> void:
 	add_child(_markers)
 	_pins_root = Node3D.new()
 	_markers.add_child(_pins_root)
+	_marks_root = Node3D.new()
+	_marks_root.name = "Marks"
+	_markers.add_child(_marks_root)
 	_sub_arrow = _marker(_arrow_mesh(), Color(0.85, 1.0, 1.0), 0.5)
 	_objective = _marker(_diamond_mesh(), Color(1.0, 0.85, 0.3), 0.45)
 	_cone = _marker(null, Color(1.0, 0.85, 0.2), 0.05)
@@ -101,6 +109,8 @@ func _process(_delta: float) -> void:
 		_map_model = get_tree().get_first_node_in_group(&"map_model") as MapModel
 		if _map_model != null:
 			_map_model.changed.connect(_rebuild_pins)
+			_map_model.marks_changed.connect(_rebuild_marks)
+			_rebuild_marks()
 			_rebuild_pins()
 	var sub_pos: Vector3 = game.sub_frame.sub_transform.origin
 	var center: Vector3 = sub_pos if follow_sub else focus
@@ -120,7 +130,47 @@ func _update_markers(sub_pos: Vector3) -> void:
 	for pin_node: Node in _pins_root.get_children():
 		var n3: Node3D = pin_node as Node3D
 		n3.position = to_display(n3.get_meta(&"world") as Vector3)
+	_update_marks()
 	_update_cone(sub_pos)
+
+
+func _rebuild_marks() -> void:
+	for c: Node in _marks_root.get_children():
+		c.queue_free()
+	if _map_model == null or not show_marks:
+		return
+	var sphere: SphereMesh = SphereMesh.new()
+	sphere.radius = mark_blob_size
+	sphere.height = mark_blob_size * 2.0
+	sphere.radial_segments = 12
+	sphere.rings = 6
+	for m: Dictionary in _map_model.marks:
+		var mi: MeshInstance3D = MeshInstance3D.new()
+		mi.mesh = sphere
+		mi.material_override = _holo_material(MapModel.kind_color(MapModel.Kind.CONTACT), 0.0, 0.0)
+		mi.set_meta(&"world", m["pos"] as Vector3)
+		mi.set_meta(&"mark_id", int(m["id"]))
+		_marks_root.add_child(mi)
+
+
+## Fades and positions each blob; the brightest (newest) is the biggest.
+func _update_marks() -> void:
+	if _map_model == null or not show_marks:
+		return
+	var now: int = Time.get_ticks_msec()
+	for node: Node in _marks_root.get_children():
+		var mi: MeshInstance3D = node as MeshInstance3D
+		if mi == null or mi.is_queued_for_deletion():
+			continue
+		var id: int = int(mi.get_meta(&"mark_id"))
+		var k: float = 0.0
+		for m: Dictionary in _map_model.marks:
+			if int(m["id"]) == id:
+				k = MapModel.mark_intensity(MapModel.mark_age_s(m, now), _map_model.mark_fade_s)
+				break
+		mi.position = to_display(mi.get_meta(&"world") as Vector3)
+		mi.scale = Vector3.ONE * lerpf(0.4, 1.0, k)
+		(mi.material_override as ShaderMaterial).set_shader_parameter(&"alpha", 0.8 * k)
 
 
 ## The hydrophone's listening direction while someone is on sonar.
