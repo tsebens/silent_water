@@ -15,6 +15,8 @@ uniform vec3 hull_half_extents = vec3(2.1, 2.1, 5.1);
 // Faint self-illumination so flakes read as a motion cue even outside the
 // lights. Lights still make them much brighter.
 uniform float self_glow = 0.35;
+// Flakes at or above this world height (the water surface) are not drawn.
+uniform float surface_y = 0.0;
 uniform vec4 flake_color : source_color = vec4(0.75, 0.78, 0.72, 1.0);
 
 varying float edge_fade;
@@ -28,7 +30,7 @@ void vertex() {
 	vec3 local = mod(base - sub_pos, box_size) - box_size * 0.5;
 	// Skip flakes inside the hull: move them outside the clip volume.
 	vec3 in_sub = sub_basis_inv * local - hull_center;
-	if (all(lessThan(abs(in_sub), hull_half_extents))) {
+	if (local.y + sub_pos.y >= surface_y || all(lessThan(abs(in_sub), hull_half_extents))) {
 		POSITION = vec4(2.0, 2.0, 2.0, 1.0);
 		edge_fade = 0.0;
 	} else {

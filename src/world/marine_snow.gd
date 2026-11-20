@@ -15,6 +15,7 @@ func _ready() -> void:
 	_material = ShaderMaterial.new()
 	_material.shader = preload("res://src/world/marine_snow.gdshader")
 	_material.set_shader_parameter(&"box_size", box_size)
+	_material.set_shader_parameter(&"surface_y", OceanSurface.SURFACE_Y)
 	mesh = _build_mesh()
 	material_override = _material
 	cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
