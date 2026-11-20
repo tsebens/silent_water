@@ -66,6 +66,7 @@ A dive ends when you surface after the scan (success) or when it reaches you (lo
 | WASD | Walk; at the helm, W/S throttle and A/D rudder |
 | R / F | At the helm: dive planes (R rises, F dives) |
 | Numpad 8 / 2 (or Page Up / Page Down) | At the helm in single-player mode: blow / flood while held |
+| Space | Hop (clears steps and seat edges). Landing makes a thud, louder than a footstep |
 | Shift | Sneak (quieter footsteps) |
 | Esc | Release the mouse and let go of everything |
 

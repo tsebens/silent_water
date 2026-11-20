@@ -7,6 +7,7 @@ const ACTIONS: Dictionary = {
 	&"move_back": [KEY_S],
 	&"move_left": [KEY_A],
 	&"move_right": [KEY_D],
+	&"jump": [KEY_SPACE],
 	&"sneak": [KEY_SHIFT],
 	&"release_mouse": [KEY_ESCAPE],
 	&"dev_overlay": [KEY_F1],
