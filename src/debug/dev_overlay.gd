@@ -1,7 +1,8 @@
 class_name DevOverlay
 extends CanvasLayer
 ## Developer overlay, toggled with F1 in development builds (or with `--dev`).
-## F4 switches the apex off and on for everyone (host decides).
+## F4 switches the apex off and on for everyone (host decides); F6 does the
+## same for spontaneous leaks.
 ## Drawn over the normal view:
 ##   left       console: engine output, warnings, errors and game events
 ##              (host events reach clients too)
@@ -63,6 +64,11 @@ func _unhandled_input(event: InputEvent) -> void:
 		var apex: ApexMonster = game.get_node_or_null("World/Apex") as ApexMonster
 		if apex != null:
 			apex.request_active(not apex.active)
+		get_viewport().set_input_as_handled()
+	elif event.is_action_pressed(&"dev_toggle_leaks") and game != null:
+		var leak_system: LeakSystem = game.get_node_or_null("LeakSystem") as LeakSystem
+		if leak_system != null:
+			leak_system.request_spontaneous_disabled(not leak_system.spontaneous_disabled)
 		get_viewport().set_input_as_handled()
 
 
@@ -283,6 +289,10 @@ static func stats_text(g: Game) -> String:
 		lines.append("  distance %.0f m   speed %.1f m/s   depth %.0f m" % [dist, apex.speed, -apex.position.y])
 		lines.append("  suspicion %.0f   last SNR %s   alertness %.2f" % [
 			apex.sync_suspicion, ("%+.1f dB" % apex.sync_snr) if apex.sync_snr > -99.0 else "none", apex.sync_alertness])
+	var leak_system: LeakSystem = g.get_node_or_null("LeakSystem") as LeakSystem
+	if leak_system != null:
+		lines.append("LEAKS  spontaneous %s  (F6 to %s)" % [
+			"OFF" if leak_system.spontaneous_disabled else "on", "enable" if leak_system.spontaneous_disabled else "disable"])
 	var director: DiveDirector = g.get_node_or_null("DiveDirector") as DiveDirector
 	var scan: ScanObjective = g.get_node_or_null("ScanObjective") as ScanObjective
 	if director != null:

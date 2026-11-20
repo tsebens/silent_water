@@ -109,6 +109,7 @@ Arousal fades about 30 seconds after you go quiet. Patrolling lasts a minute or 
 | F1 | Developer overlay: console (engine output and game events, including the host's on clients), 3D minimap (sub green, apex red, array yellow), and live sub, noise, apex and dive stats. Launch with `-- --dev-overlay` to start with it on. |
 | F5 | Single-player mode: the helm also runs the ballast (Numpad 8 or Page Up to blow, Numpad 2 or Page Down to flood, while held). Turns on automatically when you host alone in a development build (start with `-- --crew` to skip that); F5 toggles it. |
 | F4 | Switch the apex off or on for everyone (the host decides). While it's off, it's gone: no body, no sound, no hearing, no contact. Start the host with `-- --no-apex` to dive without it from the start. |
+| F6 | Switch spontaneous leaks off or on for everyone (the host decides). Hull-strike leaks still open. Start the host with `-- --no-leaks` to dive without them. |
 | F3 | Simulate normal speech on your mic |
 | Shift+F3 | Simulate a shout |
 
