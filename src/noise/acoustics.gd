@@ -96,6 +96,15 @@ func voice_intensity(peer_id: int) -> float:
 	return float(_voices.get(peer_id, 0.0))
 
 
+## Seconds since [param peer_id] last reported its voice (host only). INF when
+## the peer has never reported. Below [constant VOICE_TIMEOUT] means the
+## intensity from [method voice_intensity] is live, not the timed-out zero.
+func voice_age(peer_id: int) -> float:
+	if not _voice_times.has(peer_id):
+		return INF
+	return _time - float(_voice_times[peer_id])
+
+
 ## Sub noise as heard at [param world_point] (linear intensity), with spreading
 ## loss and terrain occlusion. Host only; used by creatures.
 func heard_at(world_point: Vector3, sub_frame: SubFrame) -> float:
