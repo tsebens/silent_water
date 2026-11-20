@@ -36,8 +36,9 @@ jobs:
       contents: read
     env:
       # A PAT, not GITHUB_TOKEN: the board is a user project and the labels this
-      # run applies must fire webhooks and other workflows.
-      GH_TOKEN: ${{ secrets.GITHUB_MCP_PAT }}
+      # run applies must fire webhooks and other workflows. Same value as the cloud
+      # environment's GITHUB_MCP_PAT; Actions reserves the GITHUB_* prefix.
+      GH_TOKEN: ${{ secrets.GH_MCP_PAT }}
       FIRE_URL_DEV: ${{ secrets.FIRE_URL_DEV }}
       FIRE_TOKEN_DEV: ${{ secrets.FIRE_TOKEN_DEV }}
       WORKER_CAP: ${{ vars.WORKER_CAP || 2 }}

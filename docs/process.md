@@ -198,7 +198,7 @@ Notes:
 - CI gating: `ci.yml` removes `ci-green` at the start of every PR run and adds it on success. The label event, not the push, is what fires the review agent, so the review agent never looks at a red or pending PR.
 - PR subscriptions deliver review, comment, CI and merge events for one PR into the session that subscribed, waking it from idle with its context intact. This is how rework reaches the development agent without a fired session, so `changes-requested` has no trigger row.
 - Native GitHub triggers do not queue. Events over the hourly caps are dropped, and a run blocked by the concurrent-session ceiling does not start. The labels hold the state and the dispatcher's cron retries, so nothing is lost; it is at most late.
-- Events caused by a workflow's `GITHUB_TOKEN` do not start other **Actions** workflows (which is why `fire.yml` and `dispatch.yml` use the `GITHUB_MCP_PAT` secret where they must chain), but they do reach the Claude GitHub App's webhooks, which is what the `ci-green` row relies on. Setup step 7 confirms this too.
+- Events caused by a workflow's `GITHUB_TOKEN` do not start other **Actions** workflows (which is why `fire.yml` and `dispatch.yml` use the `GH_MCP_PAT` secret where they must chain), but they do reach the Claude GitHub App's webhooks, which is what the `ci-green` row relies on. Setup step 7 confirms this too.
 
 ## Worker pool
 
@@ -218,7 +218,7 @@ There is no native "at most N runs" setting anywhere in the chain: Actions concu
 
 1. Create `dev` from `main`. Protect `dev` and `main`: PRs only, CI required. Keep `main` default.
 2. Create the labels in the table above.
-3. Add repository variables `WORKER_CAP=2`, `PIPELINE_PAUSED=false`, and the secret `GITHUB_MCP_PAT` (already used by `.mcp.json`; needs `repo` and `project` scopes).
+3. Add repository variables `WORKER_CAP=2`, `PIPELINE_PAUSED=false`, and the secret `GH_MCP_PAT` (same value as the cloud environment's `GITHUB_MCP_PAT` used by `.mcp.json`; Actions reserves the `GITHUB_*` prefix for secrets. Needs issues read/write, pull requests read and user-projects read/write, or classic `repo` + `project`).
 4. Install the Claude GitHub App on `tsebens/silent_water` (required for native triggers).
 5. Create four scheduled tasks (organization, plan-review, development, review) in the Claude Code web UI, each with the stub prompt above, the `silent_water` environment, and the trigger from the table. The development task is API-only (no schedule, no GitHub trigger).
 6. Copy the development task's fire URL and token into repository secrets `FIRE_URL_DEV` and `FIRE_TOKEN_DEV`. If `fire.yml` is needed for issue events, do the same for the organization and plan-review tasks.
