@@ -46,6 +46,8 @@ Minimal, and expected to change a lot.
 - **Hydrophone handwheel** (`HydrophoneWheel`): one turn swings the bearing 120°. Bearings are relative to the bow, clockwise. The **bearing dial** shows where it's trained.
 - **Beam** (`SonarStation.beam_gain_db`): ((1 + cos Δ)/2)^8. On bearing is 0 dB, 30° off is about −2.4 dB, 60° off about −10 dB, and abeam about −24 dB.
 - **What's on the hydrophone** (`OutsideAudio`): the apex's swimming (louder with speed) and calls, ambient vents, the ocean background, and the sub's own noise. The sub's own noise masks distant contacts, so a noisy sub is also a deaf one.
+- **Bearing display** (`BearingBezel/BearingDisplay`, a `HoloMap`): a non-interactive heading-up hologram on the station bezel, the shared chart with the sub at the centre facing up. While someone is on sonar it shows a yellow cone on the hydrophone bearing; its width is `HoloMap.SONAR_CONE_HALF_ANGLE_DEG`, the same constant as the pilot map.
+- **Marks** (`M`, `SonarSeat.mark_contact`): still add a `CONTACT` chart pin, and also a transient mark in `MapModel.marks`, host-owned and replicated like pins (`_rpc_add_mark` → host → `_rpc_set_marks`; ages travel, not timestamps). Intensity is `MapModel.mark_intensity(age, fade)`: 1 when new, 0 at `mark_fade_s` (default 60 s), then pruned. The display draws each as a fading blob (`HoloMap.show_marks`, `mark_blob_size`), so repeated marks leave a trail brightest at the newest.
 - Full scale on the hydrophone is 95 dB at the sub. Everything is a constant in `OutsideAudio` or `SonarStation`.
 
 ## Losing the sub (`DiveDirector`)
