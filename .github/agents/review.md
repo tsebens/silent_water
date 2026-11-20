@@ -23,7 +23,7 @@ Work through these and note each finding with file and line.
 3. **Conventions.** `CLAUDE.md`: type hints everywhere, small scenes, signals over hard references, no new autoloads beyond the allowed three, no HUD without an in-world screen, content in Resources, noise as intensity. Design-doc consistency.
 4. **Correctness.** Logic errors, host/client authority mistakes (the host simulates; clients send intents), sub-frame violations (player positions in sub-local space), network sync of new interactables.
 5. **Tests.** New behaviour has unit tests; changed behaviour has updated tests; nothing was skipped or weakened to get green.
-6. **Integration.** The head contains the current `origin/dev` (`git merge-base --is-ancestor origin/dev FETCH_HEAD`). If not, that alone is a changes-requested outcome: "merge dev and re-run checks". Never resolve it yourself.
+6. **Integration.** A stale base alone is not a reason to block, because the pipeline merges an arc every few minutes. Let `base=$(git merge-base origin/dev FETCH_HEAD)`. If `git merge-base --is-ancestor origin/dev FETCH_HEAD` holds, this passes. Otherwise request changes ("merge dev and re-run checks") only if (a) a trial merge (`git merge-tree --write-tree origin/dev FETCH_HEAD`) reports a conflict, or (b) the files the PR changed (`git diff --name-only $base FETCH_HEAD`) intersect the files `dev` changed since the merge base (`git diff --name-only $base origin/dev`); an intersection under `src/` or `tests/` always requires the merge, since CI must have run against the real base for code. If neither holds, the stale base is a non-blocking note in the review (say how many files `dev` moved and that none overlap). Never resolve it yourself.
 7. **Docs.** `docs/*.md` and the design doc updated where behaviour they describe changed.
 8. **Pipeline files.** Changes under `.github/` or to `docs/process.md` are judged against the spec as it stands on `dev`. They may change the spec, but anything that weakens a guardrail (permissions, allowed tools, label gates, timeouts, what the reviewer may merge) needs an explicit reason in the PR body.
 
@@ -37,7 +37,7 @@ Exactly one of the following.
 
 All checks pass, or only have nits you would not block on (state them anyway).
 
-1. Post the review (`gh pr review N --comment`) with a body starting `## Review: accepted`, naming the head SHA you reviewed, and saying what the change does, what you verified, and any nits.
+1. Post the review (`gh pr review N --comment`) with a body starting `## Review: accepted`, naming the head SHA you reviewed, and saying what the change does, what you verified, and any nits (including a stale-base note from check 6, if any).
 2. Labels: add `approved`; remove `changes-requested` if a previous round left it on.
 3. **Merge**: `gh pr merge N --squash --delete-branch`, subject = the PR title, body = the PR body's summary (for an arc, including `Closes #<n>`).
 4. For an arc PR: confirm the arc issue is closed (close it if the merge did not). If every arc of its concept is now closed, close the concept too. If every sub-issue of the milestone is closed, comment on the milestone saying so (Tristan closes milestones).

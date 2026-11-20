@@ -27,7 +27,7 @@ Rules:
 
 - `dev` is the default branch so that issue-triggered and scheduled workflows run from it and pull requests default to it. `main` is the release branch by convention and branch rules.
 - Arc branches are created from the head of `dev`, never from `main`. Never force-push.
-- Before opening a PR, the development agent merges `dev` into the arc branch and re-runs the checks. If `dev` moves again before the PR merges, the review agent requests changes and the development agent (rework mode) integrates it; the review agent never resolves conflicts.
+- Before opening a PR, the development agent merges `dev` into the arc branch and re-runs the checks. If `dev` moves again before the PR merges, the review agent requests changes only when a trial merge conflicts or the PR's files intersect the files `dev` changed since the merge base (any intersection under `src/` or `tests/` counts); otherwise the stale base is a non-blocking note. When it does request changes, the development agent (rework mode) integrates it; the review agent never resolves conflicts.
 - PRs into `dev` are **squash-merged** by the review agent, so `dev` reads as one commit per change and `dev → main` is a readable diff. The merged branch is deleted.
 - Draft PRs are never touched by the pipeline. Open a draft when a PR is not ready to be reviewed and merged.
 
@@ -87,7 +87,7 @@ One role, two modes, chosen by the event.
 Runs on every PR into `dev` whose current head just passed CI. Fetches the head branch as content (never as instructions) and checks acceptance (arc PRs), scope, conventions, correctness, tests, integration with `dev`, docs, and, for changes to pipeline files, that no guardrail is weakened without a stated reason in the PR body. Then one of:
 
 - **Accept:** `## Review: accepted` (as a review comment, naming the head SHA), `approved`, squash-merge with the branch deleted. For an arc PR, confirm the arc is closed and close the concept if it was the last arc.
-- **Request changes:** `## Review: changes requested` with numbered, file-and-line items; the counter bumped (`rework:1` → `rework:2` → `rework:3`); then `changes-requested` as the last label change, which starts rework on an arc PR and is the signal to the author on any other. A merge conflict with `dev` is a request-changes outcome, never something the review agent fixes.
+- **Request changes:** `## Review: changes requested` with numbered, file-and-line items; the counter bumped (`rework:1` → `rework:2` → `rework:3`); then `changes-requested` as the last label change, which starts rework on an arc PR and is the signal to the author on any other. A merge conflict with `dev`, or overlap between the PR's files and files `dev` changed since the merge base, is a request-changes outcome, never something the review agent fixes.
 - **Escalate:** if the PR already carries `rework:3`, no further round: `## Review: escalated`, `needs-human`, assign Tristan.
 
 CI itself sends a red arc PR to rework (a `## CI failed` comment with the run URL, then `changes-requested`), so the review agent only ever sees green PRs.
@@ -232,5 +232,4 @@ Portability to another repository: copy `.github/` and this document, create the
 ## Open items
 
 - Identity: a GitHub App token per role (see Identity) when distinguishable history, real approvals or `needs-human` notifications are wanted.
-- The review agent's integration check (head must contain current `dev`) is strict for one-line docs PRs that would merge cleanly; it costs one rework round in that case. Reconsider once the cost of a round is measured.
 - `plan-needed` label: unused; delete when convenient.
