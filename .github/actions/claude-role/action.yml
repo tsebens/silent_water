@@ -113,6 +113,10 @@ runs:
         MODEL: ${{ inputs.model }}
       run: |
         set -uo pipefail
+        if [ -z "${CLAUDE_CODE_OAUTH_TOKEN:-}" ]; then
+          echo "::error::CLAUDE_CODE_OAUTH_TOKEN is empty. Add the repository secret (run 'claude setup-token' locally)."
+          exit 1
+        fi
         args=(-p --permission-mode acceptEdits --allowedTools "$ALLOWED_TOOLS"
               --append-system-prompt "$(cat "$RUNNER_TEMP/system.md")"
               --strict-mcp-config --no-session-persistence
@@ -122,9 +126,19 @@ runs:
           | jq -r 'select(.type == "assistant") | .message.content[]? | select(.type == "text") | .text' 2>/dev/null || true
         rc=${PIPESTATUS[0]}
         echo "::group::Result"
-        jq -r 'select(.type == "result") | "subtype=\(.subtype) turns=\(.num_turns) duration_ms=\(.duration_ms)\n\(.result // "")"' \
+        jq -r 'select(.type == "result") | "subtype=\(.subtype) is_error=\(.is_error) turns=\(.num_turns) duration_ms=\(.duration_ms)\n\(.result // "")"' \
           "$RUNNER_TEMP/transcript.jsonl" 2>/dev/null || true
         echo "::endgroup::"
+        # The CLI exits 0 and reports subtype=success even when it could not log in or errored
+        # out; treat those as failures so the job goes red instead of silently doing nothing.
+        if [ "$rc" -eq 0 ]; then
+          if ! jq -e 'select(.type == "result")' "$RUNNER_TEMP/transcript.jsonl" >/dev/null 2>&1; then
+            echo "::error::Claude Code produced no result event."; rc=1
+          elif jq -e 'select(.type == "result") | (.is_error == true) or (.subtype != "success") or ((.result // "") | test("Not logged in|Please run /login|Invalid API key"))' \
+                 "$RUNNER_TEMP/transcript.jsonl" >/dev/null 2>&1; then
+            echo "::error::Claude Code reported an error result (see Result above)."; rc=1
+          fi
+        fi
         exit "$rc"
 
     - name: Upload transcript
