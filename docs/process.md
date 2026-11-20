@@ -4,6 +4,16 @@ How work moves from an idea to `main` in Silent Water, and which agent does what
 
 Tracked by [#62](https://github.com/tsebens/silent_water/issues/62).
 
+> **Migration in progress** ([#93](https://github.com/tsebens/silent_water/issues/93)). The pipeline is moving from Claude scheduled tasks to GitHub Actions jobs that run the Claude Code CLI directly (`.github/actions/claude-role`), one role at a time, in reverse order. The scheduled tasks are disabled. Status:
+>
+> | Role | Mechanism now |
+> | --- | --- |
+> | Review | **Actions**: `role-review.yml` on `pull_request_target.labeled` = `ci-green`, runs from the base branch, merges accepted PRs ([#95](https://github.com/tsebens/silent_water/issues/95)) |
+> | Organization, plan review, development | Not yet migrated; described below as scheduled tasks, currently off |
+> | Dispatcher, CI | Actions, unchanged; CI applies `ci-green` with the PAT so the event starts the review job |
+>
+> Identity: roles act with the `GH_MCP_PAT` token (as Tristan) for now; a GitHub App token can replace it later as a secret swap. Configuration is files in this repo plus the secrets `CLAUDE_CODE_OAUTH_TOKEN` and `GH_MCP_PAT`. The sections below are rewritten role by role as each one migrates; until then, this note wins where they disagree.
+
 ## Principles
 
 - **The repo is the source of truth.** Role definitions, labels, the state machine and the dispatcher live in version control and change through pull requests. Anything stored elsewhere (scheduled-task prompts, tokens) is a thin pointer back here.
