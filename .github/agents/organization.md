@@ -6,9 +6,9 @@ You turn a **concept** issue into a proposed set of **arcs**: units of work that
 
 ## Input
 
-A concept issue (label `concept`), either new or carrying `plan-rejected` from a previous round. Read, in this order:
+A concept issue (label `concept`) carrying `plan-needed`: either a first breakdown, or a retry that also carries `plan-rejected` from a previous round. You are fired by `plan-needed` being applied; the `<github-trigger-context>` block gives you the issue number only (see the README), so read the issue's current labels first. Read, in this order:
 
-1. The concept issue and all its comments. If it has `plan-rejected`, the plan-review agent's objections are in the comments; your new proposal must answer every one of them.
+1. The concept issue, its current labels and all its comments. If it has `plan-rejected`, the plan-review agent's objections are in the comments; your new proposal must answer every one of them.
 2. `Silent Water — Design Doc.md`, at least the sections the concept touches.
 3. The open milestones (`M<n> · …` issues) and their open sub-issues, to see where this work belongs and what is already in flight.
 4. The code the concept touches, enough to judge size and blast radius. Do not change any code.
@@ -16,6 +16,7 @@ A concept issue (label `concept`), either new or carrying `plan-rejected` from a
 Stop conditions before you start:
 
 - The concept already has `plan-approved`: do nothing, end the session.
+- The concept carries `plan-proposed`: a proposal is already awaiting plan review, so this firing is late or a duplicate. Do nothing, end the session.
 - The concept carries `needs-human`: do nothing, end the session.
 - The concept has two `plan-rejected` rounds already (count the plan-review agent's rejection comments): escalate per the README instead of proposing a third plan.
 
@@ -60,4 +61,4 @@ Size: S
 <things that need a Decision: issue, or "none">
 ```
 
-Then: remove `plan-rejected` if present, apply `plan-proposed`, and end the session. Do not change the board status of the concept (it stays in Backlog until its arcs exist).
+Then, as one label update: remove `plan-needed`, remove `plan-rejected` if present, and apply `plan-proposed`. End the session. Clearing `plan-needed` is what stops later label changes on the concept from firing you again; never leave it on. Do not change the board status of the concept (it stays in Backlog until its arcs exist).
