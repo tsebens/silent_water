@@ -212,7 +212,7 @@ Everything else is in the repo: the exact stub text and the conventions shared b
 | --- | --- | --- | --- | --- |
 | Organization | `issues.labeled` | label = `plan-needed` | Native trigger | Issue number, from `<github-trigger-context>` |
 | Plan review | `issues.labeled` | label = `plan-proposed` | Native trigger | Issue number, from `<github-trigger-context>` |
-| Dispatcher | `issues` labeled/closed, `pull_request` closed, cron `*/15` | — | GitHub Action | Event |
+| Dispatcher | `issues` labeled/unlabeled/closed/reopened; `pull_request_target` labeled/unlabeled/closed; cron `*/30`; manual (dry run) | — | GitHub Action, PAT | Event |
 | Development | Dispatcher claim | — | Dispatcher calls the fire API with `{"text": "arc #n"}`; the session then subscribes to its own PR and is woken by PR events, not re-fired | Arc number, from `<routine-fire-payload>`; then PR events |
 | Review | `pull_request.labeled` | label = `ci-green`, base = `dev` | Native trigger | Checkout at PR head; PR found from branch |
 
