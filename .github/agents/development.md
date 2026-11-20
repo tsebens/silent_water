@@ -64,8 +64,9 @@ Cap: three `## CI failed` comments in a row with no `## Review` between them mea
 1. Address **every** numbered item of the latest `## Review: changes requested`, or the cause of the CI failure. If asked to integrate `dev`, `git merge origin/dev` and resolve conflicts.
 2. If a requested change is wrong (it contradicts the design doc or the arc's acceptance criteria), do not argue in the thread: make the changes you do agree with and state the disagreement once, with the reason, in your reply. The reviewer decides. If the same point was already disputed once, escalate instead.
 3. Run `tools/check.sh` until it passes.
-4. Commit with `Refs #<n>` and push the head branch.
-5. Reply on the PR under `## Rework` with a point-by-point account: for each review item or CI cause, what you changed and where. Add anything the next run should know.
-6. `gh pr edit <pr> --remove-label changes-requested`.
+4. Commit with `Refs #<n>`.
+5. `gh pr edit <pr> --remove-label changes-requested`. **Before** the push: if CI goes red on the new head while the label is still on the PR, CI's re-add would be a no-op and no rework run would start.
+6. Push the head branch.
+7. Reply on the PR under `## Rework` with a point-by-point account: for each review item or CI cause, what you changed and where. Add anything the next run should know.
 
-End. Your push makes CI run again; on green it adds `ci-green`, which starts the review job on the new head.
+End. Your push makes CI run again; on green it adds `ci-green`, which starts the review job on the new head; on red it adds `changes-requested` again, which starts another rework run.
