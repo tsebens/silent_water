@@ -1,0 +1,19 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://src/sub/bilge_water.gd" id="1"]
+[ext_resource type="Shader" path="res://src/sub/bilge_water.gdshader" id="2"]
+
+[sub_resource type="ShaderMaterial" id="water_mat"]
+shader = ExtResource("2")
+shader_parameter/clip_radius = 1.86
+
+[sub_resource type="PlaneMesh" id="water_plane"]
+size = Vector2(4, 8.4)
+subdivide_width = 24
+subdivide_depth = 48
+
+[node name="BilgeWater" type="MeshInstance3D"]
+visible = false
+material_override = SubResource("water_mat")
+mesh = SubResource("water_plane")
+script = ExtResource("1")
