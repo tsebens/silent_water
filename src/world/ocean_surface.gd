@@ -44,6 +44,16 @@ static func make_material(amp: float, wavelength_m: float, wave_speed: float) ->
 	return m
 
 
+## Sets the surface colours (from the active light preset).
+func set_colors(top: Color, under: Color) -> void:
+	if _material == null:
+		_material = material_override as ShaderMaterial
+	if _material == null:
+		return
+	_material.set_shader_parameter(&"top_color", top)
+	_material.set_shader_parameter(&"under_color", under)
+
+
 func _ready() -> void:
 	var plane: PlaneMesh = PlaneMesh.new()
 	plane.size = Vector2(size, size)
