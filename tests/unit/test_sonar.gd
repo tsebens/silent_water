@@ -40,3 +40,47 @@ func test_wheel_turns_bearing() -> void:
 func test_outside_level_at_sub() -> void:
 	# A 135 dB call 100 m away arrives at 105 dB (30 dB of spreading).
 	expect_near(OutsideAudio.level_at_sub(135.0, Vector3(0, 0, 100)), 105.0, 0.01)
+
+
+func _tilted_disc() -> MeshInstance3D:
+	# A thin disc whose axle is tilted 15° off +Z, like the exported wheel.
+	var tilt: Basis = Basis(Vector3.RIGHT, deg_to_rad(15.0))
+	var verts: PackedVector3Array = PackedVector3Array()
+	var idx: PackedInt32Array = PackedInt32Array()
+	for i: int in range(16):
+		var a: float = TAU * float(i) / 16.0
+		verts.append(tilt * Vector3(cos(a) * 0.16, sin(a) * 0.16, 0.05))
+		verts.append(tilt * Vector3(cos(a) * 0.16, sin(a) * 0.16, -0.05))
+	for i: int in range(32):
+		idx.append_array([i, (i + 1) % 32, (i + 2) % 32])
+	var arrays: Array = []
+	arrays.resize(Mesh.ARRAY_MAX)
+	arrays[Mesh.ARRAY_VERTEX] = verts
+	arrays[Mesh.ARRAY_INDEX] = idx
+	var mesh: ArrayMesh = ArrayMesh.new()
+	mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)
+	var mi: MeshInstance3D = MeshInstance3D.new()
+	mi.mesh = mesh
+	return mi
+
+
+func test_wheel_mesh_spins_about_its_axle() -> void:
+	var mi: MeshInstance3D = _tilted_disc()
+	var w: HydrophoneWheel = HydrophoneWheel.new()
+	w.wheel = mi
+	var axle: Vector3 = HydrophoneWheel.axle_of(mi)
+	var tilt_axis: Vector3 = Basis(Vector3.RIGHT, deg_to_rad(15.0)) * Vector3.BACK
+	expect(axle.dot(tilt_axis) > 0.999, "axle found: %s" % str(axle))
+	w._apply_visual(0.0)
+	var b0: Basis = mi.transform.basis
+	w._apply_visual(30.0)  # a quarter of a 120° turn... of bearing: 90° of wheel
+	var rel: Basis = b0.inverse() * mi.transform.basis
+	# Rotation relative to the start is purely about the axle.
+	var q: Quaternion = rel.get_rotation_quaternion()
+	expect(q.get_axis().cross(axle).length() < 0.001 or absf(q.get_angle()) < 0.001, "rotation about axle only")
+	expect_near(absf(q.get_angle()), deg_to_rad(90.0), 0.001, "angle")
+	# Increasing bearing turns clockwise seen from the operator (axle toward them).
+	expect(q.get_axis().dot(axle) < -0.999, "clockwise: sign matches bearing")
+	expect(is_equal_approx(w.bearing_deg(), 0.0), "bearing_deg untouched by visual")
+	w.free()
+	mi.free()
