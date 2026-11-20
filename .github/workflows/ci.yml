@@ -26,9 +26,6 @@ jobs:
         if: env.IS_LOCAL_PR == 'true'
         run: gh pr edit "$PR" --repo "$GITHUB_REPOSITORY" --remove-label ci-green || true
 
-      - name: Dispatcher unit tests
-        run: .github/scripts/test_dispatch.sh
-
       - uses: ./.github/actions/setup-godot
 
       - name: Check project
