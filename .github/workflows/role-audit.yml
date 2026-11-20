@@ -1,0 +1,96 @@
+name: "Role: audit"
+
+# Periodic review of the pipeline's own runs, transcripts and issue timelines. Read-only on the
+# pipeline: posts a report on the standing "Pipeline health" issue and opens unlabelled Concept:
+# proposals for Tristan. Spec: docs/process.md. Prompt: .github/agents/audit.md.
+#
+# The cron is hourly only as a floor. A schedule cannot read repository variables, so the gate
+# below enforces the real interval, vars.PIPELINE_REVIEW_INTERVAL minutes (default 360), and
+# also skips when nothing has happened since the last audit.
+
+on:
+  schedule:
+    - cron: "17 * * * *"
+  workflow_dispatch:
+    inputs:
+      force:
+        description: Run even if the interval has not elapsed or nothing happened
+        type: boolean
+        default: false
+
+concurrency:
+  group: audit
+  cancel-in-progress: false
+
+jobs:
+  audit:
+    if: vars.PIPELINE_PAUSED != 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: .github
+
+      - name: Gate
+        id: gate
+        env:
+          GH_TOKEN: ${{ secrets.GH_MCP_PAT }}
+          INTERVAL_MIN: ${{ vars.PIPELINE_REVIEW_INTERVAL || 360 }}
+          FORCE: ${{ github.event_name == 'workflow_dispatch' && inputs.force || 'false' }}
+        run: |
+          set -euo pipefail
+          repo="$GITHUB_REPOSITORY"
+          title="Pipeline health"
+
+          # The standing issue holds one comment per audit; its marker is the watermark.
+          issue=$(gh issue list -R "$repo" --state open --search "\"$title\" in:title" --json number,title \
+            --jq --arg t "$title" '[.[] | select(.title == $t)][0].number // empty')
+          if [ -z "$issue" ]; then
+            issue=$(gh issue create -R "$repo" --title "$title" --assignee tsebens --body \
+              "Standing issue for the pipeline audit role (docs/process.md). One comment per audit; the newest comment's \`<!-- audit: … -->\` marker is the watermark for the next run. Proposals are filed as separate unlabelled \`Concept:\` issues." \
+              | grep -oE '[0-9]+$')
+            echo "Created standing issue #$issue"
+          fi
+
+          last=$(gh api "repos/$repo/issues/$issue/comments?per_page=100&sort=created&direction=desc" \
+            --jq '[.[] | .body | select(test("<!-- audit: ")) | capture("<!-- audit: (?<t>[^ ]+) -->").t] | first // empty')
+          if [ -z "$last" ]; then
+            last=$(gh api "repos/$repo" --jq .created_at)
+            echo "No previous audit; watermark is the repository creation time ($last)"
+          fi
+
+          now=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+          elapsed=$(( ( $(date -u -d "$now" +%s) - $(date -u -d "$last" +%s) ) / 60 ))
+          runs=$(gh run list -R "$repo" --created ">=$last" --limit 300 --json databaseId --jq 'length')
+          changed=$(gh api "repos/$repo/issues?state=all&since=$last&per_page=100" --jq 'length')
+
+          echo "watermark=$last elapsed=${elapsed}m interval=${INTERVAL_MIN}m runs=$runs changed=$changed force=$FORCE"
+          run=true
+          if [ "$FORCE" != "true" ]; then
+            if [ "$elapsed" -lt "$INTERVAL_MIN" ]; then echo "Interval not elapsed; skipping."; run=false; fi
+            if [ "$runs" -eq 0 ] && [ "$changed" -eq 0 ]; then echo "Nothing happened since the last audit; skipping."; run=false; fi
+          fi
+          {
+            echo "run=$run"
+            echo "issue=$issue"
+            echo "watermark=$last"
+            echo "runs=$runs"
+            echo "changed=$changed"
+          } >> "$GITHUB_OUTPUT"
+
+      - uses: ./.github/actions/claude-role
+        if: steps.gate.outputs.run == 'true'
+        with:
+          role: audit
+          context: |
+            - Event: `${{ github.event_name }}`${{ github.event_name == 'workflow_dispatch' && ' (manual)' || '' }}
+            - Watermark (last audit): `${{ steps.gate.outputs.watermark }}`
+            - Standing issue: #${{ steps.gate.outputs.issue }} "Pipeline health"
+            - Since the watermark: ${{ steps.gate.outputs.runs }} workflow runs, ${{ steps.gate.outputs.changed }} issues or PRs updated
+            - Read-only on the pipeline: one report comment, unlabelled `Concept:` proposals assigned to tsebens, nothing else.
+          github-token: ${{ secrets.GH_MCP_PAT }}
+          oauth-token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          allowed-tools: "Bash,Read,Glob,Grep"

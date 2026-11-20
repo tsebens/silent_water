@@ -37,7 +37,7 @@ All roles act with the `GH_MCP_PAT` token, i.e. as Tristan. Consequences: agent 
 
 ## Roles
 
-Six roles. Five are Claude jobs; the dispatcher is deterministic code.
+Seven roles. Six are Claude jobs; the dispatcher is deterministic code.
 
 | Role | Runs as | Started by | Input | Output |
 | --- | --- | --- | --- | --- |
@@ -47,6 +47,7 @@ Six roles. Five are Claude jobs; the dispatcher is deterministic code.
 | **Dispatcher** | `dispatch.yml`, shell | Any label change or close on issues and PRs; cron `*/30` | Labels | Unblocks arcs, claims up to the worker cap, starts development builds, projects labels onto the board |
 | **Development agent** | `role-development.yml` | Build: `gh workflow run` from the dispatcher. Rework: `changes-requested` added to an `arc/*` PR | A `claimed` arc, or a sent-back PR | A PR into `dev` with a `## Handoff` comment; or a pushed fix with a `## Rework` reply |
 | **Review agent** | `role-review.yml` | `ci-green` added to a PR into `dev` | The PR | `## Review: accepted` + `approved` + squash-merge; or `## Review: changes requested` + `rework:N` + `changes-requested`; or escalation |
+| **Audit agent** | `role-audit.yml` | Hourly cron, gated to every `PIPELINE_REVIEW_INTERVAL` minutes (default 360) and only when something happened; or by hand | The pipeline's own runs, transcripts and timelines since the last audit | A report comment on the standing "Pipeline health" issue; unlabelled `Concept:` proposals assigned to Tristan |
 
 ### Head developer
 
@@ -90,6 +91,12 @@ Runs on every PR into `dev` whose current head just passed CI. Fetches the head 
 - **Escalate:** if the PR already carries `rework:3`, no further round: `## Review: escalated`, `needs-human`, assign Tristan.
 
 CI itself sends a red arc PR to rework (a `## CI failed` comment with the run URL, then `changes-requested`), so the review agent only ever sees green PRs.
+
+### Audit agent
+
+Read-only on the pipeline. Gathers every workflow run since the last audit (conclusions, durations, failed-job logs, transcript artifacts), the label timelines and role comments on issues and PRs updated in the window, and the dispatcher's logs, then works a fixed checklist: duplicate arc numbers, double claims, inconsistent labels, stuck PRs, re-fire loops, skipped-run storms, rework and escalation causes, concurrency cancellations and near-timeouts, recurring plan-review and review findings, CI failure causes, PAT-bearing jobs on PR-controlled refs, and cost per role. It reads its own previous reports for trends and to avoid re-filing. Output: one comment per audit on the standing **"Pipeline health"** issue (first line `<!-- audit: <ISO> -->`, which is the next run's watermark), and for each actionable finding an **unlabelled** `Concept:` issue assigned to Tristan with the evidence. Applying `concept` is Tristan's acceptance; the auditor never applies pipeline labels, edits files, renumbers or closes anything, and uses `needs-human` only for a PAT-bearing job on PR code, a runaway, or budget burning with nothing merging.
+
+The cron runs hourly as a floor; a shell gate enforces the real interval from `vars.PIPELINE_REVIEW_INTERVAL` (a schedule cannot read variables) and skips when no run, issue or PR has changed since the watermark.
 
 ## Issues and labels
 
@@ -184,6 +191,7 @@ blocked ──(blockers closed)──► ready ──(dispatcher, cap)──► 
 | `dispatch.yml` | `issues` labeled/unlabeled/closed/reopened; `pull_request_target` labeled/unlabeled/closed; cron `*/30`; manual (dry run) | — | no |
 | `role-development.yml` | `workflow_dispatch(arc)` (build); `pull_request_target.labeled` (rework) | rework: label is `changes-requested`; base `dev`; head `arc/*`; same-repo head; lacks `needs-human` | yes |
 | `role-review.yml` | `pull_request_target.labeled` | label is `ci-green`; base `dev`; same-repo head; not draft; lacks `needs-human` | yes |
+| `role-audit.yml` | cron `17 * * * *`; manual (`force`) | gate: `PIPELINE_REVIEW_INTERVAL` minutes elapsed (default 360) and activity since the watermark | no |
 | `ci.yml` | `push` to `dev`/`main`; `pull_request` | — | yes |
 
 Every job also requires `vars.PIPELINE_PAUSED != 'true'`, has a `concurrency` group per issue or PR (plan review's is repository-wide, so arc numbering cannot race), and a `timeout-minutes`.
@@ -215,7 +223,7 @@ There is no native "at most N runs" setting in Actions (`concurrency` groups hol
 Everything outside the files in this repository:
 
 - **Secrets:** `CLAUDE_CODE_OAUTH_TOKEN` (output of `claude setup-token`; runs bill to that subscription) and `GH_MCP_PAT` (issues and pull requests read/write, user projects read/write, workflows; classic `repo` + `project` + `workflow` also works).
-- **Variables:** `WORKER_CAP` (2), `PIPELINE_PAUSED` (`false`).
+- **Variables:** `WORKER_CAP` (2), `PIPELINE_PAUSED` (`false`), `PIPELINE_REVIEW_INTERVAL` (minutes between audits; default 360 when unset).
 - **Labels:** the table above.
 - **Branches:** `dev` default; branch protection on `dev` (PRs only, CI required) and `main` (PRs from `dev`, merged by Tristan).
 
