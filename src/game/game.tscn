@@ -4,6 +4,7 @@
 [ext_resource type="Script" path="res://src/sub/sub_frame.gd" id="2"]
 [ext_resource type="Script" path="res://src/sub/sub_controller.gd" id="3"]
 [ext_resource type="Script" path="res://src/world/marine_snow.gd" id="6"]
+[ext_resource type="Script" path="res://src/world/ocean_surface.gd" id="ocean"]
 [ext_resource type="Script" path="res://src/audio/sub_audio.gd" id="7"]
 [ext_resource type="Script" path="res://src/damage/leak_system.gd" id="8"]
 [ext_resource type="PackedScene" path="res://src/creature/apex_monster.tscn" id="9"]
@@ -128,6 +129,9 @@ script = ExtResource("13")
 
 [node name="MarineSnow" type="MeshInstance3D" parent="World"]
 script = ExtResource("6")
+
+[node name="OceanSurface" type="MeshInstance3D" parent="World"]
+script = ExtResource("ocean")
 
 [node name="Players" type="Node3D" parent="."]
 
