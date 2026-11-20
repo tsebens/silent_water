@@ -12,6 +12,7 @@ on:
 concurrency:
   group: plan-review
   cancel-in-progress: false
+  queue: max   # keep every pending review; the default queue holds one and cancels the rest
 
 jobs:
   plan-review:
