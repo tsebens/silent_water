@@ -270,8 +270,8 @@ static func stats_text(g: Game) -> String:
 	lines.append("SUB")
 	lines.append("  depth %.1f m   speed %+.2f m/s   heading %03.0f   pitch %+.0f°" % [c.depth, c.speed, c.heading_deg, c.pitch_deg])
 	lines.append("  vertical %+.2f m/s   buoyancy %s %+.2f m/s²" % [c.vertical_speed, b_word, b])
-	lines.append("  engine %+.0f%%   tank %.0f%%   air %.0f%%   bilge %.0f%%%s" % [
-		c.engine_output * 100.0, c.tank_fraction * 100.0, c.air_fraction * 100.0, c.bilge_fraction * 100.0, "   SURFACED" if c.surfaced else ""])
+	lines.append("  engine %+.0f%%   tank %.0f%%   air %.0f%%   bilge %.1f t%s" % [
+		c.engine_output * 100.0, c.tank_fraction * 100.0, c.air_fraction * 100.0, c.bilge_water_t, "   SURFACED" if c.surfaced else ""])
 	var margin: float = Acoustics.sub_db() - Acoustics.ambient_db()
 	lines.append("NOISE")
 	if Acoustics.sub_intensity <= 0.0:

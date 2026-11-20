@@ -53,7 +53,7 @@ var pitch_deg: float = 0.0
 var engine_output: float = 0.0
 var tank_fraction: float = 0.5
 var air_fraction: float = 1.0
-var bilge_fraction: float = 0.0
+var bilge_water_t: float = 0.0
 var surfaced: bool = false
 ## Net vertical acceleration from buoyancy (m/s²): + rises, − sinks.
 var buoyancy: float = 0.0
@@ -167,7 +167,7 @@ func _update_readouts() -> void:
 	engine_output = model.engine
 	tank_fraction = model.tank_water_t / model.tank_capacity_t
 	air_fraction = model.air_t / model.air_capacity_t
-	bilge_fraction = model.bilge_water_t / model.bilge_capacity_t
+	bilge_water_t = model.bilge_water_t
 
 
 ## Engine noise (linear intensity). Valid on every peer from replicated readouts.
