@@ -47,7 +47,7 @@ jobs:
 
           # The standing issue holds one comment per audit; its marker is the watermark.
           issue=$(gh issue list -R "$repo" --state open --search "\"$title\" in:title" --json number,title \
-            --jq --arg t "$title" '[.[] | select(.title == $t)][0].number // empty')
+            | jq -r --arg t "$title" '[.[] | select(.title == $t)][0].number // empty')
           if [ -z "$issue" ]; then
             issue=$(gh issue create -R "$repo" --title "$title" --assignee tsebens --body \
               "Standing issue for the pipeline audit role (docs/process.md). One comment per audit; the newest comment's \`<!-- audit: … -->\` marker is the watermark for the next run. Proposals are filed as separate unlabelled \`Concept:\` issues." \
