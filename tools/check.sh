@@ -20,6 +20,14 @@ step() { # name, rc
   if [ "$2" -eq 0 ]; then echo "PASS  $1"; else echo "FAIL  $1 (log: $LOG_DIR/$1.log)"; status=1; fi
 }
 
+# Name the Godot binary and version up front, so logs say what actually ran.
+GODOT_PATH="$(command -v "$GODOT" 2>/dev/null || true)"
+if [ -z "$GODOT_PATH" ] || ! GODOT_VERSION="$("$GODOT_PATH" --version 2>&1 | head -n 1)" || [ -z "$GODOT_VERSION" ]; then
+  echo "FAIL  Godot binary '$GODOT' not found or not executable (set GODOT to its path)"
+  exit 1
+fi
+echo "Godot $GODOT_VERSION at $GODOT_PATH"
+
 run import 120 --import --quit; step import $?
 
 # --fixed-fps runs the simulation as fast as the CPU allows instead of in
