@@ -42,3 +42,7 @@ The host writes `sub_transform` at physics rate. Clients receive it at 20 Hz and
 ## Bilge
 
 `SubPhysicsModel.bilge_water_t` (tonnes) is uncapped above and floored at 0. Leaks add it, the pump removes it, and every tonne adds mass, so enough bilge water keeps the sub from surfacing even with the tanks blown. It never destroys the sub by itself. Height over the floor is `bilge_height_m(t) = t / INTERIOR_FOOTPRINT_M2` (1 t = 1 m³; footprint 20 m², tunable), so 3 t is 0.15 m and 4 t is 0.20 m. The controller replicates `bilge_water_t`; clients derive height from it. The bilge gauge reads 0..8 t and pins at full scale above that.
+
+### Bilge water surface
+
+`BilgeWater` (`src/sub/bilge_water.tscn`) is a child of the still `Interior`. It sits at `bilge_height_m(bilge_water_t)` above the floor, is hidden when dry, and eases toward the replicated tonnage on every peer. Its shader (`bilge_water.gdshader`) is a minimal translucent rippling surface, clipped to the hull cylinder; the ocean surface can adopt it.
