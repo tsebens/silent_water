@@ -30,7 +30,12 @@ There are three ways a session gets its input, depending on how the role is fire
 - **Pull request event** (review agent, and the development agent once subscribed). If there is no trigger context or payload and the checkout is on a branch named `arc/<n>-<slug>`, your input is the open PR from that branch into `dev`. Find it by head branch.
 - If you cannot identify your input, comment nothing, change nothing, and end the session with a one-line summary saying so.
 
-**`plan-needed` goes last, on its own.** Because label filters match on labels present, the organization agent is fired by the transient `plan-needed` label, which it clears when it posts a proposal. Whoever applies `plan-needed` (the head developer at first breakdown, the plan-review agent on rejection) applies it as the **last** label change on the concept, in its **own** API call, after `concept`, `plan-rejected` or any other label. One labeled event, one firing. Never apply it together with another label.
+**Filter labels re-fire their role until cleared.** Label filters match on labels present, so any label change on an issue or PR that still carries a role's filter label fires that role again, including label changes the role itself makes. Every filter label is therefore transient and is cleared by the role it fires:
+
+- `plan-needed` (organization agent) is cleared when the proposal is posted. Whoever applies it (the head developer at first breakdown, the plan-review agent on rejection) applies it as the **last** label change on the concept, in its **own** API call, after `concept`, `plan-rejected` or any other label. One labeled event, one firing. Never apply it together with another label.
+- `ci-green` (review agent) is removed by the review agent as its **first** label change on every verdict path, before `approved`, `changes-requested`, `rework:n` or `needs-human`. CI re-adds it on the next green run.
+
+A role fired by an echo of its own labels must find nothing to do: each role's stop conditions cover the state its own verdict leaves behind.
 
 ### Repository facts
 
