@@ -41,3 +41,15 @@ jobs:
       - name: Mark ci-green
         if: success() && env.IS_LOCAL_PR == 'true'
         run: gh pr edit "$PR" --repo "$GITHUB_REPOSITORY" --add-label ci-green
+
+      # A red arc PR goes back to the development role (rework mode) through the same label
+      # the reviewer uses, with a comment that says CI, not a reviewer, sent it.
+      - name: Send arc PR to rework
+        if: failure() && env.IS_LOCAL_PR == 'true' && startsWith(github.event.pull_request.head.ref, 'arc/')
+        env:
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          gh pr comment "$PR" --repo "$GITHUB_REPOSITORY" --body "## CI failed
+
+          Run: ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID} (head ${HEAD_SHA}). The development role takes it from here in rework mode; Godot output is in the run's \`godot-logs\` artifact."
+          gh pr edit "$PR" --repo "$GITHUB_REPOSITORY" --add-label changes-requested

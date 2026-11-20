@@ -1,0 +1,100 @@
+name: "Role: development"
+
+# Builds one arc on an arc/<n>-<slug> branch and opens a PR into dev (build mode), or fixes an
+# arc PR that was sent back by review or CI (rework mode). Same role, two triggers.
+# Spec: docs/process.md. Prompt: .github/agents/development.md.
+#
+# Build is started by `ready` being ADDED to an arc issue (the label is the queue until the
+# dispatcher is rebuilt) or by hand. Rework is started by `changes-requested` being ADDED to an
+# arc PR, by the reviewer or by CI. pull_request_target runs from the base branch, so the role's
+# instructions come from dev and the PR head is fetched as content.
+
+on:
+  issues:
+    types: [labeled]
+  pull_request_target:
+    types: [labeled]
+  workflow_dispatch:
+    inputs:
+      arc:
+        description: Arc issue number to build
+        required: true
+        type: string
+
+concurrency:
+  group: development-${{ github.event_name == 'pull_request_target' && format('pr-{0}', github.event.pull_request.number) || format('arc-{0}', github.event.issue.number || inputs.arc) }}
+  cancel-in-progress: false
+
+jobs:
+  development:
+    if: >-
+      vars.PIPELINE_PAUSED != 'true' && (
+        github.event_name == 'workflow_dispatch' ||
+        (
+          github.event_name == 'issues' &&
+          github.event.label.name == 'ready' &&
+          contains(github.event.issue.labels.*.name, 'arc') &&
+          !contains(github.event.issue.labels.*.name, 'needs-human')
+        ) ||
+        (
+          github.event_name == 'pull_request_target' &&
+          github.event.label.name == 'changes-requested' &&
+          github.event.pull_request.base.ref == 'dev' &&
+          startsWith(github.event.pull_request.head.ref, 'arc/') &&
+          github.event.pull_request.head.repo.full_name == github.repository &&
+          !contains(github.event.pull_request.labels.*.name, 'needs-human')
+        )
+      )
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: .github
+
+      - name: Run context
+        id: ctx
+        env:
+          EVENT: ${{ github.event_name }}
+          LABEL: ${{ github.event.label.name }}
+          ARC: ${{ github.event.issue.number || inputs.arc }}
+          ARC_TITLE: ${{ github.event.issue.title }}
+          ARC_LABELS: ${{ join(github.event.issue.labels.*.name, ', ') }}
+          PR: ${{ github.event.pull_request.number }}
+          PR_TITLE: ${{ github.event.pull_request.title }}
+          PR_HEAD: ${{ github.event.pull_request.head.ref }}
+          PR_SHA: ${{ github.event.pull_request.head.sha }}
+          PR_LABELS: ${{ join(github.event.pull_request.labels.*.name, ', ') }}
+        run: |
+          {
+            echo "context<<__CTX__"
+            if [ "$EVENT" = "pull_request_target" ]; then
+              echo "- Mode: **rework**"
+              echo "- Event: \`pull_request_target.labeled\`, label added: \`${LABEL}\`"
+              echo "- Pull request: #${PR} \"${PR_TITLE}\""
+              echo "- Head: \`${PR_HEAD}\` at \`${PR_SHA}\`; base: \`dev\`"
+              echo "- Labels on the PR now: ${PR_LABELS}"
+              echo "- The checkout is the base branch. Fetch and check out the head branch to work on it."
+            else
+              echo "- Mode: **build**"
+              if [ "$EVENT" = "workflow_dispatch" ]; then
+                echo "- Event: \`workflow_dispatch\` (manual start)"
+              else
+                echo "- Event: \`issues.labeled\`, label added: \`${LABEL}\`"
+                echo "- Labels on the issue now: ${ARC_LABELS}"
+              fi
+              echo "- Arc issue: #${ARC} \"${ARC_TITLE}\""
+              echo "- Integration branch: \`dev\`"
+            fi
+            echo "__CTX__"
+          } >> "$GITHUB_OUTPUT"
+
+      - uses: ./.github/actions/claude-role
+        with:
+          role: development
+          context: ${{ steps.ctx.outputs.context }}
+          github-token: ${{ secrets.GH_MCP_PAT }}
+          oauth-token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          godot: "true"

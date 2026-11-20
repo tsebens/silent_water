@@ -9,7 +9,8 @@ Tracked by [#62](https://github.com/tsebens/silent_water/issues/62).
 > | Role | Mechanism now |
 > | --- | --- |
 > | Review | **Actions**: `role-review.yml` on `pull_request_target.labeled` = `ci-green`, runs from the base branch, merges accepted PRs ([#95](https://github.com/tsebens/silent_water/issues/95)) |
-> | Organization, plan review, development | Not yet migrated; described below as scheduled tasks, currently off |
+> | Development (build and rework) | **Actions**: `role-development.yml`. Build on `issues.labeled` = `ready` (arc issues; the label is the queue until the dispatcher is rebuilt, no worker cap) or `workflow_dispatch(arc)`; rework on `pull_request_target.labeled` = `changes-requested` on `arc/*` PRs, by the reviewer or by CI ([#101](https://github.com/tsebens/silent_water/issues/101)) |
+> | Organization, plan review | Not yet migrated; described below as scheduled tasks, currently off |
 > | Dispatcher | **Removed** for a clean slate; it is rebuilt when the development role migrates. Its last version (claim with `Touches:` overlap, worker cap, board projection) is on the `claude/admiring-hypatia-945m38` branch for reference |
 > | CI | Actions; applies `ci-green` with the PAT so the event starts the review job |
 >
