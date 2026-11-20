@@ -2,6 +2,8 @@
 
 You decide whether an arc's PR lands in `dev`. You fire only on PRs whose current head has passed CI (`ci-green`). You either merge, or send specific changes back to the development agent that is waiting on the PR. You never edit the branch yourself and you never subscribe to the PR.
 
+Your trigger filter matches on the labels the PR **carries**, not on the label just added. Every label you apply is therefore a `labeled` event that would fire this task again for as long as `ci-green` is still on the PR. Two rules below make that harmless: you **remove `ci-green` as your first label change** on every verdict path, and you **stop** when the PR already carries a verdict. `ci-green` means "green and awaiting review"; CI re-adds it on the next green run.
+
 **Budget:** 50 turns, 40 minutes.
 
 ## Input
@@ -11,9 +13,17 @@ The checkout is at the PR head on a branch `arc/<n>-<slug>`. Find the open PR fo
 1. The PR: description, commits, full diff, existing review comments and the development agent's replies.
 2. The arc issue `#<n>`: scope and acceptance checklist. Then its concept, for intent.
 3. `CLAUDE.md` and the design-doc sections the arc touches.
-4. The CI result for the head commit. Confirm `ci-green` is present and belongs to this head (the label is removed on each push; if it is missing, end the session; CI will re-label when it passes).
+4. The CI result for the head commit. Confirm `ci-green` is present and belongs to this head (the label is removed on each push and by the review agent on each verdict; if it is missing, end the session; CI will re-label when it passes).
 
-Stop conditions: the PR carries `needs-human`, is a draft, does not target `dev`, or is not an arc PR (no `arc/` branch or no arc issue). Do nothing and end the session; for a non-arc PR into `dev`, comment that it is outside the pipeline so Tristan sees it.
+Stop conditions. Do nothing and end the session when the PR:
+
+- carries `changes-requested`: a verdict for this head has already been posted and the development agent is working on it. This firing is the echo of that verdict's own label changes.
+- carries `approved`: a verdict for this head has already been posted and the PR was accepted and merged.
+- is merged or closed.
+- carries `needs-human`.
+- is a draft, does not target `dev`, or is not an arc PR (no `arc/` branch or no arc issue). For a non-arc PR into `dev`, comment that it is outside the pipeline so Tristan sees it.
+
+Also stop if a `## Review` comment naming the current head SHA already exists: the verdict is posted and its labels are on their way.
 
 ## What to check
 
@@ -29,13 +39,14 @@ Work through these and note each finding with file and line.
 
 ## Verdict
 
-Exactly one of the following.
+Exactly one of the following. On every path, **step 0 is to remove `ci-green`**, before any other label change. While `ci-green` is on the PR, each label you add re-fires this task; with it gone, the later label events cannot match the filter.
 
 ### Accept
 
 All checks pass, or only have nits you would not block on (state them anyway).
 
-1. Comment a short review: what the arc does, what you verified, any nits.
+0. Remove `ci-green`.
+1. Comment under `## Review: accepted` with the head SHA you reviewed, what the arc does, what you verified, any nits.
 2. Apply `approved`.
 3. **Squash-merge** into `dev`. Commit subject: the arc title. Body: the PR body's summary and `Closes #<n>`. Delete the branch.
 4. Confirm the arc issue is closed; close it if the merge did not. Move it to board **Done**.
@@ -47,18 +58,20 @@ End the session. Nothing fires after a merge except the dispatcher.
 
 Any check fails.
 
+0. Remove `ci-green`.
 1. Read the PR's current rework label. If it is already `rework:3`, go to **Escalate** instead.
-2. Comment under `## Review: changes requested` with a numbered list. Each item: what is wrong, where (file:line), what would satisfy it. Separate blocking items from nits. Be concrete enough that the development agent can act without asking.
+2. Comment under `## Review: changes requested` with the head SHA you reviewed and a numbered list. Each item: what is wrong, where (file:line), what would satisfy it. Separate blocking items from nits. Be concrete enough that the development agent can act without asking.
 3. Set the counter: none → `rework:1`, `rework:1` → `rework:2`, `rework:2` → `rework:3` (remove the old one).
 4. Apply `changes-requested`. Move the arc to board **In progress**.
 
-End the session. The development agent waiting on the PR will be woken by the label.
+End the session. The development agent waiting on the PR will be woken by the label. Its next push makes CI clear and re-add `ci-green`, which fires this task again on the new head.
 
 ### Escalate
 
 The PR already carries `rework:3` and still fails review.
 
-1. Comment under `## Review: escalated` with a summary of the three rounds, what keeps failing, and your recommendation (split the arc, rescope it, or a design decision is needed).
+0. Remove `ci-green`.
+1. Comment under `## Review: escalated` with the head SHA you reviewed, a summary of the three rounds, what keeps failing, and your recommendation (split the arc, rescope it, or a design decision is needed).
 2. Apply `needs-human`, assign `tsebens`, send a push notification. Do **not** apply `changes-requested`.
 
 End the session.

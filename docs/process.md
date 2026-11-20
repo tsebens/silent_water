@@ -38,7 +38,7 @@ Six roles. Five are Claude sessions; the dispatcher is deterministic code.
 | **Plan-review agent** | Scheduled task | A `plan-proposed` concept | Either the arc issues (created under milestones) and `plan-approved`, or objections, `plan-rejected`, then `plan-needed` |
 | **Dispatcher** | GitHub Action (no Claude) | Labels, PR merges, a 15-minute cron | Marks arcs `ready`, claims them up to the worker cap, fires development agents |
 | **Development agent** | Scheduled task, then subscribed to its PR | A `claimed` arc | An arc branch and a PR into `dev`; stays with the PR through CI and review until it merges |
-| **Review agent** | Scheduled task | A PR with green CI | Squash-merge and Done, or `changes-requested` with a rework counter |
+| **Review agent** | Scheduled task | A PR carrying `ci-green` (green and awaiting review) | `ci-green` cleared, then squash-merge and Done, or `changes-requested` with a rework counter |
 
 ### Head developer
 
@@ -89,11 +89,15 @@ Only one session may hold a PR's event stream, so no other role subscribes to ar
 
 ### Review agent
 
-Fires only on a PR that CI has already passed (see the trigger table). Reviews for correctness against the arc's acceptance criteria, adherence to CLAUDE.md and the design doc, test coverage, and whether the branch is up to date with `dev`. Then one of:
+Fires only on a PR that CI has already passed (see the trigger table). Reviews for correctness against the arc's acceptance criteria, adherence to CLAUDE.md and the design doc, test coverage, and whether the branch is up to date with `dev`.
 
-- **Accept:** comments a short review, applies `approved`, squash-merges into `dev` with the arc title as the commit subject, deletes the branch, moves the arc to Done and confirms it is closed. If that was the concept's last open arc, it closes the concept as Done too. Nothing fires after a merge except the dispatcher.
-- **Request changes:** comments the specific, actionable changes, increments the rework counter (`rework:1` → `rework:2` → `rework:3`), applies `changes-requested`, and moves the arc to In progress. A merge conflict with `dev`, or stale CI, is a request-changes outcome, never something the review agent fixes.
-- **Escalate:** if the PR already carries `rework:3`, it does not request changes again. It applies `needs-human`, assigns Tristan, summarises why the PR keeps failing, and sends a push notification.
+Its trigger filter matches on labels the PR carries, so every label the review agent applies would fire it again on the same head while `ci-green` is still present (observed on #81: the `changes-requested` and `rework:1` applications each started a fresh review session). Two layers make that harmless. First, **the review agent removes `ci-green` as its first label change on every verdict path**, before `approved`, `changes-requested`, `rework:n` or `needs-human`; `ci-green` means "green and awaiting review", mirroring `plan-needed`, and `ci.yml` re-adds it on the next green run. Second, **stop conditions**: if the PR carries `changes-requested` or `approved`, a verdict for this head already exists; if it is merged or closed, there is nothing to review. In each case the agent does nothing and ends. A session fired by a leftover label event therefore never re-reviews a head, never bumps the rework counter twice for one round, and never escalates on its own echo.
+
+Then one of:
+
+- **Accept:** removes `ci-green`, comments a short review, applies `approved`, squash-merges into `dev` with the arc title as the commit subject, deletes the branch, moves the arc to Done and confirms it is closed. If that was the concept's last open arc, it closes the concept as Done too. Nothing fires after a merge except the dispatcher.
+- **Request changes:** removes `ci-green`, comments the specific, actionable changes, increments the rework counter (`rework:1` → `rework:2` → `rework:3`), applies `changes-requested`, and moves the arc to In progress. A merge conflict with `dev`, or stale CI, is a request-changes outcome, never something the review agent fixes.
+- **Escalate:** if the PR already carries `rework:3`, it does not request changes again. It removes `ci-green`, applies `needs-human`, assigns Tristan, summarises why the PR keeps failing, and sends a push notification.
 
 Commits and PRs in this pipeline carry Tristan's GitHub identity (that is how cloud sessions push), so the review agent cannot use GitHub's formal approve; the `approved` label and the review comment are the record. The review agent does not subscribe to the PR; its session ends when its verdict is posted.
 
@@ -125,7 +129,7 @@ Rework is done by the development agent that opened the PR, woken through its su
 | `ready` | arc | Eligible for claiming | Plan-review agent, dispatcher, Tristan | Dispatcher |
 | `claimed` | arc | A development agent has it | Dispatcher | Development agent |
 | `in-review` | arc | Has an open PR | Development agent | Review agent (on merge) |
-| `ci-green` | PR | CI passed on the current head | CI workflow | CI workflow (on next push) |
+| `ci-green` | PR | CI passed on the current head and the review is pending; fires the review agent | CI workflow | Review agent (first label change of any verdict); CI workflow (on next push) |
 | `changes-requested` | PR | Rework needed | Review agent | Development agent |
 | `rework:1` `rework:2` `rework:3` | PR | Rounds of rework so far | Review agent | never (replaced) |
 | `approved` | PR | Review passed; merged | Review agent | never |
@@ -172,6 +176,7 @@ blocked ──(blockers closed)──► ready ──(dispatcher, cap)──► 
                                               ▼                                       ▼
                                       PR ci-green → review agent              CI red → wait for push
                                               │
+                                   (clears ci-green first)
                         ┌─────────────────────┼─────────────────────────┐
                         ▼                     ▼                         ▼
                    approved, merged     changes-requested          rework:3 already
@@ -203,6 +208,7 @@ Notes:
 - Native issue triggers are confirmed (first end-to-end run, #74, recorded on #68). A label filter fires, and the session receives a `<github-trigger-context>` block with the event type, the repository, and the issue number and URL. It does **not** say which label was added. The filter matches on the labels **present** on the issue at the time of the event, not on the label just added, so a filter on a permanent label such as `concept` fires again on every later label change. That is why the organization hop filters on the transient `plan-needed`, and why `plan-needed` is always applied last, in its own call. The role reads the issue's current labels from GitHub to learn its state.
 - `fire.yml` (an Action that POSTs to a task's fire endpoint with the issue number as `text`) is not needed for the organization or plan-review hops. Whether to keep it as a general fallback is [#65](https://github.com/tsebens/silent_water/issues/65), Tristan's call.
 - CI gating: `ci.yml` removes `ci-green` at the start of every PR run and adds it on success. The label event, not the push, is what fires the review agent, so the review agent never looks at a red or pending PR.
+- **Filter labels re-fire their role until cleared.** A label filter matches on the labels present on the issue or PR, not on the label just added, so any label change on an item that still carries a role's filter label fires that role again, including the role's own label changes. Every filter label is therefore transient and cleared by the role it fires: `plan-needed` by the organization agent when it posts the proposal, `ci-green` by the review agent as the first label change of its verdict. Each role also has stop conditions for the state its own verdict leaves behind (`plan-proposed`; `changes-requested`, `approved`, merged or closed), so a duplicate firing that slips through finds nothing to do. #81 is the observed instance for the review hop; see [#83](https://github.com/tsebens/silent_water/issues/83).
 - PR subscriptions deliver review, comment, CI and merge events for one PR into the session that subscribed, waking it from idle with its context intact. This is how rework reaches the development agent without a fired session, so `changes-requested` has no trigger row.
 - Native GitHub triggers do not queue. Events over the hourly caps are dropped, and a run blocked by the concurrent-session ceiling does not start. The labels hold the state and the dispatcher's cron retries, so nothing is lost; it is at most late.
 - Events caused by a workflow's `GITHUB_TOKEN` do not start other **Actions** workflows (which is why `fire.yml` and `dispatch.yml` use the `GH_MCP_PAT` secret where they must chain), but they do reach the Claude GitHub App's webhooks, which is what the `ci-green` row relies on. Setup step 7 confirms this.
