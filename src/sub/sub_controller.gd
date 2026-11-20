@@ -32,6 +32,8 @@ const STRIKE_INTENSITY: float = 0.3
 @export var sub_frame: SubFrame
 ## Pilot throttle, -1 (full astern) .. 1 (full ahead).
 @export var throttle: SpringAxis
+## Fraction of lever travel either side of centre where the ordered engine is 0.
+@export_range(0.0, 0.9) var throttle_dead_zone: float = 0.15
 @export var rudder: SpringAxis
 @export var planes: SpringAxis
 @export var flood_valve: Interactable
@@ -89,7 +91,7 @@ func _physics_process(delta: float) -> void:
 	var before: Vector3 = model.position
 	model.step(
 		delta,
-		throttle.get_value() if throttle != null else 0.0,
+		SubPhysicsModel.throttle_order(throttle.get_value(), throttle_dead_zone) if throttle != null else 0.0,
 		rudder.get_value() if rudder != null else 0.0,
 		planes.get_value() if planes != null else 0.0,
 		flood_valve.get_normalized() if flood_valve != null else 0.0,

@@ -150,3 +150,25 @@ func test_responsive_speed_up_and_slow_down() -> void:
 	# Quadratic drag: v = v0 / (1 + k v0 t). With k doubled, ~1.5 m/s after 10 s
 	# (it was ~2.0). Throttling astern brakes harder still.
 	expect(m.forward_speed() < 1.8, "coasts down quickly (%f m/s after 10 s)" % m.forward_speed())
+
+
+func test_throttle_dead_zone_mapping() -> void:
+	var cases: Array[Vector2] = [
+		Vector2(0.10, 0.0), Vector2(-0.14, 0.0), Vector2(0.15, 0.0), Vector2(0.575, 0.5),
+		Vector2(1.0, 1.0), Vector2(-0.15, 0.0), Vector2(-0.575, -0.5), Vector2(-1.0, -1.0),
+	]
+	for c: Vector2 in cases:
+		expect_near(SubPhysicsModel.throttle_order(c.x, 0.15), c.y, 0.0001)
+
+
+func test_throttle_dead_zone_configurable() -> void:
+	expect_near(SubPhysicsModel.throttle_order(0.3, 0.0), 0.3, 0.0001)
+	expect_near(SubPhysicsModel.throttle_order(-0.8, 0.0), -0.8, 0.0001)
+	expect_near(SubPhysicsModel.throttle_order(0.3, 0.3), 0.0, 0.0001)
+	expect_near(SubPhysicsModel.throttle_order(0.65, 0.3), 0.5, 0.0001)
+
+
+func test_engine_converges_to_zero_in_dead_band() -> void:
+	m.engine = 0.6
+	_run(20.0, SubPhysicsModel.throttle_order(0.14, 0.15))
+	expect_near(m.engine, 0.0, 0.0001)
