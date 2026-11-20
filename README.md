@@ -53,4 +53,4 @@ Launch arguments go after `--`: `--host`, `--join [address]`, `--port <n>`, `--n
 | `docs/` | Architecture notes |
 | `.github/agents/` | Pipeline role prompts, one per agent |
 | `.github/actions/` | Shared actions: `setup-godot` and `claude-role` (runs one pipeline agent with the Claude Code CLI) |
-| `.github/workflows/` | CI and one `role-*.yml` workflow per migrated pipeline agent |
+| `.github/workflows/` | CI, the dispatcher and one `role-*.yml` workflow per pipeline agent |
