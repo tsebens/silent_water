@@ -44,6 +44,8 @@ Decision [#8](https://github.com/tsebens/silent_water/issues/8): each player's m
 
 Debug: hold **F3** to simulate normal speech, **Shift+F3** for a shout. `--fake-voice-db <dB>` reports a constant level.
 
+The reports travel unreliable-ordered, and the host counts a peer's voice as silence once its last report is older than `Acoustics.VOICE_TIMEOUT` (0.5 s), so a voice stops adding noise promptly when a player goes quiet or drops. The three-instance autotest therefore holds its snapshot until every peer's report is fresh (`Autotest.report_due`, bounded by a short grace), rather than reading a timed-out zero as a failure ([#86](https://github.com/tsebens/silent_water/issues/86)).
+
 ## Hearing at a distance (for creatures)
 
 `Acoustics.heard_at(world_point, sub_frame)` gives the sub's noise at a point:
