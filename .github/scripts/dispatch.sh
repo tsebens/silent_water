@@ -239,8 +239,24 @@ PR_LABELS=$(gh api --paginate "repos/$REPO/pulls?state=open&base=dev&per_page=10
   | jq -s 'add // []')
 pr_has() { echo "$PR_LABELS" | jq -e --argjson n "$1" --arg l "$2" '.[] | select(.arc == $n) | .labels | index($l) != null' >/dev/null 2>&1; }
 
+# Add an issue to the board if it is not there yet (plan review creates arcs without touching
+# the board; the board is the dispatcher's to keep). Appends the new item to PROJECT_ITEMS.
+ensure_on_board() { # number
+  if echo "$PROJECT_ITEMS" | jq -e --argjson n "$1" '.[] | select(.number == $n)' >/dev/null; then return 0; fi
+  local content item
+  content=$(gh api "repos/$REPO/issues/$1" --jq .node_id 2>/dev/null) || return 1
+  log "    #$1 not on the board; adding"
+  if [ "$DRY_RUN" = "true" ]; then return 1; fi
+  item=$(gh api graphql -F project="$PROJECT_ID" -F content="$content" -f query='
+    mutation($project: ID!, $content: ID!) {
+      addProjectV2ItemById(input: {projectId: $project, contentId: $content}) { item { id } }
+    }' --jq '.data.addProjectV2ItemById.item.id') || return 1
+  PROJECT_ITEMS=$(echo "$PROJECT_ITEMS" | jq -c --arg id "$item" --argjson n "$1" '. + [{item_id: $id, number: $n, state: "OPEN", status: ""}]')
+}
+
 project() { # number wanted-status
   local current
+  ensure_on_board "$1" || return 0
   current=$(echo "$PROJECT_ITEMS" | jq -r --argjson n "$1" '.[] | select(.number == $n) | .status')
   [ "$current" = "$2" ] && return 0
   set_board_status "$1" "$2"
