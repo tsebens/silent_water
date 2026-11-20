@@ -240,6 +240,44 @@ max_value = 3.0
 sweep_deg = 240.0
 radius = 0.1
 
+[node name="CenterPod" type="Node3D" parent="Stations/Pilot"]
+position = Vector3(0, -0.2, -2.0)
+rotation = Vector3(-0.28, 0, 0)
+scale = Vector3(0.85, 0.85, 0.85)
+
+[node name="Plate" type="MeshInstance3D" parent="Stations/Pilot/CenterPod"]
+position = Vector3(0, 0, -0.03)
+mesh = SubResource("pod_plate_small")
+
+[node name="BuoyancyGauge" type="Node3D" parent="Stations/Pilot/CenterPod"]
+position = Vector3(-0.19, 0, 0)
+script = ExtResource("3")
+readout = &"buoyancy"
+title = "BUOYANCY"
+min_value = -0.5
+max_value = 0.5
+sweep_deg = 180.0
+radius = 0.08
+
+[node name="VertSpeedGauge" type="Node3D" parent="Stations/Pilot/CenterPod"]
+script = ExtResource("3")
+readout = &"vertical_speed"
+title = "VERT SPEED"
+min_value = -3.0
+max_value = 3.0
+sweep_deg = 180.0
+radius = 0.08
+
+[node name="ThrottleGauge" type="Node3D" parent="Stations/Pilot/CenterPod"]
+position = Vector3(0.19, 0, 0)
+script = ExtResource("3")
+readout = &"engine_output"
+title = "THROTTLE"
+min_value = -1.0
+max_value = 1.0
+sweep_deg = 180.0
+radius = 0.08
+
 [node name="Sonar" type="Node3D" parent="Stations" node_paths=PackedStringArray("headset", "wheel")]
 script = ExtResource("9")
 headset = NodePath("Headset")
