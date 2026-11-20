@@ -8,10 +8,27 @@ jobs:
   check:
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    permissions:
+      contents: read
+      issues: write
+      pull-requests: write
     env:
       GODOT_VERSION: "4.7.2"
+      GH_TOKEN: ${{ github.token }}
     steps:
       - uses: actions/checkout@v4
+
+      # The pipeline's review agent fires on the ci-green label (docs/process.md,
+      # "Triggers"). Drop it on every PR run so the label only ever describes the
+      # current head, and add it back below when the checks pass.
+      - name: Clear ci-green
+        if: github.event_name == 'pull_request'
+        run: gh pr edit "$PR" --repo "$GITHUB_REPOSITORY" --remove-label ci-green || true
+        env:
+          PR: ${{ github.event.pull_request.number }}
+
+      - name: Dispatcher unit tests
+        run: .github/scripts/test_dispatch.sh
 
       - name: Cache Godot
         id: cache-godot
@@ -40,3 +57,9 @@ jobs:
         with:
           name: godot-logs
           path: ${{ runner.temp }}/godot-logs
+
+      - name: Mark ci-green
+        if: success() && github.event_name == 'pull_request'
+        run: gh pr edit "$PR" --repo "$GITHUB_REPOSITORY" --add-label ci-green
+        env:
+          PR: ${{ github.event.pull_request.number }}

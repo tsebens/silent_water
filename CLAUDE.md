@@ -22,6 +22,8 @@ The `github-projects` MCP server in `.mcp.json` provides `projects_list`, `proje
 
 Create issues and sub-issues with the regular GitHub MCP tools (`issue_write` with `parent_issue_number`).
 
+The same server carries the `labels` toolset (`list_label`, `get_label`, `label_write`) for creating and editing repository labels. The pipeline's label set is defined in `docs/process.md`; pipeline agents apply labels but never create them.
+
 ## Roles
 
 Agents with a specific role follow their role doc in addition to this file:
