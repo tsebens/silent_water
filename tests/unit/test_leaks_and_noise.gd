@@ -79,8 +79,43 @@ func test_leak_reopens_after_patch_wears_off() -> void:
 	leak.begin_interaction()
 	await _frames(int(60 * (Leak.PATCH_TIME + 0.3)))
 	leaks._timer = 0.05
-	await _frames(10)
+	leaks.mean_interval_sec = 0.01
+	await _frames(20)
 	expect(leaks.open_index != -1, "the leak recurs")
+
+
+func test_spontaneous_rate_matches_mean_interval() -> void:
+	leaks._timer = 0.0
+	leaks._rng.seed = 12345  # deterministic: no random CI flake
+	var depth: float = LeakSystem.FLOOR_DEPTH
+	var dt: float = 0.5
+	var steps: int = 100000
+	var hits: int = 0
+	for i: int in range(steps):
+		if leaks.spontaneous_roll(dt, depth):
+			hits += 1
+	var expected: float = steps * dt * leaks.spontaneous_rate(depth)
+	expect(absf(hits - expected) < 5.0 * sqrt(expected), "hits %d vs expected %f" % [hits, expected])
+
+
+func test_depth_factor_monotonic_and_deeper_is_likelier() -> void:
+	var prev: float = -1.0
+	for d: int in range(0, 400, 10):
+		var f: float = LeakSystem.depth_factor(float(d))
+		expect(f >= prev, "monotonic at %d m" % d)
+		prev = f
+	expect(LeakSystem.depth_factor(0.0) < LeakSystem.depth_factor(LeakSystem.FLOOR_DEPTH))
+
+
+func test_dev_switch_stops_spontaneous_but_not_strikes() -> void:
+	leaks._timer = 0.0
+	leaks.mean_interval_sec = 0.01
+	leaks.request_spontaneous_disabled(true)
+	expect(leaks.spontaneous_disabled)
+	for i: int in range(5000):
+		expect(not leaks.spontaneous_roll(1.0, 200.0), "no spontaneous leak")
+	leaks._on_hull_strike(LeakSystem.STRIKE_FOR_CERTAIN_LEAK)
+	expect(leaks.open_index != -1, "hard strike still leaks")
 
 
 func test_pump_empties_bilge_noisily() -> void:

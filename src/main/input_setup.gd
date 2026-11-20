@@ -12,6 +12,7 @@ const ACTIONS: Dictionary = {
 	&"dev_overlay": [KEY_F1],
 	&"dev_toggle_apex": [KEY_F4],
 	&"dev_single_player": [KEY_F5],
+	&"dev_toggle_leaks": [KEY_F6],
 	&"activate": [KEY_E],
 	&"sonar_mark": [KEY_M],
 	&"pilot_planes_rise": [KEY_R],

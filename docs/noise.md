@@ -62,3 +62,7 @@ Creatures compare that against the background at their own position to decide wh
 ## Gauges
 
 The two-needle noise gauge (`src/noise/noise_gauge.tscn`) reads `sub_db` (red) and `ambient_db` (blue) from `Acoustics` on a 40–120 dB scale. Repeaters sit at the pilot, engineering, ballast and bilge stations.
+
+## Leak rate
+
+Spontaneous leaks are a Poisson process: the rate is `depth_factor(depth) / mean_interval_sec` (`LeakSystem`, `mean_interval_sec` exported, default 180 s). `depth_factor` rises linearly from 0.25 at the surface to 2.0 at the canyon floor (230 m) and stays there below that, so a leak is about eight times as likely at the floor as at the surface. After a patch (or at the start of a dive) nothing opens until the hold time has run out. Hull strikes are unchanged. F6 (dev) switches spontaneous leaks off for everyone.
