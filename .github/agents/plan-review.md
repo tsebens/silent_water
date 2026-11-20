@@ -28,7 +28,12 @@ Reject if any of these fail; otherwise approve. Do not reject on taste.
 
 ## On rejection
 
-Comment under the heading `## Plan review: changes requested` with a numbered list of specific objections, each tied to an arc or to the breakdown as a whole, and each stating what would satisfy it. Remove `plan-proposed`, apply `plan-rejected`, end the session. If this is the **second** rejection of this concept, escalate per the README instead (comment the objections, `needs-human`, assign Tristan, push notification) and do not apply `plan-rejected`.
+Comment under the heading `## Plan review: changes requested` with a numbered list of specific objections, each tied to an arc or to the breakdown as a whole, and each stating what would satisfy it. Then change the labels in this order:
+
+1. Remove `plan-proposed` and apply `plan-rejected` (one call is fine).
+2. Apply `plan-needed` in a **separate** API call, as the last label change. This is what fires the organization agent for another round; applying it last and alone means one labeled event and one firing (see the README).
+
+End the session. If this is the **second** rejection of this concept, escalate per the README instead (comment the objections, `needs-human`, assign Tristan, push notification) and apply neither `plan-rejected` nor `plan-needed`; nothing should fire after an escalation.
 
 ## On approval
 
