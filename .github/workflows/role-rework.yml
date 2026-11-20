@@ -1,0 +1,47 @@
+name: "Role: rework"
+
+# Addresses requested changes (or a CI failure) on an arc PR. Spec: docs/process.md.
+# Prompt: .github/agents/rework.md. Fires when `changes-requested` is ADDED to an arc PR.
+# pull_request_target: role files come from the base branch; the role fetches the head branch to work on it.
+
+on:
+  pull_request_target:
+    types: [labeled]
+
+concurrency:
+  group: rework-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
+
+jobs:
+  rework:
+    if: >-
+      vars.PIPELINE_PAUSED != 'true' &&
+      github.event.label.name == 'changes-requested' &&
+      github.event.pull_request.base.ref == 'dev' &&
+      startsWith(github.event.pull_request.head.ref, 'arc/') &&
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      !contains(github.event.pull_request.labels.*.name, 'needs-human')
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    permissions:
+      contents: write
+      issues: write
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: .github
+      - uses: ./.github/actions/run-role
+        with:
+          role: rework
+          context: |
+            - Event: `pull_request_target.labeled`, label added: `${{ github.event.label.name }}`
+            - Pull request: #${{ github.event.pull_request.number }} "${{ github.event.pull_request.title }}"
+            - Head: `${{ github.event.pull_request.head.ref }}` at `${{ github.event.pull_request.head.sha }}`; base: `${{ github.event.pull_request.base.ref }}`
+            - Labels on the PR now: ${{ join(github.event.pull_request.labels.*.name, ', ') }}
+            - The checkout is the base branch. Fetch and check out the head branch to work on it.
+          app-id: ${{ secrets.PIPELINE_APP_ID }}
+          app-private-key: ${{ secrets.PIPELINE_APP_PRIVATE_KEY }}
+          oauth-token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          max-turns: "120"
+          godot: "true"

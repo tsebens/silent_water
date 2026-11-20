@@ -1,0 +1,43 @@
+name: "Role: development"
+
+# Builds one arc on an arc/<n>-<slug> branch and opens a PR into dev.
+# Spec: docs/process.md. Prompt: .github/agents/development.md.
+# Started only by the dispatcher (gh workflow run), which has already claimed the arc.
+
+on:
+  workflow_dispatch:
+    inputs:
+      arc:
+        description: Arc issue number
+        required: true
+        type: string
+
+concurrency:
+  group: development-${{ inputs.arc }}
+  cancel-in-progress: false
+
+jobs:
+  development:
+    if: vars.PIPELINE_PAUSED != 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    permissions:
+      contents: write
+      issues: write
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: .github
+      - uses: ./.github/actions/run-role
+        with:
+          role: development
+          context: |
+            - Event: `workflow_dispatch` from the dispatcher
+            - Arc issue: #${{ inputs.arc }}
+            - Integration branch: `dev`
+          app-id: ${{ secrets.PIPELINE_APP_ID }}
+          app-private-key: ${{ secrets.PIPELINE_APP_PRIVATE_KEY }}
+          oauth-token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          max-turns: "200"
+          godot: "true"

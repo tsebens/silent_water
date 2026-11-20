@@ -1,0 +1,43 @@
+name: "Role: organization"
+
+# Breaks a concept issue into proposed arcs. Spec: docs/process.md. Prompt: .github/agents/organization.md.
+# Fires when `concept` or `plan-rejected` is ADDED to an issue (the label just applied, not labels present).
+
+on:
+  issues:
+    types: [labeled]
+
+concurrency:
+  group: organization-${{ github.event.issue.number }}
+  cancel-in-progress: false
+
+jobs:
+  organization:
+    if: >-
+      vars.PIPELINE_PAUSED != 'true' &&
+      (github.event.label.name == 'concept' || github.event.label.name == 'plan-rejected') &&
+      !contains(github.event.issue.labels.*.name, 'needs-human') &&
+      !contains(github.event.issue.labels.*.name, 'plan-proposed') &&
+      !contains(github.event.issue.labels.*.name, 'plan-approved')
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      issues: write
+      pull-requests: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: .github
+      - uses: ./.github/actions/run-role
+        with:
+          role: organization
+          context: |
+            - Event: `issues.labeled`, label added: `${{ github.event.label.name }}`
+            - Concept issue: #${{ github.event.issue.number }} "${{ github.event.issue.title }}"
+            - Labels on the issue now: ${{ join(github.event.issue.labels.*.name, ', ') }}
+          app-id: ${{ secrets.PIPELINE_APP_ID }}
+          app-private-key: ${{ secrets.PIPELINE_APP_PRIVATE_KEY }}
+          oauth-token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          max-turns: "40"
+          allowed-tools: "Bash,Read,Glob,Grep"

@@ -3,15 +3,17 @@
 #
 # Each run:
 #   0. exit if PIPELINE_PAUSED=true
-#   1. mirror board Status=Ready onto the `ready` label
+#   1. mirror board Status=Ready onto the `ready` label (so Tristan can promote from the board)
 #   2. unblock: `blocked` arcs whose blockers are all closed become `ready`
 #   3. claim: while in-flight arcs < WORKER_CAP, claim the oldest `ready` arc whose
-#      Touches: do not overlap an in-flight arc, and fire the development task
-#   4. log anomalies (Done on the board but open; stale changes-requested PRs)
+#      Touches: do not overlap an in-flight arc, and start a development run
+#   4. project labels onto the board (agents touch labels only; this is the one writer of Status)
+#   5. log anomalies (stale changes-requested PRs)
 #
-# Env:  GH_TOKEN (PAT with repo + project scope), FIRE_URL_DEV, FIRE_TOKEN_DEV,
-#       WORKER_CAP (default 2), PIPELINE_PAUSED, PROJECT_NUMBER (default 1),
-#       STALE_MINUTES (default 30), DRY_RUN=true to log mutations instead of doing them.
+# Env:  GH_TOKEN (PAT with repo + project scope), WORKER_CAP (default 2), PIPELINE_PAUSED,
+#       PROJECT_NUMBER (default 1), STALE_MINUTES (default 30),
+#       DEVELOPMENT_WORKFLOW (default role-development.yml),
+#       DRY_RUN=true to log mutations instead of doing them.
 set -euo pipefail
 
 REPO="${GITHUB_REPOSITORY:-tsebens/silent_water}"
@@ -19,8 +21,8 @@ OWNER="${REPO%%/*}"
 PROJECT_NUMBER="${PROJECT_NUMBER:-1}"
 WORKER_CAP="${WORKER_CAP:-2}"
 STALE_MINUTES="${STALE_MINUTES:-30}"
+DEVELOPMENT_WORKFLOW="${DEVELOPMENT_WORKFLOW:-role-development.yml}"
 DRY_RUN="${DRY_RUN:-false}"
-HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 if [ "${PIPELINE_PAUSED:-false}" = "true" ]; then
   echo "PIPELINE_PAUSED=true; nothing dispatched."
@@ -185,10 +187,15 @@ for n in $in_flight; do
 done
 log "  in flight: $in_flight_count/$WORKER_CAP ($(echo "$in_flight" | tr '\n' ' '))"
 
-if [ -z "${FIRE_URL_DEV:-}" ] || [ -z "${FIRE_TOKEN_DEV:-}" ]; then
-  log "  FIRE_URL_DEV/FIRE_TOKEN_DEV not set; claiming disabled"
-  WORKER_CAP=0
-fi
+DEFAULT_BRANCH=$(gh api "repos/$REPO" --jq .default_branch 2>/dev/null || echo dev)
+
+# Start one development run for an arc. Prints the run URL (best effort) on success.
+start_development() { # arc number
+  gh workflow run "$DEVELOPMENT_WORKFLOW" -R "$REPO" --ref "$DEFAULT_BRANCH" -f "arc=$1" || return 1
+  sleep 5
+  gh run list -R "$REPO" --workflow "$DEVELOPMENT_WORKFLOW" --event workflow_dispatch --limit 1 \
+    --json url --jq '.[0].url // empty' 2>/dev/null || true
+}
 
 for n in $(arcs_with ready); do
   [ "$in_flight_count" -lt "$WORKER_CAP" ] || break
@@ -205,22 +212,60 @@ for n in $(arcs_with ready); do
   remove_label "$n" ready
   add_label "$n" claimed
   if [ "$DRY_RUN" = "true" ]; then
-    session_url="(dry run)"
-  elif ! session_url=$("$HERE/fire.sh" "$FIRE_URL_DEV" "$FIRE_TOKEN_DEV" "arc #$n"); then
-    log "  fire failed for #$n; reverting to ready"
+    run_url="(dry run)"
+  elif ! run_url=$(start_development "$n"); then
+    log "  could not start a development run for #$n; reverting to ready"
     remove_label "$n" claimed
     add_label "$n" ready
     continue
   fi
-  comment "$n" "Dispatcher: claimed and fired a development session: $session_url"
+  comment "$n" "Dispatcher: claimed and started a development run${run_url:+: $run_url}"
   in_flight_count=$((in_flight_count + 1))
   in_flight_touches="$in_flight_touches"$'\n'"$t"
 done
 
-log "4. Anomalies (logged, not acted on)"
-for n in $(board_numbers_with_status "Done"); do
-  [ "$(board_state_of "$n")" = "OPEN" ] && log "  #$n is Done on the board but still open"
+log "4. Project labels onto the board"
+load_arcs
+load_board
+# Open PR labels, keyed by arc number (from the arc/<n>- branch prefix), for the in-review split.
+PR_LABELS=$(gh api --paginate "repos/$REPO/pulls?state=open&base=dev&per_page=100" \
+  --jq '[.[] | select(.head.ref | test("^arc/[0-9]+-")) | {arc: (.head.ref | capture("^arc/(?<n>[0-9]+)-").n | tonumber), labels: [.labels[].name]}]' \
+  | jq -s 'add // []')
+pr_has() { echo "$PR_LABELS" | jq -e --argjson n "$1" --arg l "$2" '.[] | select(.arc == $n) | .labels | index($l) != null' >/dev/null 2>&1; }
+
+project() { # number wanted-status
+  local current
+  current=$(echo "$PROJECT_ITEMS" | jq -r --argjson n "$1" '.[] | select(.number == $n) | .status')
+  [ "$current" = "$2" ] && return 0
+  set_board_status "$1" "$2"
+}
+
+for n in $(echo "$ARCS" | jq -r '.[].number'); do
+  arc_has "$n" needs-human && continue
+  if arc_has "$n" in-review; then
+    if pr_has "$n" changes-requested; then project "$n" "In progress"; else project "$n" "In review"; fi
+  elif arc_has "$n" claimed; then project "$n" "In progress"
+  elif arc_has "$n" ready;   then project "$n" "Ready"
+  elif arc_has "$n" blocked; then project "$n" "Backlog"
+  fi
 done
+CONCEPTS=$(gh api --paginate "repos/$REPO/issues?state=open&labels=concept&per_page=100" \
+  --jq '[.[] | select(.pull_request == null) | {number, labels: [.labels[].name]}]' | jq -s 'add // []')
+for n in $(echo "$CONCEPTS" | jq -r '.[].number'); do
+  if echo "$CONCEPTS" | jq -e --argjson n "$n" '.[] | select(.number == $n) | .labels | index("plan-approved") != null' >/dev/null; then
+    project "$n" "In progress"
+  else
+    project "$n" "Backlog"
+  fi
+done
+# Recently closed arcs and concepts are Done.
+since=$(date -u -d '3 days ago' +%Y-%m-%dT%H:%M:%SZ)
+for n in $(gh api --paginate "repos/$REPO/issues?state=closed&since=$since&per_page=100" \
+    --jq '.[] | select(.pull_request == null) | select([.labels[].name] | (index("arc") != null or index("concept") != null)) | .number'); do
+  project "$n" "Done"
+done
+
+log "5. Anomalies (logged, not acted on)"
 now=$(date -u +%s)
 stale_before=$((now - STALE_MINUTES * 60))
 for pr in $(gh api --paginate "repos/$REPO/pulls?state=open&base=dev&per_page=100" \
@@ -229,7 +274,7 @@ for pr in $(gh api --paginate "repos/$REPO/pulls?state=open&base=dev&per_page=10
     --jq '[.[] | select(.event == "labeled" and .label.name == "changes-requested")] | last | .created_at // empty')
   [ -z "$applied" ] && continue
   if [ "$(date -u -d "$applied" +%s)" -lt "$stale_before" ]; then
-    log "  PR #$pr has had changes-requested since $applied with no rework; the development session may not have woken"
+    log "  PR #$pr has had changes-requested since $applied with no rework run clearing it; check the rework workflow's runs"
   fi
 done
 

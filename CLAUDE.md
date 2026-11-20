@@ -24,6 +24,12 @@ Create issues and sub-issues with the regular GitHub MCP tools (`issue_write` wi
 
 The same server carries the `labels` toolset (`list_label`, `get_label`, `label_write`) for creating and editing repository labels. The pipeline's label set is defined in `docs/process.md`; pipeline agents apply labels but never create them.
 
+Pipeline agents (the `role-*.yml` workflows) never touch the board: the dispatcher projects their labels onto it. Interactive sessions and Tristan update the board directly as described above.
+
+### Branches
+
+`dev` is the default branch and the integration branch; all work branches off it and returns to it by PR. `main` is the release branch, promoted from `dev` by Tristan. See `docs/process.md`.
+
 ## Roles
 
 Agents with a specific role follow their role doc in addition to this file:

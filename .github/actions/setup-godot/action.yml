@@ -1,0 +1,43 @@
+name: Set up Godot
+description: Install the headless Godot editor binary (cached) and export GODOT for tools/check.sh.
+
+inputs:
+  version:
+    description: Godot version (stable)
+    required: false
+    default: "4.7.2"
+
+outputs:
+  godot:
+    description: Path to the Godot binary
+    value: ${{ steps.path.outputs.godot }}
+
+runs:
+  using: composite
+  steps:
+    - name: Cache Godot
+      id: cache
+      uses: actions/cache@v4
+      with:
+        path: ~/godot
+        key: godot-${{ inputs.version }}-linux-x86_64
+
+    - name: Download Godot
+      if: steps.cache.outputs.cache-hit != 'true'
+      shell: bash
+      run: |
+        mkdir -p ~/godot
+        curl -sSL -o "$RUNNER_TEMP/godot.zip" \
+          "https://downloads.godotengine.org/?version=${{ inputs.version }}&flavor=stable&slug=linux.x86_64.zip"
+        unzip -q "$RUNNER_TEMP/godot.zip" -d ~/godot
+
+    - name: Export GODOT
+      id: path
+      shell: bash
+      run: |
+        godot="$HOME/godot/Godot_v${{ inputs.version }}-stable_linux.x86_64"
+        chmod +x "$godot"
+        echo "godot=$godot" >> "$GITHUB_OUTPUT"
+        echo "GODOT=$godot" >> "$GITHUB_ENV"
+        mkdir -p "$RUNNER_TEMP/godot-logs"
+        echo "LOG_DIR=$RUNNER_TEMP/godot-logs" >> "$GITHUB_ENV"
