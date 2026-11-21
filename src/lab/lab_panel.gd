@@ -10,6 +10,8 @@ signal changed
 signal regenerate_requested
 signal lighting_toggled
 signal back_requested
+## The before/after toggle: true shows the eroded ground, false the analytic one.
+signal erosion_view_toggled(eroded: bool)
 ## Spec or heightmap file actions, with the path typed in the panel.
 signal save_spec_requested(path: String)
 signal load_spec_requested(path: String)
@@ -20,6 +22,7 @@ const DEFAULT_SPEC_PATH: String = "user://lab_spec.tres"
 const DEFAULT_HEIGHTMAP_PATH: String = "user://lab_heightmap.png"
 const SECTION_SPEC: String = "spec"
 const SECTION_SITE: String = "site"
+const SECTION_EROSION: String = "erosion"
 const ROW_LABEL_WIDTH: float = 150.0
 const NUMBER_LIMIT: float = 100000.0
 ## Constraint kinds the "add" button offers.
@@ -33,6 +36,7 @@ var tunables: CanyonSite
 var _controls: Dictionary = {}
 var _readout: Label
 var _auto: CheckBox
+var _eroded_view: CheckBox
 var _body: VBoxContainer
 var _constraints_rebuild: Callable = Callable()
 
@@ -51,6 +55,8 @@ static func exported_properties(obj: Object) -> Array[Dictionary]:
 func setup(new_spec: SiteSpec, new_tunables: CanyonSite) -> void:
 	spec = new_spec
 	tunables = new_tunables
+	if tunables.erosion == null:
+		tunables.erosion = ErosionParams.new()
 	_controls.clear()
 	_constraints_rebuild = Callable()
 	for child: Node in get_children():
@@ -69,7 +75,9 @@ func setup(new_spec: SiteSpec, new_tunables: CanyonSite) -> void:
 	_body.add_child(_heading("Site spec"))
 	_build_properties(_body, spec, SECTION_SPEC, ["seed"])
 	_body.add_child(_heading("Canyon tunables"))
-	_build_properties(_body, tunables, SECTION_SITE, ["spec"])
+	_build_properties(_body, tunables, SECTION_SITE, ["spec", "erosion"])
+	_body.add_child(_heading("Erosion"))
+	_build_properties(_body, tunables.erosion, SECTION_EROSION, [])
 
 
 ## The control bound to [param prop] of the [param section] ([constant
@@ -128,6 +136,15 @@ func set_readout(text: String) -> void:
 		_readout.text = text
 
 
+func readout_text() -> String:
+	return _readout.text if _readout != null else ""
+
+
+## Whether the lab shows the eroded ground (true) or the analytic one before erosion.
+func shows_eroded() -> bool:
+	return _eroded_view == null or _eroded_view.button_pressed
+
+
 func auto_regenerate() -> bool:
 	return _auto != null and _auto.button_pressed
 
@@ -161,6 +178,12 @@ func _build_header() -> Control:
 	_auto.button_pressed = true
 	_auto.tooltip_text = "Regenerate on every change while generation is quick"
 	buttons.add_child(_auto)
+	_eroded_view = CheckBox.new()
+	_eroded_view.text = "Eroded"
+	_eroded_view.button_pressed = true
+	_eroded_view.tooltip_text = "Before / after: show the eroded ground, or the analytic ground before erosion"
+	_eroded_view.toggled.connect(func(on: bool) -> void: erosion_view_toggled.emit(on))
+	buttons.add_child(_eroded_view)
 	var light: Button = Button.new()
 	light.text = "Day / night"
 	light.pressed.connect(func() -> void: lighting_toggled.emit())

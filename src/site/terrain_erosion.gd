@@ -16,16 +16,27 @@ static func sample_grid(height_fn: Callable, origin: Vector2, cell: float, nx: i
 
 
 ## Run the enabled passes in order and return the eroded grid. [param rng] is
-## seeded from the site seed; only the droplet pass draws from it.
-static func erode(heights: PackedFloat32Array, nx: int, nz: int, cell: float, mask: PackedFloat32Array, params: ErosionParams, rng: RandomNumberGenerator) -> PackedFloat32Array:
+## seeded from the site seed; only the droplet pass draws from it. When
+## [param timings] is given, it receives each pass that ran as name -> ms.
+static func erode(heights: PackedFloat32Array, nx: int, nz: int, cell: float, mask: PackedFloat32Array, params: ErosionParams, rng: RandomNumberGenerator, timings: Dictionary = {}) -> PackedFloat32Array:
 	var h: PackedFloat32Array = heights.duplicate()
+	var t0: int = Time.get_ticks_usec()
 	if params.droplet_enabled:
 		h = droplet_pass(h, nx, nz, cell, mask, params.protect_threshold, rng, params.droplet_count, params.droplet_lifetime, params.droplet_capacity, params.droplet_erode_rate, params.droplet_deposit_rate, params.droplet_evaporation)
+		t0 = _lap(timings, "droplet", t0)
 	if params.thermal_enabled:
 		h = thermal_pass(h, nx, nz, cell, mask, params.protect_threshold, params.talus_angle, params.thermal_iterations, params.thermal_rate)
+		t0 = _lap(timings, "thermal", t0)
 	if params.deposition_enabled:
 		h = deposition_pass(h, nx, nz, cell, mask, params.protect_threshold, params.settle_slope, params.settle_strength, params.deposition_iterations)
+		_lap(timings, "deposition", t0)
 	return h
+
+
+static func _lap(timings: Dictionary, pass_name: String, since_usec: int) -> int:
+	var now: int = Time.get_ticks_usec()
+	timings[pass_name] = (now - since_usec) / 1000.0
+	return now
 
 
 static func make_rng(spec_seed: int, params: ErosionParams) -> RandomNumberGenerator:
