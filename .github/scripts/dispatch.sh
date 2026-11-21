@@ -143,6 +143,13 @@ set_board_status() { # number status-name
     }' >/dev/null
 }
 
+# Concepts and Design: notes. `design` (still being thought through) is inert and always Backlog,
+# even on a concept that somehow also carries plan-approved.
+concept_status() { # newline-separated label names -> board status
+  if grep -qx 'design' <<<"$1"; then echo "Backlog"
+  elif grep -qx 'plan-approved' <<<"$1"; then echo "In progress"
+  else echo "Backlog"; fi
+}
 # ---------------------------------------------------------------------------
 # Run.
 # ---------------------------------------------------------------------------
@@ -271,14 +278,12 @@ for n in $(echo "$ARCS" | jq -r '.[].number'); do
   elif arc_has "$n" blocked; then project "$n" "Backlog"
   fi
 done
-CONCEPTS=$(gh api --paginate "repos/$REPO/issues?state=open&labels=concept&per_page=100" \
-  --jq '[.[] | select(.pull_request == null) | {number, labels: [.labels[].name]}]' | jq -s 'add // []')
+CONCEPTS=$({ for l in concept design; do
+  gh api --paginate "repos/$REPO/issues?state=open&labels=$l&per_page=100" \
+    --jq '[.[] | select(.pull_request == null) | {number, labels: [.labels[].name]}]'
+  done; } | jq -s 'add // [] | unique_by(.number)')
 for n in $(echo "$CONCEPTS" | jq -r '.[].number'); do
-  if echo "$CONCEPTS" | jq -e --argjson n "$n" '.[] | select(.number == $n) | .labels | index("plan-approved") != null' >/dev/null; then
-    project "$n" "In progress"
-  else
-    project "$n" "Backlog"
-  fi
+  project "$n" "$(concept_status "$(echo "$CONCEPTS" | jq -r --argjson n "$n" '.[] | select(.number == $n) | .labels[]')")"
 done
 # Recently closed arcs and concepts are Done, and a closed arc carries no state label.
 since=$(date -u -d '3 days ago' +%Y-%m-%dT%H:%M:%SZ)

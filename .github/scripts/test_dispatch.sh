@@ -49,4 +49,9 @@ check "blockers: body numbers ∪ native, de-duplicated, sorted" $'1\n7\n9' "$(b
 gh() { return 1; }
 check "blockers: none and API failure" "" "$(blockers_of 1)"
 
+check "concept_status: design is Backlog" "Backlog" "$(concept_status $'design')"
+check "concept_status: design beats plan-approved" "Backlog" "$(concept_status $'concept\ndesign\nplan-approved')"
+check "concept_status: plan-approved is In progress" "In progress" "$(concept_status $'concept\nplan-approved')"
+check "concept_status: plain concept is Backlog" "Backlog" "$(concept_status $'concept')"
+
 exit $fails
