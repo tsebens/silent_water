@@ -90,3 +90,7 @@ Kept in `assets/media/architecture/` (to be added):
 | `rosander_seafloor_modules.jpg` | Concept art by Patrik Rosander | Monolithic ribbed angular modules on a sloping seabed; tiny warm window lights; fog swallowing distance |
 
 The earlier mood board in `assets/media/` remains a reference for lighting, palette and underwater atmosphere. Where it shows sleek, rounded forms, this file takes precedence.
+
+## Style bible
+
+The asset pipeline's prompt blocks and class profiles live in `assets/style_bible/` (see its `README.md`). They are seeded from this file; when the direction changes here, update them too.

@@ -1,0 +1,35 @@
+# Class profiles for the asset pipeline. See assets/style_bible/README.md.
+# Seeded from docs/art_direction.md; tune freely, tools/validate_style_bible.py checks the shape.
+classes:
+  creature:
+    build_route: image-to-3d
+    triangle_budget: 8000
+    scale_range_m: [0.5, 40.0]
+    snap_grid_m: null          # organic: no grid
+    palette_size: 8
+    cleanup_recipe: [repair, scale_and_pivot, decimate_to_budget, flat_shade, vertex_colour_palette, collision_helper]
+    gates: {triangle_tolerance: 1.0, bbox_tolerance: 0.10, max_loose_parts: 1, max_non_manifold: 0, silhouette_iou_min: 0.80}
+  prop:
+    build_route: image-to-3d
+    triangle_budget: 3000
+    scale_range_m: [0.05, 4.0]
+    snap_grid_m: null
+    palette_size: 6
+    cleanup_recipe: [repair, scale_and_pivot, decimate_to_budget, flat_shade, vertex_colour_palette, collision_helper]
+    gates: {triangle_tolerance: 1.0, bbox_tolerance: 0.05, max_loose_parts: 4, max_non_manifold: 0, silhouette_iou_min: 0.85}
+  terrain:
+    build_route: image-to-3d
+    triangle_budget: 20000
+    scale_range_m: [5.0, 300.0]
+    snap_grid_m: null
+    palette_size: 6
+    cleanup_recipe: [repair, scale_and_pivot, remesh_to_budget, flat_shade, vertex_colour_palette, collision_helper]
+    gates: {triangle_tolerance: 1.0, bbox_tolerance: 0.15, max_loose_parts: 1, max_non_manifold: 0, silhouette_iou_min: 0.75}
+  architecture:
+    build_route: scripted
+    triangle_budget: 6000
+    scale_range_m: [1.0, 100.0]
+    snap_grid_m: 0.5
+    palette_size: 6
+    cleanup_recipe: [snap_to_grid, scale_and_pivot, flat_shade, vertex_colour_palette, collision_helper]
+    gates: {triangle_tolerance: 1.0, bbox_tolerance: 0.02, max_loose_parts: 32, max_non_manifold: 0, silhouette_iou_min: 0.90}
