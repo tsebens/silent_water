@@ -49,7 +49,7 @@ Fixed roles would let players read a site's state from a distance.
 The sub is a different object from the stations. Per M7 it's a **modern, utilitarian near-future research sub**:
 - matte, muted surfaces
 - backlit gauges
-- cool neon strips tracing the ribs
+- hidden cove lighting at the top of the walls, with occasional point sources
 - holographic map displays
 - a glass dome over the pilot
 
