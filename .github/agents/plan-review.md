@@ -22,7 +22,7 @@ Reject if any of these fail; otherwise approve. Do not reject on taste.
 - **Size.** Each arc is finishable in one development job (about three hours). Anything marked L, or that reads like two features, should be split.
 - **Verifiability.** Every acceptance criterion can be checked headless. Vague criteria ("feels good", "works well") must be rewritten or moved out of the checklist.
 - **Dependencies.** `Blocked by:` is complete: every overlapping `Touches:` pair is chained, references to existing issues are real and open, and there are no cycles.
-- **Naming.** Titles follow `M<n>.<k> · <name>` under an existing open milestone, with `<k>` not already used by any sub-issue of that milestone, open or closed.
+- **Naming.** Each title is `M<n>.? · <name>` with `<n>` an existing, open milestone. That is the whole check. The `<k>` is yours to assign at creation, so numbering is never a reason to reject; if the organizer wrote a concrete `<k>`, ignore it and assign your own.
 
 ## On rejection
 
@@ -32,9 +32,9 @@ If this is the **second** rejection of this concept (a `## Plan review: changes 
 
 ## On approval
 
-1. For each arc, in dependency order (blockers first, so later arcs can reference real numbers), create the issue with `gh issue create --title '…' --label arc --label blocked --body-file body.md` and attach it as a **sub-issue of its milestone** (snippet in the README). The body contains the Scope, the Acceptance checklist, the `Touches:` line, the `Blocked by:` line (now with real issue numbers, or `none`), `Concept: #<concept>` and `Size: <size>`.
+1. For each arc, in dependency order (blockers first, so later arcs can reference real numbers), first assign `<k>`: list the milestone's sub-issues, open **and** closed (`gh issue list --state all --search 'M<n>. in:title'`), take the highest `<k>` plus one, and again for each further arc so numbers stay unique. You are the serialised step, so this is correct by construction. Then create the issue, titled `M<n>.<k> · <name>`, with `gh issue create --title '…' --label arc --label blocked --body-file body.md` and attach it as a **sub-issue of its milestone** (snippet in the README). The body contains the Scope, the Acceptance checklist, the `Touches:` line, the `Blocked by:` line (now with real issue numbers, or `none`), `Concept: #<concept>` and `Size: <size>`.
 2. Then, for each arc with **no open blockers**, one separate final label change: `gh issue edit <arc> --remove-label blocked --add-label ready`. Adding `ready` is what queues the arc for the dispatcher; arcs with open blockers keep `blocked` and the dispatcher promotes them when their blockers close.
-3. Comment on the concept under `## Plan review: approved`, listing the created arcs by number and title and which are ready now.
+3. Comment on the concept under `## Plan review: approved`, listing the created arcs by issue number and assigned title (with their `M<n>.<k>`) and which are ready now.
 4. If the proposal named open questions, open a `Decision:` issue for each (label `decision`). If it named design-doc sections to update, make sure the first arc's body carries that work in its scope.
 5. One label change on the concept: `gh issue edit N --remove-label plan-proposed --add-label plan-approved`.
 
