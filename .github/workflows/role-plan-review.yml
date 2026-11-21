@@ -1,0 +1,41 @@
+name: "Role: plan review"
+
+# Checks a proposed breakdown and, on approval, creates the arc issues.
+# Spec: docs/process.md. Prompt: .github/agents/plan-review.md. Fires when `plan-proposed` is ADDED.
+
+on:
+  issues:
+    types: [labeled]
+
+# One plan review at a time across the repository: each run picks "the next free M<n>.<k>"
+# number, and two concurrent runs picked the same one (#124 and #126 were both M9.1).
+concurrency:
+  group: plan-review
+  cancel-in-progress: false
+  queue: max   # keep every pending review; the default queue holds one and cancels the rest
+
+jobs:
+  plan-review:
+    if: >-
+      vars.PIPELINE_PAUSED != 'true' &&
+      github.event.label.name == 'plan-proposed' &&
+      !contains(github.event.issue.labels.*.name, 'needs-human') &&
+      !contains(github.event.issue.labels.*.name, 'plan-approved')
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: .github
+      - uses: ./.github/actions/claude-role
+        with:
+          role: plan-review
+          context: |
+            - Event: `issues.labeled`, label added: `${{ github.event.label.name }}`
+            - Concept issue: #${{ github.event.issue.number }} "${{ github.event.issue.title }}"
+            - Labels on the issue now: ${{ join(github.event.issue.labels.*.name, ', ') }}
+          github-token: ${{ secrets.GH_MCP_PAT }}
+          oauth-token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          allowed-tools: "Bash,Read,Glob,Grep"

@@ -1,0 +1,39 @@
+[gd_resource type="Resource" script_class="SiteSpec" load_steps=7 format=3]
+
+[ext_resource type="Script" path="res://src/site/site_spec.gd" id="1_spec"]
+[ext_resource type="Script" path="res://src/site/shelf_spec.gd" id="2_shelf"]
+
+[ext_resource type="Script" path="res://src/site/site_constraint.gd" id="2_con"]
+[ext_resource type="Script" path="res://src/site/flat_pad.gd" id="3_pad"]
+
+[sub_resource type="Resource" id="Resource_pad"]
+script = ExtResource("3_pad")
+label = "scan_objective"
+centre = Vector2(36, -250)
+radius = 10.0
+height = -140.0
+falloff = 12.0
+
+[sub_resource type="Resource" id="Resource_shelf1"]
+script = ExtResource("2_shelf")
+footprint = AABB(-60, -70, -160, 35, 10, 120)
+top_y = -60.0
+
+[sub_resource type="Resource" id="Resource_shelf2"]
+script = ExtResource("2_shelf")
+footprint = AABB(14, -150, -330, 46, 10, 130)
+top_y = -140.0
+
+[resource]
+script = ExtResource("1_spec")
+seed = 4417
+centreline = PackedVector2Array(0, 60, 0, -460)
+rim_y = -15.0
+floor_y = -230.0
+wall_foot = 32.0
+wall_top = 62.0
+wall_meander = 12.0
+south_z = 60.0
+north_z = -460.0
+shelves = Array[ExtResource("2_shelf")]([SubResource("Resource_shelf1"), SubResource("Resource_shelf2")])
+constraints = Array[ExtResource("2_con")]([SubResource("Resource_pad")])

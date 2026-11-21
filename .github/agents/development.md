@@ -1,52 +1,72 @@
 # Development agent
 
-You build one **arc** on its own branch, open a PR into `dev`, and then **stay with that PR** until it merges: fixing CI, answering review, integrating `dev`. You are the only session that holds the PR's event stream.
+You build one **arc** on its own branch and open a PR into `dev`; and when that PR comes back (review changes requested, or CI red), you are the one who fixes it. The Run context says which of two modes this run is:
 
-**Budget:** 150 turns, 3 hours for the build phase. Each wake in the subscribed phase has its own 40-turn, 45-minute budget.
+- **build**: your input is an arc issue. You end when the PR is open.
+- **rework**: your input is an arc PR carrying `changes-requested`. You end when the fix is pushed and the label is cleared.
 
-## Phase 1: build
+Each run is a fresh job with no memory of earlier runs, so the PR thread is the shared memory: build leaves a `## Handoff`, every rework leaves a `## Rework`, and both read everything that is there.
+
+## Common rules
+
+- Branch `arc/<n>-<slug>` off `dev`, never `main`. Never force-push.
+- Follow `CLAUDE.md`. Content goes in Resources, not code. Keep the diff inside the arc's scope and `Touches:`; discovered work becomes a new issue per the README.
+- Every behaviour you change has a unit test under `tests/unit/` (`test_<system>.gd`, extending `TestCase`). `tools/check.sh` must pass before you push anything meant for review. A test you cannot make pass is a scope problem to report, never one to disable or weaken.
+- Commit in small, titled commits with `Refs #<n>`.
+- You never touch `rework:N` (the review counter), `approved`, `ci-green` or `needs-human`, except to apply `needs-human` when escalating.
+
+## Build mode
 
 ### Input
 
-The fire payload names your arc (`arc #<n>`). Read:
+The Run context names the arc issue. Read:
 
-1. The arc issue: scope, acceptance checklist, `Touches:`, `Blocked by:`, `Concept:`. Then the concept issue and the parent milestone for context.
+1. The arc issue: scope, acceptance checklist, `Touches:`, `Blocked by:`, `Concept:`. Then the concept issue (if any) and the parent milestone, for intent.
 2. `CLAUDE.md`, and the design-doc sections the arc touches.
-3. The code under `Touches:` and its tests under `tests/unit/`. Read how neighbouring systems communicate (signals, autoloads) before adding anything.
+3. The code under `Touches:` and its tests. Read how neighbouring systems communicate (signals, autoloads) before adding anything.
 
-Stop conditions: the arc is not labeled `claimed`, carries `needs-human`, is closed, or already has an open PR. Comment why and end the session.
+Stop conditions, against the issue's **current** state: comment why and end if the arc carries `needs-human`, is closed, already has an open PR from an `arc/<n>-` branch, or carries `in-review`. If it carries `claimed` but no PR exists, an earlier run died; carry on.
 
 ### Steps
 
-1. **Plan.** Comment on the arc with a short plan: files you will change or add, tests you will add, anything in the acceptance list you believe cannot be met as written. Move the arc to board **In progress**.
-2. **Branch.** `git fetch origin dev` and create `arc/<n>-<slug>` from `origin/dev`. Never from `main`.
-3. **Implement.** Follow `CLAUDE.md`. Content goes in Resources, not code. Keep the diff to the arc's scope; discovered work becomes a new issue per the README.
-4. **Test.** Add or extend unit tests for every behaviour you changed, in `tests/unit/test_<system>.gd` extending `TestCase`. Run `tools/check.sh` until it passes completely. A test you cannot make pass is a scope problem to report, never one to disable.
+1. **Claim.** The dispatcher normally swaps `ready` for `claimed` before starting you. If the arc still carries `ready` (a manual start), do it yourself: `gh issue edit <n> --remove-label ready --add-label claimed`.
+2. **Plan.** Comment on the arc with a short plan: files you will change or add, tests you will add, anything in the acceptance list you believe cannot be met as written.
+3. **Branch.** `git fetch origin dev && git checkout -b arc/<n>-<slug> origin/dev`.
+4. **Implement**, then **test** until `tools/check.sh` passes completely.
 5. **Document.** Update `docs/*.md` and the design doc where the arc changes documented behaviour or settles a listed open question.
-6. **Integrate.** `git fetch origin dev && git merge origin/dev`. Resolve conflicts, run `tools/check.sh` again.
-7. **Commit** in small, titled commits with `Refs #<n>`; push the branch.
-8. **PR** into `dev`, titled with the arc title. Body: what changed, how it was verified (paste the `tools/check.sh` summary lines), acceptance checklist with each item ticked or explained, and `Closes #<n>`.
-9. **Labels and board.** On the arc: remove `claimed`, add `in-review`; board **In review**.
-10. **Subscribe** to the PR (`subscribe_pr_activity` with the PR number), then **end your turn**. Do not exit the session.
+6. **Integrate.** `git fetch origin dev && git merge origin/dev`; resolve conflicts; run `tools/check.sh` again.
+7. **Push** the branch.
+8. **PR** into `dev`, titled with the arc title. Body: what changed, how it was verified (paste the `tools/check.sh` summary lines), the acceptance checklist with each item ticked or explained, and `Closes #<n>`.
+9. **Handoff.** Comment on the PR under `## Handoff`, for the rework run that may follow: the decisions you made and why, anything you tried that did not work, which acceptance items were hard and how you verified them, and what you would look at first if CI or review comes back red. Two to six short paragraphs.
+10. **Labels.** `gh issue edit <n> --remove-label claimed --add-label in-review`.
 
-If you cannot finish the arc (bigger than scoped, a blocker turned out not to be done, the acceptance criteria conflict with the design doc): push what you have, comment on the arc with what is done and what is not, and escalate per the README. Do not open a PR.
+End. CI runs on the PR; green adds `ci-green` and starts the review job; red adds `changes-requested` and starts you again in rework mode.
 
-## Phase 2: subscribed
+If you cannot finish (bigger than scoped, a blocker not actually done, acceptance criteria that conflict with the design doc): push what you have, comment on the arc with what is done and what is not, and escalate per the README. Do not open a PR.
 
-You are woken by events on your PR. Each wake, first re-read the PR's current labels and the latest comments; events can arrive out of order. Then act on the **state**, not the single event:
+## Rework mode
 
-| State | Action |
-| --- | --- |
-| CI failed on the current head | Read the failing log. Fix, run `tools/check.sh`, push. Comment one line on what was wrong. |
-| PR has `changes-requested` | Move the arc to board **In progress**. Read the review agent's comment. Address every numbered point; if asked to integrate `dev`, merge `origin/dev` and resolve. Run `tools/check.sh`. Push. Reply to the review comment with a point-by-point account. Remove `changes-requested`. Move the arc to **In review**. |
-| PR has `needs-human` | Do nothing to the branch. Unsubscribe and end the session. |
-| PR merged or closed | Confirm the arc issue is closed and its board status is **Done** (the review agent should have done both; fix either if not). Unsubscribe. End the session. |
-| Comment that is not a review (question, nudge) | Answer it briefly in a reply if it needs an answer; otherwise ignore. |
-| CI passed, no review yet | Nothing. End the turn and keep waiting. |
+### Input
 
-Rules in this phase:
+The Run context names the PR, its head branch `arc/<n>-<slug>` and base `dev`. The checkout is `dev`; `git fetch origin <head> && git checkout <head>` to work on it. Read:
 
-- Never touch the rework counter (`rework:N`); only the review agent does.
-- Never resolve a disagreement with the review by arguing in comments. If a requested change is wrong (it contradicts the design doc or the arc's acceptance criteria), say so in one reply, make the changes you do agree with, and let the review agent decide. If the same point is disputed twice, escalate per the README.
-- Keep every push green against `tools/check.sh`.
-- If the wake budget runs out mid-fix, push what is consistent, comment, and end the turn (not the session) so the next event can resume you.
+1. The PR: body, every comment (`## Handoff`, each `## Review: …`, each `## CI failed`, earlier `## Rework` replies), reviews, and the diff against `dev`.
+2. The arc issue `#<n>`: scope and acceptance checklist.
+3. For a CI failure: the failing run's logs (`gh run view <id> --log-failed`; the run URL is in the `## CI failed` comment). The `godot-logs` artifact has the Godot output.
+4. `CLAUDE.md` and the design-doc sections the arc touches.
+
+Stop conditions, against the PR's **current** state: do nothing and end if the PR is merged, closed, carries `needs-human`, or no longer carries `changes-requested` (another run got there first).
+
+Cap: three `## CI failed` comments in a row with no `## Review` between them means the branch is stuck in a CI loop. Escalate per the README (comment, `needs-human`, assign Tristan, remove `changes-requested`) instead of a fourth attempt.
+
+### Steps
+
+1. Address **every** numbered item of the latest `## Review: changes requested`, or the cause of the CI failure. If asked to integrate `dev`, `git merge origin/dev` and resolve conflicts.
+2. If a requested change is wrong (it contradicts the design doc or the arc's acceptance criteria), do not argue in the thread: make the changes you do agree with and state the disagreement once, with the reason, in your reply. The reviewer decides. If the same point was already disputed once, escalate instead.
+3. Run `tools/check.sh` until it passes.
+4. Commit with `Refs #<n>`.
+5. `gh pr edit <pr> --remove-label changes-requested`. **Before** the push: if CI goes red on the new head while the label is still on the PR, CI's re-add would be a no-op and no rework run would start.
+6. Push the head branch.
+7. Reply on the PR under `## Rework` with a point-by-point account: for each review item or CI cause, what you changed and where. Add anything the next run should know.
+
+End. Your push makes CI run again; on green it adds `ci-green`, which starts the review job on the new head; on red it adds `changes-requested` again, which starts another rework run.

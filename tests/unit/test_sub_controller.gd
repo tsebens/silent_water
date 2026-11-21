@@ -54,3 +54,23 @@ func test_readouts_track_model() -> void:
 	controller.model.tank_water_t = controller.model.tank_capacity_t * 0.5
 	await _physics_frames(2)
 	expect_near(controller.depth, 22.5, 0.5)
+
+
+func test_pilot_gauge_readouts_resolve_to_model() -> void:
+	var planes: SpringAxis = game.get_node("Interior/Stations/Pilot/Planes") as SpringAxis
+	var throttle: SpringAxis = game.get_node("Interior/Stations/Pilot/Throttle") as SpringAxis
+	planes.host_set_value(1.0)
+	throttle.host_set_value(1.0)
+	await _physics_frames(60 * 3)
+	expect(absf(controller.model.velocity.y) > 0.001, "expected vertical motion, vy=%f" % controller.model.velocity.y)
+	expect_near(controller.readout(&"vertical_speed"), controller.model.velocity.y, 0.001)
+	expect_near(controller.readout(&"buoyancy"), controller.model.buoyancy_accel(), 0.001)
+	expect_near(controller.readout(&"engine_output"), controller.model.engine, 0.001)
+
+
+func test_engine_output_zero_in_dead_band() -> void:
+	var throttle: SpringAxis = game.get_node("Interior/Stations/Pilot/Throttle") as SpringAxis
+	throttle.host_set_value(controller.throttle_dead_zone * 0.5)
+	await _physics_frames(60 * 3)
+	expect_near(controller.readout(&"engine_output"), controller.model.engine, 0.001)
+	expect_near(controller.readout(&"engine_output"), 0.0, 0.001, "dead band reads zero")

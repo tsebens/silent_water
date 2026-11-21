@@ -1,7 +1,8 @@
 class_name DevOverlay
 extends CanvasLayer
 ## Developer overlay, toggled with F1 in development builds (or with `--dev`).
-## F4 switches the apex off and on for everyone (host decides).
+## F4 switches the apex off and on for everyone (host decides); F6 does the
+## same for spontaneous leaks.
 ## Drawn over the normal view:
 ##   left       console: engine output, warnings, errors and game events
 ##              (host events reach clients too)
@@ -59,10 +60,19 @@ func _unhandled_input(event: InputEvent) -> void:
 		DevSettings.single_player = not DevSettings.single_player
 		print("[dev] single-player mode %s" % ("on" if DevSettings.single_player else "off"))
 		get_viewport().set_input_as_handled()
+	elif event.is_action_pressed(&"dev_toggle_night"):
+		DevSettings.toggle_night()
+		print("[dev] light preset: %s" % ("night" if DevSettings.night else "day"))
+		get_viewport().set_input_as_handled()
 	elif event.is_action_pressed(&"dev_toggle_apex") and game != null:
 		var apex: ApexMonster = game.get_node_or_null("World/Apex") as ApexMonster
 		if apex != null:
 			apex.request_active(not apex.active)
+		get_viewport().set_input_as_handled()
+	elif event.is_action_pressed(&"dev_toggle_leaks") and game != null:
+		var leak_system: LeakSystem = game.get_node_or_null("LeakSystem") as LeakSystem
+		if leak_system != null:
+			leak_system.request_spontaneous_disabled(not leak_system.spontaneous_disabled)
 		get_viewport().set_input_as_handled()
 
 
@@ -261,11 +271,12 @@ static func stats_text(g: Game) -> String:
 	var b: float = c.buoyancy
 	var b_word: String = "NEUTRAL" if absf(b) < 0.02 else ("POSITIVE (rising)" if b > 0.0 else "NEGATIVE (sinking)")
 	lines.append("MODE  %s  (F5)" % ("single-player: helm runs ballast" if DevSettings.single_player else "crew"))
+	lines.append("LIGHT  %s  (F7)" % ("night" if DevSettings.night else "day"))
 	lines.append("SUB")
 	lines.append("  depth %.1f m   speed %+.2f m/s   heading %03.0f   pitch %+.0f°" % [c.depth, c.speed, c.heading_deg, c.pitch_deg])
 	lines.append("  vertical %+.2f m/s   buoyancy %s %+.2f m/s²" % [c.vertical_speed, b_word, b])
-	lines.append("  engine %+.0f%%   tank %.0f%%   air %.0f%%   bilge %.0f%%%s" % [
-		c.engine_output * 100.0, c.tank_fraction * 100.0, c.air_fraction * 100.0, c.bilge_fraction * 100.0, "   SURFACED" if c.surfaced else ""])
+	lines.append("  engine %+.0f%%   tank %.0f%%   air %.0f%%   bilge %.1f t%s" % [
+		c.engine_output * 100.0, c.tank_fraction * 100.0, c.air_fraction * 100.0, c.bilge_water_t, "   SURFACED" if c.surfaced else ""])
 	var margin: float = Acoustics.sub_db() - Acoustics.ambient_db()
 	lines.append("NOISE")
 	if Acoustics.sub_intensity <= 0.0:
@@ -283,6 +294,10 @@ static func stats_text(g: Game) -> String:
 		lines.append("  distance %.0f m   speed %.1f m/s   depth %.0f m" % [dist, apex.speed, -apex.position.y])
 		lines.append("  suspicion %.0f   last SNR %s   alertness %.2f" % [
 			apex.sync_suspicion, ("%+.1f dB" % apex.sync_snr) if apex.sync_snr > -99.0 else "none", apex.sync_alertness])
+	var leak_system: LeakSystem = g.get_node_or_null("LeakSystem") as LeakSystem
+	if leak_system != null:
+		lines.append("LEAKS  spontaneous %s  (F6 to %s)" % [
+			"OFF" if leak_system.spontaneous_disabled else "on", "enable" if leak_system.spontaneous_disabled else "disable"])
 	var director: DiveDirector = g.get_node_or_null("DiveDirector") as DiveDirector
 	var scan: ScanObjective = g.get_node_or_null("ScanObjective") as ScanObjective
 	if director != null:

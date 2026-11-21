@@ -150,3 +150,51 @@ func test_responsive_speed_up_and_slow_down() -> void:
 	# Quadratic drag: v = v0 / (1 + k v0 t). With k doubled, ~1.5 m/s after 10 s
 	# (it was ~2.0). Throttling astern brakes harder still.
 	expect(m.forward_speed() < 1.8, "coasts down quickly (%f m/s after 10 s)" % m.forward_speed())
+
+
+func test_throttle_dead_zone_mapping() -> void:
+	var cases: Array[Vector2] = [
+		Vector2(0.10, 0.0), Vector2(-0.14, 0.0), Vector2(0.15, 0.0), Vector2(0.575, 0.5),
+		Vector2(1.0, 1.0), Vector2(-0.15, 0.0), Vector2(-0.575, -0.5), Vector2(-1.0, -1.0),
+	]
+	for c: Vector2 in cases:
+		expect_near(SubPhysicsModel.throttle_order(c.x, 0.15), c.y, 0.0001)
+
+
+func test_throttle_dead_zone_configurable() -> void:
+	expect_near(SubPhysicsModel.throttle_order(0.3, 0.0), 0.3, 0.0001)
+	expect_near(SubPhysicsModel.throttle_order(-0.8, 0.0), -0.8, 0.0001)
+	expect_near(SubPhysicsModel.throttle_order(0.3, 0.3), 0.0, 0.0001)
+	expect_near(SubPhysicsModel.throttle_order(0.65, 0.3), 0.5, 0.0001)
+
+
+func test_engine_converges_to_zero_in_dead_band() -> void:
+	m.engine = 0.6
+	_run(20.0, SubPhysicsModel.throttle_order(0.14, 0.15))
+	expect_near(m.engine, 0.0, 0.0001)
+
+
+func test_bilge_is_uncapped_and_floors_at_zero() -> void:
+	expect_near(m.change_bilge(12.0), 12.0, 0.0001)
+	expect_near(m.bilge_water_t, 12.0, 0.0001, "above the old 8 t")
+	expect_near(m.change_bilge(-100.0), -12.0, 0.0001, "actual change")
+	expect_near(m.bilge_water_t, 0.0, 0.0001)
+
+
+func test_bilge_height_from_tonnage() -> void:
+	expect_eq(SubPhysicsModel.bilge_height_m(0.0), 0.0)
+	expect(SubPhysicsModel.bilge_height_m(1.0) < SubPhysicsModel.bilge_height_m(2.0), "monotonic")
+	var h3: float = SubPhysicsModel.bilge_height_m(3.0)
+	var h4: float = SubPhysicsModel.bilge_height_m(4.0)
+	expect(h3 >= 0.15 and h3 <= 0.20, "3 t height %f" % h3)
+	expect(h4 >= 0.15 and h4 <= 0.20, "4 t height %f" % h4)
+
+
+func test_enough_bilge_defeats_blown_tanks() -> void:
+	m.tank_water_t = 0.0
+	expect(m.buoyancy_accel() > 0.0, "blown tanks rise")
+	var reserve_t: float = m.displacement_t - (m.dry_mass_t + m.payload_t)
+	m.change_bilge(reserve_t + 2.0)
+	expect(m.buoyancy_accel() < 0.0, "flooded sub sinks with tanks blown")
+	m.change_bilge(-100.0)
+	expect(m.buoyancy_accel() > 0.0, "pumped down it rises again")

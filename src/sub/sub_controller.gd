@@ -32,6 +32,8 @@ const STRIKE_INTENSITY: float = 0.3
 @export var sub_frame: SubFrame
 ## Pilot throttle, -1 (full astern) .. 1 (full ahead).
 @export var throttle: SpringAxis
+## Fraction of lever travel either side of centre where the ordered engine is 0.
+@export_range(0.0, 0.9) var throttle_dead_zone: float = 0.15
 @export var rudder: SpringAxis
 @export var planes: SpringAxis
 @export var flood_valve: Interactable
@@ -51,7 +53,7 @@ var pitch_deg: float = 0.0
 var engine_output: float = 0.0
 var tank_fraction: float = 0.5
 var air_fraction: float = 1.0
-var bilge_fraction: float = 0.0
+var bilge_water_t: float = 0.0
 var surfaced: bool = false
 ## Net vertical acceleration from buoyancy (m/s²): + rises, − sinks.
 var buoyancy: float = 0.0
@@ -89,7 +91,7 @@ func _physics_process(delta: float) -> void:
 	var before: Vector3 = model.position
 	model.step(
 		delta,
-		throttle.get_value() if throttle != null else 0.0,
+		SubPhysicsModel.throttle_order(throttle.get_value(), throttle_dead_zone) if throttle != null else 0.0,
 		rudder.get_value() if rudder != null else 0.0,
 		planes.get_value() if planes != null else 0.0,
 		flood_valve.get_normalized() if flood_valve != null else 0.0,
@@ -165,7 +167,7 @@ func _update_readouts() -> void:
 	engine_output = model.engine
 	tank_fraction = model.tank_water_t / model.tank_capacity_t
 	air_fraction = model.air_t / model.air_capacity_t
-	bilge_fraction = model.bilge_water_t / model.bilge_capacity_t
+	bilge_water_t = model.bilge_water_t
 
 
 ## Engine noise (linear intensity). Valid on every peer from replicated readouts.

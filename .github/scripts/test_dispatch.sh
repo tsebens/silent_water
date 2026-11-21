@@ -49,4 +49,51 @@ check "blockers: body numbers ∪ native, de-duplicated, sorted" $'1\n7\n9' "$(b
 gh() { return 1; }
 check "blockers: none and API failure" "" "$(blockers_of 1)"
 
+check "concept_status: design is Backlog" "Backlog" "$(concept_status $'design')"
+check "concept_status: design beats plan-approved" "Backlog" "$(concept_status $'concept\ndesign\nplan-approved')"
+check "concept_status: plan-approved is In progress" "In progress" "$(concept_status $'concept\nplan-approved')"
+check "concept_status: plain concept is Backlog" "Backlog" "$(concept_status $'concept')"
+
+# closable_concepts: arcs in any state, linked by the "Concept: #n" line.
+CONCEPTS_FIX='[{"number":10,"labels":["concept","plan-approved"]},{"number":11,"labels":["concept","plan-approved"]},
+  {"number":12,"labels":["concept","plan-approved"]},{"number":13,"labels":["concept","plan-approved","needs-human"]},
+  {"number":14,"labels":["concept"]}]'
+ARCS_FIX='[{"number":20,"state":"closed","body":"Touches: x\nConcept: #10\n"},
+  {"number":21,"state":"closed","body":"**Concept:** #10\n"},
+  {"number":22,"state":"closed","body":"Concept: #11\n"},
+  {"number":23,"state":"open","body":"Concept: #11\n"},
+  {"number":24,"state":"closed","body":"Concept: #13\n"},
+  {"number":25,"state":"closed","body":"Concept: #14\n"},
+  {"number":26,"state":"closed","body":"Mentions #12 in Scope\nConcept: #99\n"}]'
+check "closable: all arcs closed closes; open arc, no arcs, needs-human, unapproved stay" "10" "$(closable_concepts "$CONCEPTS_FIX" "$ARCS_FIX")"
+check "closable: already-closed concepts are not in the open list (idempotent)" "" "$(closable_concepts '[]' "$ARCS_FIX")"
+
+# The pass itself: closes with reason completed, logs the line; dry run logs without closing.
+CALLS=$(mktemp)
+gh() { if [[ "$*" == "api repos/$REPO/issues/10 --jq .state" ]]; then echo open; else echo "gh $*" >>"$CALLS"; fi; }
+out=$(close_finished_concepts "$CONCEPTS_FIX" "$ARCS_FIX")
+check "close pass: closes only #10 with reason completed" "gh issue close 10 -R $REPO --reason completed" "$(cat "$CALLS")"
+check "close pass: log line" "  closing concept #10: all arcs closed" "$out"
+: >"$CALLS"
+DRY_RUN=true
+out=$(close_finished_concepts "$CONCEPTS_FIX" "$ARCS_FIX")
+check "dry run: nothing closed" "" "$(cat "$CALLS")"
+check "dry run: would-close line logged" $'  closing concept #10: all arcs closed\n    (dry) gh issue close 10 -R '"$REPO"' --reason completed' "$out"
+DRY_RUN=false
+
+# Concept already closed since the snapshot: no close call, logged, returns 0.
+: >"$CALLS"
+gh() { if [[ "$*" == *"issues/10 --jq .state" ]]; then echo closed; else echo "gh $*" >>"$CALLS"; fi; }
+out=$(close_finished_concepts "$CONCEPTS_FIX" "$ARCS_FIX"); rc=$?
+check "already closed: no close call" "" "$(cat "$CALLS")"
+check "already closed: logged" "  concept #10 already closed" "$out"
+check "already closed: returns 0" 0 $rc
+
+# The close call itself fails: logged and swallowed.
+gh() { if [[ "$*" == *"issues/10 --jq .state" ]]; then echo open; else return 1; fi; }
+out=$(close_finished_concepts "$CONCEPTS_FIX" "$ARCS_FIX"); rc=$?
+check "close failure: logged" $'  closing concept #10: all arcs closed\n    closing concept #10 failed; continuing' "$out"
+check "close failure: returns 0" 0 $rc
+rm -f "$CALLS"
+
 exit $fails

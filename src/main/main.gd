@@ -22,6 +22,10 @@ func _ready() -> void:
 	for e: String in args.errors:
 		push_error("Launch args: " + e)
 
+	if args.terrain_lab:
+		_open_terrain_lab.call_deferred()
+		return
+
 	if OS.get_cmdline_user_args().has("--autotest"):
 		var autotest: Autotest = Autotest.new()
 		autotest.name = "Autotest"
@@ -50,7 +54,13 @@ func _show_menu() -> void:
 	_menu.join_requested.connect(
 		func(address: String, port: int) -> void: _report(Net.join(address, port), "join")
 	)
+	_menu.terrain_lab_requested.connect(_open_terrain_lab)
 	add_child(_menu)
+
+
+## The terrain lab replaces this scene; it has no game session.
+func _open_terrain_lab() -> void:
+	get_tree().change_scene_to_file(TerrainLab.SCENE_PATH)
 
 
 func _start_game() -> void:

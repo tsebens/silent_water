@@ -32,12 +32,21 @@ const SLOPE_SPEED_EFFECT: float = 1.5
 ## Interior bounds (sub-local). A player outside them is put back inside;
 ## this guards against physics glitches pushing someone through the hull.
 const INTERIOR_BOUNDS: AABB = AABB(Vector3(-2.0, -0.8, -3.4), Vector3(4.0, 3.8, 8.4))
+## Landing noise: louder than a walking step (a thud, not a footfall), fading
+## over [constant LANDING_NOISE_S].
+const LANDING_INTENSITY: float = 1.2e-2
+const LANDING_NOISE_S: float = 0.25
 const RESCUE_POINT: Vector3 = Vector3(-0.9, 0.1, 1.2)
 
 ## Replicated pose (sub-local). Written by the owning peer.
 @export var sync_position: Vector3 = Vector3.ZERO
 @export var sync_yaw: float = 0.0
 @export var sync_pitch: float = 0.0
+## Counts landings after a jump; every peer turns a change into landing noise.
+@export var sync_landings: int = 0
+## Jump height in metres, sub-local. Low enough to clear a step or seat edge
+## and nothing out of bounds.
+@export var jump_height: float = 0.3
 
 @onready var _head: Node3D = $Head
 @onready var _camera: Camera3D = $Head/Camera3D
@@ -48,6 +57,8 @@ const RESCUE_POINT: Vector3 = Vector3(-0.9, 0.1, 1.2)
 var bot_move: Vector2 = Vector2.ZERO
 var bot_planes: float = 0.0
 var bot_ballast: float = 0.0
+## Scripted jump press; consumed by the next physics step.
+var bot_jump: bool = false
 
 var _sub_frame: SubFrame
 var _held: Interactable = null
@@ -61,6 +72,10 @@ var _speed: float = 0.0
 ## Camera shake amplitude (radians), set by threat cues.
 var _shake: float = 0.0
 var _last_position: Vector3 = Vector3.ZERO
+var _airborne: bool = false
+var _seen_landings: int = 0
+## Seconds of landing noise left.
+var _landing_left: float = 0.0
 
 
 func _enter_tree() -> void:
@@ -133,6 +148,11 @@ func _physics_process(delta: float) -> void:
 		rotation.y = lerp_angle(rotation.y, sync_yaw, w)
 		_head.rotation.x = lerp_angle(_head.rotation.x, sync_pitch, w)
 	_track_speed(delta)
+	_landing_left = maxf(_landing_left - delta, 0.0)
+	if sync_landings != _seen_landings:
+		_seen_landings = sync_landings
+		_landing_left = LANDING_NOISE_S
+		footstep.emit(1.0)
 
 
 func _simulate(delta: float) -> void:
@@ -174,10 +194,17 @@ func _simulate(delta: float) -> void:
 	var horizontal: Vector3 = Vector3(velocity.x, 0.0, velocity.z)
 	horizontal = horizontal.lerp(wish, 1.0 - exp(-ACCEL * delta))
 	velocity = Vector3(horizontal.x, velocity.y, horizontal.z)
+	var jump_pressed: bool = bot_jump or (
+		Input.mouse_mode == Input.MOUSE_MODE_CAPTURED and Input.is_action_just_pressed(&"jump")
+	)
+	bot_jump = false
 	if is_on_floor():
 		if tilt > deg_to_rad(SLIDE_ANGLE_DEG):
 			velocity += along_deck * delta
 		velocity.y = minf(velocity.y, 0.0) + gravity.y * delta
+		if jump_pressed:
+			velocity.y = sqrt(2.0 * gravity.length() * jump_height)
+			_airborne = true
 	else:
 		velocity += gravity * delta
 	var before: Vector3 = position
@@ -188,6 +215,9 @@ func _simulate(delta: float) -> void:
 		push_warning("Player %s left the interior at %s; moving back inside" % [name, position])
 		position = RESCUE_POINT
 		velocity = Vector3.ZERO
+	if _airborne and is_on_floor() and velocity.y <= 0.0:
+		_airborne = false
+		sync_landings += 1
 	if is_on_floor():
 		_stride += (position - before).length()
 		if _stride >= STRIDE_M:
@@ -259,9 +289,12 @@ func _track_speed(delta: float) -> void:
 ## Movement noise (linear intensity). The host polls this for every player,
 ## using replicated movement, so a client can't fake being quiet.
 func noise_intensity() -> float:
-	if _seat != null or _speed < 0.2:
+	if _seat != null:
 		return 0.0
-	return FOOTSTEP_INTENSITY * pow(_speed / WALK_SPEED, 3.0)
+	var landing: float = LANDING_INTENSITY * _landing_left / LANDING_NOISE_S
+	if _speed < 0.2:
+		return landing
+	return FOOTSTEP_INTENSITY * pow(_speed / WALK_SPEED, 3.0) + landing
 
 
 func _look(relative: Vector2) -> void:

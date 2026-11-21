@@ -47,7 +47,9 @@ func mark_contact() -> void:
 	if station == null or frame == null or chart == null:
 		return
 	var dir: Vector3 = SonarStation.bearing_to_world(frame.sub_transform, station.bearing_deg())
-	chart.add_pin(frame.sub_transform.origin + dir * contact_range_m, MapModel.Kind.CONTACT)
+	var at: Vector3 = frame.sub_transform.origin + dir * contact_range_m
+	chart.add_pin(at, MapModel.Kind.CONTACT)
+	chart.add_mark(at)
 
 
 func interaction_hint() -> String:

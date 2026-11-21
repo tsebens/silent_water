@@ -102,3 +102,52 @@ func test_dive_reset_clears_the_chart() -> void:
 	chart.add_pin(Vector3.ZERO, MapModel.Kind.NOTE)
 	(game.get_node("DiveDirector") as DiveDirector).reset_dive()
 	expect_eq(chart.pins.size(), 0)
+
+
+func test_mark_intensity_decays_and_clamps() -> void:
+	expect_eq(MapModel.mark_intensity(0.0, 60.0), 1.0)
+	expect(absf(MapModel.mark_intensity(30.0, 60.0) - 0.5) < 0.001)
+	expect_eq(MapModel.mark_intensity(60.0, 60.0), 0.0)
+	expect_eq(MapModel.mark_intensity(500.0, 60.0), 0.0)
+	expect_eq(MapModel.mark_intensity(-5.0, 60.0), 1.0)
+
+
+func test_mark_trail_is_newest_brightest() -> void:
+	var t0: int = Time.get_ticks_msec()
+	for i: int in range(3):
+		chart.marks.append({"id": i + 1, "pos": Vector3.ZERO, "author": 1, "born": t0 - (3 - i) * 10000})
+	var trail: Array[Dictionary] = chart.mark_trail(t0)
+	expect_eq(trail.size(), 3)
+	expect_eq(int(trail[0]["id"]), 3)
+	expect(float(trail[0]["intensity"]) > float(trail[1]["intensity"]))
+	expect(float(trail[1]["intensity"]) > float(trail[2]["intensity"]))
+
+
+func test_expired_marks_are_pruned_and_host_add_replicates_via_set() -> void:
+	chart.add_mark(Vector3(1, -40, -50))
+	expect_eq(chart.marks.size(), 1, "host-side add yields an entry")
+	var wire: Array = chart._marks_to_wire()
+	expect_eq(wire.size(), 1)
+	chart._rpc_set_marks(wire)
+	expect_eq(chart.marks.size(), 1, "the replicated list round-trips")
+	var now: int = Time.get_ticks_msec()
+	chart.marks[0]["born"] = now - int(chart.mark_fade_s * 1000.0) - 1000
+	expect(chart.prune_marks(now))
+	expect(chart.marks.is_empty())
+
+
+func test_bearing_display_is_heading_up_and_uses_shared_cone_constant() -> void:
+	await _frames(2)
+	var large: MeshInstance3D = (game.get_node("Interior/Model") as SubModel).part("Bezel")
+	var bezel: FlatChart = large.get_node_or_null("BearingScreen") as FlatChart
+	expect(bezel != null, "bezel display exists")
+	controller.enabled = false
+	for deg: float in [0.0, 37.0, 150.0, 271.0]:
+		var pos: Vector3 = Vector3(0, -40, -100)
+		game.sub_frame.set_pose(Transform3D(Basis(Vector3.UP, deg_to_rad(deg)), pos))
+		await _frames(2)
+		var c: Vector2 = bezel.to_display(pos)
+		expect(c.distance_to(Vector2(bezel.resolution, bezel.resolution) * 0.5) < 0.01, "sub at the centre (%s)" % c)
+		var fwd: Vector3 = game.sub_frame.sub_transform.basis * Vector3.FORWARD
+		var ahead: Vector2 = bezel.to_display(pos + fwd * 50.0) - c
+		expect(ahead.y < -0.01 and absf(ahead.x) < 0.01, "bow is up the display at %s deg (%s)" % [deg, ahead])

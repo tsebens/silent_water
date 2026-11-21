@@ -136,6 +136,7 @@ This is the highest-risk system. Prototype several versions.
 
 - **Terrain is always known** from the expedition ship's pre-dive survey and shown at the charts station or pin-table. Sonar adds what moves: creatures, vents and objectives.
 - **Passive (default)** is a listening job. The operator hears directional audio in their headphones and turns the hydrophone to locate sounds. It is vague and silent, and only the operator hears it.
+- **Bearing display:** the sonar station's main bezel shows a non-interactive heading-up hologram of the chart with a cone on the current hydrophone bearing and fading blobs where the operator has marked contacts. It is a memory aid for the operator, not a sonar picture.
 - **Active** pings paint a 3D cloud of points that fades over a few seconds, similar to Scanner Sombre. It is clear but loud, and gives the sub away.
 - **Wide or narrow:** a wide ping is blurry and announces you everywhere; a narrow beam is sharper and quieter but shows only a slice.
 - **Display options:** a phosphor point cloud, or a mechanical pin-table that rises into the shape of the terrain.
@@ -254,13 +255,14 @@ Low-poly models with crisp, clean rendering. No grain, static, dither or fuzzy f
 
 - **Volumetric fog** gives underwater light beams real shape and a short reach. It is built into Godot 4.
 - **Marine snow** drifting through the lights reads instantly as deep ocean.
-- **Strong silhouettes.** With little visible detail, creatures and structures are recognized by shape, so shape matters more than texture.
+- **Strong silhouettes.** With little visible detail, creatures and structures are recognized by shape, so shape matters more than texture. Restrained surface treatment is welcome where it supports silhouette and never competes with it: the sub interior's worn industrial metal has low-contrast panel lines and light wear, and no grain or noise filter.
 - **Light is gameplay.** The difference between white and red light should be obvious at a glance.
 - **Infrastructure looks overbuilt:** rivets, heavy hatches, clear labels, backup systems, maintenance logs. Industrial, never sleek. The feel (industrial, utilitarian, competent) matters more than any specific detail.
 - **Brutalist architecture:** Raindrop builds in smooth, angular concrete and steel. Its stations have massive stacked slabs, cantilevered tiers, splayed struts, repeated ribs, and deep-set ribbon windows. Hard angular structures stand against soft, sloping organic terrain.
 - **Soft neon on the architecture:** orange, blue and green light in lines, slots and windows, fading quickly into the dark. It sets the infrastructure apart from nature and shows how vast and isolating the ocean is. The sub's working lights stay white or red.
-- **The sub is modern and utilitarian (M7).** A near-future research sub: matte, muted surfaces, backlit gauges, cool neon strips tracing the ribs, holographic map displays, a glass dome over the pilot. Cabin lights dim so the crew can see out. The model is built in Onshape and converted with `tools/convert_sub.py`.
-- **Terrain reads as real seabed.** Dive sites are continuous heightfields (a sculpted profile plus noise), not stacked boxes.
+- **The sub is modern and utilitarian (M7).** A near-future research sub: matte, muted surfaces, backlit gauges, hidden cove lighting (lights behind fascias at the top of the walls, so light spills down the surfaces) with occasional point sources, holographic map displays, a glass dome over the pilot. Cabin lights dim so the crew can see out. The model is built in Onshape and converted with `tools/convert_sub.py`.
+- **The water surface and surfacing light (M9).** The surface at depth 0 is a crisp low-poly wave plane, translucent and rippled: from below it transmits the sky (sun disc or bright patch), from above it reflects it; it is never drawn inside the hull. Ambient and directional light rise over the last 40 m of ascent, so the approach to the surface is visible before the gauge shows it: strong by day, faint at night. Day and night are Resource presets (sky, light colour, intensity, surface colours), day by default, no cycle. A developer switch (F7) flips the preset.
+- **Terrain reads as real seabed.** Dive sites are continuous heightfields from a site spec (a sculpted profile plus constraints), with eroded-looking analytic detail (smooth-blended profile, strata bands, domain-warped, slope-damped noise), grid erosion passes, tuned in an in-game terrain lab. Not stacked boxes. The macro shape now lives in a `SiteSpec` Resource (`src/site/presets/canyon.tres`, with `SiteConstraint` as the base for rules). `FlatPad`, `Corridor` and `ClearColumn` constraints are applied as soft masks (detail fades inside them, the combined mask protects those cells from erosion), a validator flags conflicts, and the scan objective's position is read from the preset's `FlatPad` rather than hard-coded. Erosion (`ErosionParams`, `TerrainErosion`) samples the analytic generator onto a grid, runs a seeded hydraulic droplet pass (sediment-carrying particles carve gullies, flow diverted around protected cells, sediment conserved), a thermal pass (slump above a talus angle) and a deposition-settle pass (flat ground relaxes, steep cells untouched), never changes cells inside a constraint mask, and serves `height_at` by bilinear sampling; it is seeded and off by default, leaving `height_at` analytic. The terrain lab is a queued concept (#123).
 - Full detail and references are in [Art direction](docs/art_direction.md).
 
 ## Technical architecture
@@ -321,7 +323,7 @@ The prototype answers one question: is it tense and fun to coordinate a sub when
 - [x] One recurring leak with a field patch
 - [x] The noise system and two-needle gauge, with each player's mic loudness feeding the noise level
 - [x] One blind, sound-hunting apex monster with the full escalation ladder
-- [x] Minimal passive sonar: a hydrophone the operator turns, with directional audio only they hear. No active ping and no 3D display. This is the hardest system to calibrate, so expect to rework it many times.
+- [x] Minimal passive sonar: a hydrophone the operator turns, with directional audio only they hear. No active ping and no 3D display. (Later, the bearing display on the station bezel adds a chart overlay of marks; there is still no sonar picture.) This is the hardest system to calibrate, so expect to rework it many times.
 - [x] One small vertical map with two or three shelves
 - [x] One objective: a scan taken from the sub
 - [x] A played descent and ascent; the dive ends on surfacing

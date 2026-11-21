@@ -4,6 +4,7 @@ extends Control
 
 signal host_requested(port: int)
 signal join_requested(address: String, port: int)
+signal terrain_lab_requested
 
 @onready var _address: LineEdit = %Address
 @onready var _port: SpinBox = %Port
@@ -16,3 +17,4 @@ func _ready() -> void:
 	(%Join as Button).pressed.connect(
 		func() -> void: join_requested.emit(_address.text.strip_edges(), int(_port.value))
 	)
+	(%TerrainLab as Button).pressed.connect(func() -> void: terrain_lab_requested.emit())

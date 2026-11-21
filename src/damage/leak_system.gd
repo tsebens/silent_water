@@ -1,9 +1,9 @@
 class_name LeakSystem
 extends Node
-## Host-side leak director. Opens one leak at a time at a random point, now and
-## then and after hull strikes. Water comes in while it's open. A patch closes
-## it for a time that scales with patch quality; then it reopens (the prototype
-## has one recurring leak). Also runs the bilge pump.
+## Host-side leak director. Opens one leak at a time at a random point, at a
+## depth-scaled random rate and after hull strikes. Water comes in while it's
+## open. A patch closes it for a time that scales with patch quality; then it
+## reopens (the prototype has one recurring leak). Also runs the bilge pump.
 
 signal leak_opened(where: String)
 signal leak_patched(quality: float, hold_sec: float)
@@ -12,19 +12,35 @@ signal leak_patched(quality: float, hold_sec: float)
 const LEAK_INTENSITY: float = 2e-3
 ## Bilge pump running (~78 dB).
 const PUMP_INTENSITY: float = 6e-3
-const LEAK_FLOW_T: float = 0.02   # tonnes/s in through an open leak
-const PUMP_FLOW_T: float = 0.05   # tonnes/s out with the pump on
-const FIRST_LEAK_DELAY: Vector2 = Vector2(60.0, 120.0)
+## Quiet time at the start of a dive (and after a reset) before spontaneous
+## leaks can begin.
+const START_QUIET_SEC: float = 45.0
+## Depth multiplier on the spontaneous rate: SURFACE_FACTOR at the surface,
+## FLOOR_FACTOR at FLOOR_DEPTH (the canyon floor), linear between, flat beyond.
+const SURFACE_FACTOR: float = 0.25
+const FLOOR_FACTOR: float = 2.0
+const FLOOR_DEPTH: float = 230.0
 const PATCH_HOLD_SEC: Vector2 = Vector2(45.0, 240.0)  # zero vs perfect quality
 ## A strike this hard (m/s) always opens a leak; softer ones scale the chance.
 const STRIKE_FOR_CERTAIN_LEAK: float = 1.2
 
+## Mean seconds between spontaneous leaks at depth factor 1.0 (about double the
+## old 60-120 s first-leak delay).
+@export var mean_interval_sec: float = 180.0
+## Tonnes/s in through an open leak. One unattended leak should leave the sub
+## unable to surface in 3-5 minutes (see docs/damage.md).
+@export var leak_flow: float = 0.04
+## Tonnes/s out with the pump on: between 1x and 2x `leak_flow`, so one pump
+## beats one leak but not two.
+@export var pump_flow: float = 0.06
 @export var controller: SubController
 @export var leaks_root: Node3D
 @export var pump: Lever
 @export var pump_point: Node3D
 
 var open_index: int = -1
+## Dev switch (host decides, synced): no spontaneous leaks. Hull strikes still leak.
+var spontaneous_disabled: bool = false
 
 var _leaks: Array[Leak] = []
 var _timer: float = 0.0
@@ -40,7 +56,8 @@ func _ready() -> void:
 			_leaks.append(leak)
 			leak.patch_completed.connect(_on_patch_completed)
 	_rng.randomize()
-	_timer = _rng.randf_range(FIRST_LEAK_DELAY.x, FIRST_LEAK_DELAY.y)
+	_timer = START_QUIET_SEC
+	spontaneous_disabled = OS.get_cmdline_user_args().has("--no-leaks")
 	if controller != null:
 		controller.hull_strike.connect(_on_hull_strike)
 	Net.peer_joined.connect(_on_peer_joined)
@@ -83,12 +100,51 @@ func _physics_process(delta: float) -> void:
 	if not multiplayer.is_server() or controller == null or not controller.enabled:
 		return
 	if open_index != -1:
-		controller.model.change_bilge(LEAK_FLOW_T * delta)
+		controller.model.change_bilge(leak_flow * delta)
 	if pump_on():
-		controller.model.change_bilge(-PUMP_FLOW_T * delta)
+		controller.model.change_bilge(-pump_flow * delta)
 	_timer -= delta
-	if _timer <= 0.0 and open_index == -1:
+	if _timer <= 0.0 and open_index == -1 and spontaneous_roll(delta, controller.depth):
 		open_random_leak()
+
+
+## Multiplier on the spontaneous leak rate at this depth (m). Monotonic
+## non-decreasing: rare at the surface, commonest at the canyon floor.
+static func depth_factor(depth: float) -> float:
+	return lerpf(SURFACE_FACTOR, FLOOR_FACTOR, clampf(depth / FLOOR_DEPTH, 0.0, 1.0))
+
+
+## Spontaneous leaks per second at this depth.
+func spontaneous_rate(depth: float) -> float:
+	return depth_factor(depth) / maxf(mean_interval_sec, 0.001)
+
+
+## Host: one Poisson draw for a step of `delta` seconds. False while the dev
+## switch is on or the quiet period (`_timer`) has not run out.
+func spontaneous_roll(delta: float, depth: float) -> bool:
+	if spontaneous_disabled or _timer > 0.0:
+		return false
+	return _rng.randf() < 1.0 - exp(-spontaneous_rate(depth) * delta)
+
+
+## Any peer: ask the host to switch spontaneous leaks off or on.
+func request_spontaneous_disabled(off: bool) -> void:
+	if multiplayer.is_server():
+		_set_spontaneous_disabled.rpc(off)
+	else:
+		_rpc_request_spontaneous_disabled.rpc_id(1, off)
+
+
+@rpc("any_peer", "reliable")
+func _rpc_request_spontaneous_disabled(off: bool) -> void:
+	if multiplayer.is_server() and DevOverlay.allowed():
+		_set_spontaneous_disabled.rpc(off)
+
+
+@rpc("authority", "call_local", "reliable")
+func _set_spontaneous_disabled(off: bool) -> void:
+	spontaneous_disabled = off
+	print("[leaks] spontaneous leaks %s by developer" % ("disabled" if off else "enabled"))
 
 
 ## Host: closes everything and restarts the leak clock.
@@ -98,7 +154,7 @@ func reset() -> void:
 	_set_leak.rpc(-1)
 	if pump != null:
 		pump.host_set_value(0.0)
-	_timer = _rng.randf_range(FIRST_LEAK_DELAY.x, FIRST_LEAK_DELAY.y)
+	_timer = START_QUIET_SEC
 
 
 ## Host: opens a leak at a random point (if none is open).
@@ -148,3 +204,4 @@ func _on_hull_strike(speed: float) -> void:
 func _on_peer_joined(peer_id: int) -> void:
 	if multiplayer.is_server():
 		_set_leak.rpc_id(peer_id, open_index)
+		_set_spontaneous_disabled.rpc_id(peer_id, spontaneous_disabled)

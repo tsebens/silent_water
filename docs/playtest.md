@@ -44,7 +44,7 @@ A dive ends when you surface after the scan (success) or when it reaches you (lo
 
 | Station | Where | What you do |
 | --- | --- | --- |
-| **Helm** | Bow, in the pilot well under the glass dome | Press **E** at the seat to take the helm (E again to stand). **W/S** throttle (it stays where you leave it), **A/D** rudder, **R/F** dive planes (F noses down). **A/D** turns even when stopped (side thrusters, which make some noise); the rudder adds more turn once you're moving. The dive planes only work with water moving over them. Gauges either side: depth, pitch, noise, heading, speed. The **pilot's map** hologram in front of you is heading-up and centred on the sub (about 115 m around), with terrain, the objective, pins and sonar contacts. **Cabin lights** lever by your left hand dims the cabin so you can see out. You can't work other stations while seated, so call your orders out. |
+| **Helm** | Bow, in the pilot well under the glass dome | Press **E** at the seat to take the helm (E again to stand). **W/S** throttle (it stays where you leave it), **A/D** rudder, **R/F** dive planes (F noses down). **A/D** turns even when stopped (side thrusters, which make some noise); the rudder adds more turn once you're moving. The dive planes only work with water moving over them. Gauges either side: depth, pitch, noise, heading, speed. A centre pod below the dome adds buoyancy (net vertical acceleration, sinking left), vertical speed (down left) and throttle (effective engine output, astern left; reads 0 inside the lever's dead zone). The **pilot's map** hologram in front of you is heading-up and centred on the sub (about 115 m around), with terrain, the objective, pins and sonar contacts. **Cabin lights** lever by your left hand dims the cabin so you can see out. You can't work other stations while seated, so call your orders out. |
 | **Ballast** | Port wall, forward cabin, by the bulkhead | **FLOOD** valve (quiet) makes the sub heavier. **BLOW** valve (very loud, uses limited HP air) makes it lighter. Turn the handwheels by circling the mouse. Gauges: tank, HP air. In single-player mode the helm runs these with Numpad 8/2 or Page Up/Page Down. |
 | **Sonar** | Starboard desk, forward cabin, against the bulkhead | Press **E** at the seat to sit; that puts the headset on. Circle the mouse on the **hydrophone wheel** to turn the listening bearing; the dial on the bulkhead shows where you're listening, and both maps show it as a yellow fan. **Scroll** to set an estimated range, **M** to mark a contact at that bearing and range on the shared chart. Only you hear the hydrophone, and you must say what you hear out loud. |
 | **Map table** | Midships, behind the helm | Press **E** to lean over the hologram (cursor appears). **WASD** pan, **wheel** zoom, **F** follow the sub, **1-4** pin type (waypoint, danger, last seen: apex, note), **click** place a pin on the terrain, **right-click** remove one, **E** step back. North stays fixed to the table; the sub arrow shows the heading. Pins, sonar contacts and the yellow sonar fan show here and on the pilot's map. |
@@ -66,6 +66,7 @@ A dive ends when you surface after the scan (success) or when it reaches you (lo
 | WASD | Walk; at the helm, W/S throttle and A/D rudder |
 | R / F | At the helm: dive planes (R rises, F dives) |
 | Numpad 8 / 2 (or Page Up / Page Down) | At the helm in single-player mode: blow / flood while held |
+| Space | Hop (clears steps and seat edges). Landing makes a thud, louder than a footstep |
 | Shift | Sneak (quieter footsteps) |
 | Esc | Release the mouse and let go of everything |
 
@@ -102,6 +103,33 @@ Every step up the ladder can be heard or felt:
 
 Arousal fades about 30 seconds after you go quiet. Patrolling lasts a minute or two after that.
 
+## Dev tools
+
+### Terrain lab
+
+A developer scene for shaping dive sites without hosting a session. Open it with the **Terrain lab** button on the dev connect menu, or launch straight into it:
+
+```bash
+godot --path . -- --terrain-lab
+```
+
+It is not part of a session: there is no sub, crew or network, and nothing in a running dive leads to it. **Back** returns to the dev menu.
+
+The scene is a `CanyonSite` generated from a `SiteSpec`, the ocean surface, and the day and night light presets for context. It calls the same generator and `height_at` as the game, so what you see is what a session builds from the same spec and seed.
+
+- **Camera:** hold the **right mouse button** to look; while held, **W/A/S/D** fly, **E/Q** rise and sink, **Shift** is fast, and the **wheel** changes speed. Without the button, keys go to the panel.
+- **Panel (left):** a control for every `SiteSpec` field (seed, centreline, rim and floor, wall shape, width and depth curves, closed ends, shelves, constraints) and every exported `CanyonSite` tunable (profile, strata, detail, ambient occlusion). New exports appear automatically. Lists (shelves, constraints) have **Add** and **Remove**; the centreline and curves are typed as `x,z; x,z` points (curves are `t,value`, `t` from 0 at the south end to 1 at the north; empty means none).
+- **Seed** sits at the top with **Random**. **Regenerate** rebuilds the site. With **Auto** on, an edit regenerates after a short pause, as long as the last build took under 1.5 s; slower builds wait for the button.
+- **Readout:** how long the last build took, and any conflicts `SiteSpec.validate()` finds between constraints.
+- **Day / night** switches the light preset.
+- **Constraint overlay:** every constraint is drawn as a wireframe over the terrain: a `FlatPad` as a gold ring (inner ring is the pad, faint outer ring its falloff, plus a post at its height), a `Corridor` as a cyan outline with its centre ramp, a `ClearColumn` as a pink cylinder. It follows edits at once, without waiting for a regenerate. Constraints are added, removed and edited through the list in the panel; the same operations are `LabPanel.add_constraint`, `move_constraint` and `remove_constraint`.
+- **Spec files:** the two path rows under the buttons. **Save spec** writes the edited `SiteSpec` (constraints included) as `.tres`; **Load spec** replaces the edited spec with one. The default path is `user://lab_spec.tres`.
+- **Heightmap:** **Export heightmap** samples the generated ground over the generator's grid (2 m cells) and writes a PNG plus a `.json` sidecar beside it. Each pixel holds a 16-bit height code, high byte in red and low byte in green (Godot has no 16-bit greyscale), row 0 at the minimum z. The sidecar gives the extent (`x_min`, `z_min`, `x_max`, `z_max`), `cell`, the grid size, and the vertical range (`min_y`, `max_y`, `vertical_scale` = range / 65535). `y = min_y + code / 65535 * (max_y - min_y)`. **Import** reads a PNG and sidecar back and reports its size and range; heights reproduce within one `vertical_scale` step (`SiteIO.import_heightmap`).
+- **Erosion:** an **Erosion** section of the panel holds every `ErosionParams` field. `enabled` turns grid erosion on (it is off by default, so the ground stays analytic); `cell_size` is the grid resolution (smaller is finer and slower). Three passes run in order, each with its own toggle and parameters: **Droplets** (seeded hydraulic erosion: droplets pick up, carry and deposit sediment as they run downhill), **Thermal** (material steeper than the talus angle slumps downhill) and **Deposition** (flat ground settles toward its neighbours' mean). Cells under a constraint are never changed. The readout lists the milliseconds each pass took and the total.
+- **Before / after:** the **Eroded** checkbox next to Auto switches between the eroded ground and the analytic ground before erosion (the site is rebuilt either way). **Export heightmap** always writes the eroded grid when erosion is on, even from the before view, so the exported file is the frozen result. Whether a game session bakes the grid or loads one is not settled (Decision #207).
+
+The lab starts from the canyon preset (`src/site/presets/canyon.tres`) and edits a copy; it never writes the preset back.
+
 ## Debug keys (playtests only)
 
 | Key | What it does |
@@ -109,8 +137,14 @@ Arousal fades about 30 seconds after you go quiet. Patrolling lasts a minute or 
 | F1 | Developer overlay: console (engine output and game events, including the host's on clients), 3D minimap (sub green, apex red, array yellow), and live sub, noise, apex and dive stats. Launch with `-- --dev-overlay` to start with it on. |
 | F5 | Single-player mode: the helm also runs the ballast (Numpad 8 or Page Up to blow, Numpad 2 or Page Down to flood, while held). Turns on automatically when you host alone in a development build (start with `-- --crew` to skip that); F5 toggles it. |
 | F4 | Switch the apex off or on for everyone (the host decides). While it's off, it's gone: no body, no sound, no hearing, no contact. Start the host with `-- --no-apex` to dive without it from the start. |
+| F6 | Switch spontaneous leaks off or on for everyone (the host decides). Hull-strike leaks still open. Start the host with `-- --no-leaks` to dive without them. |
+| F7 | Flip the surface light preset between day (default) and night. Start with `-- --night` for night. |
 | F3 | Simulate normal speech on your mic |
 | Shift+F3 | Simulate a shout |
+
+## Surfacing light
+
+Ascend slowly through the last 40 m. By day the water should visibly brighten well before the depth gauge reads near zero; by night (F7) the same cue should be there but subtle. Report whether either is too strong, too weak or too late. Presets live in `src/world/presets/`.
 
 ## During and after
 

@@ -9,6 +9,7 @@ First-person co-op submarine stealth game. See [the design doc](Silent%20Water%2
 - [Noise system](docs/noise.md): the model and every source's level
 - [The apex and passive sonar](docs/apex_and_sonar.md): hearing, the escalation ladder, tells, sonar
 - [Sub frame](docs/sub_frame.md): why the interior never moves
+- [Development process](docs/process.md): how work flows from a concept issue to `dev`, and which agent does what
 
 ## Development
 
@@ -20,13 +21,15 @@ Run a local crew of N players (1 host + N−1 clients, windows tiled):
 tools/launch.sh 4
 ```
 
-Run the headless checks (import, unit tests, two-process network smoke test):
+Run the headless checks (import, unit tests, network smoke test, three-instance autotest):
 
 ```bash
 tools/check.sh
 ```
 
 Set `GODOT=/path/to/godot` if the binary isn't on `PATH` as `godot`.
+
+To pick up or propose work, follow [the development process](docs/process.md) and the [project board](https://github.com/users/tsebens/projects/1).
 
 After re-exporting the sub from Onshape (as a single assembly glTF to `assets/media/sub/Assembly 1.gltf`), rebuild the game model:
 
@@ -48,3 +51,6 @@ Launch arguments go after `--`: `--host`, `--join [address]`, `--port <n>`, `--n
 | `tests/` | Test runner and network smoke test |
 | `tools/` | Launch and check scripts; `compare_autotest.py` checks multi-instance runs; `convert_sub.py` builds the sub model |
 | `docs/` | Architecture notes |
+| `.github/agents/` | Pipeline role prompts, one per agent |
+| `.github/actions/` | Shared actions: `setup-godot` and `claude-role` (runs one pipeline agent with the Claude Code CLI) |
+| `.github/workflows/` | CI, the dispatcher and one `role-*.yml` workflow per pipeline agent |

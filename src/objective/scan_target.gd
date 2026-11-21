@@ -9,6 +9,12 @@ const PINGER_DB: float = 105.0
 
 
 func _ready() -> void:
+	# The array sits where the site spec's objective constraint puts it.
+	var site: CanyonSite = get_node_or_null("../Site") as CanyonSite
+	if site != null and site.spec != null:
+		var at: Vector3 = site.spec.objective_position()
+		if at.is_finite():
+			position = at
 	add_to_group(&"scan_target")
 	add_to_group(&"outside_sources")
 	_build()

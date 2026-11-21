@@ -4,6 +4,8 @@
 [ext_resource type="Script" path="res://src/sub/sub_frame.gd" id="2"]
 [ext_resource type="Script" path="res://src/sub/sub_controller.gd" id="3"]
 [ext_resource type="Script" path="res://src/world/marine_snow.gd" id="6"]
+[ext_resource type="Script" path="res://src/world/ocean_surface.gd" id="ocean"]
+[ext_resource type="Script" path="res://src/world/surface_lighting.gd" id="surflight"]
 [ext_resource type="Script" path="res://src/audio/sub_audio.gd" id="7"]
 [ext_resource type="Script" path="res://src/damage/leak_system.gd" id="8"]
 [ext_resource type="PackedScene" path="res://src/creature/apex_monster.tscn" id="9"]
@@ -50,7 +52,7 @@ properties/5/replication_mode = 1
 properties/6/path = NodePath(".:air_fraction")
 properties/6/spawn = true
 properties/6/replication_mode = 1
-properties/7/path = NodePath(".:bilge_fraction")
+properties/7/path = NodePath(".:bilge_water_t")
 properties/7/spawn = true
 properties/7/replication_mode = 1
 properties/8/path = NodePath(".:surfaced")
@@ -128,6 +130,9 @@ script = ExtResource("13")
 
 [node name="MarineSnow" type="MeshInstance3D" parent="World"]
 script = ExtResource("6")
+
+[node name="OceanSurface" type="MeshInstance3D" parent="World"]
+script = ExtResource("ocean")
 
 [node name="Players" type="Node3D" parent="."]
 
@@ -207,3 +212,9 @@ game = NodePath("..")
 
 [node name="Environment" type="WorldEnvironment" parent="."]
 environment = SubResource("env")
+
+[node name="SurfaceLighting" type="Node" parent="." node_paths=PackedStringArray("environment_node", "surface", "sub_frame")]
+script = ExtResource("surflight")
+environment_node = NodePath("../Environment")
+surface = NodePath("../World/OceanSurface")
+sub_frame = NodePath("../SubFrame")

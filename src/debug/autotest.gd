@@ -8,17 +8,26 @@ extends Node
 ## Scenario (seconds after the session starts):
 ##   Crew2 walks forward for 1.5 s, grabs the cabin lights lever at 2.0, drags
 ##     it all the way down and releases at 3.5.
-##   Crew3 tries to grab the same lever at 2.5 while Crew2 holds it and drags
-##     it up. The host must reject this. At 3.6 Crew3 takes the helm and holds
+##   Crew3 tries to grab the same lever from 2.5, once it sees Crew2 holding
+##     it, and drags it up. The host must reject this. At 3.6 Crew3 takes the helm and holds
 ##     W (throttle ahead) and A (rudder to port) from 4.0.
 ##   Crew1 (host) opens the flood valve about 1.5 turns between 2.0 and 3.0.
 ##   Crew2 "talks" at 75 dB from 4.0 on (simulated mic level) and puts on
 ##   the sonar headset at 4.5 (it's on the starboard side; the cord check
 ##   uses distance, so Crew2 is moved next to it first).
-##   At 10.0 (engine fully spooled, so noise is steady) the host tells every instance to report at once; clients then
-##   quit, and the host quits once they are gone.
+##   At 10.0 (engine fully spooled, so noise is steady) the host tells every
+##   instance to report at once; clients then quit, and the host quits once
+##   they are gone. The host holds the report for up to REPORT_GRACE while any
+##   peer's last voice report is older than VOICE_FRESH, so a lost unreliable
+##   packet or a scheduler stall near the snapshot can't read a timed-out voice
+##   as silence (#86). After the grace it reports regardless.
 
 const REPORT_AT: float = 10.0
+## Longest the host waits past REPORT_AT for fresh voice reports (s).
+const REPORT_GRACE: float = 3.0
+## A peer's voice counts as fresh when its last report is younger than this (s).
+## Must stay well under Acoustics.VOICE_TIMEOUT or the wait is pointless.
+const VOICE_FRESH: float = 0.25
 const STATIONS: String = "Interior/Stations/"
 
 var role: String = ""
@@ -68,8 +77,15 @@ func _physics_process(delta: float) -> void:
 					me.teleport(headset.global_position + Vector3(-0.8, -1.4, 0))
 					me.put_on(headset))
 		"Crew3":
-			_once("grab", 2.5, func() -> void: lever.begin_interaction())
-			if _t > 2.6 and _t < 3.2:
+			# Only contest the lever once Crew2's hold has reached this instance:
+			# instances start their clocks when they connect, so on a loaded
+			# runner a fixed time can land before Crew2's grab and Crew3 would
+			# win the lever (#210). Never grab late either.
+			if _t >= 2.5 and _t < 3.2 and not _done.has("grab") \
+					and lever.state.holder != InteractableState.NO_HOLDER \
+					and lever.state.holder != Net.local_id():
+				_once("grab", 2.5, func() -> void: lever.begin_interaction())
+			if _done.has("grab") and _t < 3.2:
 				lever.drag(Vector2(0, -8))
 			_once("release", 3.4, func() -> void: lever.end_interaction())
 			if me != null:
@@ -84,10 +100,29 @@ func _physics_process(delta: float) -> void:
 				flood.drag(Vector2(-sin(a), cos(a)) * r * TAU * 1.5 * delta)
 			_once("release", 3.0, func() -> void: flood.end_interaction())
 	# The host tells everyone when to report so all snapshots are simultaneous.
-	if Net.is_host():
-		_once("report", REPORT_AT, func() -> void: _rpc_report.rpc())
+	if Net.is_host() and not _done.has("report"):
+		var ages: Array[float] = []
+		for peer: int in multiplayer.get_peers():
+			ages.append(Acoustics.voice_age(peer))
+		if report_due(_t, ages):
+			_rpc_report.rpc()
 	if role == "Crew1" and _done.has("report") and multiplayer.get_peers().is_empty():
 		_once("quit", 0.0, func() -> void: get_tree().quit(0))
+
+
+## Whether the host should snapshot now, given the session time and how long
+## ago each connected peer last reported its voice. True once REPORT_AT has
+## passed and every report is fresher than VOICE_FRESH, or once REPORT_GRACE
+## more has run out either way.
+static func report_due(t: float, voice_ages: Array[float]) -> bool:
+	if t < REPORT_AT:
+		return false
+	if t >= REPORT_AT + REPORT_GRACE:
+		return true
+	for age: float in voice_ages:
+		if age >= VOICE_FRESH:
+			return false
+	return true
 
 
 func _once(key: String, at: float, action: Callable) -> void:

@@ -34,9 +34,11 @@ var air_capacity_t: float = 60.0
 var air_t: float = 60.0
 
 # --- Bilge -------------------------------------------------------------------
-## Water that has leaked into the hull (tonnes). Adds weight; pumped out.
+## Water that has leaked into the hull (tonnes). Uncapped: it adds weight and
+## is pumped out, but never destroys the sub by itself.
 var bilge_water_t: float = 0.0
-var bilge_capacity_t: float = 8.0
+## Footprint of the flooded interior (m²). Water height = tonnes / footprint.
+const INTERIOR_FOOTPRINT_M2: float = 20.0
 
 # --- Engine ------------------------------------------------------------------
 ## Normalized engine output, -1 (full astern) .. 1 (full ahead).
@@ -88,11 +90,23 @@ func total_mass_t() -> float:
 	return dry_mass_t + payload_t + tank_water_t + bilge_water_t
 
 
+## Bilge tonnage at which, with the tank fully blown, buoyancy at the surface
+## can no longer lift the hull above the waterline: the reserve buoyancy
+## (displacement minus dry mass and payload). 10.0 t with the default hull.
+func max_surfaceable_bilge_t() -> float:
+	return displacement_t - dry_mass_t - payload_t
+
+
 ## Adds (positive) or pumps out (negative) bilge water. Returns the change.
 func change_bilge(delta_t: float) -> float:
 	var before: float = bilge_water_t
-	bilge_water_t = clampf(bilge_water_t + delta_t, 0.0, bilge_capacity_t)
+	bilge_water_t = maxf(bilge_water_t + delta_t, 0.0)
 	return bilge_water_t - before
+
+
+## Height (m) of the bilge water over the interior floor (1 t = 1 m³).
+static func bilge_height_m(tonnes: float) -> float:
+	return tonnes / INTERIOR_FOOTPRINT_M2
 
 
 ## Net vertical acceleration from buoyancy alone (positive rises).
@@ -125,6 +139,18 @@ func depth() -> float:
 ## Forward speed through the water (m/s); negative when going astern.
 func forward_speed() -> float:
 	return (basis().inverse() * velocity).dot(Vector3.FORWARD)
+
+
+## Maps the throttle lever position (-1..1) to the ordered engine (-1..1).
+## Inside ±[param dead_zone] of centre the order is exactly 0; beyond it the
+## order ramps linearly to ±1 at full travel, so there is no jump at the edge.
+static func throttle_order(lever: float, dead_zone: float) -> float:
+	var l: float = clampf(lever, -1.0, 1.0)
+	var dz: float = clampf(dead_zone, 0.0, 0.99)
+	var mag: float = absf(l)
+	if mag <= dz:
+		return 0.0
+	return signf(l) * (mag - dz) / (1.0 - dz)
 
 
 ## Advances the model.
