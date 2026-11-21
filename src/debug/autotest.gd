@@ -8,8 +8,8 @@ extends Node
 ## Scenario (seconds after the session starts):
 ##   Crew2 walks forward for 1.5 s, grabs the cabin lights lever at 2.0, drags
 ##     it all the way down and releases at 3.5.
-##   Crew3 tries to grab the same lever at 2.5 while Crew2 holds it and drags
-##     it up. The host must reject this. At 3.6 Crew3 takes the helm and holds
+##   Crew3 tries to grab the same lever from 2.5, once it sees Crew2 holding
+##     it, and drags it up. The host must reject this. At 3.6 Crew3 takes the helm and holds
 ##     W (throttle ahead) and A (rudder to port) from 4.0.
 ##   Crew1 (host) opens the flood valve about 1.5 turns between 2.0 and 3.0.
 ##   Crew2 "talks" at 75 dB from 4.0 on (simulated mic level) and puts on
@@ -77,8 +77,15 @@ func _physics_process(delta: float) -> void:
 					me.teleport(headset.global_position + Vector3(-0.8, -1.4, 0))
 					me.put_on(headset))
 		"Crew3":
-			_once("grab", 2.5, func() -> void: lever.begin_interaction())
-			if _t > 2.6 and _t < 3.2:
+			# Only contest the lever once Crew2's hold has reached this instance:
+			# instances start their clocks when they connect, so on a loaded
+			# runner a fixed time can land before Crew2's grab and Crew3 would
+			# win the lever (#210). Never grab late either.
+			if _t >= 2.5 and _t < 3.2 and not _done.has("grab") \
+					and lever.state.holder != InteractableState.NO_HOLDER \
+					and lever.state.holder != Net.local_id():
+				_once("grab", 2.5, func() -> void: lever.begin_interaction())
+			if _done.has("grab") and _t < 3.2:
 				lever.drag(Vector2(0, -8))
 			_once("release", 3.4, func() -> void: lever.end_interaction())
 			if me != null:
