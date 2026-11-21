@@ -38,3 +38,20 @@ func test_dev_setting_toggles_preset() -> void:
 	expect(SurfaceLighting.other(SurfaceLighting.DAY) == SurfaceLighting.NIGHT, "other of day")
 	expect(SurfaceLighting.other(SurfaceLighting.NIGHT) == SurfaceLighting.DAY, "other of night")
 	DevSettings.night = before
+
+
+func test_preset_sun_reaches_surface_material() -> void:
+	var surface: OceanSurface = OceanSurface.new()
+	runner.add_child(surface)
+	var m: ShaderMaterial = surface.material_override as ShaderMaterial
+	var node: SurfaceLighting = SurfaceLighting.new()
+	node.surface = surface
+	for p: LightPreset in [SurfaceLighting.DAY, SurfaceLighting.NIGHT]:
+		node.set_preset(p)
+		expect(m.get_shader_parameter(&"sun_direction").is_equal_approx(p.sun_direction.normalized()), "%s direction" % p.preset_name)
+		expect(m.get_shader_parameter(&"sun_color") == p.light_color, "%s colour" % p.preset_name)
+		expect_near(float(m.get_shader_parameter(&"sun_strength")), p.sun_energy)
+	expect(not SurfaceLighting.DAY.sun_direction.normalized().is_equal_approx(SurfaceLighting.NIGHT.sun_direction.normalized()), "presets set different sun directions")
+	expect(SurfaceLighting.DAY.sun_direction.y > 0.0 and SurfaceLighting.NIGHT.sun_direction.y > 0.0, "sun above the horizon")
+	node.free()
+	surface.free()
