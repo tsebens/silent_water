@@ -52,4 +52,6 @@ if grep -qE "SCRIPT ERROR|SHADER ERROR|Parse Error" "$LOG_DIR/autotest.log"; the
 python3 tools/compare_autotest.py "$LOG_DIR/autotest.log" 3 || rc=1
 step autotest $rc
 
+python3 tools/validate_style_bible.py >"$LOG_DIR/style_bible.log" 2>&1; step style_bible $?
+
 exit $status
