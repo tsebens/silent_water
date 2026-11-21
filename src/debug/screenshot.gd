@@ -4,6 +4,7 @@ extends Node
 ## seconds (default 3) after the session starts, optionally points the local
 ## player's view with `--look <yaw_deg>,<pitch_deg>` and moves them with
 ## `--at <x>,<z>`, sits with `--sit pilot|sonar` (then --look is relative),
+## sets the hydrophone wheel with `--wheel <value>`,
 ## places the apex with `--apex-rel <x>,<y>,<z>` (sub-local),
 ## saves the frame as PNG, then quits.
 
@@ -19,6 +20,8 @@ var _sub_at: Vector3 = Vector3.ZERO
 var _has_sub_at: bool = false
 var _apex_rel: Vector3 = Vector3.ZERO
 var _has_apex: bool = false
+var _wheel: float = 0.0
+var _has_wheel: bool = false
 
 
 func setup(game: Game, args: PackedStringArray) -> void:
@@ -43,6 +46,9 @@ func setup(game: Game, args: PackedStringArray) -> void:
 				var r: PackedStringArray = args[i + 1].split(",")
 				_apex_rel = Vector3(float(r[0]), float(r[1]), float(r[2]))
 				_has_apex = true
+			"--wheel":
+				_wheel = float(args[i + 1])
+				_has_wheel = true
 			"--at":
 				var q: PackedStringArray = args[i + 1].split(",")
 				_at = Vector2(float(q[0]), float(q[1]))
@@ -72,6 +78,8 @@ func _run() -> void:
 		var seat_path: String = seats.get(_sit, seats["pilot"])
 		me.sit_in(_game.get_node(seat_path) as StationSeat)
 		await get_tree().create_timer(0.3).timeout
+	if _has_wheel:
+		(_game.get_node("Interior/Stations/Sonar/Wheel") as Interactable).host_set_value(_wheel)
 	if OS.get_cmdline_user_args().has("--demo-map"):
 		# A few pins and a manned hydrophone so the charts have something to show.
 		var chart: MapModel = _game.get_node("MapModel") as MapModel
