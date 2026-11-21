@@ -70,7 +70,7 @@ check "closable: already-closed concepts are not in the open list (idempotent)" 
 
 # The pass itself: closes with reason completed, logs the line; dry run logs without closing.
 CALLS=$(mktemp)
-gh() { echo "gh $*" >>"$CALLS"; }
+gh() { if [[ "$*" == "api repos/$REPO/issues/10 --jq .state" ]]; then echo open; else echo "gh $*" >>"$CALLS"; fi; }
 out=$(close_finished_concepts "$CONCEPTS_FIX" "$ARCS_FIX")
 check "close pass: closes only #10 with reason completed" "gh issue close 10 -R $REPO --reason completed" "$(cat "$CALLS")"
 check "close pass: log line" "  closing concept #10: all arcs closed" "$out"
@@ -80,6 +80,20 @@ out=$(close_finished_concepts "$CONCEPTS_FIX" "$ARCS_FIX")
 check "dry run: nothing closed" "" "$(cat "$CALLS")"
 check "dry run: would-close line logged" $'  closing concept #10: all arcs closed\n    (dry) gh issue close 10 -R '"$REPO"' --reason completed' "$out"
 DRY_RUN=false
+
+# Concept already closed since the snapshot: no close call, logged, returns 0.
+: >"$CALLS"
+gh() { if [[ "$*" == *"issues/10 --jq .state" ]]; then echo closed; else echo "gh $*" >>"$CALLS"; fi; }
+out=$(close_finished_concepts "$CONCEPTS_FIX" "$ARCS_FIX"); rc=$?
+check "already closed: no close call" "" "$(cat "$CALLS")"
+check "already closed: logged" "  concept #10 already closed" "$out"
+check "already closed: returns 0" 0 $rc
+
+# The close call itself fails: logged and swallowed.
+gh() { if [[ "$*" == *"issues/10 --jq .state" ]]; then echo open; else return 1; fi; }
+out=$(close_finished_concepts "$CONCEPTS_FIX" "$ARCS_FIX"); rc=$?
+check "close failure: logged" $'  closing concept #10: all arcs closed\n    closing concept #10 failed; continuing' "$out"
+check "close failure: returns 0" 0 $rc
 rm -f "$CALLS"
 
 exit $fails
