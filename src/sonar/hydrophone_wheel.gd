@@ -43,8 +43,10 @@ func _apply_visual(v: float) -> void:
 		_axle = axle_of(wheel)
 		_have_axle = true
 	# Spin about the wheel's own axle, keeping its mounting orientation.
-	# The axle points toward the operator, so a negative angle is clockwise.
-	var angle: float = -deg_to_rad(v / degrees_per_turn * 360.0)
+	# axle_of() is signed toward the mesh's local +Z, which in the sub model is
+	# away from the operator at the sonar seat, so a positive angle about it
+	# is clockwise as the operator sees it (tests pin this against the scene).
+	var angle: float = deg_to_rad(v / degrees_per_turn * 360.0)
 	wheel.transform.basis = _base_basis * Basis(_axle, angle)
 
 
