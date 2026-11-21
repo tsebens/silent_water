@@ -137,15 +137,17 @@ func test_expired_marks_are_pruned_and_host_add_replicates_via_set() -> void:
 
 
 func test_bearing_display_is_heading_up_and_uses_shared_cone_constant() -> void:
-	var bezel: HoloMap = game.get_node("Interior/Stations/Sonar/BearingBezel/BearingDisplay") as HoloMap
-	expect(bezel != null and bezel.heading_up and bezel.show_marks, "bezel display exists")
+	await _frames(2)
+	var large: MeshInstance3D = (game.get_node("Interior/Model") as SubModel).part("Bezel")
+	var bezel: FlatChart = large.get_node_or_null("BearingScreen") as FlatChart
+	expect(bezel != null, "bezel display exists")
 	controller.enabled = false
 	for deg: float in [0.0, 37.0, 150.0, 271.0]:
 		var pos: Vector3 = Vector3(0, -40, -100)
 		game.sub_frame.set_pose(Transform3D(Basis(Vector3.UP, deg_to_rad(deg)), pos))
 		await _frames(2)
-		var c: Vector3 = bezel.to_display(pos)
-		expect(absf(c.x) < 0.01 and absf(c.z) < 0.01, "sub at the centre (%s)" % c)
+		var c: Vector2 = bezel.to_display(pos)
+		expect(c.distance_to(Vector2(bezel.resolution, bezel.resolution) * 0.5) < 0.01, "sub at the centre (%s)" % c)
 		var fwd: Vector3 = game.sub_frame.sub_transform.basis * Vector3.FORWARD
-		var ahead: Vector3 = bezel.to_display(pos + fwd * 50.0) - c
-		expect(ahead.z < -0.01 and absf(ahead.x) < 0.01, "bow is up the display at %s deg (%s)" % [deg, ahead])
+		var ahead: Vector2 = bezel.to_display(pos + fwd * 50.0) - c
+		expect(ahead.y < -0.01 and absf(ahead.x) < 0.01, "bow is up the display at %s deg (%s)" % [deg, ahead])
