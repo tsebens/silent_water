@@ -57,11 +57,11 @@ Thinking that is not final lives in GitHub issues, labelled `design`: a draft `C
 
 ### Organization agent
 
-Reads the concept, the design doc, the open milestones and the open arcs. Decides whether the concept is one arc or several. For each proposed arc it writes a title in the milestone scheme (`M<n>.<k> · <name>`, under an existing milestone; if none fits it proposes one and escalates), a scope, headless acceptance criteria, `Touches:` (its blast radius) and `Blocked by:` (dependencies, including chaining any two arcs whose `Touches:` overlap). Posts the breakdown as a comment and applies `plan-proposed` (removing `plan-rejected` on a retry). Creates no issues. Two rejections on one concept escalate instead of a third proposal.
+Reads the concept, the design doc, the open milestones and the open arcs. Decides whether the concept is one arc or several. For each proposed arc it writes a title as `M<n>.? · <name>` under an existing milestone (the `<k>` is left for plan review to assign; if no milestone fits it proposes one and escalates), a scope, headless acceptance criteria, `Touches:` (its blast radius) and `Blocked by:` (dependencies, including chaining any two arcs whose `Touches:` overlap). Posts the breakdown as a comment and applies `plan-proposed` (removing `plan-rejected` on a retry). Creates no issues. Two rejections on one concept escalate instead of a third proposal.
 
 ### Plan-review agent
 
-Checks the proposal against the concept and the design doc: fidelity, design consistency, size (one development job each), verifiability, dependencies, naming. On approval it creates the arcs as sub-issues of their milestones with `arc` and `blocked`, then adds `ready` as a separate final label change to those with no open blockers, and applies `plan-approved`. On rejection it comments objections and swaps `plan-proposed` for `plan-rejected`, which starts another organization job. A second rejection escalates to `needs-human` instead.
+Checks the proposal against the concept and the design doc: fidelity, design consistency, size (one development job each), verifiability, dependencies, naming (only that the milestone exists and is open; arc numbers are never a rejection reason). On approval it assigns each arc's `<k>` (next free under the milestone, open and closed sub-issues counted; plan review is serialised so this cannot race), creates the arcs as sub-issues of their milestones with `arc` and `blocked`, then adds `ready` as a separate final label change to those with no open blockers, and applies `plan-approved`. On rejection it comments objections and swaps `plan-proposed` for `plan-rejected`, which starts another organization job. A second rejection escalates to `needs-human` instead.
 
 ### Dispatcher
 
@@ -108,7 +108,7 @@ The cron runs hourly as a floor; a shell gate enforces the real interval from `v
 | --- | --- | --- | --- | --- |
 | Concept | Free-form, usually `Concept: …` | `concept` | Head developer | None |
 | Milestone | `M<n> · <name>` | none | Tristan or head developer | None |
-| Arc | `M<n>.<k> · <name>` | `arc` | Plan-review agent (or the head developer for a shakedown) | Its milestone |
+| Arc | `M<n>.<k> · <name>` (`<k>` assigned by plan review at creation) | `arc` | Plan-review agent (or the head developer for a shakedown) | Its milestone |
 | Design note | `Design: …` | `design` | Head developer | None |
 | Decision | `Decision: …` | `decision` | Anyone | None |
 | Discovered work | Free-form | `arc` once scoped | Any agent that finds it | Its milestone |

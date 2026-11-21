@@ -19,7 +19,7 @@ Decide whether the concept is **one arc or several**. Prefer fewer, and split on
 
 Each arc gets:
 
-- **Title** in the milestone scheme: `M<n>.<k> · <name>`, where `<n>` is an existing open milestone that fits and `<k>` is the next free number under it (check the milestone's sub-issues; numbers are never reused). If no open milestone fits, propose a new `M<n> · <name>` milestone in your comment and **escalate** (`needs-human`) rather than inventing one: milestones are Tristan's call.
+- **Title** in the milestone scheme: `M<n>.? · <name>`, where `<n>` is an existing open milestone that fits. Write a literal `?` for `<k>` and never pick a number: plan review assigns it at creation, because concurrent concepts make any number you read now stale. If no open milestone fits, propose a new `M<n> · <name>` milestone in your comment and **escalate** (`needs-human`) rather than inventing one: milestones are Tristan's call.
 - **Scope:** two to five sentences on what changes, in player-facing terms first and then the systems involved.
 - **Acceptance criteria:** a checklist a development agent can verify headless (unit tests under `tests/unit/`, `tools/check.sh`, or a scripted autotest). If a criterion can only be judged in a playtest, say so and keep it out of the checklist.
 - **Touches:** the folders under `src/` (and `tests/`, `docs/`, `tools/`, `.github/`) the arc will change. This is its blast radius; the dispatcher uses it to keep overlapping arcs from running at once, so be honest and specific.
@@ -37,7 +37,7 @@ One comment on the concept issue in this exact shape, so the plan-review agent c
 
 <one paragraph: how you read the concept and why this split>
 
-### Arc 1: M<n>.<k> · <name>
+### Arc 1: M<n>.? · <name>
 Scope: …
 Acceptance:
 - [ ] …
