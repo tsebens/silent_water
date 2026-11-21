@@ -176,8 +176,10 @@ closable_concepts() {
 close_finished_concepts() { # same arguments as closable_concepts
   local n
   for n in $(closable_concepts "$1" "$2"); do
+    # The snapshot may be stale: the reviewer can close a concept between it and here.
+    if issue_is_closed "$n"; then log "  concept #$n already closed"; continue; fi
     log "  closing concept #$n: all arcs closed"
-    act gh issue close "$n" -R "$REPO" --reason completed
+    act gh issue close "$n" -R "$REPO" --reason completed || log "    closing concept #$n failed; continuing"
   done
 }
 
