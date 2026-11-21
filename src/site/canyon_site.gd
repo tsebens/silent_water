@@ -53,6 +53,11 @@ const DETAIL_FREQ: float = 0.03
 	set(value):
 		spec = value
 		_configure_noise()
+## Grid erosion passes; null or disabled keeps [method height_at] analytic.
+@export var erosion: ErosionParams:
+	set(value):
+		erosion = value
+		_eroded = PackedFloat32Array()
 @export_group("Profile")
 ## Radius (m) of the smooth min/max rounding the foot and lip of the walls.
 @export var profile_blend: float = 8.0
@@ -96,6 +101,10 @@ var _strata_noise: FastNoiseLite
 var _rng: RandomNumberGenerator = RandomNumberGenerator.new()
 var _map_mesh: ArrayMesh
 var _constraint_grid: PackedFloat32Array = PackedFloat32Array()
+var _eroded: PackedFloat32Array = PackedFloat32Array()
+var _eroded_nx: int = 0
+var _eroded_nz: int = 0
+var _eroded_cell: float = CELL
 
 
 func _init() -> void:
@@ -132,13 +141,46 @@ func _configure_noise() -> void:
 
 func _ready() -> void:
 	_rng.seed = spec.seed
+	bake_erosion()
 	_build_terrain()
 	_build_boulders()
 	_build_vents()
 
 
-## Terrain height (world y) at a world x, z. Pure and seeded.
+## Terrain height (world y) at a world x, z. Pure and seeded. Bilinear over the
+## eroded grid once [method bake_erosion] has run, else the analytic generator.
 func height_at(x: float, z: float) -> float:
+	if _eroded.is_empty():
+		return analytic_height_at(x, z)
+	return TerrainErosion.sample_bilinear(_eroded, _eroded_nx, _eroded_nz, GRID_MIN, _eroded_cell, x, z)
+
+
+## Sample the analytic generator onto a grid, run the erosion passes with the
+## constraint mask protecting constrained cells, and serve [method height_at]
+## from the result. With erosion null or disabled this clears the grid.
+func bake_erosion() -> void:
+	_eroded = PackedFloat32Array()
+	if erosion == null or not erosion.enabled:
+		return
+	_eroded_cell = erosion.cell_size
+	_eroded_nx = int((GRID_MAX.x - GRID_MIN.x) / _eroded_cell) + 1
+	_eroded_nz = int((GRID_MAX.y - GRID_MIN.y) / _eroded_cell) + 1
+	var base: PackedFloat32Array = TerrainErosion.sample_grid(analytic_height_at, GRID_MIN, _eroded_cell, _eroded_nx, _eroded_nz)
+	var mask: PackedFloat32Array = PackedFloat32Array()
+	mask.resize(base.size())
+	for j: int in range(_eroded_nz):
+		for i: int in range(_eroded_nx):
+			mask[j * _eroded_nx + i] = spec.constraint_weight(GRID_MIN.x + i * _eroded_cell, GRID_MIN.y + j * _eroded_cell)
+	_eroded = TerrainErosion.erode(base, _eroded_nx, _eroded_nz, _eroded_cell, mask, erosion, TerrainErosion.make_rng(spec.seed, erosion))
+
+
+## The eroded grid (row-major, [constant GRID_MIN], cell [member ErosionParams.cell_size]); empty when off.
+func eroded_grid() -> PackedFloat32Array:
+	return _eroded
+
+
+## The pure analytic terrain height, ignoring any erosion.
+func analytic_height_at(x: float, z: float) -> float:
 	# Walls meander along the canyon, and lean at a slope that varies with z
 	# (steep faces here, talus fans there).
 	var rim_y: float = spec.rim_y
@@ -212,8 +254,8 @@ func _smax(a: float, b: float, k: float) -> float:
 
 
 ## The combined constraint mask (0..1) on the terrain grid, row-major with
-## [constant GRID_MIN] and [constant CELL]: kept for a later erosion pass,
-## which should leave constrained cells alone. Filled when the terrain builds.
+## [constant GRID_MIN] and [constant CELL]: the erosion
+## passes leave constrained cells alone. Filled when the terrain builds.
 func constraint_mask_grid() -> PackedFloat32Array:
 	return _constraint_grid
 
