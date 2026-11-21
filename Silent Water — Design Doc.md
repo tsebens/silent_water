@@ -255,7 +255,7 @@ Low-poly models with crisp, clean rendering. No grain, static, dither or fuzzy f
 
 - **Volumetric fog** gives underwater light beams real shape and a short reach. It is built into Godot 4.
 - **Marine snow** drifting through the lights reads instantly as deep ocean.
-- **Strong silhouettes.** With little visible detail, creatures and structures are recognized by shape, so shape matters more than texture.
+- **Strong silhouettes.** With little visible detail, creatures and structures are recognized by shape, so shape matters more than texture. Restrained surface treatment is welcome where it supports silhouette and never competes with it: the sub interior's worn industrial metal has low-contrast panel lines and light wear, and no grain or noise filter.
 - **Light is gameplay.** The difference between white and red light should be obvious at a glance.
 - **Infrastructure looks overbuilt:** rivets, heavy hatches, clear labels, backup systems, maintenance logs. Industrial, never sleek. The feel (industrial, utilitarian, competent) matters more than any specific detail.
 - **Brutalist architecture:** Raindrop builds in smooth, angular concrete and steel. Its stations have massive stacked slabs, cantilevered tiers, splayed struts, repeated ribs, and deep-set ribbon windows. Hard angular structures stand against soft, sloping organic terrain.

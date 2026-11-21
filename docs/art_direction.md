@@ -57,6 +57,18 @@ Its hull is built in Onshape (`assets/media/sub/`) and converted with `tools/con
 
 The sub and the stations still share one feel: industrial, utilitarian, competent. The sub is the crew's well-kept working tool; the stations are the massive, aging network it serves. Brutalist massing belongs to the stations, not the sub.
 
+### Interior metal
+
+Interior surfaces (hull shell, deck, hatch and fittings) share one procedural material, `src/sub/worn_metal.gdshader`, assigned per part by `SubModel`. It is matte industrial metal: low-contrast panel seams, light scratches, and edge and walkway wear. It is crisp, with no grain or noise filter, and it supports the silhouette rather than competing with it. Glass and displays keep their own looks; the exterior is untouched.
+
+| Parameter | Default | Meaning |
+| --- | --- | --- |
+| `base_tone` | per part (shell `0.15,0.17,0.18`, fittings `0.24,0.27,0.29`) | Base colour |
+| `wear_amount` | 0.35 | 0 pristine to 1 heavily worn (scratches, seam edges, walkway) |
+| `scale` | 1.0 | Pattern density; panels are 1 m / scale |
+| `metallic_amount`, `roughness_amount` | per part | Surface response |
+| `walkway_height` | 0.35 | Local height (m) below which floor wear builds up |
+
 ## Props and equipment
 
 Props inside the sub follow the sub. They're compact and purposeful, matching its matte finish and lighting, with heavy-duty modular parts and a clear function at a glance.
