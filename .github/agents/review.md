@@ -40,7 +40,7 @@ All checks pass, or only have nits you would not block on (state them anyway).
 1. Post the review (`gh pr review N --comment`) with a body starting `## Review: accepted`, naming the head SHA you reviewed, and saying what the change does, what you verified, and any nits (including a stale-base note from check 6, if any).
 2. Labels: add `approved`; remove `changes-requested` if a previous round left it on.
 3. **Merge**: `gh pr merge N --squash --delete-branch`, subject = the PR title, body = the PR body's summary (for an arc, including `Closes #<n>`).
-4. For an arc PR: confirm the arc issue is closed (close it if the merge did not). If every arc of its concept is now closed, close the concept too. If every sub-issue of the milestone is closed, comment on the milestone saying so (Tristan closes milestones).
+4. For an arc PR: confirm the arc issue is closed (close it if the merge did not). If every arc of its concept is now closed, close the concept too (the dispatcher backstops this step on its next run, but do not rely on it). If every sub-issue of the milestone is closed, comment on the milestone saying so (Tristan closes milestones).
 
 End.
 

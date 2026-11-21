@@ -7,6 +7,7 @@
 #   2. unblock: `blocked` arcs whose blockers are all closed become `ready`
 #   3. claim: while in-flight arcs < WORKER_CAP, claim the oldest `ready` arc whose
 #      Touches: do not overlap an in-flight arc, and start a development run
+#   3b. close approved concepts whose arcs are all closed (backstop for the review agent)
 #   4. project labels onto the board (agents touch labels only; this is the one writer of Status)
 #   5. log anomalies (stale changes-requested PRs)
 #
@@ -150,6 +151,36 @@ concept_status() { # newline-separated label names -> board status
   elif grep -qx 'plan-approved' <<<"$1"; then echo "In progress"
   else echo "Backlog"; fi
 }
+# "Concept: #186" on an arc body's own line -> 186 (first number only), or nothing.
+concept_of_body() { # body
+  grep -i -m1 -E '^\**concept:?\**:?' <<<"$1" | grep -oE '#[0-9]+' | head -1 | tr -d '#' || true
+}
+
+# Open concepts to close: plan-approved, not needs-human, with at least one arc and every arc closed.
+# $1 = JSON [{number, labels}] of open concepts, $2 = JSON [{number, state, body}] of arcs in any state.
+closable_concepts() {
+  local c n arc_states
+  for n in $(echo "$1" | jq -r '.[] | select(.labels | index("plan-approved") and (index("needs-human") | not)) | .number'); do
+    arc_states=""
+    while IFS= read -r row; do
+      [ -z "$row" ] && continue
+      c=$(concept_of_body "$(jq -r '.body' <<<"$row")")
+      [ "$c" = "$n" ] && arc_states="$arc_states $(jq -r '.state' <<<"$row")"
+    done < <(echo "$2" | jq -c '.[]')
+    [ -z "$arc_states" ] && continue
+    case "$arc_states" in *open*|*OPEN*) continue ;; esac
+    echo "$n"
+  done
+}
+
+close_finished_concepts() { # same arguments as closable_concepts
+  local n
+  for n in $(closable_concepts "$1" "$2"); do
+    log "  closing concept #$n: all arcs closed"
+    act gh issue close "$n" -R "$REPO" --reason completed
+  done
+}
+
 # ---------------------------------------------------------------------------
 # Run.
 # ---------------------------------------------------------------------------
@@ -236,6 +267,13 @@ for n in $(arcs_with ready); do
   in_flight_count=$((in_flight_count + 1))
   in_flight_touches="$in_flight_touches"$'\n'"$t"
 done
+
+log "3b. Close concepts whose arcs are all closed"
+OPEN_CONCEPTS=$(gh api --paginate "repos/$REPO/issues?state=open&labels=concept&per_page=100" \
+  --jq '[.[] | select(.pull_request == null) | {number, labels: [.labels[].name]}]' | jq -s 'add // []')
+ALL_ARCS=$(gh api --paginate "repos/$REPO/issues?state=all&labels=arc&per_page=100" \
+  --jq '[.[] | select(.pull_request == null) | {number, state, body: (.body // "")}]' | jq -s 'add // []')
+close_finished_concepts "$OPEN_CONCEPTS" "$ALL_ARCS"
 
 log "4. Project labels onto the board"
 load_arcs
