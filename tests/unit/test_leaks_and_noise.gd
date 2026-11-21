@@ -144,3 +144,41 @@ func test_engine_noise_reaches_about_80_db_at_full() -> void:
 func test_quiet_sub_is_masked() -> void:
 	await _frames(10)
 	expect(Acoustics.is_masked(), "a still sub (%f dB) should hide under the ocean (%f dB)" % [Acoustics.sub_db(), Acoustics.ambient_db()])
+
+
+func test_max_surfaceable_bilge_is_reserve_buoyancy() -> void:
+	var m: SubPhysicsModel = SubPhysicsModel.new()
+	expect_near(m.max_surfaceable_bilge_t(), 10.0, 0.001, "default model")
+	m.displacement_t = 160.0
+	expect_near(m.max_surfaceable_bilge_t(), 160.0 - 139.64 - 0.36, 0.001, "displacement")
+	m.dry_mass_t = 140.64
+	expect_near(m.max_surfaceable_bilge_t(), 160.0 - 140.64 - 0.36, 0.001, "dry mass")
+	m.payload_t = 1.36
+	expect_near(m.max_surfaceable_bilge_t(), 160.0 - 140.64 - 1.36, 0.001, "payload")
+
+
+func test_one_unattended_leak_floods_in_three_to_five_minutes() -> void:
+	var m: SubPhysicsModel = SubPhysicsModel.new()
+	var t: float = 0.0
+	while m.bilge_water_t < m.max_surfaceable_bilge_t() and t < 1000.0:
+		m.change_bilge(leaks.leak_flow * 0.1)
+		t += 0.1
+	expect(t >= 180.0 and t <= 300.0, "time to unsurfaceable %f s" % t)
+
+
+func test_pump_is_between_one_and_two_leaks() -> void:
+	expect(leaks.leak_flow < leaks.pump_flow, "pump beats one leak")
+	expect(leaks.pump_flow < 2.0 * leaks.leak_flow, "pump loses to two leaks")
+
+
+func test_pump_beats_one_leak_but_not_two() -> void:
+	var m: SubPhysicsModel = SubPhysicsModel.new()
+	m.bilge_water_t = 5.0
+	m.change_bilge(leaks.leak_flow * 10.0)
+	m.change_bilge(-leaks.pump_flow * 10.0)
+	expect_near(m.bilge_water_t, 5.0 + (leaks.leak_flow - leaks.pump_flow) * 10.0, 0.0001)
+	expect(m.bilge_water_t < 5.0, "one leak + pump: falling")
+	var before: float = m.bilge_water_t
+	m.change_bilge(2.0 * leaks.leak_flow * 10.0)
+	m.change_bilge(-leaks.pump_flow * 10.0)
+	expect(m.bilge_water_t > before, "two leaks + pump: rising")

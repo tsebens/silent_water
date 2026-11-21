@@ -90,6 +90,13 @@ func total_mass_t() -> float:
 	return dry_mass_t + payload_t + tank_water_t + bilge_water_t
 
 
+## Bilge tonnage at which, with the tank fully blown, buoyancy at the surface
+## can no longer lift the hull above the waterline: the reserve buoyancy
+## (displacement minus dry mass and payload). 10.0 t with the default hull.
+func max_surfaceable_bilge_t() -> float:
+	return displacement_t - dry_mass_t - payload_t
+
+
 ## Adds (positive) or pumps out (negative) bilge water. Returns the change.
 func change_bilge(delta_t: float) -> float:
 	var before: float = bilge_water_t

@@ -12,8 +12,6 @@ signal leak_patched(quality: float, hold_sec: float)
 const LEAK_INTENSITY: float = 2e-3
 ## Bilge pump running (~78 dB).
 const PUMP_INTENSITY: float = 6e-3
-const LEAK_FLOW_T: float = 0.02   # tonnes/s in through an open leak
-const PUMP_FLOW_T: float = 0.05   # tonnes/s out with the pump on
 ## Quiet time at the start of a dive (and after a reset) before spontaneous
 ## leaks can begin.
 const START_QUIET_SEC: float = 45.0
@@ -29,6 +27,12 @@ const STRIKE_FOR_CERTAIN_LEAK: float = 1.2
 ## Mean seconds between spontaneous leaks at depth factor 1.0 (about double the
 ## old 60-120 s first-leak delay).
 @export var mean_interval_sec: float = 180.0
+## Tonnes/s in through an open leak. One unattended leak should leave the sub
+## unable to surface in 3-5 minutes (see docs/damage.md).
+@export var leak_flow: float = 0.04
+## Tonnes/s out with the pump on: between 1x and 2x `leak_flow`, so one pump
+## beats one leak but not two.
+@export var pump_flow: float = 0.06
 @export var controller: SubController
 @export var leaks_root: Node3D
 @export var pump: Lever
@@ -96,9 +100,9 @@ func _physics_process(delta: float) -> void:
 	if not multiplayer.is_server() or controller == null or not controller.enabled:
 		return
 	if open_index != -1:
-		controller.model.change_bilge(LEAK_FLOW_T * delta)
+		controller.model.change_bilge(leak_flow * delta)
 	if pump_on():
-		controller.model.change_bilge(-PUMP_FLOW_T * delta)
+		controller.model.change_bilge(-pump_flow * delta)
 	_timer -= delta
 	if _timer <= 0.0 and open_index == -1 and spontaneous_roll(delta, controller.depth):
 		open_random_leak()
