@@ -28,6 +28,7 @@ Each role runs as a **GitHub Actions job** (`.github/workflows/role-<name>.yml`)
 - Labels are the pipeline's only state. The full set and what each means is in `docs/process.md`. **Never create a label.** If one you need does not exist, stop and escalate.
 - Workflows fire on a label being **added**, so applying a label is starting a job. Apply exactly the labels your role file says, in the order it says, and no others.
 - Current triggers: `concept` or `plan-rejected` on an issue starts organization; `plan-proposed` starts plan review; `ready` on an arc queues it for the dispatcher, which claims it (`claimed`) and starts a development build; `ci-green` on a PR starts review; `changes-requested` on an `arc/*` PR starts development in rework mode.
+- `design` marks issues still being thought through. It is inert: no workflow triggers on it and no role ever applies or removes it.
 - The audit role runs on a timer, not a label, and applies no pipeline labels at all; its proposals are unlabelled `Concept:` issues for Tristan.
 - Reference the issue in every commit and PR: `Refs #n` for work in progress, `Closes #n` in the PR body for an arc.
 

@@ -53,6 +53,8 @@ Seven roles. Six are Claude jobs; the dispatcher is deterministic code.
 
 Talks with Tristan about a feature, fix or adjustment until the idea is solid. Writes one concept issue per idea: the problem, the intended player experience, constraints, what is explicitly out of scope, and any design-doc sections it touches. Does not break the work down and does not write code. If the conversation settles an open design question, records it as a `Decision:` issue and in the design doc, as CLAUDE.md requires. Applying the `concept` label starts the organization job, so the head developer creates the issue first and labels it when the text is final.
 
+Thinking that is not final lives in GitHub issues, labelled `design`: a draft `Concept:` issue, or a `Design:` note issue (one per theme, thoughts accumulating as comments). `design` is inert: no workflow triggers on it and no role applies or removes it. To hand off, the head developer, with Tristan, removes `design` and adds `concept` (or, from a `Design:` note when it is ripe, writes `Concept:` issues, and a `Decision:` where the design doc changes).
+
 ### Organization agent
 
 Reads the concept, the design doc, the open milestones and the open arcs. Decides whether the concept is one arc or several. For each proposed arc it writes a title in the milestone scheme (`M<n>.<k> · <name>`, under an existing milestone; if none fits it proposes one and escalates), a scope, headless acceptance criteria, `Touches:` (its blast radius) and `Blocked by:` (dependencies, including chaining any two arcs whose `Touches:` overlap). Posts the breakdown as a comment and applies `plan-proposed` (removing `plan-rejected` on a retry). Creates no issues. Two rejections on one concept escalate instead of a third proposal.
@@ -69,7 +71,7 @@ Checks the proposal against the concept and the design doc: fidelity, design con
 2. **Mirrors the board.** Arcs whose board Status is Ready but which lack the `ready` label get it, so Tristan can promote work from the board UI.
 3. **Unblocks.** For each `blocked` arc, if every issue in its `Blocked by:` line and in GitHub's native blocked-by dependencies is closed, swap `blocked` for `ready`. A blocker that cannot be looked up counts as still open.
 4. **Claims.** In-flight count = open arcs labeled `claimed` or `in-review` (a PR awaiting review or rework still occupies its slice of `dev`). While in-flight is below `WORKER_CAP` (repository variable, start at 2): take the oldest `ready` arc whose `Touches:` do not overlap any in-flight arc (prefix-directory match; an arc with no `Touches:` line counts as touching everything), swap `ready` for `claimed`, start `role-development.yml` with `gh workflow run`, and comment the run URL on the arc. If the run cannot be started, revert to `ready`.
-5. **Projects labels onto the board**, first adding any arc or concept that is not yet a project item (plan review creates arcs without touching the board): arcs `blocked` → Backlog, `ready` → Ready, `claimed` → In progress, `in-review` → In review (or In progress while the PR carries `changes-requested`), closed → Done; concepts `plan-approved` → In progress, otherwise Backlog, closed → Done. Closed arcs also lose any stale state label. Items carrying `needs-human` are left where they are.
+5. **Projects labels onto the board**, first adding any arc, concept or `design` issue that is not yet a project item (plan review creates arcs without touching the board): arcs `blocked` → Backlog, `ready` → Ready, `claimed` → In progress, `in-review` → In review (or In progress while the PR carries `changes-requested`), closed → Done; concepts `plan-approved` → In progress, otherwise Backlog; open issues labelled `design` (draft concepts and `Design:` notes) → Backlog, closed → Done. Closed arcs also lose any stale state label. Items carrying `needs-human` are left where they are.
 6. **Logs anomalies**: an arc PR that has carried `changes-requested` for 30+ minutes with no rework run clearing it.
 
 The dispatcher is the only thing that starts builds: `ready` is a queue marker, not a trigger.
@@ -107,6 +109,7 @@ The cron runs hourly as a floor; a shell gate enforces the real interval from `v
 | Concept | Free-form, usually `Concept: …` | `concept` | Head developer | None |
 | Milestone | `M<n> · <name>` | none | Tristan or head developer | None |
 | Arc | `M<n>.<k> · <name>` | `arc` | Plan-review agent (or the head developer for a shakedown) | Its milestone |
+| Design note | `Design: …` | `design` | Head developer | None |
 | Decision | `Decision: …` | `decision` | Anyone | None |
 | Discovered work | Free-form | `arc` once scoped | Any agent that finds it | Its milestone |
 
@@ -116,6 +119,7 @@ Every workflow fires on a label being **added**; a label already present fires n
 
 | Label | On | Meaning | Added by (starts) | Removed by |
 | --- | --- | --- | --- | --- |
+| `design` | issue | Still being thought through; not ready for breakdown. Inert: fires nothing. Remove it and add `concept` to hand off | Head developer | Head developer |
 | `concept` | issue | A concept issue, ready for breakdown | Head developer (starts organization) | never |
 | `plan-proposed` | concept | Breakdown awaits plan review | Organization agent (starts plan review) | Plan-review agent |
 | `plan-rejected` | concept | Breakdown sent back; counts toward the plan cap | Plan-review agent (starts organization) | Organization agent |
@@ -139,7 +143,7 @@ The dispatcher is the only writer of board Status. Agents never update the board
 
 | Board Status | Concept | Arc |
 | --- | --- | --- |
-| Backlog | Awaiting breakdown or plan review | `blocked` |
+| Backlog | Awaiting breakdown or plan review; any open `design` issue (draft concept or `Design:` note) | `blocked` |
 | Ready | Not used | `ready` |
 | In progress | `plan-approved`, arcs in flight | `claimed`, or `in-review` with `changes-requested` on the PR |
 | In review | Not used | `in-review`, PR awaiting CI or review |
