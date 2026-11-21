@@ -40,3 +40,63 @@ func test_surface_node_tracks_sub() -> void:
 	expect_near(surface.position.y, 0.0)
 	game.end_session()
 	game.free()
+
+
+func _material_of(surface: OceanSurface) -> ShaderMaterial:
+	runner.add_child(surface)
+	var m: ShaderMaterial = surface.material_override as ShaderMaterial
+	return m
+
+
+func test_surface_is_translucent_and_transmits() -> void:
+	var surface: OceanSurface = OceanSurface.new()
+	var m: ShaderMaterial = _material_of(surface)
+	expect(m != null, "material exists")
+	expect(float(m.get_shader_parameter(&"alpha")) < 1.0, "alpha < 1")
+	expect(float(m.get_shader_parameter(&"alpha")) > 0.0, "alpha > 0")
+	expect(float(m.get_shader_parameter(&"transmission")) > 0.0, "transmission > 0")
+	var props: Array[String] = []
+	for p: Dictionary in surface.get_property_list():
+		if int(p["usage"]) & PROPERTY_USAGE_EDITOR != 0:
+			props.append(String(p["name"]))
+	for name: String in ["alpha", "tint", "transmission"]:
+		expect(props.has(name), "%s exported" % name)
+	surface.alpha = 0.5
+	surface.tint = Color.RED
+	surface.apply_settings(m)
+	expect_near(float(m.get_shader_parameter(&"alpha")), 0.5)
+	expect(m.get_shader_parameter(&"tint") == Color.RED, "tint reaches the material")
+	surface.free()
+
+
+func test_ripple_parameters_exported_and_nonzero() -> void:
+	var surface: OceanSurface = OceanSurface.new()
+	var m: ShaderMaterial = _material_of(surface)
+	expect(float(m.get_shader_parameter(&"ripple_strength")) > 0.0, "ripple strength non-zero")
+	expect(float(m.get_shader_parameter(&"ripple_scale")) > 0.0, "ripple scale positive")
+	var props: Array[String] = []
+	for p: Dictionary in surface.get_property_list():
+		if int(p["usage"]) & PROPERTY_USAGE_EDITOR != 0:
+			props.append(String(p["name"]))
+	expect(props.has("ripple_scale"), "ripple_scale exported")
+	expect(props.has("ripple_strength"), "ripple_strength exported")
+	surface.free()
+
+
+func test_no_surface_inside_hull_at_waterline() -> void:
+	var surface: OceanSurface = OceanSurface.new()
+	var m: ShaderMaterial = _material_of(surface)
+	# The camera sits in the cabin at the waterline; the surface point there is clipped.
+	var cam: Vector3 = Vector3(0.0, 0.0, 1.0)
+	var centre: Vector3 = m.get_shader_parameter(&"hull_center")
+	var half: Vector3 = m.get_shader_parameter(&"hull_half_extents")
+	var basis: Basis = m.get_shader_parameter(&"hull_basis")
+	expect(OceanSurface.inside_hull(cam, centre, half, basis), "waterline point inside the hull is not drawn")
+	expect(OceanSurface.inside_hull(Vector3(1.9, 0.5, -4.9), centre, half, basis), "near corner still inside")
+	expect(not OceanSurface.inside_hull(Vector3(8.0, 0.0, 0.0), centre, half, basis), "outside the hull is drawn")
+	expect(not OceanSurface.inside_hull(Vector3(0.0, 0.0, 6.0), centre, half, basis), "beyond the bow is drawn")
+	# A rotated hull moves the clip with it.
+	var rot: Basis = Basis(Vector3.UP, PI * 0.5)
+	expect(OceanSurface.inside_hull(Vector3(4.0, 0.0, 0.0), centre, half, rot), "rotated hull covers +x")
+	expect(not OceanSurface.inside_hull(Vector3(0.0, 0.0, 4.0), centre, half, rot), "rotated hull frees +z")
+	surface.free()
