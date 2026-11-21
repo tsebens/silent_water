@@ -103,6 +103,28 @@ Every step up the ladder can be heard or felt:
 
 Arousal fades about 30 seconds after you go quiet. Patrolling lasts a minute or two after that.
 
+## Dev tools
+
+### Terrain lab
+
+A developer scene for shaping dive sites without hosting a session. Open it with the **Terrain lab** button on the dev connect menu, or launch straight into it:
+
+```bash
+godot --path . -- --terrain-lab
+```
+
+It is not part of a session: there is no sub, crew or network, and nothing in a running dive leads to it. **Back** returns to the dev menu.
+
+The scene is a `CanyonSite` generated from a `SiteSpec`, the ocean surface, and the day and night light presets for context. It calls the same generator and `height_at` as the game, so what you see is what a session builds from the same spec and seed.
+
+- **Camera:** hold the **right mouse button** to look; while held, **W/A/S/D** fly, **E/Q** rise and sink, **Shift** is fast, and the **wheel** changes speed. Without the button, keys go to the panel.
+- **Panel (left):** a control for every `SiteSpec` field (seed, centreline, rim and floor, wall shape, width and depth curves, closed ends, shelves, constraints) and every exported `CanyonSite` tunable (profile, strata, detail, ambient occlusion). New exports appear automatically. Lists (shelves, constraints) have **Add** and **Remove**; the centreline and curves are typed as `x,z; x,z` points (curves are `t,value`, `t` from 0 at the south end to 1 at the north; empty means none).
+- **Seed** sits at the top with **Random**. **Regenerate** rebuilds the site. With **Auto** on, an edit regenerates after a short pause, as long as the last build took under 1.5 s; slower builds wait for the button.
+- **Readout:** how long the last build took, and any conflicts `SiteSpec.validate()` finds between constraints.
+- **Day / night** switches the light preset.
+
+The lab starts from the canyon preset (`src/site/presets/canyon.tres`) and edits a copy; it never writes the preset back.
+
 ## Debug keys (playtests only)
 
 | Key | What it does |

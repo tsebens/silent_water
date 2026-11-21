@@ -7,6 +7,7 @@ extends RefCounted
 ##   --join [address]      join a host (default 127.0.0.1)
 ##   --port <n>            port for host or join
 ##   --name <s>            display name for this player
+##   --terrain-lab         open the terrain lab (a developer scene, no session)
 ## Both `--key value` and `--key=value` forms are accepted.
 
 var host: bool = false
@@ -14,6 +15,7 @@ var join: bool = false
 var address: String = Net.DEFAULT_ADDRESS
 var port: int = Net.DEFAULT_PORT
 var player_name: String = ""
+var terrain_lab: bool = false
 var errors: PackedStringArray = PackedStringArray()
 
 
@@ -52,6 +54,8 @@ static func parse(args: PackedStringArray) -> LaunchArgs:
 					result.port = int(value)
 				else:
 					result.errors.append("invalid port: '%s'" % value)
+			"--terrain-lab":
+				result.terrain_lab = true
 			"--name":
 				if not has_inline_value and next_is_value:
 					i += 1
