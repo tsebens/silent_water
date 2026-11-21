@@ -109,7 +109,7 @@ func test_cabin_dimmer_dims_cabin_but_not_headlight() -> void:
 	await _frames(2)
 	expect_near(fore.light_energy, bright * CabinLights.MIN_LEVEL, 0.001, "dimmed to near dark")
 	expect_eq(head.light_energy, head_before, "headlight untouched")
-	expect(cabin.cabin_lights().size() == 4, "four cabin lights")
+	expect(cabin.cabin_lights().size() == 6, "six cabin lights (four room lights, two coves)")
 
 
 func test_dev_overlay_stats_cover_sub_noise_and_apex() -> void:
@@ -133,16 +133,38 @@ func test_dev_log_captures_engine_output() -> void:
 	expect(found)
 
 
-func test_neon_strips_dim_with_the_cabin_lights() -> void:
-	var neon: NeonStrips = game.get_node("Interior/Lights/Neon") as NeonStrips
-	expect(neon.get_child_count() >= 10, "ribs, frames and edges built (%d)" % neon.get_child_count())
-	var mat: StandardMaterial3D = (neon.get_child(0) as MeshInstance3D).mesh.surface_get_material(0) as StandardMaterial3D
+func test_dimmer_scales_every_cabin_light_including_the_coves() -> void:
+	var lights: CabinLights = game.get_node("CabinLights") as CabinLights
 	var dimmer: Lever = game.get_node("Interior/Stations/Pilot/Dimmer") as Lever
-	await _frames(2)
-	var full: float = mat.emission_energy_multiplier
+	var cabin: Array[Light3D] = lights.cabin_lights()
+	var names: Array[String] = []
+	for l: Light3D in cabin:
+		names.append(String(l.name))
+	expect(names.has("CoveLeft") and names.has("CoveRight"), "cove lights are cabin lights (%s)" % str(names))
+	expect(cabin.size() <= 8, "a handful of lights (%d)" % cabin.size())
+	var base: Dictionary = {}
+	dimmer.host_set_value(1.0)
+	await _frames(3)
+	for l: Light3D in cabin:
+		base[l.name] = l.light_energy
 	dimmer.host_set_value(0.0)
-	await _frames(2)
-	expect_near(mat.emission_energy_multiplier, full * CabinLights.MIN_LEVEL, 0.001, "strips dim to near dark")
+	await _frames(3)
+	for l: Light3D in cabin:
+		expect_near(l.light_energy, float(base[l.name]) * CabinLights.MIN_LEVEL, 0.001, "%s dims to MIN_LEVEL" % l.name)
+	dimmer.host_set_value(1.0)
+	await _frames(3)
+	for l: Light3D in cabin:
+		expect_near(l.light_energy, float(base[l.name]), 0.001, "%s back to full" % l.name)
+
+
+func test_no_visible_strip_meshes_under_the_lights() -> void:
+	var lights_root: Node = game.get_node("Interior/Lights")
+	var allowed: Array[String] = []
+	var stray: Array[String] = []
+	for n: Node in lights_root.find_children("*", "MeshInstance3D", true, false):
+		if not allowed.has(String(n.name)):
+			stray.append(String(n.name))
+	expect(stray.is_empty(), "no strip meshes under Lights (%s)" % str(stray))
 
 
 func test_single_player_helm_runs_the_ballast() -> void:

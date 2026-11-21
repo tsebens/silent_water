@@ -13,12 +13,14 @@
 [ext_resource type="PackedScene" path="res://src/sonar/hydrophone_wheel.tscn" id="11"]
 [ext_resource type="PackedScene" path="res://src/interact/lever.tscn" id="12"]
 [ext_resource type="Script" path="res://src/sonar/sonar_seat.gd" id="13"]
-[ext_resource type="Script" path="res://src/sub/neon_strips.gd" id="14"]
 [ext_resource type="Script" path="res://src/map/holo_map.gd" id="15"]
 [ext_resource type="Script" path="res://src/map/map_table.gd" id="16"]
 [ext_resource type="PackedScene" path="res://src/sub/bilge_water.tscn" id="17"]
 [ext_resource type="Script" path="res://src/map/flat_chart.gd" id="flat_chart"]
 [ext_resource type="Script" path="res://src/sonar/sonar_panel.gd" id="sonar_panel"]
+
+[sub_resource type="BoxMesh" id="fascia_mesh"]
+size = Vector3(0.06, 0.22, 3.2)
 
 [sub_resource type="StandardMaterial3D" id="fitting"]
 albedo_color = Color(0.2, 0.22, 0.24, 1)
@@ -110,8 +112,33 @@ light_color = Color(0.6, 0.8, 0.85, 1)
 light_energy = 0.9
 omni_range = 3.0
 
-[node name="Neon" type="Node3D" parent="Lights"]
-script = ExtResource("14")
+[node name="CoveLeft" type="SpotLight3D" parent="Lights"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1, 2.45, 1.4)
+rotation_degrees = Vector3(-50, 90, 0)
+light_color = Color(0.45, 0.8, 0.9, 1)
+light_energy = 1.2
+spot_range = 4.0
+spot_angle = 65.0
+
+[node name="CoveRight" type="SpotLight3D" parent="Lights"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1, 2.45, 1.4)
+rotation_degrees = Vector3(-50, -90, 0)
+light_color = Color(0.45, 0.8, 0.9, 1)
+light_energy = 1.2
+spot_range = 4.0
+spot_angle = 65.0
+
+[node name="Fascia" type="Node3D" parent="."]
+
+[node name="FasciaLeft" type="MeshInstance3D" parent="Fascia"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.88, 2.5, 1.4)
+mesh = SubResource("fascia_mesh")
+surface_material_override/0 = SubResource("fitting")
+
+[node name="FasciaRight" type="MeshInstance3D" parent="Fascia"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.88, 2.5, 1.4)
+mesh = SubResource("fascia_mesh")
+surface_material_override/0 = SubResource("fitting")
 
 [node name="Headlight" type="SpotLight3D" parent="Lights"]
 position = Vector3(0, -0.8, -4.3)
