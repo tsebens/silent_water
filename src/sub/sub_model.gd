@@ -5,13 +5,20 @@ extends Node3D
 ## floor at the centreline, bow toward -Z.
 ##
 ## At startup this:
-## - gives every part its look: matte, muted surfaces; a clear glass dome;
+## - gives every part its look: worn industrial metal; a clear glass dome;
 ##   softly glowing displays
 ## - builds collision: exact (trimesh) for the hull, deck, dome and frames,
 ##   convex for furniture
 ## - swings the bulkhead door open
 
 const LAYER_INTERIOR: int = 1
+
+## The shared worn-metal interior shader (see docs/art_direction.md).
+const WORN_METAL: Shader = preload("res://src/sub/worn_metal.gdshader")
+
+## Default worn-metal parameters, applied to every interior part.
+const METAL_WEAR_AMOUNT: float = 0.35
+const METAL_SCALE: float = 1.0
 
 ## Parts that need exact collision (concave): you walk inside or around them.
 const TRIMESH_PARTS: PackedStringArray = ["Shell", "Deck", "FrontWindow", "LifeSupportStationFrame"]
@@ -79,7 +86,7 @@ func _open_door() -> void:
 	door.transform = hinge * swing * hinge.affine_inverse() * door.transform
 
 
-func _material_for(part_name: String) -> StandardMaterial3D:
+func _material_for(part_name: String) -> Material:
 	var m: StandardMaterial3D = StandardMaterial3D.new()
 	m.roughness = 0.85
 	if part_name == "FrontWindow":
@@ -96,24 +103,33 @@ func _material_for(part_name: String) -> StandardMaterial3D:
 		m.emission = Color(0.2, 0.62, 0.7)
 		m.emission_energy_multiplier = 0.55
 		return m
+	var sm: ShaderMaterial = ShaderMaterial.new()
+	sm.shader = WORN_METAL
+	sm.set_shader_parameter("wear_amount", METAL_WEAR_AMOUNT)
+	sm.set_shader_parameter("scale", METAL_SCALE)
 	if part_name == "Shell":
-		m.albedo_color = Color(0.15, 0.17, 0.18)
+		sm.set_shader_parameter("base_tone", Color(0.15, 0.17, 0.18))
+		sm.set_shader_parameter("metallic_amount", 0.1)
+		sm.set_shader_parameter("roughness_amount", 0.85)
 	elif part_name == "Deck":
-		m.albedo_color = Color(0.1, 0.11, 0.115)
-		m.metallic = 0.35
-		m.roughness = 0.75
+		sm.set_shader_parameter("base_tone", Color(0.1, 0.11, 0.115))
+		sm.set_shader_parameter("metallic_amount", 0.35)
+		sm.set_shader_parameter("roughness_amount", 0.75)
 	elif part_name.begins_with("PressurizedCylinder"):
-		m.albedo_color = Color(0.38, 0.4, 0.39)
-		m.metallic = 0.55
-		m.roughness = 0.55
+		sm.set_shader_parameter("base_tone", Color(0.38, 0.4, 0.39))
+		sm.set_shader_parameter("metallic_amount", 0.55)
+		sm.set_shader_parameter("roughness_amount", 0.55)
 	elif part_name == "BulkheadHatch":
-		m.albedo_color = Color(0.2, 0.22, 0.23)
-		m.metallic = 0.4
+		sm.set_shader_parameter("base_tone", Color(0.2, 0.22, 0.23))
+		sm.set_shader_parameter("metallic_amount", 0.4)
+		sm.set_shader_parameter("roughness_amount", 0.85)
 	elif part_name in ["EngineBlock", "Flywheel", "EngineMount", "HydrophoneWheel"] or part_name.begins_with("Slider"):
-		m.albedo_color = Color(0.3, 0.31, 0.3)
-		m.metallic = 0.6
-		m.roughness = 0.5
+		sm.set_shader_parameter("base_tone", Color(0.3, 0.31, 0.3))
+		sm.set_shader_parameter("metallic_amount", 0.6)
+		sm.set_shader_parameter("roughness_amount", 0.5)
 	else:
 		# Furniture and fittings: muted grey-blue.
-		m.albedo_color = Color(0.24, 0.27, 0.29)
-	return m
+		sm.set_shader_parameter("base_tone", Color(0.24, 0.27, 0.29))
+		sm.set_shader_parameter("metallic_amount", 0.0)
+		sm.set_shader_parameter("roughness_amount", 0.85)
+	return sm
