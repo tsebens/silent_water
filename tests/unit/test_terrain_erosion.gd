@@ -110,6 +110,74 @@ func test_same_seed_same_grid() -> void:
 	expect_eq(r1.randi(), r2.randi())
 
 
+func _sum(h: PackedFloat32Array) -> float:
+	var t: float = 0.0
+	for v: float in h:
+		t += v
+	return t
+
+
+func _droplets(h: PackedFloat32Array, mask: PackedFloat32Array, seed_value: int, count: int) -> PackedFloat32Array:
+	var rng: RandomNumberGenerator = RandomNumberGenerator.new()
+	rng.seed = seed_value
+	return TerrainErosion.droplet_pass(h, N, N, CELL, mask, 0.05, rng, count, 30, 4.0, 0.3, 0.3, 0.05)
+
+
+func _plane() -> PackedFloat32Array:
+	var h: PackedFloat32Array = PackedFloat32Array()
+	h.resize(N * N)
+	for j: int in range(N):
+		for i: int in range(N):
+			h[j * N + i] = 40.0 - i * CELL * 0.8
+	return h
+
+
+func test_droplet_moves_downhill() -> void:
+	var h: PackedFloat32Array = _plane()
+	var out: PackedFloat32Array = _droplets(h, _empty_mask(), 3, 1)
+	# One droplet lifts material from upslope and leaves it further downslope:
+	# the centre of mass in x moves toward +x (downhill).
+	var before: float = 0.0
+	var after: float = 0.0
+	for k: int in range(h.size()):
+		before += (out[k] - h[k]) * (k % N)
+		after += out[k] - h[k]
+	expect_near(after, 0.0, 0.001, "net zero")
+	expect(before > 0.0, "sediment ends downhill of where it was picked up")
+	var changed: int = 0
+	for k: int in range(h.size()):
+		if out[k] != h[k]:
+			changed += 1
+	expect(changed > 1, "droplet altered the terrain")
+
+
+func test_droplet_conserves_material() -> void:
+	var h: PackedFloat32Array = _noisy(6.0)
+	var out: PackedFloat32Array = _droplets(h, _empty_mask(), 11, 400)
+	expect_near(_sum(out), _sum(h), 0.05, "total height conserved")
+	expect(out != h, "terrain changed")
+
+
+func test_droplet_protected_unchanged() -> void:
+	var h: PackedFloat32Array = _noisy(6.0)
+	var mask: PackedFloat32Array = PackedFloat32Array()
+	mask.resize(N * N)
+	for j: int in range(4, 10):
+		for i: int in range(4, 10):
+			mask[j * N + i] = 1.0
+	var out: PackedFloat32Array = _droplets(h, mask, 5, 600)
+	for k: int in range(h.size()):
+		if mask[k] > 0.05:
+			expect_eq(out[k], h[k], "protected cell untouched")
+	expect_near(_sum(out), _sum(h), 0.05, "still conserved")
+
+
+func test_droplet_deterministic() -> void:
+	var h: PackedFloat32Array = _noisy(6.0)
+	expect(_droplets(h, _empty_mask(), 9, 200) == _droplets(h, _empty_mask(), 9, 200), "same seed same grid")
+	expect(_droplets(h, _empty_mask(), 9, 200) != _droplets(h, _empty_mask(), 10, 200), "different seed differs")
+
+
 func test_bilinear_matches_nodes() -> void:
 	var site: CanyonSite = _eroded_site()
 	var g: PackedFloat32Array = site.eroded_grid()

@@ -16,10 +16,11 @@ static func sample_grid(height_fn: Callable, origin: Vector2, cell: float, nx: i
 
 
 ## Run the enabled passes in order and return the eroded grid. [param rng] is
-## seeded from the site seed; the current passes are deterministic and do not
-## draw from it, but later stochastic passes will.
+## seeded from the site seed; only the droplet pass draws from it.
 static func erode(heights: PackedFloat32Array, nx: int, nz: int, cell: float, mask: PackedFloat32Array, params: ErosionParams, rng: RandomNumberGenerator) -> PackedFloat32Array:
 	var h: PackedFloat32Array = heights.duplicate()
+	if params.droplet_enabled:
+		h = droplet_pass(h, nx, nz, cell, mask, params.protect_threshold, rng, params.droplet_count, params.droplet_lifetime, params.droplet_capacity, params.droplet_erode_rate, params.droplet_deposit_rate, params.droplet_evaporation)
 	if params.thermal_enabled:
 		h = thermal_pass(h, nx, nz, cell, mask, params.protect_threshold, params.talus_angle, params.thermal_iterations, params.thermal_rate)
 	if params.deposition_enabled:
@@ -35,6 +36,68 @@ static func make_rng(spec_seed: int, params: ErosionParams) -> RandomNumberGener
 
 static func _is_protected(mask: PackedFloat32Array, k: int, protect: float) -> bool:
 	return mask.size() > k and mask[k] > protect
+
+
+## Hydraulic droplet erosion. Each droplet starts on a random unprotected cell
+## and steps to its steepest lower unprotected 8-neighbour (so flow bends around
+## protected cells). It carries sediment: it picks up material in proportion to
+## its speed, water and the local slope, deposits when over capacity, and
+## evaporates a little each step. A droplet that finds no way down, or reaches the
+## end of its lifetime, drops all remaining sediment where it stands, so total
+## height is conserved. Protected cells are never visited, hence never changed.
+static func droplet_pass(heights: PackedFloat32Array, nx: int, nz: int, cell: float, mask: PackedFloat32Array, protect: float, rng: RandomNumberGenerator, count: int, lifetime: int, capacity_k: float, erode_rate: float, deposit_rate: float, evaporation: float) -> PackedFloat32Array:
+	var h: PackedFloat32Array = heights.duplicate()
+	if nx < 2 or nz < 2:
+		return h
+	for _d: int in range(count):
+		var i: int = rng.randi_range(0, nx - 1)
+		var j: int = rng.randi_range(0, nz - 1)
+		if _is_protected(mask, j * nx + i, protect):
+			continue
+		var water: float = 1.0
+		var speed: float = 1.0
+		var sediment: float = 0.0
+		for _s: int in range(lifetime):
+			var k: int = j * nx + i
+			var best: int = -1
+			var best_slope: float = 0.0
+			var bi: int = i
+			var bj: int = j
+			for dj: int in range(-1, 2):
+				for di: int in range(-1, 2):
+					if di == 0 and dj == 0:
+						continue
+					var ni: int = i + di
+					var nj: int = j + dj
+					if ni < 0 or nj < 0 or ni >= nx or nj >= nz:
+						continue
+					var n: int = nj * nx + ni
+					if _is_protected(mask, n, protect):
+						continue
+					var slope: float = (h[k] - h[n]) / (cell * (1.414214 if di != 0 and dj != 0 else 1.0))
+					if slope > best_slope:
+						best_slope = slope
+						best = n
+						bi = ni
+						bj = nj
+			if best < 0:
+				break
+			var capacity: float = best_slope * speed * water * capacity_k
+			if sediment > capacity:
+				var dep: float = (sediment - capacity) * deposit_rate
+				h[k] += dep
+				sediment -= dep
+			else:
+				# Never dig below the downhill neighbour, so pits are not carved.
+				var take: float = minf((capacity - sediment) * erode_rate, (h[k] - h[best]) * 0.5)
+				h[k] -= take
+				sediment += take
+			speed = sqrt(maxf(speed * speed + best_slope * cell, 0.0))
+			water *= 1.0 - evaporation
+			i = bi
+			j = bj
+		h[j * nx + i] += sediment
+	return h
 
 
 ## Thermal erosion: wherever the drop between 4-neighbours exceeds the talus
