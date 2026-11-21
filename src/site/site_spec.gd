@@ -30,7 +30,7 @@ extends Resource
 @export var north_z: float = -460.0
 ## Ledges cut into the walls.
 @export var shelves: Array[ShelfSpec] = []
-## Rules the generated site must satisfy. No concrete kinds yet.
+## Rules the generated site must satisfy ([FlatPad], [Corridor], [ClearColumn]).
 @export var constraints: Array[SiteConstraint] = []
 
 
@@ -62,3 +62,48 @@ func depth_scale(z: float) -> float:
 
 func _along(z: float) -> float:
 	return clampf(inverse_lerp(south_z, north_z, z), 0.0, 1.0)
+
+
+## Label of the constraint that places the scan objective.
+const OBJECTIVE_LABEL: String = "scan_objective"
+
+
+## Combined constraint weight (0..1) at x, z: the strongest of them.
+func constraint_weight(x: float, z: float) -> float:
+	var m: float = 0.0
+	for c: SiteConstraint in constraints:
+		m = maxf(m, c.weight(x, z))
+	return m
+
+
+## Where the scan objective sits, read from the constraint labelled
+## [constant OBJECTIVE_LABEL]: a [FlatPad] gives its height, a [ClearColumn]
+## sits on the canyon floor. Vector3.INF if the spec has none.
+func objective_position() -> Vector3:
+	for c: SiteConstraint in constraints:
+		if c.label != OBJECTIVE_LABEL:
+			continue
+		var at: Vector2 = c.anchor()
+		if c is FlatPad:
+			return Vector3(at.x, (c as FlatPad).height, at.y)
+		if c is ClearColumn:
+			return Vector3(at.x, floor_y, at.y)
+	return Vector3.INF
+
+
+## Conflicts between constraints: pads that overlap at different heights, and
+## corridors steeper than they allow. Empty when the spec is consistent.
+func validate() -> PackedStringArray:
+	var out: PackedStringArray = PackedStringArray()
+	for i: int in range(constraints.size()):
+		out.append_array(constraints[i].problems())
+		var p: FlatPad = constraints[i] as FlatPad
+		if p == null:
+			continue
+		for j: int in range(i + 1, constraints.size()):
+			var q: FlatPad = constraints[j] as FlatPad
+			if q == null:
+				continue
+			if p.centre.distance_to(q.centre) < p.radius + q.radius and absf(p.height - q.height) > 0.05:
+				out.append("pads '%s' and '%s' overlap at different heights (%.1f vs %.1f)" % [p.label, q.label, p.height, q.height])
+	return out
