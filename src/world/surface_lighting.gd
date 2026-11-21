@@ -95,4 +95,4 @@ func _apply(depth: float) -> void:
 
 func _apply_surface_colors() -> void:
 	if surface != null:
-		surface.set_colors(preset.surface_top_color, preset.surface_under_color)
+		surface.set_colors(preset.surface_top_color, preset.surface_under_color, preset.sky_color)
