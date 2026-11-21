@@ -55,6 +55,31 @@ func test_view_tracks_bilge_in_scene() -> void:
 	holder.free()
 
 
+func test_non_current_camera_stays_dry() -> void:
+	var holder: Node3D = Node3D.new()
+	runner.add_child(holder)
+	var w: BilgeWater = (load("res://src/sub/bilge_water.tscn") as PackedScene).instantiate() as BilgeWater
+	holder.add_child(w)
+	w.set_tonnage(4.0)
+	var cam: Camera3D = Camera3D.new()
+	holder.add_child(cam)
+	cam.current = false
+	var quad: MeshInstance3D = MeshInstance3D.new()
+	quad.name = "Quad"
+	var v: UnderwaterView = UnderwaterView.new()
+	v.add_child(quad)
+	cam.add_child(v)
+	cam.global_position = Vector3(0, w.global_position.y - 0.3, 0)
+	v._process(0.0)
+	expect(not v.underwater, "remote (non-current) camera is not underwater")
+	expect(not quad.visible, "remote overlay hidden")
+	cam.current = true
+	v._process(0.0)
+	expect(v.underwater, "current camera below the surface is underwater")
+	expect(quad.visible, "local overlay shown")
+	holder.free()
+
+
 func test_tunables_exported_on_player_scene() -> void:
 	var p: Node = PLAYER_SCENE.instantiate()
 	var v: UnderwaterView = p.get_node("Head/Camera3D/UnderwaterView") as UnderwaterView

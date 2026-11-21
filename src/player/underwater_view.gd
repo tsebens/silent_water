@@ -44,6 +44,11 @@ func _ready() -> void:
 func _process(_delta: float) -> void:
 	if _camera == null:
 		return
+	# Only the camera actually rendering this client's view may be tinted: the
+	# quad would otherwise draw into the local camera for remote crewmates.
+	if not _camera_is_active():
+		_apply(false)
+		return
 	if _water == null or not is_instance_valid(_water):
 		_water = get_tree().get_first_node_in_group(water_group) as Node3D
 	var wet: bool = _water != null and _water.visible
@@ -51,6 +56,13 @@ func _process(_delta: float) -> void:
 	if wet:
 		next = next_state(underwater, _camera.global_position.y, _water.global_position.y, hysteresis_m)
 	_apply(next)
+
+
+## True when the tracked camera is the one rendering. Non-camera nodes count
+## as active (used by tests).
+func _camera_is_active() -> bool:
+	var cam: Camera3D = _camera as Camera3D
+	return cam == null or cam.current
 
 
 ## Sets the state and updates the overlay.
