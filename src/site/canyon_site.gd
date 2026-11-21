@@ -16,7 +16,7 @@ extends Node3D
 ## mesh (sediment on flats, rock on steep faces), collided as a height grid.
 
 const LAYER_EXTERIOR: int = 1 << 3
-const SEED: int = 4417
+const PRESET: String = "res://src/site/presets/canyon.tres"
 
 const RIM_Y: float = -15.0
 const FLOOR_Y: float = -230.0
@@ -41,16 +41,18 @@ const GRID_MAX: Vector2 = Vector2(170.0, 180.0)
 const CELL: float = 2.0
 ## Coarser copy for the holographic maps.
 const MAP_CELL: float = 6.0
-## Where the walls lean (inner edge of the wall slope / rim), before meander.
-const WALL_FOOT: float = 32.0
-const WALL_TOP: float = 62.0
-const WALL_MEANDER_M: float = 12.0
 
 const SAND: Color = Color(0.29, 0.28, 0.24)
 const ROCK: Color = Color(0.16, 0.18, 0.17)
 
 const DETAIL_FREQ: float = 0.03
 
+## The macro shape: seed, centreline, width and depth, shelves, closed ends.
+## Defaults to the canyon preset, which the constants above mirror.
+@export var spec: SiteSpec:
+	set(value):
+		spec = value
+		_configure_noise()
 @export_group("Profile")
 ## Radius (m) of the smooth min/max rounding the foot and lip of the walls.
 @export var profile_blend: float = 8.0
@@ -96,37 +98,39 @@ var _map_mesh: ArrayMesh
 
 
 func _init() -> void:
-	_shape_noise = FastNoiseLite.new()
-	_shape_noise.seed = SEED
-	_shape_noise.noise_type = FastNoiseLite.TYPE_PERLIN
-	_shape_noise.frequency = 0.006
-	_detail_noise = FastNoiseLite.new()
-	_detail_noise.seed = SEED + 1
-	_detail_noise.noise_type = FastNoiseLite.TYPE_PERLIN
-	_detail_noise.frequency = DETAIL_FREQ
+	_shape_noise = _make_noise(FastNoiseLite.TYPE_PERLIN, 0.006)
+	_detail_noise = _make_noise(FastNoiseLite.TYPE_PERLIN, DETAIL_FREQ)
 	_detail_noise.fractal_type = FastNoiseLite.FRACTAL_NONE
-	_rock_noise = FastNoiseLite.new()
-	_rock_noise.seed = SEED + 2
-	_rock_noise.noise_type = FastNoiseLite.TYPE_PERLIN
-	_rock_noise.frequency = 0.05
+	_rock_noise = _make_noise(FastNoiseLite.TYPE_PERLIN, 0.05)
 	_rock_noise.fractal_type = FastNoiseLite.FRACTAL_RIDGED
 	_rock_noise.fractal_octaves = 3
-	_slope_noise = FastNoiseLite.new()
-	_slope_noise.seed = SEED + 3
-	_slope_noise.noise_type = FastNoiseLite.TYPE_PERLIN
-	_slope_noise.frequency = 0.008
-	_warp_noise = FastNoiseLite.new()
-	_warp_noise.seed = SEED + 4
-	_warp_noise.noise_type = FastNoiseLite.TYPE_PERLIN
-	_warp_noise.frequency = 0.012
-	_strata_noise = FastNoiseLite.new()
-	_strata_noise.seed = SEED + 5
-	_strata_noise.noise_type = FastNoiseLite.TYPE_PERLIN
-	_strata_noise.frequency = 0.02
+	_slope_noise = _make_noise(FastNoiseLite.TYPE_PERLIN, 0.008)
+	_warp_noise = _make_noise(FastNoiseLite.TYPE_PERLIN, 0.012)
+	_strata_noise = _make_noise(FastNoiseLite.TYPE_PERLIN, 0.02)
+	spec = load(PRESET) as SiteSpec
+
+
+func _make_noise(noise_type: FastNoiseLite.NoiseType, frequency: float) -> FastNoiseLite:
+	var n: FastNoiseLite = FastNoiseLite.new()
+	n.noise_type = noise_type
+	n.frequency = frequency
+	return n
+
+
+## Seed every noise layer from the spec.
+func _configure_noise() -> void:
+	if spec == null or _shape_noise == null:
+		return
+	_shape_noise.seed = spec.seed
+	_detail_noise.seed = spec.seed + 1
+	_rock_noise.seed = spec.seed + 2
+	_slope_noise.seed = spec.seed + 3
+	_warp_noise.seed = spec.seed + 4
+	_strata_noise.seed = spec.seed + 5
 
 
 func _ready() -> void:
-	_rng.seed = SEED
+	_rng.seed = spec.seed
 	_build_terrain()
 	_build_boulders()
 	_build_vents()
@@ -136,23 +140,27 @@ func _ready() -> void:
 func height_at(x: float, z: float) -> float:
 	# Walls meander along the canyon, and lean at a slope that varies with z
 	# (steep faces here, talus fans there).
-	var xw: float = x + _shape_noise.get_noise_2d(z, 17.0) * WALL_MEANDER_M
+	var rim_y: float = spec.rim_y
+	var floor_y: float = rim_y - (rim_y - spec.floor_y) * spec.depth_scale(z)
+	var wall_foot: float = spec.wall_foot * spec.width_scale(z)
+	var wall_top: float = spec.wall_top * spec.width_scale(z)
+	var xw: float = x - spec.centre_x(z) + _shape_noise.get_noise_2d(z, 17.0) * spec.wall_meander
 	var ax: float = absf(xw)
-	var top: float = WALL_FOOT + (WALL_TOP - WALL_FOOT) * (1.0 + _slope_noise.get_noise_2d(z, 91.0) * wall_slope_variation)
-	var wall_t: float = clampf((ax - WALL_FOOT) / (top - WALL_FOOT), 0.0, 1.0)
-	var wall_slope: float = (RIM_Y - FLOOR_Y) / (top - WALL_FOOT)
+	var top: float = wall_foot + (wall_top - wall_foot) * (1.0 + _slope_noise.get_noise_2d(z, 91.0) * wall_slope_variation)
+	var wall_t: float = clampf((ax - wall_foot) / (top - wall_foot), 0.0, 1.0)
+	var wall_slope: float = (rim_y - floor_y) / (top - wall_foot)
 	# Floor, wall ramp and plateau blended with smooth min/max: rounded foot and lip.
-	var ramp: float = FLOOR_Y + (ax - WALL_FOOT) * wall_slope
-	var plateau: float = RIM_Y - maxf(ax - top, 0.0) * 0.06
-	var h: float = _smin(_smax(FLOOR_Y, ramp, profile_blend), plateau, profile_blend)
+	var ramp: float = floor_y + (ax - wall_foot) * wall_slope
+	var plateau: float = rim_y - maxf(ax - top, 0.0) * 0.06
+	var h: float = _smin(_smax(floor_y, ramp, profile_blend), plateau, profile_blend)
 	# Closed ends.
-	var end_t: float = maxf(smoothstep(NORTH_Z + 30.0, NORTH_Z - 10.0, z), smoothstep(SOUTH_Z - 30.0, SOUTH_Z + 10.0, z))
-	h = lerpf(h, maxf(h, RIM_Y - 3.0), end_t)
+	var end_t: float = maxf(smoothstep(spec.north_z + 30.0, spec.north_z - 10.0, z), smoothstep(spec.south_z - 30.0, spec.south_z + 10.0, z))
+	h = lerpf(h, maxf(h, rim_y - 3.0), end_t)
 	# Ledges cut into the walls: irregular footprints, blended in.
-	for ledge: Array in [[SHELF1, SHELF1_TOP], [SHELF2, SHELF2_TOP]]:
-		var m: float = _ledge_mask(x, z, ledge[0] as AABB)
+	for shelf: ShelfSpec in spec.shelves:
+		var m: float = _ledge_mask(x, z, shelf.footprint)
 		if m > 0.0:
-			h = _smax(h, lerpf(FLOOR_Y - 20.0, ledge[1] as float, m), 4.0)
+			h = _smax(h, lerpf(floor_y - 20.0, shelf.top_y, m), 4.0)
 	var on_ledge: float = _on_ledge(x, z)
 	# Steep faces, away from the ledges.
 	var wallness: float = smoothstep(0.0, 0.15, wall_t) * (1.0 - smoothstep(0.85, 1.0, wall_t)) * (1.0 - on_ledge)
@@ -213,7 +221,10 @@ func _ledge_mask(x: float, z: float, area: AABB) -> float:
 
 
 func _on_ledge(x: float, z: float) -> float:
-	return maxf(_ledge_mask(x, z, SHELF1), _ledge_mask(x, z, SHELF2))
+	var m: float = 0.0
+	for shelf: ShelfSpec in spec.shelves:
+		m = maxf(m, _ledge_mask(x, z, shelf.footprint))
+	return m
 
 
 func _build_terrain() -> void:
@@ -336,10 +347,12 @@ func _build_boulders() -> void:
 	shape_mesh.radial_segments = 7
 	shape_mesh.rings = 4
 	var convex: ConvexPolygonShape3D = shape_mesh.create_convex_shape(true, true)
-	var areas: Array = [
-		[SHELF1, 10], [SHELF2, 12],
-		[AABB(Vector3(-WALL_FOOT, FLOOR_Y, NORTH_Z + 30.0), Vector3(WALL_FOOT * 2.0, 0.0, SOUTH_Z - NORTH_Z - 60.0)), 30],
-	]
+	# Boulders per shelf, in spec order, then on the floor.
+	var shelf_counts: Array[int] = [10, 12]
+	var areas: Array = []
+	for k: int in range(spec.shelves.size()):
+		areas.append([spec.shelves[k].footprint, shelf_counts[k] if k < shelf_counts.size() else 10])
+	areas.append([AABB(Vector3(-spec.wall_foot, spec.floor_y, spec.north_z + 30.0), Vector3(spec.wall_foot * 2.0, 0.0, spec.south_z - spec.north_z - 60.0)), 30])
 	var n: int = 0
 	for entry: Array in areas:
 		var area: AABB = entry[0]
