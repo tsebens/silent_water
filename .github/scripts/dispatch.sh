@@ -137,7 +137,7 @@ set_board_status() { # number status-name
   option=$(echo "$STATUS_OPTIONS" | jq -r --arg s "$2" '.[] | select(.name == $s) | .id')
   if [ -z "$item" ] || [ -z "$option" ]; then log "    #$1 not on board (or no option '$2'); status not set"; return; fi
   log "    #$1 board -> $2"
-  act gh api graphql -F project="$PROJECT_ID" -F item="$item" -F field="$STATUS_FIELD_ID" -F option="$option" -f query='
+  act gh api graphql -f project="$PROJECT_ID" -f item="$item" -f field="$STATUS_FIELD_ID" -f option="$option" -f query='
     mutation($project: ID!, $item: ID!, $field: ID!, $option: String!) {
       updateProjectV2ItemFieldValue(input: {projectId: $project, itemId: $item, fieldId: $field,
         value: {singleSelectOptionId: $option}}) { projectV2Item { id } }
