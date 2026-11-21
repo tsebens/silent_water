@@ -38,3 +38,8 @@ func test_bad_port_reports_error() -> void:
 func test_host_and_join_conflict() -> void:
 	var a: LaunchArgs = LaunchArgs.parse(PackedStringArray(["--host", "--join"]))
 	expect_eq(a.errors.size(), 1)
+
+
+func test_terrain_lab_flag() -> void:
+	expect(LaunchArgs.parse(PackedStringArray(["--terrain-lab"])).terrain_lab)
+	expect(not LaunchArgs.parse(PackedStringArray()).terrain_lab)
