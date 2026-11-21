@@ -17,11 +17,8 @@
 [ext_resource type="Script" path="res://src/map/holo_map.gd" id="15"]
 [ext_resource type="Script" path="res://src/map/map_table.gd" id="16"]
 [ext_resource type="PackedScene" path="res://src/sub/bilge_water.tscn" id="17"]
-
-[sub_resource type="CylinderMesh" id="bezel_base"]
-top_radius = 0.2
-bottom_radius = 0.22
-height = 0.06
+[ext_resource type="Script" path="res://src/map/flat_chart.gd" id="flat_chart"]
+[ext_resource type="Script" path="res://src/sonar/sonar_panel.gd" id="sonar_panel"]
 
 [sub_resource type="StandardMaterial3D" id="fitting"]
 albedo_color = Color(0.2, 0.22, 0.24, 1)
@@ -349,7 +346,7 @@ readout = &"signal"
 title = "SIGNAL"
 min_value = 40.0
 max_value = 110.0
-radius = 0.13
+radius = 0.055
 
 [node name="BearingRateGauge" type="Node3D" parent="Stations/Sonar"]
 position = Vector3(0.75, 1.4, 1.84)
@@ -361,28 +358,21 @@ title = "BRG RATE"
 min_value = -120.0
 max_value = 120.0
 sweep_deg = 180.0
-radius = 0.13
+radius = 0.055
 
 [node name="NoiseGauge" parent="Stations/Sonar" instance=ExtResource("6")]
 position = Vector3(0.4, 1.85, 1.84)
 rotation = Vector3(0, 3.14159, 0)
 
-[node name="BearingBezel" type="MeshInstance3D" parent="Stations/Sonar"]
-position = Vector3(0.4, 0.97, 1.45)
-mesh = SubResource("bezel_base")
+[node name="BearingScreen" type="MeshInstance3D" parent="Stations/Sonar"]
+script = ExtResource("flat_chart")
 
-[node name="BearingDisplay" type="Node3D" parent="Stations/Sonar/BearingBezel"]
-position = Vector3(0, 0.03, 0)
-scale = Vector3(0.4, 0.4, 0.4)
-script = ExtResource("15")
-heading_up = true
-meters_per_unit = 300.0
-clip_rx = 0.47
-clip_rz = 0.47
-height = 0.75
-show_marks = true
-mark_blob_size = 0.05
-marker_size = 0.045
+[node name="SonarPanel" type="Node3D" parent="Stations/Sonar" node_paths=PackedStringArray("model", "screen", "signal_gauge", "rate_gauge")]
+script = ExtResource("sonar_panel")
+model = NodePath("../../../Model")
+screen = NodePath("../BearingScreen")
+signal_gauge = NodePath("../SignalGauge")
+rate_gauge = NodePath("../BearingRateGauge")
 
 [node name="Ballast" type="Node3D" parent="Stations"]
 
