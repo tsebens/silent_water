@@ -10,9 +10,9 @@ The Run context gives you the **watermark** (the ISO timestamp of the last audit
 
 Work from the watermark forward; do not re-audit earlier events except to compare trends.
 
-1. **Runs.** `gh run list --created ">=<watermark>" --limit 300 --json databaseId,name,event,status,conclusion,createdAt,updatedAt,displayTitle,headBranch`. Group by workflow name. Note counts by conclusion (`success`, `failure`, `cancelled`, `skipped`), durations (`updatedAt - createdAt`), and any run within 10 % of its workflow's `timeout-minutes` (read the workflow files under `.github/workflows/`).
+1. **Runs.** Read every run in the window; never use a fixed `--limit`. `gh api --paginate "repos/$GITHUB_REPOSITORY/actions/runs?created=>=<watermark>&per_page=100" --jq '.workflow_runs[] | {databaseId: .id, name, event, status, conclusion, createdAt: .created_at, updatedAt: .updated_at, displayTitle: .display_title, headBranch: .head_branch}'` (optionally add `&workflow_id=` per workflow, or `&status=`). Group by workflow name. Note counts by conclusion (`success`, `failure`, `cancelled`, `skipped`), durations (`updatedAt - createdAt`), and any run within 10 % of its workflow's `timeout-minutes` (read the workflow files under `.github/workflows/`). Count `skipped` and `cancelled` runs for the skipped-run-storm and concurrency findings, but leave them out of the detailed per-run pass. Verify the number of runs read matches the count in the Run context; if it does not, say so.
 2. **Failures.** For each failed or cancelled role or dispatcher run: `gh run view <id> --log-failed`. For role runs, download the transcript artifact (`gh run download <id> -n transcript-<role>-<id> -D "$RUNNER_TEMP/t/<id>"`) and read `transcript.jsonl`'s `result` event and the last few assistant messages to see where it stopped and why.
-3. **Issues and PRs** updated since the watermark: `gh issue list --state all --search "updated:>=<date> label:arc"` (and `label:concept`, and PRs into `dev`), then for each the label timeline (`gh api repos/$GITHUB_REPOSITORY/issues/<n>/events --jq '.[] | select(.event == "labeled" or .event == "unlabeled") | [.created_at, .event, .label.name]'`) and the comments by role heading (`## Proposed breakdown`, `## Plan review`, `## Handoff`, `## Review`, `## Rework`, `## CI failed`).
+3. **Issues and PRs** updated since the watermark: `gh issue list --state all --search "updated:>=<date> label:arc"` (and `label:concept`, and PRs into `dev`), then for each the label timeline (this is the source of order for rounds and label changes; never infer order from run display titles. Attribute rework rounds on a PR from its issue events and comment sequence) (`gh api repos/$GITHUB_REPOSITORY/issues/<n>/events --jq '.[] | select(.event == "labeled" or .event == "unlabeled") | [.created_at, .event, .label.name]'`) and the comments by role heading (`## Proposed breakdown`, `## Plan review`, `## Handoff`, `## Review`, `## Rework`, `## CI failed`).
 4. **Dispatcher logs** (`gh run view <id> --log` for the dispatcher runs in the window): claims, reverts, anomalies, "not on the board; adding" lines.
 5. **Memory.** Read the previous audit comments on the standing issue (newest first) for trends and for proposals already filed. Read open issues titled `Concept:` whose body carries `Filed by the pipeline audit` so you do not file a duplicate.
 
@@ -69,7 +69,7 @@ One comment on the standing issue. First line is the marker, exactly: `<!-- audi
 <the checklist items with no evidence, in one line>
 ```
 
-Be specific and brief. No praise, no hedging. If the only content would be the summary and "nothing found", post it anyway: the marker is the next audit's watermark.
+State the exact window you read (first and last run `createdAt`, and the number of runs) in the Summary; never silently truncate, and say so if anything could not be read. Be specific and brief. No praise, no hedging. If the only content would be the summary and "nothing found", post it anyway: the marker is the next audit's watermark.
 
 ### Proposals
 
