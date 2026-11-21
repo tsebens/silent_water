@@ -122,6 +122,9 @@ The scene is a `CanyonSite` generated from a `SiteSpec`, the ocean surface, and 
 - **Seed** sits at the top with **Random**. **Regenerate** rebuilds the site. With **Auto** on, an edit regenerates after a short pause, as long as the last build took under 1.5 s; slower builds wait for the button.
 - **Readout:** how long the last build took, and any conflicts `SiteSpec.validate()` finds between constraints.
 - **Day / night** switches the light preset.
+- **Constraint overlay:** every constraint is drawn as a wireframe over the terrain: a `FlatPad` as a gold ring (inner ring is the pad, faint outer ring its falloff, plus a post at its height), a `Corridor` as a cyan outline with its centre ramp, a `ClearColumn` as a pink cylinder. It follows edits at once, without waiting for a regenerate. Constraints are added, removed and edited through the list in the panel; the same operations are `LabPanel.add_constraint`, `move_constraint` and `remove_constraint`.
+- **Spec files:** the two path rows under the buttons. **Save spec** writes the edited `SiteSpec` (constraints included) as `.tres`; **Load spec** replaces the edited spec with one. The default path is `user://lab_spec.tres`.
+- **Heightmap:** **Export heightmap** samples the generated ground over the generator's grid (2 m cells) and writes a PNG plus a `.json` sidecar beside it. Each pixel holds a 16-bit height code, high byte in red and low byte in green (Godot has no 16-bit greyscale), row 0 at the minimum z. The sidecar gives the extent (`x_min`, `z_min`, `x_max`, `z_max`), `cell`, the grid size, and the vertical range (`min_y`, `max_y`, `vertical_scale` = range / 65535). `y = min_y + code / 65535 * (max_y - min_y)`. **Import** reads a PNG and sidecar back and reports its size and range; heights reproduce within one `vertical_scale` step (`SiteIO.import_heightmap`).
 
 The lab starts from the canyon preset (`src/site/presets/canyon.tres`) and edits a copy; it never writes the preset back.
 

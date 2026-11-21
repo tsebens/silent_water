@@ -10,7 +10,14 @@ signal changed
 signal regenerate_requested
 signal lighting_toggled
 signal back_requested
+## Spec or heightmap file actions, with the path typed in the panel.
+signal save_spec_requested(path: String)
+signal load_spec_requested(path: String)
+signal export_heightmap_requested(path: String)
+signal import_heightmap_requested(path: String)
 
+const DEFAULT_SPEC_PATH: String = "user://lab_spec.tres"
+const DEFAULT_HEIGHTMAP_PATH: String = "user://lab_heightmap.png"
 const SECTION_SPEC: String = "spec"
 const SECTION_SITE: String = "site"
 const ROW_LABEL_WIDTH: float = 150.0
@@ -27,6 +34,7 @@ var _controls: Dictionary = {}
 var _readout: Label
 var _auto: CheckBox
 var _body: VBoxContainer
+var _constraints_rebuild: Callable = Callable()
 
 
 ## Exported properties of [param obj]'s own scripts (base classes included), in
@@ -44,6 +52,7 @@ func setup(new_spec: SiteSpec, new_tunables: CanyonSite) -> void:
 	spec = new_spec
 	tunables = new_tunables
 	_controls.clear()
+	_constraints_rebuild = Callable()
 	for child: Node in get_children():
 		child.queue_free()
 	custom_minimum_size = Vector2(400.0, 0.0)
@@ -67,6 +76,51 @@ func setup(new_spec: SiteSpec, new_tunables: CanyonSite) -> void:
 ## SECTION_SPEC] or [constant SECTION_SITE]), or null.
 func control_for(section: String, prop: String) -> Control:
 	return _controls.get(section + "/" + prop) as Control
+
+
+## Model API for the constraint list (what the buttons call). Each edits
+## [member spec], refreshes the list and emits [signal changed].
+func add_constraint(kind: Script) -> SiteConstraint:
+	var c: SiteConstraint = kind.new() as SiteConstraint
+	if c == null:
+		return null
+	spec.constraints.append(c)
+	_constraints_edited()
+	return c
+
+
+## Moves constraint [param index] by [param offset] in x, z. A [Corridor] moves
+## both ends. Returns false for a bad index.
+func move_constraint(index: int, offset: Vector2) -> bool:
+	if index < 0 or index >= spec.constraints.size():
+		return false
+	var c: SiteConstraint = spec.constraints[index]
+	if c is FlatPad:
+		(c as FlatPad).centre += offset
+	elif c is ClearColumn:
+		(c as ClearColumn).centre += offset
+	elif c is Corridor:
+		var cor: Corridor = c
+		cor.a += Vector3(offset.x, 0.0, offset.y)
+		cor.b += Vector3(offset.x, 0.0, offset.y)
+	else:
+		return false
+	_constraints_edited()
+	return true
+
+
+func remove_constraint(index: int) -> bool:
+	if index < 0 or index >= spec.constraints.size():
+		return false
+	spec.constraints.remove_at(index)
+	_constraints_edited()
+	return true
+
+
+func _constraints_edited() -> void:
+	if _constraints_rebuild.is_valid():
+		_constraints_rebuild.call()
+	changed.emit()
 
 
 func set_readout(text: String) -> void:
@@ -116,10 +170,35 @@ func _build_header() -> Control:
 	back.pressed.connect(func() -> void: back_requested.emit())
 	buttons.add_child(back)
 	box.add_child(buttons)
+	box.add_child(_build_io_rows())
 	_readout = Label.new()
 	_readout.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	box.add_child(_readout)
 	return box
+
+
+func _build_io_rows() -> Control:
+	var box: VBoxContainer = VBoxContainer.new()
+	box.add_child(_io_row(DEFAULT_SPEC_PATH, "Save spec", save_spec_requested, "Load spec", load_spec_requested))
+	box.add_child(_io_row(DEFAULT_HEIGHTMAP_PATH, "Export heightmap", export_heightmap_requested, "Import", import_heightmap_requested))
+	return box
+
+
+func _io_row(default_path: String, a_text: String, a_signal: Signal, b_text: String, b_signal: Signal) -> Control:
+	var row: HBoxContainer = HBoxContainer.new()
+	var path: LineEdit = LineEdit.new()
+	path.text = default_path
+	path.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	row.add_child(path)
+	var a: Button = Button.new()
+	a.text = a_text
+	a.pressed.connect(func() -> void: a_signal.emit(path.text))
+	row.add_child(a)
+	var b: Button = Button.new()
+	b.text = b_text
+	b.pressed.connect(func() -> void: b_signal.emit(path.text))
+	row.add_child(b)
+	return row
 
 
 func _heading(text: String) -> Label:
@@ -359,10 +438,15 @@ func _list_editor(obj: Object, pname: StringName, prop: Dictionary) -> Control:
 			items.add_child(_element_editor(arr, i, rebuild))
 	add.pressed.connect(func() -> void:
 		var arr: Array = obj.get(pname)
+		if hint.ends_with("SiteConstraint"):
+			add_constraint(kinds[kind_pick.selected])
+			return
 		arr.append(kinds[kind_pick.selected].new())
 		rebuild.call()
 		changed.emit()
 	)
+	if hint.ends_with("SiteConstraint"):
+		_constraints_rebuild = rebuild
 	rebuild.call()
 	return box
 
@@ -380,6 +464,9 @@ func _element_editor(arr: Array, index: int, rebuild: Callable) -> Control:
 	var remove: Button = Button.new()
 	remove.text = "Remove"
 	remove.pressed.connect(func() -> void:
+		if element is SiteConstraint:
+			remove_constraint(index)
+			return
 		arr.remove_at(index)
 		rebuild.call()
 		changed.emit()

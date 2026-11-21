@@ -14,12 +14,15 @@ const NIGHT: LightPreset = preload("res://src/world/presets/night.tres")
 ## Auto-regeneration waits for the button once a build takes longer than this.
 const AUTO_MAX_MS: float = 1500.0
 const AUTO_DELAY: float = 0.4
+## Sample spacing of exported heightmaps (m).
+const EXPORT_CELL: float = 2.0
 
 var spec: SiteSpec
 var tunables: CanyonSite = CanyonSite.new()
 var site: CanyonSite
 var camera: LabCamera
 var panel: LabPanel
+var overlay: ConstraintOverlay
 var last_build_ms: float = 0.0
 var preset: LightPreset = DAY
 
@@ -29,6 +32,7 @@ var _sun: DirectionalLight3D
 var _env: Environment
 var _debounce: Timer
 var _stale: bool = false
+var _message: String = ""
 
 
 ## A site built the way the game builds one, from [param site_spec] with the
@@ -69,6 +73,8 @@ func _build_world() -> void:
 	_ocean = OceanSurface.new()
 	_ocean.name = "OceanSurface"
 	add_child(_ocean)
+	overlay = ConstraintOverlay.new()
+	add_child(overlay)
 	camera = LabCamera.new()
 	camera.name = "Camera"
 	add_child(camera)
@@ -88,6 +94,10 @@ func _build_ui() -> void:
 	panel.regenerate_requested.connect(regenerate)
 	panel.lighting_toggled.connect(toggle_lighting)
 	panel.back_requested.connect(back)
+	panel.save_spec_requested.connect(save_spec)
+	panel.load_spec_requested.connect(load_spec)
+	panel.export_heightmap_requested.connect(export_heightmap)
+	panel.import_heightmap_requested.connect(import_heightmap)
 	layer.add_child(panel)
 	_debounce = Timer.new()
 	_debounce.one_shot = true
@@ -107,6 +117,50 @@ func regenerate() -> void:
 	_site_holder.add_child(site)
 	last_build_ms = (Time.get_ticks_usec() - t0) / 1000.0
 	_stale = false
+	overlay.rebuild(spec)
+	_update_readout()
+
+
+## Writes the spec being edited to [param path] as `.tres`.
+func save_spec(path: String) -> Error:
+	var err: Error = SiteIO.save_spec(spec, path)
+	_note("saved spec to %s" % path if err == OK else "save failed: %s" % error_string(err))
+	return err
+
+
+## Replaces the edited spec with the one at [param path] and rebuilds the panel.
+func load_spec(path: String) -> bool:
+	var loaded: SiteSpec = SiteIO.load_spec(path)
+	if loaded == null:
+		_note("could not load a spec from %s" % path)
+		return false
+	spec = loaded
+	panel.setup(spec, tunables)
+	regenerate()
+	_note("loaded spec from %s" % path)
+	return true
+
+
+## Exports the current ground over the generator's grid as a heightmap.
+func export_heightmap(path: String) -> Error:
+	var extent: Rect2 = Rect2(CanyonSite.GRID_MIN, CanyonSite.GRID_MAX - CanyonSite.GRID_MIN)
+	var err: Error = SiteIO.export_heightmap(site, extent, EXPORT_CELL, path)
+	_note("exported heightmap to %s" % path if err == OK else "export failed: %s" % error_string(err))
+	return err
+
+
+## Reads a heightmap back and reports its size and range (a check, not an edit).
+func import_heightmap(path: String) -> Dictionary:
+	var data: Dictionary = SiteIO.import_heightmap(path)
+	if data.is_empty():
+		_note("could not import a heightmap from %s" % path)
+	else:
+		_note("imported %dx%d heightmap, y %.1f..%.1f" % [data["width"], data["height"], data["min_y"], data["max_y"]])
+	return data
+
+
+func _note(text: String) -> void:
+	_message = text
 	_update_readout()
 
 
@@ -134,6 +188,7 @@ func _apply_preset() -> void:
 
 
 func _on_changed() -> void:
+	overlay.rebuild(spec)
 	_stale = true
 	_update_readout()
 	if panel.auto_regenerate() and last_build_ms <= AUTO_MAX_MS:
@@ -148,6 +203,8 @@ func _on_debounce() -> void:
 func _update_readout() -> void:
 	var lines: PackedStringArray = PackedStringArray()
 	lines.append("generated in %.0f ms%s" % [last_build_ms, "   (edited: press Regenerate)" if _stale else ""])
+	if _message != "":
+		lines.append(_message)
 	for problem: String in spec.validate():
 		lines.append("! " + problem)
 	panel.set_readout("\n".join(lines))
