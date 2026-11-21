@@ -54,4 +54,32 @@ check "concept_status: design beats plan-approved" "Backlog" "$(concept_status $
 check "concept_status: plan-approved is In progress" "In progress" "$(concept_status $'concept\nplan-approved')"
 check "concept_status: plain concept is Backlog" "Backlog" "$(concept_status $'concept')"
 
+# closable_concepts: arcs in any state, linked by the "Concept: #n" line.
+CONCEPTS_FIX='[{"number":10,"labels":["concept","plan-approved"]},{"number":11,"labels":["concept","plan-approved"]},
+  {"number":12,"labels":["concept","plan-approved"]},{"number":13,"labels":["concept","plan-approved","needs-human"]},
+  {"number":14,"labels":["concept"]}]'
+ARCS_FIX='[{"number":20,"state":"closed","body":"Touches: x\nConcept: #10\n"},
+  {"number":21,"state":"closed","body":"**Concept:** #10\n"},
+  {"number":22,"state":"closed","body":"Concept: #11\n"},
+  {"number":23,"state":"open","body":"Concept: #11\n"},
+  {"number":24,"state":"closed","body":"Concept: #13\n"},
+  {"number":25,"state":"closed","body":"Concept: #14\n"},
+  {"number":26,"state":"closed","body":"Mentions #12 in Scope\nConcept: #99\n"}]'
+check "closable: all arcs closed closes; open arc, no arcs, needs-human, unapproved stay" "10" "$(closable_concepts "$CONCEPTS_FIX" "$ARCS_FIX")"
+check "closable: already-closed concepts are not in the open list (idempotent)" "" "$(closable_concepts '[]' "$ARCS_FIX")"
+
+# The pass itself: closes with reason completed, logs the line; dry run logs without closing.
+CALLS=$(mktemp)
+gh() { echo "gh $*" >>"$CALLS"; }
+out=$(close_finished_concepts "$CONCEPTS_FIX" "$ARCS_FIX")
+check "close pass: closes only #10 with reason completed" "gh issue close 10 -R $REPO --reason completed" "$(cat "$CALLS")"
+check "close pass: log line" "  closing concept #10: all arcs closed" "$out"
+: >"$CALLS"
+DRY_RUN=true
+out=$(close_finished_concepts "$CONCEPTS_FIX" "$ARCS_FIX")
+check "dry run: nothing closed" "" "$(cat "$CALLS")"
+check "dry run: would-close line logged" $'  closing concept #10: all arcs closed\n    (dry) gh issue close 10 -R '"$REPO"' --reason completed' "$out"
+DRY_RUN=false
+rm -f "$CALLS"
+
 exit $fails
