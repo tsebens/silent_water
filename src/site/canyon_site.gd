@@ -95,6 +95,7 @@ var _warp_noise: FastNoiseLite
 var _strata_noise: FastNoiseLite
 var _rng: RandomNumberGenerator = RandomNumberGenerator.new()
 var _map_mesh: ArrayMesh
+var _constraint_grid: PackedFloat32Array = PackedFloat32Array()
 
 
 func _init() -> void:
@@ -176,7 +177,9 @@ func height_at(x: float, z: float) -> float:
 	var px: float = x + _warp_noise.get_noise_2d(x, z) * detail_warp
 	var pz: float = z + _warp_noise.get_noise_2d(x + 311.0, z - 173.0) * detail_warp
 	var d: Vector2 = Vector2(wall_slope * wallness, 0.0)
-	var amp: float = detail_amp * (1.0 - settle * (1.0 - wallness))
+	# Constraint areas calm the ground: detail and crags fade out.
+	var cm: float = spec.constraint_weight(x, z)
+	var amp: float = detail_amp * (1.0 - settle * (1.0 - wallness)) * (1.0 - cm)
 	var freq: float = DETAIL_FREQ
 	var detail: float = 0.0
 	for o: int in range(detail_octaves):
@@ -190,9 +193,12 @@ func height_at(x: float, z: float) -> float:
 		amp *= 0.5
 		freq *= 2.0
 	h += detail
-	h += (_rock_noise.get_noise_2d(x, z) + 0.3) * rock_amp * wallness
-	# Keep the array's site and the start area level.
-	h = lerpf(h, SHELF2_TOP, 1.0 - smoothstep(10.0, 22.0, Vector2(x, z).distance_to(Vector2(OBJECTIVE_POSITION.x, OBJECTIVE_POSITION.z))))
+	h += (_rock_noise.get_noise_2d(x, z) + 0.3) * rock_amp * wallness * (1.0 - cm)
+	# Soft constraint masks: pads level, corridors ramp.
+	for c: SiteConstraint in spec.constraints:
+		var w: float = c.weight(x, z)
+		if w > 0.0:
+			h = lerpf(h, c.target_y(x, z, h), w)
 	return h
 
 
@@ -203,6 +209,13 @@ func _smin(a: float, b: float, k: float) -> float:
 
 func _smax(a: float, b: float, k: float) -> float:
 	return -_smin(-a, -b, k)
+
+
+## The combined constraint mask (0..1) on the terrain grid, row-major with
+## [constant GRID_MIN] and [constant CELL]: kept for a later erosion pass,
+## which should leave constrained cells alone. Filled when the terrain builds.
+func constraint_mask_grid() -> PackedFloat32Array:
+	return _constraint_grid
 
 
 ## Meshes and transforms for the holographic maps: a coarser surface.
@@ -236,6 +249,10 @@ func _build_terrain() -> void:
 		var z: float = GRID_MIN.y + j * CELL
 		for i: int in range(nx):
 			heights[j * nx + i] = height_at(GRID_MIN.x + i * CELL, z)
+	_constraint_grid.resize(nx * nz)
+	for j: int in range(nz):
+		for i: int in range(nx):
+			_constraint_grid[j * nx + i] = spec.constraint_weight(GRID_MIN.x + i * CELL, GRID_MIN.y + j * CELL)
 	var body: StaticBody3D = StaticBody3D.new()
 	body.name = "Terrain"
 	body.collision_layer = LAYER_EXTERIOR
@@ -359,7 +376,7 @@ func _build_boulders() -> void:
 		for k: int in range(int(entry[1])):
 			var x: float = _rng.randf_range(area.position.x + 4.0, area.end.x - 4.0)
 			var z: float = _rng.randf_range(area.position.z + 4.0, area.end.z - 4.0)
-			if Vector2(x, z).distance_to(Vector2(OBJECTIVE_POSITION.x, OBJECTIVE_POSITION.z)) < 18.0:
+			if spec.constraint_weight(x, z) > 0.0:
 				continue
 			var size: Vector3 = Vector3(_rng.randf_range(3.0, 9.0), _rng.randf_range(2.0, 6.0), _rng.randf_range(3.0, 9.0))
 			var basis: Basis = Basis.from_euler(Vector3(_rng.randf_range(-0.3, 0.3), _rng.randf() * TAU, _rng.randf_range(-0.3, 0.3)))
