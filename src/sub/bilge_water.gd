@@ -20,6 +20,7 @@ var _source: Node
 
 
 func _ready() -> void:
+	add_to_group(&"bilge_water")
 	set_tonnage(0.0)
 
 

@@ -6,6 +6,7 @@ extends Node
 ## `--at <x>,<z>`, sits with `--sit pilot|sonar` (then --look is relative),
 ## sets the hydrophone wheel with `--wheel <value>`,
 ## places the apex with `--apex-rel <x>,<y>,<z>` (sub-local),
+## floods the bilge with `--bilge <tonnes>` and crouches the view to `--head <m>` above the floor,
 ## saves the frame as PNG, then quits.
 
 var _path: String = ""
@@ -22,6 +23,8 @@ var _apex_rel: Vector3 = Vector3.ZERO
 var _has_apex: bool = false
 var _wheel: float = 0.0
 var _has_wheel: bool = false
+var _bilge: float = -1.0
+var _head: float = -1.0
 
 
 func setup(game: Game, args: PackedStringArray) -> void:
@@ -49,6 +52,10 @@ func setup(game: Game, args: PackedStringArray) -> void:
 			"--wheel":
 				_wheel = float(args[i + 1])
 				_has_wheel = true
+			"--bilge":
+				_bilge = float(args[i + 1])
+			"--head":
+				_head = float(args[i + 1])
 			"--at":
 				var q: PackedStringArray = args[i + 1].split(",")
 				_at = Vector2(float(q[0]), float(q[1]))
@@ -70,6 +77,12 @@ func _run() -> void:
 	var me: Player = _game.local_player()
 	if me != null and _has_at:
 		me.position = Vector3(_at.x, 0.1, _at.y)
+	if _bilge >= 0.0:
+		var water: BilgeWater = _game.get_node("Interior/BilgeWater") as BilgeWater
+		water.set_process(false)
+		water.set_tonnage(_bilge)
+	if me != null and _head >= 0.0:
+		(me.get_node("Head") as Node3D).position.y = _head
 	if me != null and _sit != "":
 		var seats: Dictionary = {
 			"pilot": "Interior/Stations/Pilot/Seat", "sonar": "Interior/Stations/Sonar/Seat",
