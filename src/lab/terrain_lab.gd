@@ -26,6 +26,9 @@ var overlay: ConstraintOverlay
 var last_build_ms: float = 0.0
 var preset: LightPreset = DAY
 
+## Before/after: false builds the site without erosion so the analytic ground shows.
+var show_eroded: bool = true
+
 var _site_holder: Node3D
 var _ocean: OceanSurface
 var _sun: DirectionalLight3D
@@ -93,6 +96,7 @@ func _build_ui() -> void:
 	panel.changed.connect(_on_changed)
 	panel.regenerate_requested.connect(regenerate)
 	panel.lighting_toggled.connect(toggle_lighting)
+	panel.erosion_view_toggled.connect(set_show_eroded)
 	panel.back_requested.connect(back)
 	panel.save_spec_requested.connect(save_spec)
 	panel.load_spec_requested.connect(load_spec)
@@ -113,12 +117,22 @@ func regenerate() -> void:
 		_site_holder.remove_child(site)
 		site.free()
 	site = build_site(spec, tunables)
+	if not show_eroded:
+		site.erosion = null
 	site.name = "Site"
 	_site_holder.add_child(site)
 	last_build_ms = (Time.get_ticks_usec() - t0) / 1000.0
 	_stale = false
 	overlay.rebuild(spec)
 	_update_readout()
+
+
+## Switches between the eroded ground and the analytic ground before erosion.
+func set_show_eroded(on: bool) -> void:
+	if show_eroded == on:
+		return
+	show_eroded = on
+	regenerate()
 
 
 ## Writes the spec being edited to [param path] as `.tres`.
@@ -144,7 +158,14 @@ func load_spec(path: String) -> bool:
 ## Exports the current ground over the generator's grid as a heightmap.
 func export_heightmap(path: String) -> Error:
 	var extent: Rect2 = Rect2(CanyonSite.GRID_MIN, CanyonSite.GRID_MAX - CanyonSite.GRID_MIN)
-	var err: Error = SiteIO.export_heightmap(site, extent, EXPORT_CELL, path)
+	# The export freezes the eroded grid even while the before view is showing.
+	var source: CanyonSite = site
+	if not show_eroded:
+		source = build_site(spec, tunables)
+		source.bake_erosion()
+	var err: Error = SiteIO.export_heightmap(source, extent, EXPORT_CELL, path)
+	if source != site:
+		source.free()
 	_note("exported heightmap to %s" % path if err == OK else "export failed: %s" % error_string(err))
 	return err
 
@@ -203,6 +224,16 @@ func _on_debounce() -> void:
 func _update_readout() -> void:
 	var lines: PackedStringArray = PackedStringArray()
 	lines.append("generated in %.0f ms%s" % [last_build_ms, "   (edited: press Regenerate)" if _stale else ""])
+	if not show_eroded:
+		lines.append("showing the ground before erosion")
+	elif not site.erosion_timings.is_empty():
+		var parts: PackedStringArray = PackedStringArray()
+		var total: float = 0.0
+		for pass_name: String in site.erosion_timings:
+			var ms: float = site.erosion_timings[pass_name]
+			total += ms
+			parts.append("%s %.0f" % [pass_name, ms])
+		lines.append("erosion (%.1f m grid): %s, total %.0f ms" % [site.erosion.cell_size, ", ".join(parts), total])
 	if _message != "":
 		lines.append(_message)
 	for problem: String in spec.validate():

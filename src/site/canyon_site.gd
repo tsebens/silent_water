@@ -160,6 +160,7 @@ func height_at(x: float, z: float) -> float:
 ## from the result. With erosion null or disabled this clears the grid.
 func bake_erosion() -> void:
 	_eroded = PackedFloat32Array()
+	erosion_timings = {}
 	if erosion == null or not erosion.enabled:
 		return
 	_eroded_cell = erosion.cell_size
@@ -171,7 +172,12 @@ func bake_erosion() -> void:
 	for j: int in range(_eroded_nz):
 		for i: int in range(_eroded_nx):
 			mask[j * _eroded_nx + i] = spec.constraint_weight(GRID_MIN.x + i * _eroded_cell, GRID_MIN.y + j * _eroded_cell)
-	_eroded = TerrainErosion.erode(base, _eroded_nx, _eroded_nz, _eroded_cell, mask, erosion, TerrainErosion.make_rng(spec.seed, erosion))
+	_eroded = TerrainErosion.erode(base, _eroded_nx, _eroded_nz, _eroded_cell, mask, erosion, TerrainErosion.make_rng(spec.seed, erosion), erosion_timings)
+
+
+## Milliseconds each erosion pass took in the last [method bake_erosion]
+## (pass name -> ms, only passes that ran); empty when erosion is off.
+var erosion_timings: Dictionary = {}
 
 
 ## The eroded grid (row-major, [constant GRID_MIN], cell [member ErosionParams.cell_size]); empty when off.

@@ -69,7 +69,7 @@ func test_panel_binds_every_exported_property() -> void:
 		expect(panel.control_for(LabPanel.SECTION_SPEC, p["name"]) != null, "SiteSpec.%s has a control" % p["name"])
 	var site_props: int = 0
 	for p: Dictionary in LabPanel.exported_properties(tunables):
-		if p["name"] == "spec":
+		if p["name"] == "spec" or p["name"] == "erosion":
 			continue
 		site_props += 1
 		expect(panel.control_for(LabPanel.SECTION_SITE, p["name"]) != null, "CanyonSite.%s has a control" % p["name"])
@@ -226,3 +226,98 @@ func test_heightmap_export_import_round_trips() -> void:
 	DirAccess.remove_absolute(ProjectSettings.globalize_path(path))
 	DirAccess.remove_absolute(ProjectSettings.globalize_path(SiteIO.sidecar_path(path)))
 	site.free()
+
+
+func _erosion_lab() -> TerrainLab:
+	var lab: TerrainLab = _lab()
+	await runner.get_tree().process_frame
+	var e: ErosionParams = lab.tunables.erosion
+	e.enabled = true
+	e.cell_size = 6.0
+	e.droplet_count = 300
+	e.thermal_iterations = 4
+	e.deposition_iterations = 2
+	return lab
+
+
+func _grids_differ(a: PackedFloat32Array, b: PackedFloat32Array) -> bool:
+	if a.size() != b.size():
+		return true
+	for k: int in range(a.size()):
+		if a[k] != b[k]:
+			return true
+	return false
+
+
+func test_panel_builds_erosion_controls_and_passes_change_grid() -> void:
+	var lab: TerrainLab = await _erosion_lab()
+	var e: ErosionParams = lab.tunables.erosion
+	for p: Dictionary in LabPanel.exported_properties(e):
+		expect(lab.panel.control_for(LabPanel.SECTION_EROSION, p["name"]) != null, "ErosionParams.%s has a control" % p["name"])
+	for name: String in ["enabled", "droplet_enabled", "thermal_enabled", "deposition_enabled", "cell_size"]:
+		expect(lab.panel.control_for(LabPanel.SECTION_EROSION, name) != null, name)
+	lab.regenerate()
+	var all_on: PackedFloat32Array = lab.site.eroded_grid()
+	expect(not all_on.is_empty(), "eroded grid exists")
+	(lab.panel.control_for(LabPanel.SECTION_EROSION, "thermal_enabled") as CheckBox).button_pressed = false
+	expect(not e.thermal_enabled, "toggle reached the params")
+	lab.regenerate()
+	expect(_grids_differ(all_on, lab.site.eroded_grid()), "turning thermal off changes the grid")
+	(lab.panel.control_for(LabPanel.SECTION_EROSION, "cell_size") as SpinBox).value = 8.0
+	lab.regenerate()
+	expect(lab.site.eroded_grid().size() < all_on.size(), "a coarser grid has fewer cells")
+	lab.free()
+
+
+func test_before_after_toggle() -> void:
+	var lab: TerrainLab = await _erosion_lab()
+	lab.regenerate()
+	expect(not lab.site.eroded_grid().is_empty(), "after view is eroded")
+	lab.set_show_eroded(false)
+	expect(lab.site.eroded_grid().is_empty(), "before view is analytic")
+	expect(lab.panel.readout_text().contains("before erosion"), "readout names the before view")
+	lab.set_show_eroded(true)
+	expect(not lab.site.eroded_grid().is_empty(), "back to eroded")
+	lab.free()
+
+
+func test_eroded_heightmap_round_trips() -> void:
+	var lab: TerrainLab = await _erosion_lab()
+	lab.regenerate()
+	var path: String = "user://test_eroded_heightmap.png"
+	# Export from the before view still freezes the eroded grid.
+	lab.set_show_eroded(false)
+	expect_eq(lab.export_heightmap(path), OK)
+	lab.set_show_eroded(true)
+	var data: Dictionary = lab.import_heightmap(path)
+	expect(not data.is_empty(), "imports")
+	var heights: PackedFloat32Array = data["heights"]
+	var w: int = data["width"]
+	var step: float = float(data["vertical_scale"])
+	var worst: float = 0.0
+	var differs: bool = false
+	var plain: CanyonSite = TerrainLab.build_site(lab.spec)
+	for j: int in range(data["height"]):
+		for i: int in range(w):
+			var x: float = float(data["x_min"]) + i * TerrainLab.EXPORT_CELL
+			var z: float = float(data["z_min"]) + j * TerrainLab.EXPORT_CELL
+			worst = maxf(worst, absf(heights[j * w + i] - lab.site.height_at(x, z)))
+			differs = differs or absf(heights[j * w + i] - plain.height_at(x, z)) > step * 2.0
+	expect(worst <= step * 1.01 + 0.0001, "matches the eroded ground (worst %f, step %f)" % [worst, step])
+	expect(differs, "the export is not the analytic ground")
+	DirAccess.remove_absolute(ProjectSettings.globalize_path(path))
+	DirAccess.remove_absolute(ProjectSettings.globalize_path(SiteIO.sidecar_path(path)))
+	plain.free()
+	lab.free()
+
+
+func test_timings_readout_populated() -> void:
+	var lab: TerrainLab = await _erosion_lab()
+	lab.regenerate()
+	for pass_name: String in ["droplet", "thermal", "deposition"]:
+		expect(lab.site.erosion_timings.has(pass_name), "timing for %s" % pass_name)
+		expect(lab.panel.readout_text().contains(pass_name), "readout shows %s" % pass_name)
+	(lab.panel.control_for(LabPanel.SECTION_EROSION, "droplet_enabled") as CheckBox).button_pressed = false
+	lab.regenerate()
+	expect(not lab.site.erosion_timings.has("droplet"), "a disabled pass is not timed")
+	lab.free()
