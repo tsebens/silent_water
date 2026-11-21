@@ -14,3 +14,5 @@ extends Resource
 ## Colour of the water surface seen from above and from below at the surface.
 @export var surface_top_color: Color = Color(0.1, 0.45, 0.6, 1)
 @export var surface_under_color: Color = Color(0.6, 0.9, 0.95, 1)
+## Direction towards the sun / moon (need not be unit length).
+@export var sun_direction: Vector3 = Vector3(0.4, 0.8, 0.45)

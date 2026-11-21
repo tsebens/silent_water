@@ -55,7 +55,6 @@ func toggle_preset() -> void:
 func _ready() -> void:
 	_sun = DirectionalLight3D.new()
 	_sun.name = "Sun"
-	_sun.rotation_degrees = Vector3(-60.0, 30.0, 0.0)
 	_sun.shadow_enabled = false
 	_sun.light_energy = 0.0
 	add_child(_sun)
@@ -96,3 +95,16 @@ func _apply(depth: float) -> void:
 func _apply_surface_colors() -> void:
 	if surface != null:
 		surface.set_colors(preset.surface_top_color, preset.surface_under_color, preset.sky_color)
+		surface.set_sun(preset.sun_direction, preset.light_color, preset.sun_energy)
+	if _sun != null:
+		_aim_sun()
+
+
+## Points the directional light along the preset's sun direction (the light
+## travels from the sun towards the water).
+func _aim_sun() -> void:
+	var dir: Vector3 = preset.sun_direction.normalized()
+	if dir.is_zero_approx():
+		return
+	var up: Vector3 = Vector3.UP if absf(dir.y) < 0.99 else Vector3.RIGHT
+	_sun.basis = Basis.looking_at(-dir, up)
