@@ -1,0 +1,22 @@
+[project]
+name = "asset-pipeline"
+version = "0.1.0"
+description = "Asset Studio backend: concept to game-ready model, one JSON-printing command per stage."
+requires-python = ">=3.11"
+dependencies = ["pyyaml>=6.0"]
+
+[project.scripts]
+asset = "asset_pipeline.cli:main"
+
+[dependency-groups]
+dev = ["pytest>=8.0"]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["asset_pipeline"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

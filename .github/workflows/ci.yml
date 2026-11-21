@@ -29,6 +29,12 @@ jobs:
       - name: Dispatcher unit tests
         run: .github/scripts/test_dispatch.sh
 
+      - uses: astral-sh/setup-uv@v5
+
+      - name: Asset pipeline tests
+        working-directory: tools/asset_pipeline
+        run: uv run pytest -q
+
       - uses: ./.github/actions/setup-godot
 
       - name: Check project

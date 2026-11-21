@@ -1,0 +1,23 @@
+# Provider selection for the asset pipeline. Each stage names a provider (and optionally a model id).
+# Commands override a stage default with --image-provider / --3d-provider / --prompt-writer.
+# API keys come from environment variables (tools/asset_pipeline/.env, git-ignored); never put them here.
+defaults:
+  concept_prompts: prompt_writer
+  concept: image
+  turnaround: image
+  brief: prompt_writer
+  to3d: three_d
+
+# Stage defaults: which named provider each kind uses when a command does not override it.
+selection:
+  image: mock
+  three_d: mock
+  prompt_writer: mock
+
+providers:
+  image:
+    mock: {model: mock-image-1}
+  three_d:
+    mock: {model: mock-3d-1}
+  prompt_writer:
+    mock: {model: mock-writer-1}
