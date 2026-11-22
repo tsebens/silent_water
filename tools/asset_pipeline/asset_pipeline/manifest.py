@@ -67,6 +67,16 @@ class CleanupRecord:
 
 
 @dataclass
+class CheckRecord:
+    """One `check` run: which mesh was gated, where the JSON report is, and which gates failed."""
+    id: str  # the checked mesh's lineage id
+    report: str  # repo-relative path of the JSON gate report
+    ok: bool
+    failed: list[str] = field(default_factory=list)
+    at: str = field(default_factory=now)
+
+
+@dataclass
 class Manifest:
     slug: str
     asset_class: str
@@ -80,6 +90,7 @@ class Manifest:
     decisions: list[Lock] = field(default_factory=list)
     brief: BriefRecord | None = None
     cleanups: list[CleanupRecord] = field(default_factory=list)
+    checks: list[CheckRecord] = field(default_factory=list)
 
     def entry(self, entry_id: str) -> LineageEntry:
         for e in self.lineage:
@@ -141,6 +152,7 @@ class Manifest:
             decisions=[Lock(**x) for x in d.get("decisions") or []],
             brief=BriefRecord(**d["brief"]) if d.get("brief") else None,
             cleanups=[CleanupRecord(**x) for x in d.get("cleanups") or []],
+            checks=[CheckRecord(**x) for x in d.get("checks") or []],
         )
 
     def save(self, path: Path) -> None:

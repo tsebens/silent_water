@@ -12,8 +12,8 @@ from typing import Any
 
 import yaml
 
-from . import cleanup, doctor, paths, providers
-from .manifest import CLASSES, DECISIONS, BriefRecord, CleanupRecord, LineageEntry, Manifest
+from . import check, cleanup, doctor, paths, providers
+from .manifest import CLASSES, DECISIONS, BriefRecord, CheckRecord, CleanupRecord, LineageEntry, Manifest
 from .writers import PromptWriterError
 
 VIEWS = ("front", "left", "back", "right")
@@ -276,6 +276,46 @@ def cmd_cleanup(args: argparse.Namespace, root: Path) -> dict[str, Any]:
             "triangle_budget": budget, "result": result}
 
 
+def cmd_check(args: argparse.Namespace, root: Path) -> dict[str, Any]:
+    """Gate a cleaned mesh (the latest cleanup, or --source) and write the JSON report. `ok` is false when any gate
+    fails; the failing gates are listed and recorded in the manifest."""
+    mpath = paths.manifest_path(root, args.slug)
+    m = Manifest.load(mpath)
+    if args.source:
+        src = m.entry(args.source)
+    elif m.cleanups:
+        src = m.entry(m.cleanups[-1].id)
+    else:
+        raise ValueError("nothing to check: run `asset cleanup` first, or pass --source <mesh id>")
+    if src.kind != "mesh":
+        raise ValueError(f"{src.id!r} is a {src.kind}, check needs a mesh")
+    profile = cleanup.class_profile(root, m.asset_class)
+    brief = abspath(root, m.brief.path) if m.brief else None
+    if args.size_m is not None:
+        size_m, size_from = args.size_m, "--size-m"
+    else:
+        size_m, size_from = cleanup.brief_size_m(brief, profile)
+    budget = args.triangle_budget or profile["triangle_budget"]
+    prefix = _latest_turnaround(m)
+    views = {v: abspath(root, e.path) for v in VIEWS for e in m.lineage if e.id == f"{prefix}{v}"}
+    mesh = check.load_mesh(abspath(root, src.path))
+    gates = check.run_gates(mesh, profile, size_m, size_from, budget, views)
+    failed = [g["name"] for g in gates if not g["ok"]]
+    rel = (paths.asset_dir(root, args.slug) / "checks" / f"{src.id}.json").relative_to(root)
+    report = {"slug": m.slug, "class": m.asset_class, "mesh": src.id, "mesh_path": src.path,
+              "turnaround": prefix.rstrip("_") if views else None, "ok": not failed, "failed": failed,
+              "thresholds": profile["gates"], "triangle_budget": budget, "size_m": size_m, "size_from": size_from,
+              "collision_helpers_ignored": mesh["skipped_collision"], "gates": gates}
+    (root / rel).parent.mkdir(parents=True, exist_ok=True)
+    (root / rel).write_text(json.dumps(report, indent=2) + "\n")
+    m.checks.append(CheckRecord(id=src.id, report=str(rel), ok=not failed, failed=failed))
+    if not failed and m.stage in ("cleanup", "checked"):
+        m.stage = "checked"
+    m.save(mpath)
+    return {"ok": not failed, "slug": m.slug, "stage": m.stage, "id": src.id, "report": str(rel), "failed": failed,
+            "gates": {g["name"]: g["value"] for g in gates}}
+
+
 def _latest_turnaround(m: Manifest) -> str:
     ids = [e.id for e in m.lineage if e.kind == "turnaround"]
     if not ids:
@@ -356,6 +396,12 @@ def build_parser() -> argparse.ArgumentParser:
     cl.add_argument("--size-m", type=float, default=None, help="largest dimension in metres (default: brief.md size_m, else class range)")
     cl.add_argument("--triangle-budget", type=int, default=None, help="override the class profile's budget")
     cl.set_defaults(fn=cmd_cleanup)
+    ck = sub.add_parser("check", help="numeric gates on a cleaned mesh, written as a JSON report")
+    ck.add_argument("slug")
+    ck.add_argument("--source", default=None, metavar="MESH", help="mesh id to gate (default: the latest cleanup)")
+    ck.add_argument("--size-m", type=float, default=None, help="largest dimension in metres (default: brief.md size_m, else class range)")
+    ck.add_argument("--triangle-budget", type=int, default=None, help="override the class profile's budget")
+    ck.set_defaults(fn=cmd_check)
     return p
 
 
