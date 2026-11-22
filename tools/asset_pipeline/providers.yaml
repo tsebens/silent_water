@@ -41,7 +41,9 @@ providers:
     # Rodin Gen-2.5 (model = tier). Docs: https://docs.hyper3d.ai/en/api-specification/rodin-gen2-5 (checked 2026-11-22).
     rodin: {model: Gen-2.5-Medium}
     # TRELLIS.2 on fal. Docs: https://fal.ai/models/fal-ai/trellis-2/api (checked 2026-11-22).
-    trellis: {model: fal-ai/trellis-2}
+    # fal-ai/trellis-2 takes ONE image (`image_url`), so `input: single` sends the front view only;
+    # use `input: multi` (sends `image_urls`) for an endpoint that takes several views.
+    trellis: {model: fal-ai/trellis-2, input: single}
   prompt_writer:
     mock: {model: mock-writer-1}
     # Claude Code CLI: `claude -p ... --output-format json`, uses the logged-in subscription
