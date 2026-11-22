@@ -128,3 +128,215 @@ func test_panel_loads_fixture_and_shows_backend_error() -> void:
 	expect(panel._error.visible)
 	expect(panel._error.get_parsed_text().contains("boom [x]"), "error text shown verbatim")
 	panel.queue_free()
+
+
+# --- turnaround, brief and model views (M10.10) ---------------------------------------------
+
+func _model_listing() -> Dictionary:
+	return JSON.parse_string(_fixture("list_model.json")) as Dictionary
+
+
+func _model_asset() -> Dictionary:
+	return (_model_listing()["assets"] as Array)[0] as Dictionary
+
+
+func _reports() -> Dictionary:
+	return {"tests/fixtures/asset_studio/check_report.json": JSON.parse_string(_fixture("check_report.json"))}
+
+
+func _load_model() -> AssetModelModel:
+	var l: Dictionary = _model_listing()
+	var m: AssetModelModel = AssetModelModel.new()
+	m.load_asset(_model_asset(), l["providers"] as Dictionary, l["selected"] as Dictionary, _reports())
+	return m
+
+
+func test_turnaround_uses_latest_set_in_view_order() -> void:
+	var t: AssetTurnaroundModel = AssetTurnaroundModel.new()
+	t.load_asset(_model_asset(), _fixture("brief.md"))
+	expect_eq(t.views.size(), 4)
+	expect_eq(t.views[0]["view"], "front")
+	expect_eq(t.views[3]["view"], "right")
+	expect_eq(t.view("front")["id"], "t2_front", "the newest set wins")
+	expect_eq(t.view("front")["provider"], "openai")
+	expect(not t.view("right")["present"], "t2 has no right view")
+	expect_eq(t.view("right")["caption"], "right · missing")
+	expect_eq(t.present_count(), 3)
+
+
+func test_turnaround_actions() -> void:
+	var t: AssetTurnaroundModel = AssetTurnaroundModel.new()
+	t.load_asset(_model_asset(), _fixture("brief.md"))
+	expect_eq(t.generate_args("fal"), PackedStringArray(["turnaround", "angler2", "--image-provider", "fal"]))
+	expect_eq(t.regenerate_args("back", "openai"), PackedStringArray(["turnaround", "angler2", "--view", "back", "--image-provider", "openai"]))
+	expect_eq(t.regenerate_args("left"), PackedStringArray(["turnaround", "angler2", "--view", "left"]))
+	expect(t.regenerate_args("top").is_empty(), "unknown view builds no command")
+	expect(t.draft_brief_args().is_empty(), "drafting needs all four views")
+	var bare: AssetTurnaroundModel = AssetTurnaroundModel.new()
+	bare.load_asset({"slug": "coral", "locked": null, "lineage": []})
+	expect(bare.generate_args().is_empty(), "nothing to turn around without a locked concept")
+	expect(bare.regenerate_args("front").is_empty())
+	expect_eq(bare.present_count(), 0)
+
+
+func test_brief_edit_state() -> void:
+	var t: AssetTurnaroundModel = AssetTurnaroundModel.new()
+	t.load_asset(_model_asset(), _fixture("brief.md"))
+	expect_eq(t.brief_path, "tests/fixtures/asset_studio/brief.md")
+	expect(t.brief_text.contains("size_m: 2.5"))
+	expect(not t.dirty)
+	expect(not t.can_save_brief())
+	t.set_brief_text(t.brief_text + "- extra\n")
+	expect(t.dirty and t.can_save_brief())
+	t.set_brief_text(_fixture("brief.md"))
+	expect(not t.dirty, "editing back to the saved text is clean again")
+	t.set_brief_text("changed")
+	t.mark_saved()
+	expect(not t.dirty)
+	var none: AssetTurnaroundModel = AssetTurnaroundModel.new()
+	none.load_asset({"slug": "coral", "lineage": []})
+	expect_eq(none.target_brief_path(), "assets/models/coral/concept/brief.md")
+
+
+func test_draft_brief_needs_four_views_and_clean_text() -> void:
+	var asset: Dictionary = _model_asset().duplicate(true)
+	(asset["lineage"] as Array).append({"id": "t2_right", "kind": "turnaround", "path": "", "provider": "openai", "model": "gpt-image-1", "parent": "v1"})
+	var t: AssetTurnaroundModel = AssetTurnaroundModel.new()
+	t.load_asset(asset, "text")
+	expect_eq(t.draft_brief_args(), PackedStringArray(["brief", "angler2"]))
+	t.set_brief_text("edited")
+	expect(t.draft_brief_args().is_empty(), "unsaved edits block a redraft that would overwrite them")
+
+
+func test_model_runs_from_manifest_and_gate_report() -> void:
+	var m: AssetModelModel = _load_model()
+	expect_eq(m.runs.size(), 3)
+	expect_eq(m.run("r1_tripo")["stage"], "raw")
+	expect_eq(m.run("c1")["stage"], "cleaned")
+	expect_eq(m.run("c1")["triangles"], 6120)
+	expect_eq(m.triangle_text("c1"), "6120 triangles")
+	expect_eq(m.triangle_text("r1_meshy"), "triangles: unknown")
+	expect_eq(m.gate_summary("c1"), "failed: triangles, silhouette_back")
+	expect_eq(m.gate_summary("r1_meshy"), "not checked")
+	var rows: Array[Dictionary] = m.gate_rows("c1")
+	expect_eq(rows.size(), 8)
+	expect_eq(rows[0]["name"], "triangles")
+	expect(not rows[0]["ok"])
+	expect(rows[1]["ok"])
+	expect_eq(rows[6]["name"], "silhouette_back")
+	expect(m.gate_rows("r1_meshy").is_empty())
+	expect_eq(m.three_d_providers.size(), 3)
+	expect_eq(m.default_provider, "mock")
+
+
+func test_model_bake_off_compare_set() -> void:
+	var m: AssetModelModel = _load_model()
+	expect_eq(m.compare_ids, PackedStringArray(["c1"]), "starts on the newest run")
+	expect(m.toggle_compare("r1_tripo"))
+	expect(m.toggle_compare("r1_meshy"))
+	expect_eq(m.compare_ids.size(), 3)
+	expect(not m.toggle_compare("nope"))
+	expect(m.toggle_compare("c1"), "a run can be dropped")
+	expect_eq(m.compare_ids, PackedStringArray(["r1_tripo", "r1_meshy"]))
+	m.toggle_compare("r1_tripo")
+	expect(not m.toggle_compare("r1_meshy"), "the last run stays")
+	expect_eq(m.compare_ids.size(), 1)
+
+
+func test_model_light_toggle() -> void:
+	var m: AssetModelModel = AssetModelModel.new()
+	expect_eq(m.light, AssetModelModel.LIGHT_WHITE)
+	expect_eq(m.light_color(), Color(1, 1, 1))
+	m.toggle_light()
+	expect_eq(m.light, AssetModelModel.LIGHT_RED)
+	expect(m.light_color().r > 0.9 and m.light_color().g < 0.1, "red light is red")
+	m.toggle_light()
+	expect_eq(m.light, AssetModelModel.LIGHT_WHITE)
+	m.set_light(&"red")
+	expect_eq(m.light, AssetModelModel.LIGHT_RED)
+	m.set_light(&"green")
+	expect_eq(m.light, AssetModelModel.LIGHT_RED, "unknown light is ignored")
+
+
+func test_model_wireframe_and_turntable_state() -> void:
+	var m: AssetModelModel = AssetModelModel.new()
+	expect(not m.wireframe)
+	m.toggle_wireframe()
+	expect(m.wireframe)
+	m.toggle_wireframe()
+	expect(not m.wireframe)
+	expect(m.turntable, "turntable starts on")
+	expect_near(m.advance(1.0), AssetModelModel.TURNTABLE_DEG_PER_SEC, 0.001)
+	m.toggle_turntable()
+	var held: float = m.angle_deg
+	expect_near(m.advance(5.0), held, 0.001)
+	m.toggle_turntable()
+	m.angle_deg = 350.0
+	expect_near(m.advance(1.0), fmod(350.0 + AssetModelModel.TURNTABLE_DEG_PER_SEC, 360.0), 0.001)
+
+
+func test_model_triangle_count_from_mesh() -> void:
+	expect_eq(AssetModelModel.count_triangles(null), 0)
+	expect_eq(AssetModelModel.count_triangles(BoxMesh.new()), 12)
+
+
+func test_model_backend_arguments() -> void:
+	var m: AssetModelModel = _load_model()
+	expect_eq(m.to3d_args(PackedStringArray(["tripo", "meshy"])), PackedStringArray(["to3d", "angler2", "--3d-provider", "tripo", "meshy"]))
+	expect(m.to3d_args(PackedStringArray()).is_empty())
+	expect_eq(m.cleanup_args("r1_tripo"), PackedStringArray(["cleanup", "angler2", "--source", "r1_tripo"]))
+	expect(m.cleanup_args("c1").is_empty(), "cleanup starts from a raw mesh")
+	expect_eq(m.check_args("c1"), PackedStringArray(["check", "angler2", "--source", "c1"]))
+	expect(m.check_args("r1_tripo").is_empty())
+	expect(not m.can_export("c1"), "a mesh that failed its gates cannot be exported")
+	expect(m.export_args("r1_tripo").is_empty())
+
+
+func test_model_export_after_passing_gates() -> void:
+	var asset: Dictionary = _model_asset().duplicate(true)
+	var chk: Dictionary = (asset["checks"] as Array)[0]
+	chk["ok"] = true
+	chk["failed"] = []
+	var m: AssetModelModel = AssetModelModel.new()
+	m.load_asset(asset, {}, {}, _reports())
+	expect_eq(m.gate_summary("c1"), "all gates pass")
+	expect_eq(m.export_args("c1"), PackedStringArray(["export", "angler2", "--source", "c1"]))
+
+
+func test_preview_follows_model_state() -> void:
+	var m: AssetModelModel = AssetModelModel.new()
+	var pv: AssetModelPreview = AssetModelPreview.new()
+	pv.state = m
+	runner.add_child(pv)
+	var box: MeshInstance3D = MeshInstance3D.new()
+	box.mesh = BoxMesh.new()
+	var root: Node3D = Node3D.new()
+	root.add_child(box)
+	pv.show_node(root, "box")
+	expect(pv.has_model())
+	m.toggle_light()
+	m.toggle_wireframe()
+	m.angle_deg = 40.0
+	pv.apply_state()
+	expect_eq(pv._light.light_color, m.light_color())
+	expect_eq(pv._viewport.debug_draw, Viewport.DEBUG_DRAW_WIREFRAME)
+	expect_near(pv._pivot.rotation_degrees.y, 40.0, 0.001)
+	expect(pv._viewport.own_world_3d, "the preview has its own world, so game lighting cannot leak in")
+	pv.queue_free()
+
+
+func test_panel_shows_turnaround_and_model_tabs() -> void:
+	var panel: AssetStudioPanel = AssetStudioPanel.new()
+	panel.set_meta("fixture", true)
+	runner.add_child(panel)
+	panel.show_listing(_model_listing())
+	expect_eq(panel.turnaround.present_count(), 3)
+	expect_eq(panel.model.runs.size(), 3)
+	expect(panel._brief_edit.text.contains("size_m: 2.5"))
+	expect(panel._brief_save_btn.disabled)
+	panel._brief_edit.text = "new brief"
+	panel._on_brief_changed()
+	expect(not panel._brief_save_btn.disabled)
+	expect(panel._gate_text.get_parsed_text().contains("FAIL"))
+	expect_eq(panel._tabs.get_tab_count(), 3)
+	panel.queue_free()

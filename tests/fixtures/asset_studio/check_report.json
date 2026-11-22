@@ -1,0 +1,11 @@
+{"slug": "angler2", "class": "creature", "mesh": "c1", "ok": false, "failed": ["triangles", "silhouette_back"],
+ "triangle_budget": 4000, "size_m": 2.5, "size_from": "brief.md",
+ "gates": [
+  {"name": "triangles", "ok": false, "value": 6120, "limit": 4400, "detail": "6120 triangles against a budget of 4000 (tolerance x1.1)"},
+  {"name": "bbox", "ok": true, "value": 2.46, "limit": 2.5, "detail": "largest dimension 2.460 m against 2.500 m (brief.md), off by 1.6%"},
+  {"name": "loose_parts", "ok": true, "value": 1, "limit": 2, "detail": "1 connected parts, at most 2 allowed"},
+  {"name": "non_manifold", "ok": true, "value": 0, "limit": 0, "detail": "0 edges not shared by exactly two faces"},
+  {"name": "silhouette_front", "ok": true, "value": 0.91, "limit": 0.8, "detail": "front silhouette IoU 0.910, at least 0.8 needed"},
+  {"name": "silhouette_left", "ok": true, "value": 0.88, "limit": 0.8, "detail": "left silhouette IoU 0.880, at least 0.8 needed"},
+  {"name": "silhouette_back", "ok": false, "value": 0.62, "limit": 0.8, "detail": "back silhouette IoU 0.620, at least 0.8 needed"},
+  {"name": "silhouette_right", "ok": true, "value": 0.87, "limit": 0.8, "detail": "right silhouette IoU 0.870, at least 0.8 needed"}]}
