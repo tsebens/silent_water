@@ -5,7 +5,7 @@
 #   0. exit if PIPELINE_PAUSED=true
 #   1. mirror board Status=Ready onto the `ready` label (so Tristan can promote from the board)
 #   2. unblock: `blocked` arcs whose blockers are all closed become `ready`
-#   3. claim: while in-flight arcs < WORKER_CAP, claim the oldest `ready` arc whose
+#   3. claim: drop a stray `ready` from arcs already claimed/in-review; while in-flight arcs < WORKER_CAP, claim the oldest `ready` arc whose
 #      Touches: do not overlap an in-flight arc, and start a development run
 #   3b. close approved concepts whose arcs are all closed (backstop for the review agent)
 #   4. project labels onto the board (agents touch labels only; this is the one writer of Status)
@@ -78,6 +78,17 @@ blockers_of() {
     arc_body "$1" | grep -i -m1 -E '^\**blocked by:?\**:?' | grep -oE '#[0-9]+' | tr -d '#' || true
     gh api "repos/$REPO/issues/$1/dependencies/blocked_by" --jq '.[].number' 2>/dev/null || true
   } | sort -un
+}
+
+# An arc never carries `ready` together with `claimed` or `in-review`: drop the stray `ready`.
+# Returns 0 if it was dropped (the arc is in flight and must not be claimed again).
+drop_stray_ready() { # number
+  if arc_has "$1" claimed || arc_has "$1" in-review; then
+    log "  #$1 already in flight; dropping stray ready"
+    remove_label "$1" ready
+    return 0
+  fi
+  return 1
 }
 
 # Two path lists overlap if any pair is equal or one is a prefix directory of the other.
@@ -244,7 +255,8 @@ start_development() { # arc number
 }
 
 for n in $(arcs_with ready); do
-  [ "$in_flight_count" -lt "$WORKER_CAP" ] || break
+  drop_stray_ready "$n" && continue
+  [ "$in_flight_count" -lt "$WORKER_CAP" ] || continue
   arc_has "$n" needs-human && continue
   t=$(touches_of "$n")
   if [ -z "$t" ]; then log "  #$n has no Touches: line; treating as touching everything"; t="."; fi

@@ -96,4 +96,20 @@ check "close failure: logged" $'  closing concept #10: all arcs closed\n    clos
 check "close failure: returns 0" 0 $rc
 rm -f "$CALLS"
 
+# Stray ready: an arc with ready + claimed (or in-review) loses ready and is not claimed again.
+ARCS='[{"number":30,"created_at":"2026-01-01T00:00:00Z","body":"","labels":["arc","ready","claimed"]},
+  {"number":31,"created_at":"2026-01-01T00:00:00Z","body":"","labels":["arc","ready","in-review"]},
+  {"number":32,"created_at":"2026-01-01T00:00:00Z","body":"","labels":["arc","ready"]}]'
+CALLS=$(mktemp)
+gh() { echo "gh $*" >>"$CALLS"; }
+out=$(drop_stray_ready 30); rc=$?
+check "stray ready: claimed arc returns 0 (not claimed again)" 0 $rc
+check "stray ready: log line" $'  #30 already in flight; dropping stray ready\n    #30 -ready' "$out"
+check "stray ready: only ready removed" "gh issue edit 30 -R $REPO --remove-label ready" "$(cat "$CALLS")"
+: >"$CALLS"
+drop_stray_ready 31 >/dev/null; check "stray ready: in-review arc dropped" 0 $?
+drop_stray_ready 32 >/dev/null; check "stray ready: plain ready arc is left alone" 1 $?
+check "stray ready: plain ready arc untouched" "gh issue edit 31 -R $REPO --remove-label ready" "$(cat "$CALLS")"
+rm -f "$CALLS"
+
 exit $fails
