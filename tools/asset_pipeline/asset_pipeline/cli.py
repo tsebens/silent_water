@@ -11,7 +11,7 @@ from typing import Any
 
 import yaml
 
-from . import paths, providers
+from . import doctor, paths, providers
 from .manifest import CLASSES, DECISIONS, BriefRecord, LineageEntry, Manifest
 from .writers import PromptWriterError
 
@@ -204,9 +204,16 @@ def cmd_lock(args: argparse.Namespace, root: Path) -> dict[str, Any]:
             "reviewer": rec.reviewer, "locked": m.locked is not None}
 
 
+def cmd_doctor(args: argparse.Namespace, root: Path) -> dict[str, Any]:
+    return doctor.run(providers.load_config(), live=args.live)
+
+
 def build_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(prog="asset", description="Asset Studio backend")
     sub = p.add_subparsers(dest="command", required=True)
+    d = sub.add_parser("doctor", help="check Blender, Godot, the Claude CLI and API keys (--live adds one call per provider)")
+    d.add_argument("--live", action="store_true", help="make one cheap real call per configured provider")
+    d.set_defaults(fn=cmd_doctor)
     n = sub.add_parser("new", help="create an asset's manifest and folders")
     n.add_argument("slug")
     n.add_argument("--class", dest="asset_class", required=True, choices=CLASSES)
@@ -257,14 +264,15 @@ def main(argv: list[str] | None = None) -> int:
     if getattr(args, "reviewer", 1) is None:
         args.reviewer = getpass.getuser()
     try:
-        paths.check_slug(args.slug)
+        if hasattr(args, "slug"):
+            paths.check_slug(args.slug)
         result = args.fn(args, paths.repo_root())
     except (ValueError, KeyError, OSError, yaml.YAMLError) as e:
         msg = e.args[0] if isinstance(e, KeyError) and e.args else str(e)
         print(json.dumps({"ok": False, "error": msg}))
         return 1
     print(json.dumps({"ok": True, **result}))
-    return 0
+    return 0 if result.get("ok", True) else 1
 
 
 if __name__ == "__main__":

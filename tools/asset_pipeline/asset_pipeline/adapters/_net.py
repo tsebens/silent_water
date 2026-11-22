@@ -1,0 +1,113 @@
+"""Shared HTTP plumbing for the hosted image adapters: JSON and multipart POST, GET, error mapping."""
+from __future__ import annotations
+
+import base64
+import json
+import urllib.error
+import urllib.request
+import uuid
+from pathlib import Path
+from typing import Any
+
+IMAGE_TYPES = {".png": "image/png", ".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".webp": "image/webp"}
+
+
+class ImageProviderError(ValueError):
+    """A hosted image provider could not produce an image (missing key, HTTP failure, bad reply)."""
+
+
+def mime_of(p: Path) -> str:
+    mt = IMAGE_TYPES.get(p.suffix.lower())
+    if mt is None:
+        raise ImageProviderError(f"unsupported image type for {p.name}")
+    return mt
+
+
+def b64_of(p: Path) -> str:
+    return base64.b64encode(p.read_bytes()).decode()
+
+
+def data_uri(p: Path) -> str:
+    return f"data:{mime_of(p)};base64,{b64_of(p)}"
+
+
+def _reason(status: int) -> str:
+    if status in (401, 403):
+        return "authentication failed (check the API key)"
+    if status == 429:
+        return "rate limited or out of quota"
+    if status in (400, 404, 422):
+        return "request rejected"
+    if status >= 500:
+        return "provider server error"
+    return "unexpected response"
+
+
+def _detail(raw: bytes) -> str:
+    text = raw.decode(errors="replace")
+    try:
+        err = json.loads(text)
+        e = err.get("error", err.get("detail", err)) if isinstance(err, dict) else err
+        if isinstance(e, dict):
+            e = e.get("message", e)
+        text = e if isinstance(e, str) else json.dumps(e)
+    except json.JSONDecodeError:
+        pass
+    return text.strip()[:400]
+
+
+def request(provider: str, url: str, headers: dict[str, str], body: bytes | None = None,
+            timeout: int = 180, ok_status: tuple[int, ...] = ()) -> bytes:
+    """One HTTP call. HTTP and network failures become ImageProviderError naming the provider.
+    Statuses in `ok_status` return their body instead of raising (used by liveness checks)."""
+    req = urllib.request.Request(url, data=body, headers=headers, method="POST" if body is not None else "GET")
+    try:
+        with urllib.request.urlopen(req, timeout=timeout) as resp:
+            return resp.read()
+    except urllib.error.HTTPError as e:
+        raw = e.read()
+        if e.code in ok_status:
+            return raw
+        raise ImageProviderError(f"{provider} HTTP {e.code}: {_reason(e.code)}: {_detail(raw)}") from e
+    except (urllib.error.URLError, TimeoutError) as e:
+        raise ImageProviderError(f"{provider} unreachable: {e}") from e
+
+
+def post_json(provider: str, url: str, headers: dict[str, str], payload: dict[str, Any], timeout: int = 180) -> Any:
+    raw = request(provider, url, {**headers, "content-type": "application/json"},
+                  json.dumps(payload).encode(), timeout)
+    try:
+        return json.loads(raw)
+    except json.JSONDecodeError as e:
+        raise ImageProviderError(f"{provider} returned invalid JSON: {e}") from e
+
+
+def multipart(fields: dict[str, str], files: list[tuple[str, Path]]) -> tuple[bytes, str]:
+    """Encode a multipart/form-data body; returns (body, content-type)."""
+    boundary = uuid.uuid4().hex
+    out = b""
+    for k, v in fields.items():
+        out += (f'--{boundary}\r\nContent-Disposition: form-data; name="{k}"\r\n\r\n{v}\r\n').encode()
+    for k, p in files:
+        out += (f'--{boundary}\r\nContent-Disposition: form-data; name="{k}"; filename="{p.name}"\r\n'
+                f"Content-Type: {mime_of(p)}\r\n\r\n").encode() + p.read_bytes() + b"\r\n"
+    out += f"--{boundary}--\r\n".encode()
+    return out, f"multipart/form-data; boundary={boundary}"
+
+
+def post_multipart(provider: str, url: str, headers: dict[str, str], fields: dict[str, str],
+                   files: list[tuple[str, Path]], timeout: int = 180) -> Any:
+    body, ctype = multipart(fields, files)
+    raw = request(provider, url, {**headers, "content-type": ctype}, body, timeout)
+    try:
+        return json.loads(raw)
+    except json.JSONDecodeError as e:
+        raise ImageProviderError(f"{provider} returned invalid JSON: {e}") from e
+
+
+def write_image(out: Path, data: bytes) -> Path:
+    if not data:
+        raise ImageProviderError("provider returned an empty image")
+    out.parent.mkdir(parents=True, exist_ok=True)
+    out.write_bytes(data)
+    return out
