@@ -222,6 +222,10 @@ def test_check_on_blender_cleanup_output(root, capsys):
     assert run("cleanup", "blob", "--source", "r1_mock", "--size-m", str(SIZE_M)) == 0
     capsys.readouterr()
     m = Manifest.load(mpath)
+    brief = root / "assets" / "models" / "blob" / "concept" / "brief.md"
+    brief.parent.mkdir(parents=True, exist_ok=True)
+    brief.write_text(f"- size_m: {SIZE_M}\n")
+    m.brief = BriefRecord(path=str(brief.relative_to(root)), writer="mock", model="mock")
     mesh = check.load_mesh(root / m.entry("c1").path)
     add_views(root, m, mesh["positions"], [i for t in mesh["triangles"] for i in t])
     m.save(mpath)
