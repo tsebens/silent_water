@@ -66,6 +66,10 @@ def compute(price: dict[str, Any] | None, units: dict[str, Any], reported_usd: f
         used |= _rates(price, "usd_per_mtok_total")
     if parts:  # token usage the provider reported wins over the flat per-image price
         return round(sum(parts), 6), "estimated", used
+    if _num(units.get("generations")) and _num(price.get("credits_per_generation")) and "usd_per_credit" in price:
+        # no credit figure in the response: the table's credits per job times the plan's $/credit
+        return (round(units["generations"] * price["credits_per_generation"] * price["usd_per_credit"], 6),
+                "estimated", _rates(price, "credits_per_generation", "usd_per_credit"))
     for count_key, rate_key in (("images", "usd_per_image"), ("generations", "usd_per_generation")):
         if _num(units.get(count_key)) and rate_key in price:
             return round(units[count_key] * price[rate_key], 6), "estimated", _rates(price, rate_key)

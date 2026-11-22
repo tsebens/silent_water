@@ -40,6 +40,7 @@ class RodinThreeD(HostedThreeD):
         sub = (reply.get("jobs") or {}).get("subscription_key")
         if not reply.get("uuid") or not sub:
             raise ThreeDProviderError("rodin reply has no uuid or subscription key")
+        self.last_usage = {"generations": 1}  # the status reply carries no charge: priced from prices.yaml credits
         return f"{reply['uuid']}:{sub}"
 
     def poll(self, job_id: str) -> str:

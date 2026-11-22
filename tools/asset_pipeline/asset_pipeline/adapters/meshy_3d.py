@@ -31,6 +31,7 @@ class MeshyThreeD(HostedThreeD):
         task = reply.get("result") if isinstance(reply, dict) else None
         if not task:
             raise ThreeDProviderError("meshy reply has no task id")
+        self.last_usage = {"generations": 1}  # task responses carry no charge: priced from prices.yaml credits
         return task
 
     def _task(self, job_id: str) -> dict:

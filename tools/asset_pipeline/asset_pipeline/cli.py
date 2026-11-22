@@ -287,9 +287,12 @@ def cmd_to3d(args: argparse.Namespace, root: Path) -> dict[str, Any]:
     names = list(dict.fromkeys(args.three_d_provider or [None]))
     built = [providers.select("three_d", cfg, n) for n in names]  # fail on a bad name before any spend
     out_dir = paths.work_dir(root, args.slug) / "to3d"
+    prices = cost.load_prices()
     runs: list[dict[str, Any]] = []
     errors: list[dict[str, str]] = []
     for prov in built:
+        prov.last_usage = None
+        job = ""
         try:
             job = prov.submit(views)
             _wait_for(prov, job, args.poll_interval, args.timeout)
@@ -301,7 +304,11 @@ def cmd_to3d(args: argparse.Namespace, root: Path) -> dict[str, Any]:
             prov.download(job, root / rel)
         except (ValueError, OSError) as e:
             errors.append({"provider": prov.name, "error": str(e)})
+            if prov.last_usage is not None:  # the job was accepted, so it is billed even though it failed
+                m.costs.append(cost.entry_for(prov, "three_d", prices, command="to3d", stage="to3d", error=str(e)[:300]))
+                m.save(mpath)
             continue
+        m.costs.append(cost.entry_for(prov, "three_d", prices, command="to3d", stage="to3d", lineage=rid))
         m.add(LineageEntry(id=rid, kind="mesh", path=rel.as_posix(), provider=prov.name, model=prov.model,
                            parent=ordered[0].id, references=[e.path for e in ordered], task_id=job))
         m.save(mpath)  # per run, so a later provider's crash keeps this one
