@@ -170,6 +170,7 @@ def select(kind: str, config: dict[str, Any], override: str | None = None) -> An
     """Build the provider for `kind`: the command's override if given, else the configured default."""
     if kind not in KINDS:
         raise ValueError(f"unknown provider kind {kind!r}")
+    from . import writers  # noqa: F401  registers the real prompt writers
     name = override or config["selection"].get(kind)
     if not name:
         raise ValueError(f"no {kind} provider selected")
@@ -179,5 +180,4 @@ def select(kind: str, config: dict[str, Any], override: str | None = None) -> An
     factory = REGISTRY[kind].get(name)
     if factory is None:
         raise ValueError(f"{kind} provider {name!r} has no adapter")
-    model = entry.get("model") if isinstance(entry, dict) else None
-    return factory(model) if model else factory()
+    return factory(**entry) if isinstance(entry, dict) else factory()
