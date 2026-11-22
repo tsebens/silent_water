@@ -29,6 +29,8 @@ class LineageEntry:
     prompt: str = ""
     parent: str | None = None
     created: str = field(default_factory=now)
+    writer: str = ""  # PromptWriter that composed the prompt, as name:model
+    references: list[str] = field(default_factory=list)  # images passed to the provider
 
 
 @dataclass
@@ -41,16 +43,27 @@ class Lock:
 
 
 @dataclass
+class BriefRecord:
+    path: str
+    writer: str
+    model: str
+    images: list[str] = field(default_factory=list)
+    at: str = field(default_factory=now)
+
+
+@dataclass
 class Manifest:
     slug: str
     asset_class: str
     issue: int | None = None
     stage: str = "new"
+    description: str = ""  # the concept brief: what the asset is, fed to the PromptWriter
     created: str = field(default_factory=now)
     lineage: list[LineageEntry] = field(default_factory=list)
     locked: Lock | None = None
     # Decisions that did not lock (e.g. a rejection), newest last.
     decisions: list[Lock] = field(default_factory=list)
+    brief: BriefRecord | None = None
 
     def entry(self, entry_id: str) -> LineageEntry:
         for e in self.lineage:
@@ -105,10 +118,12 @@ class Manifest:
             asset_class=d["class"],
             issue=d.get("issue"),
             stage=d.get("stage", "new"),
+            description=d.get("description", ""),
             created=d.get("created", now()),
             lineage=[LineageEntry(**e) for e in d.get("lineage") or []],
             locked=Lock(**lock) if lock else None,
             decisions=[Lock(**x) for x in d.get("decisions") or []],
+            brief=BriefRecord(**d["brief"]) if d.get("brief") else None,
         )
 
     def save(self, path: Path) -> None:

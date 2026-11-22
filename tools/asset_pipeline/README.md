@@ -2,10 +2,12 @@
 
 Python backend for Asset Studio (see #222, decisions in #220). Run from this directory with `uv run asset <command>`, or from the repo root with `uv run --project tools/asset_pipeline asset <command>`. Every command prints one JSON object (`{"ok": true, ...}` or `{"ok": false, "error": ...}`).
 
-Implemented: `new <slug> --class <creature|prop|architecture|terrain> [--issue N]` and `lock <slug> <variant> [--decision approved|rejected] [--reviewer NAME] [--notes …]`. The remaining stages arrive in later arcs.
+Implemented: `concept <slug> [--n 3] [--brief TEXT] [--image-provider P] [--prompt-writer W] [--refine VARIANT --notes TEXT]`, `turnaround <slug>` (front, left, back, right, 2048 px, reference-conditioned edits of the locked concept), `brief <slug>` (writes `assets/models/<slug>/concept/brief.md`), `new <slug> --class <creature|prop|architecture|terrain> [--issue N]` and `lock <slug> <variant> [--decision approved|rejected] [--reviewer NAME] [--notes …]`. The remaining stages arrive in later arcs.
 
 - Manifest: `assets/models/<slug>/asset.yaml` (committed): stage, lineage (prompt, provider, model, parent of every image or mesh), the locked variant and reviewer decision.
 - Scratch: `.asset_work/<slug>/` (git-ignored): rejected variants and raw provider meshes.
-- Providers: `providers.yaml` picks a provider per kind (`image`, `three_d`, `prompt_writer`); commands override with a flag. Only `mock` exists so far; it returns deterministic fixtures.
+- Providers: `providers.yaml` picks a provider per kind (`image`, `three_d`, `prompt_writer`); commands override with a flag. Only `mock` exists for images and 3D so far; it returns deterministic fixtures.
+- PromptWriter (`--prompt-writer`): `mock`; `claude-cli` runs `claude -p … --output-format json` with `--allowedTools Read` and `--add-dir` for the images, using your Claude Code login or `CLAUDE_CODE_OAUTH_TOKEN` (set `ASSET_CLAUDE_BIN` for a non-PATH binary); `anthropic-api` calls the Messages API with `ANTHROPIC_API_KEY` only. The OAuth token is never used in Messages API calls. Model comes from `providers.yaml`.
+- Concept prompts are the style bible block, the writer's prompt and the negative block; 2 to 4 anchors from `assets/style_bible/anchors/<class>/` are passed as references on every concept call (a refine also passes its parent). Variants go to `.asset_work/<slug>/concept/`; each manifest lineage entry records prompt, provider, model, writer, references and parent.
 - Keys: environment variables, loaded from `tools/asset_pipeline/.env` (git-ignored). Never commit them.
 - Tests: `uv run pytest`.
