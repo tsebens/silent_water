@@ -117,9 +117,32 @@ def token_usage(usage: Any, keys: tuple[str, ...], names: tuple[str, ...] | None
     return out
 
 
+PNG_SIGNATURE = b"\x89PNG\r\n\x1a\n"
+
+
 def write_image(out: Path, data: bytes) -> Path:
+    """Save a provider's image bytes as a real PNG at `out`.
+
+    Providers return whatever format they choose (Nano Banana sends JPEG, others WebP), but the
+    pipeline names every image `.png` and the gates read 8-bit PNG, so anything that is not
+    already PNG is decoded and re-encoded. Bytes that are not an image at all are an error.
+    """
     if not data:
         raise ImageProviderError("provider returned an empty image")
     out.parent.mkdir(parents=True, exist_ok=True)
-    out.write_bytes(data)
+    if data.startswith(PNG_SIGNATURE):
+        out.write_bytes(data)
+        return out
+    import io
+
+    from PIL import Image, UnidentifiedImageError
+
+    try:
+        with Image.open(io.BytesIO(data)) as img:
+            img.load()
+            mode = "RGBA" if img.mode in ("RGBA", "LA", "P", "PA") or "transparency" in img.info else "RGB"
+            img.convert(mode).save(out, format="PNG")
+    except UnidentifiedImageError as exc:
+        head = data[:60].decode("utf-8", "replace")
+        raise ImageProviderError(f"provider returned data that is not an image: {head!r}") from exc
     return out
