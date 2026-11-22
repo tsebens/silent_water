@@ -9,6 +9,7 @@ ROOT = Path(__file__).resolve().parent.parent / "assets" / "style_bible"
 CLASSES = ["creature", "prop", "terrain", "architecture"]
 ROUTES = {"image-to-3d", "scripted"}
 GATES = ["triangle_tolerance", "bbox_tolerance", "max_loose_parts", "max_non_manifold", "silhouette_iou_min"]
+OPTIONAL_FIELDS = ["budget_usd"]
 FIELDS = ["build_route", "triangle_budget", "scale_range_m", "snap_grid_m", "palette_size", "cleanup_recipe", "gates"]
 
 
@@ -60,8 +61,10 @@ def validate() -> list[str]:
             if f not in c:
                 errs.append(p + f"missing field {f}")
         for f in c:
-            if f not in FIELDS:
+            if f not in FIELDS + OPTIONAL_FIELDS:
                 errs.append(p + f"unknown field {f}")
+        if "budget_usd" in c and not (num(c["budget_usd"]) and c["budget_usd"] >= 0):
+            errs.append(p + "budget_usd must be a non-negative number")
         if c.get("build_route") not in ROUTES:
             errs.append(p + "build_route must be image-to-3d or scripted")
         if (name == "architecture") != (c.get("build_route") == "scripted"):

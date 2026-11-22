@@ -112,3 +112,88 @@ def paid_call(m: Manifest, prov: Any, kind: str, prices: dict[str, Any], fn: Cal
 def total_usd(m: Manifest) -> float:
     """Spend so far: every entry with a USD figure except `subscription` ones (which are always 0)."""
     return round(sum(c.usd for c in m.costs if c.usd is not None and c.basis != "subscription"), 6)
+
+
+# ---- reading the ledger: `asset cost` ---------------------------------------------------------
+
+def budget_for(root: Path, m: Manifest) -> float | None:
+    """The soft budget: the manifest's own `budget_usd` if set, else the class's in classes.yaml, else none."""
+    if m.budget_usd is not None:
+        return float(m.budget_usd)
+    f = root / "assets" / "style_bible" / "classes.yaml"
+    if not f.is_file():
+        return None
+    v = (((yaml.safe_load(f.read_text()) or {}).get("classes") or {}).get(m.asset_class) or {}).get("budget_usd")
+    return float(v) if _num(v) else None
+
+
+def _bucket(entries: list[CostEntry], attr: str) -> dict[str, dict[str, Any]]:
+    out: dict[str, dict[str, Any]] = {}
+    for c in entries:
+        b = out.setdefault(getattr(c, attr), {"usd": 0.0, "count": 0, "unknown": 0})
+        b["count"] += 1
+        if c.basis == "unknown":
+            b["unknown"] += 1
+        elif c.usd is not None and c.basis != "subscription":
+            b["usd"] = round(b["usd"] + c.usd, 6)
+    return out
+
+
+def summary(root: Path, m: Manifest) -> dict[str, Any]:
+    """Spend on one asset: total, by stage and provider with counts, `reported` and `estimated` totals,
+    the `unknown` entries, and a budget warning when the total is past the soft budget."""
+    spend = [c for c in m.costs if c.basis != "subscription"]
+    by_basis = {b: round(sum(c.usd or 0.0 for c in spend if c.basis == b), 6) for b in ("reported", "estimated", "mock")}
+    unknown = [{"at": c.at, "command": c.command, "stage": c.stage, "provider": c.provider, "model": c.model,
+                "lineage": c.lineage} for c in m.costs if c.basis == "unknown"]
+    total = total_usd(m)
+    budget = budget_for(root, m)
+    out: dict[str, Any] = {"slug": m.slug, "total_usd": total, "reported_usd": by_basis["reported"],
+                           "estimated_usd": by_basis["estimated"], "entries": len(m.costs),
+                           "by_stage": _bucket(spend, "stage"), "by_provider": _bucket(spend, "provider"),
+                           "unknown": unknown, "budget_usd": budget}
+    if budget is not None and total > budget:
+        out["warning"] = f"{m.slug} has spent ${total:.2f}, over its ${budget:.2f} budget"
+    return out
+
+
+def summary_all(root: Path) -> dict[str, Any]:
+    assets = [summary(root, Manifest.load(p)) for p in sorted((root / "assets" / "models").glob("*/asset.yaml"))]
+    return {"assets": [{k: a[k] for k in ("slug", "total_usd", "reported_usd", "estimated_usd", "entries", "budget_usd")
+                        } | ({"warning": a["warning"]} if "warning" in a else {}) | {"unknown": len(a["unknown"])}
+                       for a in assets],
+            "total_usd": round(sum(a["total_usd"] for a in assets), 6),
+            "reported_usd": round(sum(a["reported_usd"] for a in assets), 6),
+            "estimated_usd": round(sum(a["estimated_usd"] for a in assets), 6),
+            "unknown": sum(len(a["unknown"]) for a in assets),
+            "warnings": [a["warning"] for a in assets if "warning" in a]}
+
+
+# ---- `--estimate`: what a command would cost, from prices.yaml and the request; calls nothing --------
+
+def unit_usd(prov: Any, kind: str, prices: dict[str, Any]) -> tuple[float | None, str]:
+    """(USD for one call, basis) from the request alone: a flat per-image, per-generation or credit price.
+    Token-priced calls (a paid prompt writer) have no flat price and are `unknown`."""
+    billing = getattr(prov, "billing", "paid")
+    if billing in ("mock", "subscription"):
+        return 0.0, billing
+    price = price_for(prices, kind, prov.name, prov.model) or {}
+    if _num(price.get("usd_per_image")) and kind == "image":
+        return float(price["usd_per_image"]), "estimated"
+    if _num(price.get("usd_per_generation")):
+        return float(price["usd_per_generation"]), "estimated"
+    if _num(price.get("credits_per_generation")) and _num(price.get("usd_per_credit")):
+        return round(price["credits_per_generation"] * price["usd_per_credit"], 6), "estimated"
+    return None, "unknown"
+
+
+def estimate(requests: list[tuple[Any, str, int]], prices: dict[str, Any]) -> dict[str, Any]:
+    """`requests` is (provider, kind, number of calls). Unknown prices are listed, never counted as zero."""
+    calls: list[dict[str, Any]] = []
+    total = 0.0
+    for prov, kind, n in requests:
+        unit, basis = unit_usd(prov, kind, prices)
+        calls.append({"kind": kind, "provider": prov.name, "model": prov.model, "count": n, "unit_usd": unit,
+                      "usd": None if unit is None else round(unit * n, 6), "basis": basis})
+        total += 0.0 if unit is None else unit * n
+    return {"usd": round(total, 6), "calls": calls, "unknown": [c for c in calls if c["basis"] == "unknown"]}

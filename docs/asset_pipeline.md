@@ -16,7 +16,7 @@ Needs a mesh that passed `asset check`. Writes to `assets/models/<slug>/`: `<slu
 
 ## Cost ledger
 
-The manifest's append-only `costs` list records every paid backend call (units, USD, basis, the unit price used); prices live in `tools/asset_pipeline/prices.yaml`. Image, prompt-writer and 3D (`to3d`, one entry per bake-off provider) calls are all recorded. Godot-side code does not read it yet. See the backend README for the entry fields and bases.
+The manifest's append-only `costs` list records every paid backend call (units, USD, basis, the unit price used); prices live in `tools/asset_pipeline/prices.yaml`. Image, prompt-writer and 3D (`to3d`, one entry per bake-off provider) calls are all recorded. `asset cost <slug>` and `asset cost --all` summarise it, `--estimate` on a paid command prices it without calling anything, and an optional soft `budget_usd` (per class in `classes.yaml`, overridable in the manifest) makes `asset cost` warn without blocking. Godot-side code does not read it yet. See the backend README for the entry fields and bases.
 
 ## Repo gates (`tools/check.sh`)
 

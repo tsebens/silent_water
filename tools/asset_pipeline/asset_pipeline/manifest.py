@@ -147,6 +147,8 @@ class Manifest:
     exports: list[ExportRecord] = field(default_factory=list)
     # The cost ledger (see cost.py): append-only, so reject, delete and regenerate never remove entries.
     costs: list[CostRecord] = field(default_factory=list)
+    # Soft budget in USD for this asset; overrides the class's `budget_usd` in classes.yaml. Warns, never blocks.
+    budget_usd: float | None = None
 
     def entry(self, entry_id: str) -> LineageEntry:
         for e in self.lineage:
@@ -213,6 +215,7 @@ class Manifest:
             godot_checks=[GodotCheckRecord(**x) for x in d.get("godot_checks") or []],
             exports=[ExportRecord(**x) for x in d.get("exports") or []],
             costs=[CostRecord(**x) for x in d.get("costs") or []],
+            budget_usd=d.get("budget_usd"),
         )
 
     def save(self, path: Path) -> None:
