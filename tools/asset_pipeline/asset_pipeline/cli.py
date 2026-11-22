@@ -5,6 +5,7 @@ import argparse
 import getpass
 import json
 import os
+import shutil
 import sys
 import time
 from pathlib import Path
@@ -12,8 +13,9 @@ from typing import Any
 
 import yaml
 
-from . import check, cleanup, doctor, paths, providers
-from .manifest import CLASSES, DECISIONS, BriefRecord, CheckRecord, CleanupRecord, LineageEntry, Manifest
+from . import check, cleanup, doctor, godot_stage, paths, providers
+from .manifest import (CLASSES, DECISIONS, BriefRecord, CheckRecord, CleanupRecord, ExportRecord, GodotCheckRecord,
+                       LineageEntry, Manifest)
 from .writers import PromptWriterError
 
 VIEWS = ("front", "left", "back", "right")
@@ -316,6 +318,86 @@ def cmd_check(args: argparse.Namespace, root: Path) -> dict[str, Any]:
             "gates": {g["name"]: g["value"] for g in gates}}
 
 
+def _pick_mesh(m: Manifest, source: str | None) -> LineageEntry:
+    """The mesh to import or export: --source, else the latest cleanup."""
+    if source:
+        src = m.entry(source)
+    elif m.cleanups:
+        src = m.entry(m.cleanups[-1].id)
+    else:
+        raise ValueError("nothing to use: run `asset cleanup` first, or pass --source <mesh id>")
+    if src.kind != "mesh":
+        raise ValueError(f"{src.id!r} is a {src.kind}, this needs a mesh")
+    return src
+
+
+def cmd_godot_check(args: argparse.Namespace, root: Path) -> dict[str, Any]:
+    """Import the cleaned GLB headless through the shared post-import script, check the vertex-colour material flag,
+    and render it in game lighting (fog; white light; red light) into the log dir."""
+    mpath = paths.manifest_path(root, args.slug)
+    m = Manifest.load(mpath)
+    src = _pick_mesh(m, args.source)
+    log_dir = Path(args.log_dir or os.environ.get("LOG_DIR") or root / "logs").resolve()
+    res = godot_stage.godot_check(root, m.slug, abspath(root, src.path), log_dir, render=not args.no_render)
+    m.godot_checks.append(GodotCheckRecord(id=src.id, ok=res["ok"], material=res["material"],
+                                           renders=res["renders"], error=res.get("render_error", "")))
+    m.save(mpath)
+    return {"ok": res["ok"], "slug": m.slug, "stage": m.stage, "id": src.id, "log_dir": str(log_dir),
+            **{k: v for k, v in res.items() if k != "ok"}}
+
+
+def cmd_export(args: argparse.Namespace, root: Path) -> dict[str, Any]:
+    """Write the committed deliverable into assets/models/<slug>/: <slug>.glb (+ its import settings), <slug>.tscn,
+    concept/ (with .gdignore; images at most 2048 px) and asset.yaml. Needs a mesh that passed `check`."""
+    mpath = paths.manifest_path(root, args.slug)
+    m = Manifest.load(mpath)
+    src = _pick_mesh(m, args.source)
+    gate = next((c for c in reversed(m.checks) if c.id == src.id), None)
+    if gate is None or not gate.ok:
+        why = "never checked" if gate is None else "failed: " + ", ".join(gate.failed)
+        raise ValueError(f"{src.id!r} has not passed `asset check` ({why})")
+    out = paths.asset_dir(root, m.slug)
+    files: set[str] = set()
+
+    def put(p: Path) -> None:
+        files.add(str(p.relative_to(root)))
+
+    glb = out / f"{m.slug}.glb"
+    shutil.copy(abspath(root, src.path), glb)
+    put(glb)
+    imp = out / f"{m.slug}.glb.import"
+    imp.write_text(godot_stage.import_stub(f"res://assets/models/{m.slug}", m.slug))
+    put(imp)
+    scene = out / f"{m.slug}.tscn"
+    scene.write_text(godot_stage.tscn(m.slug))
+    put(scene)
+    concept = out / "concept"
+    concept.mkdir(parents=True, exist_ok=True)
+    (concept / ".gdignore").write_text("")
+    put(concept / ".gdignore")
+    resized: list[str] = []
+    if m.locked is not None:
+        lp = abspath(root, m.entry(m.locked.variant).path)
+        dst = concept / f"locked{lp.suffix.lower()}"
+        if godot_stage.downscale_png(lp, dst):
+            resized.append(str(dst.relative_to(root)))
+        put(dst)
+    for e in m.lineage:
+        if e.kind == "turnaround":
+            f = abspath(root, e.path)
+            if godot_stage.shrink_in_place(f):
+                resized.append(e.path)
+            put(f)
+    if m.brief is not None and abspath(root, m.brief.path).is_file():
+        put(abspath(root, m.brief.path))
+    m.exports.append(ExportRecord(id=src.id, files=sorted(files), commit=cleanup.code_commit(root)))
+    m.stage = "exported"
+    m.save(mpath)
+    put(mpath)
+    return {"slug": m.slug, "stage": m.stage, "id": src.id, "dir": str(out.relative_to(root)),
+            "files": sorted(files), "resized": resized}
+
+
 def _latest_turnaround(m: Manifest) -> str:
     ids = [e.id for e in m.lineage if e.kind == "turnaround"]
     if not ids:
@@ -402,6 +484,16 @@ def build_parser() -> argparse.ArgumentParser:
     ck.add_argument("--size-m", type=float, default=None, help="largest dimension in metres (default: brief.md size_m, else class range)")
     ck.add_argument("--triangle-budget", type=int, default=None, help="override the class profile's budget")
     ck.set_defaults(fn=cmd_check)
+    gc = sub.add_parser("godot-check", help="import the cleaned GLB in Godot and render it in game lighting")
+    gc.add_argument("slug")
+    gc.add_argument("--source", default=None, metavar="MESH", help="mesh id (default: the latest cleanup)")
+    gc.add_argument("--log-dir", default=None, help="where the renders and Godot logs go (default: $LOG_DIR, else ./logs)")
+    gc.add_argument("--no-render", action="store_true", help="import and verify only; skip the renders")
+    gc.set_defaults(fn=cmd_godot_check)
+    ex = sub.add_parser("export", help="write the deliverable into assets/models/<slug>/")
+    ex.add_argument("slug")
+    ex.add_argument("--source", default=None, metavar="MESH", help="mesh id (default: the latest cleanup)")
+    ex.set_defaults(fn=cmd_export)
     return p
 
 
