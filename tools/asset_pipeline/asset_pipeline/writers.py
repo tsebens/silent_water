@@ -65,6 +65,25 @@ def parse_prompts(text: str, n: int) -> list[str]:
     return [x.strip() for x in arr[:n]]
 
 
+def _cli_failure(stdout: str, stderr: str) -> str:
+    """The useful part of a failed `claude -p` run.
+
+    With `--output-format json` the CLI prints a usage block first and its error message in
+    `result` (or `errors`) at the end, so truncating the raw output hides the cause. Prefer
+    those fields, then stderr, then the tail of stdout.
+    """
+    try:
+        out = json.loads(stdout)
+    except (json.JSONDecodeError, TypeError):
+        out = None
+    if isinstance(out, dict):
+        parts = [str(out[k]) for k in ("result", "errors", "subtype") if out.get(k)]
+        if parts:
+            return " | ".join(parts)[:800]
+    text = (stderr or "").strip() or (stdout or "").strip()
+    return text[-800:] if text else "no output"
+
+
 class ClaudeCliWriter(PromptWriter):
     """`claude -p <prompt> --output-format json`, with read access to the images' folders."""
     name = "claude-cli"
@@ -94,7 +113,7 @@ class ClaudeCliWriter(PromptWriter):
         except subprocess.TimeoutExpired as e:
             raise PromptWriterError(f"claude CLI timed out after {self.timeout}s") from e
         if proc.returncode != 0:
-            raise PromptWriterError(f"claude CLI exited {proc.returncode}: {(proc.stderr or proc.stdout).strip()[:500]}")
+            raise PromptWriterError(f"claude CLI exited {proc.returncode}: {_cli_failure(proc.stdout, proc.stderr)}")
         try:
             out = json.loads(proc.stdout)
         except json.JSONDecodeError as e:
