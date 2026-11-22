@@ -7,6 +7,7 @@ import pytest
 
 from asset_pipeline import cli, doctor, paths, providers
 from asset_pipeline.adapters._net import ImageProviderError
+from asset_pipeline.adapters._net import data_uri as _net_data_uri
 from asset_pipeline.adapters.fal_trellis import FalTrellis
 from asset_pipeline.adapters.meshy_3d import MeshyThreeD
 from asset_pipeline.adapters.rodin_3d import RodinThreeD
@@ -171,7 +172,22 @@ def test_trellis_submit_poll_download(server, tmp_path, monkeypatch, views):
     job, states, out = run_job(FalTrellis(base_url=server), views, tmp_path / "t.glb", 3)
     assert job == "fal-req-1" and states == ["pending", "running", "done"] and out.read_bytes() == GLB
     assert Routes.seen[0]["headers"]["authorization"] == "Key fk"
-    assert len(json.loads(Routes.seen[0]["body"])["image_urls"]) == 4
+    body = json.loads(Routes.seen[0]["body"])
+    # fal-ai/trellis-2 takes one image: the front view, as image_url (a 4-view image_urls body is a 422)
+    assert set(body) == {"image_url"} and body["image_url"] == _net_data_uri(views[0])
+
+
+def test_trellis_multi_input_sends_every_view(server, tmp_path, monkeypatch, views):
+    monkeypatch.setenv("FAL_KEY", "fk")
+    Routes.routes = {("POST", "/fal-ai/trellis-multi"): ["trellis_submit.json"]}
+    FalTrellis(model="fal-ai/trellis-multi", base_url=server, input="multi").submit(views)
+    body = json.loads(Routes.seen[-1]["body"])
+    assert set(body) == {"image_urls"} and len(body["image_urls"]) == 4
+
+
+def test_trellis_rejects_unknown_input_mode():
+    with pytest.raises(ValueError, match="single' or 'multi"):
+        FalTrellis(input="both")
 
 
 def test_trellis_error_and_missing_key(server, monkeypatch, views, tmp_path):

@@ -1,4 +1,9 @@
-"""TRELLIS.2 (or any multi-image-to-3D endpoint) on fal.ai's queue API: the model is the endpoint id."""
+"""TRELLIS.2 (or another image-to-3D endpoint) on fal.ai's queue API: the model is the endpoint id.
+
+`input` says what the endpoint takes: `single` sends the front view as `image_url` (fal-ai/trellis-2
+accepts one image and rejects `image_urls` with a 422), `multi` sends every view as `image_urls`
+for endpoints that take several images.
+"""
 from __future__ import annotations
 
 import json
@@ -17,9 +22,11 @@ class FalTrellis(HostedThreeD):
     env_key = "FAL_KEY"
 
     def __init__(self, model: str = "fal-ai/trellis-2", base_url: str = "https://queue.fal.run",
-                 timeout: int = 300) -> None:
+                 timeout: int = 300, input: str = "single") -> None:
         super().__init__()
-        self.model, self.base_url, self.timeout = model, base_url.rstrip("/"), timeout
+        if input not in ("single", "multi"):
+            raise ValueError(f"trellis: input must be 'single' or 'multi', not {input!r}")
+        self.model, self.base_url, self.timeout, self.input = model, base_url.rstrip("/"), timeout, input
 
     def _auth(self) -> dict[str, str]:
         return {"authorization": f"Key {self._key()}"}
@@ -41,7 +48,10 @@ class FalTrellis(HostedThreeD):
 
     def submit(self, views: list[Path]) -> str:
         self._check_views(views)
-        payload = {"image_urls": [_net.data_uri(v) for v in views]}
+        if self.input == "single":
+            payload: dict = {"image_url": _net.data_uri(views[0])}  # views arrive front, left, back, right
+        else:
+            payload = {"image_urls": [_net.data_uri(v) for v in views]}
         reply = _net.post_json("trellis", f"{self.base_url}/{self.model}", self._auth(), payload, self.timeout)
         rid = reply.get("request_id") if isinstance(reply, dict) else None
         if not rid:
