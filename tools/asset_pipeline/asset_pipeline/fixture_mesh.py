@@ -77,8 +77,8 @@ def write_glb(path: Path, pos, col, idx) -> None:
                      + struct.pack("<I4s", len(blob), b"BIN\0") + blob)
 
 
-def read_glb(path: Path) -> dict:
-    """Read a GLB: {prims: [{positions, colours, triangles}], nodes} (independent of Blender, used by tests)."""
+def glb_document(path: Path):
+    """Parse a GLB: (glTF JSON document, accessor reader `acc(i) -> list of tuples`)."""
     data = path.read_bytes()
     jlen = struct.unpack_from("<I", data, 12)[0]
     doc = json.loads(data[20:20 + jlen])
@@ -105,6 +105,12 @@ def read_glb(path: Path) -> dict:
             out.append(v)
         return out
 
+    return doc, acc
+
+
+def read_glb(path: Path) -> dict:
+    """Read a GLB: {prims: [{positions, colours, triangles}], nodes} (independent of Blender, used by tests)."""
+    doc, acc = glb_document(path)
     prims = []
     for mesh in doc["meshes"]:
         for prim in mesh["primitives"]:
