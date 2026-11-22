@@ -54,4 +54,7 @@ step autotest $rc
 
 python3 tools/validate_style_bible.py >"$LOG_DIR/style_bible.log" 2>&1; step style_bible $?
 
+python3 tools/check_asset_sizes.py >"$LOG_DIR/asset_sizes.log" 2>&1; step asset_sizes $?
+python3 tools/check_export_presets.py >"$LOG_DIR/export_presets.log" 2>&1; step export_presets $?
+
 exit $status

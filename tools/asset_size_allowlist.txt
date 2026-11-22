@@ -1,0 +1,7 @@
+# Files over 5 MB that were already committed when the size check was added (#231). Do not add to this list;
+# shrink the file instead. Remove an entry when its file is removed or shrunk.
+assets/media/sub/Assembly 1.gltf
+assets/media/sub/Assembly 1.zip
+assets/media/sub/assembly/Assembly 1 - Deck.gltf
+assets/media/sub/assembly/Assembly 1 - Front Window.gltf
+assets/media/sub/assembly/Assembly 1 - Shell.gltf

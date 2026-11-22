@@ -77,6 +77,26 @@ class CheckRecord:
 
 
 @dataclass
+class GodotCheckRecord:
+    """One `godot-check` run: the mesh imported, the material check and where the game-lighting renders went."""
+    id: str  # the imported mesh's lineage id
+    ok: bool
+    material: dict[str, Any] = field(default_factory=dict)
+    renders: list[str] = field(default_factory=list)
+    error: str = ""
+    at: str = field(default_factory=now)
+
+
+@dataclass
+class ExportRecord:
+    """One `export`: which mesh became the deliverable, and the files written (repo-relative)."""
+    id: str
+    files: list[str] = field(default_factory=list)
+    commit: str = ""
+    at: str = field(default_factory=now)
+
+
+@dataclass
 class Manifest:
     slug: str
     asset_class: str
@@ -91,6 +111,8 @@ class Manifest:
     brief: BriefRecord | None = None
     cleanups: list[CleanupRecord] = field(default_factory=list)
     checks: list[CheckRecord] = field(default_factory=list)
+    godot_checks: list[GodotCheckRecord] = field(default_factory=list)
+    exports: list[ExportRecord] = field(default_factory=list)
 
     def entry(self, entry_id: str) -> LineageEntry:
         for e in self.lineage:
@@ -153,6 +175,8 @@ class Manifest:
             brief=BriefRecord(**d["brief"]) if d.get("brief") else None,
             cleanups=[CleanupRecord(**x) for x in d.get("cleanups") or []],
             checks=[CheckRecord(**x) for x in d.get("checks") or []],
+            godot_checks=[GodotCheckRecord(**x) for x in d.get("godot_checks") or []],
+            exports=[ExportRecord(**x) for x in d.get("exports") or []],
         )
 
     def save(self, path: Path) -> None:
