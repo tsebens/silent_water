@@ -270,6 +270,9 @@ Low-poly models with crisp, clean rendering. No grain, static, dither or fuzzy f
 - **Engine:** Godot 4, the latest stable release when work starts. That was 4.7 at last check, with 4.8 in development ([GameDev.net](https://gamedev.net/news/4477/)).
 - **Language: typed GDScript everywhere,** with type hints on every variable and function. GodotSteam has no official C# build; C# support goes through a community bindings project in open beta ([GodotSteam docs](https://godotsteam.pages.dev/getting_started/what_are_you_making)). Rewrite isolated hot spots later only if profiling demands it.
 - **Platform:** PC on Steam. Being Steam-only is fine.
+- **Python tools exception (#220):** game code and the Godot editor plugin are typed GDScript, but tooling under `tools/` may be Python, run with `uv`.
+- **Asset pipeline:** `tools/asset_pipeline/` is a Python backend (`uv run asset <command>`) that takes an asset from concept art to a game-ready model: one command per stage, a manifest (`assets/models/<slug>/asset.yaml`) with provenance and lineage, and image, 3D and prompt-writer providers selected in `providers.yaml`. A Godot editor plugin (`addons/asset_studio/`) is its interface. Rejected variants and raw provider meshes stay in the git-ignored `.asset_work/`.
+- **Export:** the Asset Studio plugin and the Python backend are development tools and are excluded from game exports.
 
 ### Networking
 

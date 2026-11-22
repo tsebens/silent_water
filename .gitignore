@@ -2,3 +2,8 @@
 *.import.tmp
 /build/
 /logs/
+/.asset_work/
+/tools/asset_pipeline/.env
+/tools/asset_pipeline/.venv/
+__pycache__/
+.pytest_cache/

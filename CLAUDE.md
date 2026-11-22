@@ -33,7 +33,8 @@ Agents with a specific role follow their role doc in addition to this file:
 ## Tech
 
 - **Engine:** Godot 4.7.2. The cloud environment's setup script installs it as `godot` on `PATH`. Run headless with `godot --headless`.
-- **Language:** typed GDScript everywhere, with type hints on every variable, parameter and return.
+- **Language:** typed GDScript everywhere, with type hints on every variable, parameter and return. The one exception is tooling under `tools/` (the asset pipeline backend in `tools/asset_pipeline/`, run with `uv`), which may be Python; game code and the Godot editor plugin stay GDScript (#220).
+- **Asset pipeline:** `uv run asset <command>` in `tools/asset_pipeline/` (tests: `uv run pytest`). Keys live in the git-ignored `tools/asset_pipeline/.env`; scratch meshes and rejected variants in the git-ignored `.asset_work/`.
 - **Networking:** listen server, host-authoritative. ENet locally now, GodotSteam later. Create the peer in exactly one function.
 - **Sub frame:** the interior is a still scene. The hull and world move outside. Sync player positions in sub-local space.
 
