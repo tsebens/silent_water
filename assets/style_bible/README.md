@@ -4,10 +4,15 @@ Input to the asset pipeline (concept #222). Seeded from `docs/art_direction.md`,
 
 | File | Purpose |
 | --- | --- |
-| `style.md` | Canonical prompt block, prepended to every concept prompt |
-| `negative.md` | Negative prompt block, appended to every concept prompt |
+| `style.md` | Shared style block, true for every class, prepended to every prompt |
+| `negative.md` | Shared negative list, true for every class, appended to every prompt |
+| `classes/<class>.md` | Per-class `## Style` and `## Avoid` sections (below) |
 | `anchors/<class>/` | Approved anchor images (2-4 per class), passed as references on every concept call. Empty until Tristan approves some |
 | `classes.yaml` | Per-class profile (below) |
+
+## Class files
+
+`classes/<class>.md` exists for each class in `classes.yaml` and has two sections, `## Style` (prose) and `## Avoid` (a bullet list). `concept`, `turnaround` and `brief` use the asset's class and assemble the prompt as: shared style, class style, the prompt writer's text, shared negative, class negative. The shared files hold only what applies to every class; anything specific to one class goes in its file. `tools/validate_style_bible.py` fails when a class file or either section is missing.
 
 ## `classes.yaml` format
 

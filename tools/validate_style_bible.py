@@ -16,6 +16,22 @@ def num(v) -> bool:
     return isinstance(v, (int, float)) and not isinstance(v, bool)
 
 
+def class_file_errors(name: str) -> list[str]:
+    f = ROOT / "classes" / f"{name}.md"
+    if not f.is_file():
+        return [f"classes/{name}.md missing"]
+    headings: dict[str, list[str]] = {}
+    cur = None
+    for line in f.read_text().splitlines():
+        if line.startswith("## "):
+            cur = line[3:].strip()
+            headings[cur] = []
+        elif cur is not None:
+            headings[cur].append(line)
+    return [f"classes/{name}.md: missing or empty ## {h} section"
+            for h in ("Style", "Avoid") if not "".join(headings.get(h, [])).strip()]
+
+
 def validate() -> list[str]:
     errs: list[str] = []
     for f in ["style.md", "negative.md", "classes.yaml"]:
@@ -27,6 +43,8 @@ def validate() -> list[str]:
             errs.append(f"anchors/{c}/ missing")
     if errs:
         return errs
+    for c in CLASSES:
+        errs += class_file_errors(c)
     data = yaml.safe_load((ROOT / "classes.yaml").read_text())
     classes = (data or {}).get("classes")
     if not isinstance(classes, dict):

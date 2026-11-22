@@ -116,3 +116,44 @@ def test_turnaround_single_view(root, capsys):
     assert code == 0
     with pytest.raises(SystemExit):
         run(capsys, "turnaround", "angler", "--view", "top")
+
+
+def test_prompt_uses_asset_class_blocks(root, capsys):
+    sb = root / "assets" / "style_bible"
+    (sb / "classes").mkdir(parents=True)
+    (sb / "style.md").write_text("SHARED STYLE")
+    (sb / "negative.md").write_text("- shared bad")
+    classes = ["creature", "prop", "terrain", "architecture"]
+    for c in classes:
+        (sb / "classes" / f"{c}.md").write_text(f"## Style\n{c.upper()} STYLE\n\n## Avoid\n- {c} bad\n")
+    for c in classes:
+        run(capsys, "new", f"a_{c}", "--class", c)
+        code, _ = run(capsys, "concept", f"a_{c}", "--brief", "b")
+        assert code == 0
+        run(capsys, "lock", f"a_{c}", "v1", "--reviewer", "t")
+        code, _ = run(capsys, "turnaround", f"a_{c}")
+        assert code == 0
+        m = Manifest.load(paths.manifest_path(root, f"a_{c}"))
+        for e in m.lineage:
+            if e.kind not in ("concept", "turnaround"):
+                continue
+            assert e.prompt.startswith(f"SHARED STYLE\n\n{c.upper()} STYLE")
+            assert "- shared bad" in e.prompt and f"- {c} bad" in e.prompt
+            assert e.prompt.index("- shared bad") < e.prompt.index(f"- {c} bad")
+            for other in classes:
+                if other != c:
+                    assert other.upper() + " STYLE" not in e.prompt and f"- {other} bad" not in e.prompt
+
+
+def test_brief_context_carries_class_style(root, capsys, monkeypatch):
+    seed(root, capsys)
+    (root / "assets" / "style_bible" / "classes").mkdir()
+    (root / "assets" / "style_bible" / "classes" / "creature.md").write_text("## Style\nCREATURE STYLE\n\n## Avoid\n- x\n")
+    run(capsys, "concept", "angler", "--brief", "b")
+    run(capsys, "lock", "angler", "v1", "--reviewer", "t")
+    run(capsys, "turnaround", "angler")
+    from asset_pipeline import providers
+    seen = []
+    monkeypatch.setattr(providers.MockPromptWriter, "write_brief", lambda self, ctx, imgs: seen.append(ctx) or "# B")
+    code, _ = run(capsys, "brief", "angler")
+    assert code == 0 and "CREATURE STYLE" in seen[0]
