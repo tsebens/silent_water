@@ -340,3 +340,9 @@ func test_panel_shows_turnaround_and_model_tabs() -> void:
 	expect(panel._gate_text.get_parsed_text().contains("FAIL"))
 	expect_eq(panel._tabs.get_tab_count(), 3)
 	panel.queue_free()
+
+
+func test_project_path_joins_posix_manifest_path() -> void:
+	expect(AssetBackendResult.project_path("C:/games/silent_water", "assets/models/a/concept/v1.png") == "C:/games/silent_water/assets/models/a/concept/v1.png")
+	expect(AssetBackendResult.project_path("/home/u/sw/", "assets/models/a/brief.md") == "/home/u/sw/assets/models/a/brief.md")
+	expect(AssetBackendResult.project_path("C:/sw", "assets\\models\\a.glb") == "C:/sw/assets/models/a.glb")

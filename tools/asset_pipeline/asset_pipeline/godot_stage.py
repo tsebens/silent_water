@@ -178,7 +178,7 @@ def tscn(slug: str) -> str:
 
 
 def oversize(root: Path, limit: int = MAX_FILE_BYTES) -> list[str]:
-    return [str(p.relative_to(root)) for p in sorted((root / "assets").rglob("*")) if p.is_file() and p.stat().st_size > limit]
+    return [p.relative_to(root).as_posix() for p in sorted((root / "assets").rglob("*")) if p.is_file() and p.stat().st_size > limit]
 
 
 def shrink_in_place(path: Path, max_px: int = MAX_CONCEPT_PX) -> bool:

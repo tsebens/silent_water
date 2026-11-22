@@ -64,3 +64,16 @@ jobs:
 
           Run: ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID} (head ${HEAD_SHA}). The development role takes it from here in rework mode; Godot output is in the run's \`godot-logs\` artifact."
           gh pr edit "$PR" --repo "$GITHUB_REPOSITORY" --add-label changes-requested
+
+  # Manifest and report paths must be forward-slash on Windows too. Needs neither Godot nor Blender.
+  windows-paths:
+    runs-on: windows-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+      - name: POSIX path test
+        working-directory: tools/asset_pipeline
+        run: uv run pytest -q tests/test_posix_paths.py

@@ -18,6 +18,21 @@ def now() -> str:
     return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
+_PATH_KEYS = frozenset({"path", "report"})
+_PATH_LIST_KEYS = frozenset({"references", "images", "renders", "files"})
+
+
+def _normalise_paths(node: Any, key: str = "") -> Any:
+    """Stored paths use forward slashes; a manifest written with backslashes is rewritten on load."""
+    if isinstance(node, dict):
+        return {k: _normalise_paths(v, k) for k, v in node.items()}
+    if isinstance(node, list):
+        return [_normalise_paths(v, key) for v in node]
+    if isinstance(node, str) and (key in _PATH_KEYS or key in _PATH_LIST_KEYS):
+        return node.replace("\\", "/")
+    return node
+
+
 @dataclass
 class LineageEntry:
     """One generated artifact. `parent` is the id of the entry it was derived from (refine, edit)."""
@@ -161,6 +176,7 @@ class Manifest:
 
     @classmethod
     def from_dict(cls, d: dict[str, Any]) -> "Manifest":
+        d = _normalise_paths(d)
         lock = d.get("locked")
         return cls(
             slug=d["slug"],

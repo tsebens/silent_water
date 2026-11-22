@@ -37,3 +37,9 @@ def work_dir(root: Path, slug: str) -> Path:
 
 def manifest_path(root: Path, slug: str) -> Path:
     return asset_dir(root, slug) / "asset.yaml"
+
+
+def posix_rel(root: Path, p: Path) -> str:
+    """`p` relative to `root`, forward slashes on every OS: the one form stored or printed."""
+    return p.relative_to(root).as_posix()
+

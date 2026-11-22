@@ -248,8 +248,8 @@ def clean_env(monkeypatch, tmp_path):
         monkeypatch.delenv(k, raising=False)
     fake = tmp_path / "bin"
     fake.mkdir()
-    for n in ("blender", "godot", "claude"):
-        (fake / n).write_text("#!/bin/sh\n")
+    for n, out in (("blender", "Blender 4.5.3 LTS"), ("godot", "4.7.2.stable.official.deadbeef"), ("claude", "")):
+        (fake / n).write_text(f"#!/bin/sh\necho '{out}'\n")
         (fake / n).chmod(0o755)
     monkeypatch.setenv("PATH", str(fake))
     for k in ("ASSET_BLENDER_BIN", "GODOT", "ASSET_CLAUDE_BIN"):
@@ -264,6 +264,26 @@ def test_doctor_reports_pass_and_fail_with_reasons(clean_env, monkeypatch):
     assert not c["blender"]["ok"] and "ASSET_BLENDER_BIN" in c["blender"]["detail"]
     assert not c["godot"]["ok"] and "GODOT" in c["godot"]["detail"]
     assert c["image:openai key"]["detail"] == "OPENAI_API_KEY is not set"
+
+
+def _stub(tmp_path, monkeypatch, blender, godot):
+    for n, out in (("blender", blender), ("godot", godot)):
+        (tmp_path / "bin" / n).write_text(f"#!/bin/sh\necho '{out}'\n")
+
+
+def test_doctor_checks_tool_versions(clean_env, tmp_path, monkeypatch):
+    _stub(tmp_path, monkeypatch, "Blender 4.2.1 LTS", "4.7.2.stable.mono.official.deadbeef")
+    r = doctor.run(providers.load_config())
+    c = checks(r)
+    assert r["ok"] is False
+    assert not c["blender"]["ok"] and "Blender 4.2.1" in c["blender"]["detail"] and "Blender 4.5.x" in c["blender"]["detail"]
+    assert not c["godot"]["ok"] and "mono" in c["godot"]["detail"] and "4.7.2 standard" in c["godot"]["detail"]
+    _stub(tmp_path, monkeypatch, "Blender 4.5.0 LTS", "4.6.0.stable.official.deadbeef")
+    c = checks(doctor.run(providers.load_config()))
+    assert not c["godot"]["ok"] and "4.6.0" in c["godot"]["detail"] and "4.7.2" in c["godot"]["detail"]
+    _stub(tmp_path, monkeypatch, "Blender 4.5.0 LTS", "4.7.2.stable.official.deadbeef")
+    r = doctor.run(providers.load_config())
+    assert r["ok"] is True
 
 
 def test_doctor_all_green_and_only_selected_required(clean_env):

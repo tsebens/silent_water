@@ -95,10 +95,10 @@ def cmd_concept(args: argparse.Namespace, root: Path) -> dict[str, Any]:
         prompt = full_prompt(root, body)
         rel = (out_dir / f"{vid}.png").relative_to(root)
         img.generate(prompt, refs, root / rel)
-        m.add(LineageEntry(id=vid, kind="concept", path=str(rel), provider=img.name, model=img.model,
+        m.add(LineageEntry(id=vid, kind="concept", path=rel.as_posix(), provider=img.name, model=img.model,
                            prompt=prompt, parent=parent.id if parent else None,
                            writer=f"{writer.name}:{writer.model}", references=[_rel(root, r) for r in refs]))
-        made.append({"id": vid, "path": str(rel), "parent": parent.id if parent else None})
+        made.append({"id": vid, "path": rel.as_posix(), "parent": parent.id if parent else None})
     if m.stage in ("new", "concept"):
         m.stage = "concept"
     m.save(mpath)
@@ -108,7 +108,7 @@ def cmd_concept(args: argparse.Namespace, root: Path) -> dict[str, Any]:
 
 def _rel(root: Path, p: Path) -> str:
     try:
-        return str(p.resolve().relative_to(root.resolve()))
+        return p.resolve().relative_to(root.resolve()).as_posix()
     except ValueError:
         return str(p)
 
@@ -145,10 +145,10 @@ def cmd_turnaround(args: argparse.Namespace, root: Path) -> dict[str, Any]:
             rel = (out_dir / f"turnaround_t{n}_{view}.png").relative_to(root)
             shutil.copyfile(abspath(root, old_e.path), root / rel)
             eid = f"t{n}_{view}"
-            m.add(LineageEntry(id=eid, kind="turnaround", path=str(rel), provider=old_e.provider,
+            m.add(LineageEntry(id=eid, kind="turnaround", path=rel.as_posix(), provider=old_e.provider,
                                model=old_e.model, prompt=old_e.prompt, parent=old_e.parent,
                                references=list(old_e.references)))
-            views.append({"id": eid, "view": view, "path": str(rel), "parent": old_e.parent, "carried_from": old_e.id})
+            views.append({"id": eid, "view": view, "path": rel.as_posix(), "parent": old_e.parent, "carried_from": old_e.id})
             continue
         body = (f"Orthographic {view} view of this exact asset, flat neutral lighting, no perspective, "
                 f"centred, on a transparent or plain removed background, {TURNAROUND_PX}x{TURNAROUND_PX} px. "
@@ -157,9 +157,9 @@ def cmd_turnaround(args: argparse.Namespace, root: Path) -> dict[str, Any]:
         rel = (out_dir / f"turnaround_t{n}_{view}.png").relative_to(root)
         img.edit(prompt, src_path, [], root / rel)
         eid = f"t{n}_{view}"
-        m.add(LineageEntry(id=eid, kind="turnaround", path=str(rel), provider=img.name, model=img.model,
+        m.add(LineageEntry(id=eid, kind="turnaround", path=rel.as_posix(), provider=img.name, model=img.model,
                            prompt=prompt, parent=src.id, references=[src.path]))
-        views.append({"id": eid, "view": view, "path": str(rel), "parent": src.id})
+        views.append({"id": eid, "view": view, "path": rel.as_posix(), "parent": src.id})
     if m.stage in ("new", "concept", "locked", "turnaround"):
         m.stage = "turnaround"
     m.save(mpath)
@@ -189,12 +189,12 @@ def cmd_brief(args: argparse.Namespace, root: Path) -> dict[str, Any]:
     out.parent.mkdir(parents=True, exist_ok=True)
     (out.parent / ".gdignore").touch()
     out.write_text(text)
-    m.brief = BriefRecord(path=str(out.relative_to(root)), writer=writer.name, model=writer.model,
+    m.brief = BriefRecord(path=paths.posix_rel(root, out), writer=writer.name, model=writer.model,
                           images=[_rel(root, i) for i in images])
     if m.stage in ("new", "concept", "locked", "turnaround", "brief"):
         m.stage = "brief"
     m.save(mpath)
-    return {"slug": m.slug, "stage": m.stage, "brief": str(out.relative_to(root)),
+    return {"slug": m.slug, "stage": m.stage, "brief": paths.posix_rel(root, out),
             "prompt_writer": f"{writer.name}:{writer.model}"}
 
 
@@ -245,10 +245,10 @@ def cmd_to3d(args: argparse.Namespace, root: Path) -> dict[str, Any]:
         except (ValueError, OSError) as e:
             errors.append({"provider": prov.name, "error": str(e)})
             continue
-        m.add(LineageEntry(id=rid, kind="mesh", path=str(rel), provider=prov.name, model=prov.model,
+        m.add(LineageEntry(id=rid, kind="mesh", path=rel.as_posix(), provider=prov.name, model=prov.model,
                            parent=ordered[0].id, references=[e.path for e in ordered], task_id=job))
         m.save(mpath)  # per run, so a later provider's crash keeps this one
-        runs.append({"id": rid, "provider": prov.name, "model": prov.model, "task_id": job, "path": str(rel)})
+        runs.append({"id": rid, "provider": prov.name, "model": prov.model, "task_id": job, "path": rel.as_posix()})
     if runs and m.stage in ("new", "concept", "locked", "turnaround", "brief", "to3d"):
         m.stage = "to3d"
         m.save(mpath)
@@ -285,7 +285,7 @@ def cmd_cleanup(args: argparse.Namespace, root: Path) -> dict[str, Any]:
               "max_loose_parts": profile["gates"]["max_loose_parts"]}
     (root / rel).parent.mkdir(parents=True, exist_ok=True)
     result = cleanup.run_blender(params, root / rel.parent)
-    m.add(LineageEntry(id=cid, kind="mesh", path=str(rel), provider="blender",
+    m.add(LineageEntry(id=cid, kind="mesh", path=rel.as_posix(), provider="blender",
                        model=result.get("blender_version", ""), parent=src.id))
     recorded = {k2: v for k2, v in params.items() if k2 in ("triangle_budget", "size_m", "palette_size", "snap_grid_m")}
     recorded["size_from"] = size_from
@@ -294,7 +294,7 @@ def cmd_cleanup(args: argparse.Namespace, root: Path) -> dict[str, Any]:
                                     blender=result.get("blender_version", ""), result=result))
     m.stage = "cleanup"
     m.save(mpath)
-    return {"slug": m.slug, "stage": m.stage, "id": cid, "source": src.id, "path": str(rel), "recipe": recipe,
+    return {"slug": m.slug, "stage": m.stage, "id": cid, "source": src.id, "path": rel.as_posix(), "recipe": recipe,
             "triangle_budget": budget, "result": result}
 
 
@@ -330,11 +330,11 @@ def cmd_check(args: argparse.Namespace, root: Path) -> dict[str, Any]:
               "collision_helpers_ignored": mesh["skipped_collision"], "gates": gates}
     (root / rel).parent.mkdir(parents=True, exist_ok=True)
     (root / rel).write_text(json.dumps(report, indent=2) + "\n")
-    m.checks.append(CheckRecord(id=src.id, report=str(rel), ok=not failed, failed=failed))
+    m.checks.append(CheckRecord(id=src.id, report=rel.as_posix(), ok=not failed, failed=failed))
     if not failed and m.stage in ("cleanup", "checked"):
         m.stage = "checked"
     m.save(mpath)
-    return {"ok": not failed, "slug": m.slug, "stage": m.stage, "id": src.id, "report": str(rel), "failed": failed,
+    return {"ok": not failed, "slug": m.slug, "stage": m.stage, "id": src.id, "report": rel.as_posix(), "failed": failed,
             "gates": {g["name"]: g["value"] for g in gates}}
 
 
@@ -380,7 +380,7 @@ def cmd_export(args: argparse.Namespace, root: Path) -> dict[str, Any]:
     files: set[str] = set()
 
     def put(p: Path) -> None:
-        files.add(str(p.relative_to(root)))
+        files.add(paths.posix_rel(root, p))
 
     glb = out / f"{m.slug}.glb"
     shutil.copy(abspath(root, src.path), glb)
@@ -400,7 +400,7 @@ def cmd_export(args: argparse.Namespace, root: Path) -> dict[str, Any]:
         lp = abspath(root, m.entry(m.locked.variant).path)
         dst = concept / f"locked{lp.suffix.lower()}"
         if godot_stage.downscale_png(lp, dst):
-            resized.append(str(dst.relative_to(root)))
+            resized.append(paths.posix_rel(root, dst))
         put(dst)
     for e in m.lineage:
         if e.kind == "turnaround":
@@ -414,7 +414,7 @@ def cmd_export(args: argparse.Namespace, root: Path) -> dict[str, Any]:
     m.stage = "exported"
     m.save(mpath)
     put(mpath)
-    return {"slug": m.slug, "stage": m.stage, "id": src.id, "dir": str(out.relative_to(root)),
+    return {"slug": m.slug, "stage": m.stage, "id": src.id, "dir": paths.posix_rel(root, out),
             "files": sorted(files), "resized": resized}
 
 
@@ -434,8 +434,8 @@ def cmd_new(args: argparse.Namespace, root: Path) -> dict[str, Any]:
     work = paths.work_dir(root, args.slug)
     work.mkdir(parents=True, exist_ok=True)
     return {"slug": m.slug, "class": m.asset_class, "issue": m.issue, "stage": m.stage,
-            "manifest": str(mpath.relative_to(root)), "asset_dir": str(mpath.parent.relative_to(root)),
-            "work_dir": str(work.relative_to(root))}
+            "manifest": paths.posix_rel(root, mpath), "asset_dir": paths.posix_rel(root, mpath.parent),
+            "work_dir": paths.posix_rel(root, work)}
 
 
 def cmd_lock(args: argparse.Namespace, root: Path) -> dict[str, Any]:
