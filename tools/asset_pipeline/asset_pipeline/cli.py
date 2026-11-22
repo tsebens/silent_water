@@ -535,6 +535,37 @@ def cmd_list(args: argparse.Namespace, root: Path) -> dict[str, Any]:
             "selected_source": dict(cfg.get("selection_source", {}))}
 
 
+def cmd_cost(args: argparse.Namespace, root: Path) -> dict[str, Any]:
+    """What an asset has cost so far (or every asset, with --all), read from the manifests' ledgers."""
+    if args.all:
+        return cost.summary_all(root)
+    if not args.slug:
+        raise ValueError("name an asset, or pass --all")
+    return cost.summary(root, Manifest.load(paths.manifest_path(root, args.slug)))
+
+
+def cmd_estimate(args: argparse.Namespace, root: Path) -> dict[str, Any]:
+    """`--estimate`: the cost of a paid command from prices.yaml and the request. Calls nothing and writes nothing."""
+    cfg = providers.load_config()
+    name = args.command
+    reqs: list[tuple[Any, str, int]] = []
+    if name == "concept":
+        if args.n < 1:
+            raise ValueError("--n must be at least 1")
+        reqs = [(providers.select("prompt_writer", cfg, args.prompt_writer), "prompt_writer", 1),
+                (providers.select("image", cfg, args.image_provider), "image", args.n)]
+    elif name == "turnaround":
+        reqs = [(providers.select("image", cfg, args.image_provider), "image", 1 if args.view else len(VIEWS))]
+    elif name == "brief":
+        reqs = [(providers.select("prompt_writer", cfg, args.prompt_writer), "prompt_writer", 1)]
+    elif name == "to3d":
+        names = list(dict.fromkeys(args.three_d_provider or [None]))
+        reqs = [(providers.select("three_d", cfg, n), "three_d", 1) for n in names]
+    else:
+        raise ValueError(f"{name} has no estimate")
+    return {"slug": args.slug, "command": name, "estimate": cost.estimate(reqs, cost.load_prices())}
+
+
 def cmd_doctor(args: argparse.Namespace, root: Path) -> dict[str, Any]:
     return doctor.run(providers.load_config(), live=args.live)
 
@@ -574,23 +605,32 @@ def build_parser() -> argparse.ArgumentParser:
     c.add_argument("--prompt-writer", default=None)
     c.add_argument("--refine", default=None, metavar="VARIANT")
     c.add_argument("--notes", default=None)
+    c.add_argument("--estimate", action="store_true", help="print what this would cost from prices.yaml and the request, and call nothing")
     c.set_defaults(fn=cmd_concept)
+    ESTIMATE = "print what this would cost from prices.yaml and the request, and call nothing"
     t = sub.add_parser("turnaround", help="front, left, back, right views of the locked concept")
     t.add_argument("slug")
     t.add_argument("--image-provider", default=None)
     t.add_argument("--view", choices=VIEWS, default=None,
                    help="regenerate one view into a new complete set (the other three are copied from the latest)")
+    t.add_argument("--estimate", action="store_true", help=ESTIMATE)
     t.set_defaults(fn=cmd_turnaround)
     b = sub.add_parser("brief", help="draft brief.md from the locked concept and views")
     b.add_argument("slug")
     b.add_argument("--prompt-writer", default=None)
+    b.add_argument("--estimate", action="store_true", help=ESTIMATE)
     b.set_defaults(fn=cmd_brief)
     t3 = sub.add_parser("to3d", help="image-to-3D from the turnaround; several providers is a bake-off")
     t3.add_argument("slug")
     t3.add_argument("--3d-provider", dest="three_d_provider", nargs="+", default=None, metavar="P")
     t3.add_argument("--poll-interval", type=float, default=5.0, help="seconds between polls")
     t3.add_argument("--timeout", type=float, default=1800.0, help="give up on a provider after this many seconds")
+    t3.add_argument("--estimate", action="store_true", help=ESTIMATE)
     t3.set_defaults(fn=cmd_to3d)
+    co = sub.add_parser("cost", help="what an asset has cost so far, by stage and provider (--all: every asset)")
+    co.add_argument("slug", nargs="?", default=None)
+    co.add_argument("--all", action="store_true", help="per-asset totals and a grand total over every manifest")
+    co.set_defaults(fn=cmd_cost)
     cl = sub.add_parser("cleanup", help="headless Blender cleanup of a raw mesh per the class profile")
     cl.add_argument("slug")
     cl.add_argument("--source", required=True, metavar="RUN", help="mesh run id from `to3d`, e.g. r1_tripo")
@@ -634,9 +674,9 @@ def main(argv: list[str] | None = None) -> int:
     if getattr(args, "reviewer", 1) is None:
         args.reviewer = getpass.getuser()
     try:
-        if hasattr(args, "slug"):
+        if getattr(args, "slug", None) is not None:
             paths.check_slug(args.slug)
-        result = args.fn(args, paths.repo_root())
+        result = (cmd_estimate if getattr(args, "estimate", False) else args.fn)(args, paths.repo_root())
     except (ValueError, KeyError, OSError, yaml.YAMLError) as e:
         msg = e.args[0] if isinstance(e, KeyError) and e.args else str(e)
         print(json.dumps({"ok": False, "error": msg}))

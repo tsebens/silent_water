@@ -27,5 +27,6 @@ Top-level key `classes`, with one entry each for `creature`, `prop`, `terrain`, 
 | `palette_size` | Maximum distinct vertex colours |
 | `cleanup_recipe` | Ordered list of cleanup step names |
 | `gates` | Thresholds: `triangle_tolerance` (multiplier on budget), `bbox_tolerance` (fraction), `max_loose_parts`, `max_non_manifold`, `silhouette_iou_min` (0 to 1) |
+| `budget_usd` | Optional. Soft spend limit in USD per asset of this class (a number, 0 or more). `asset cost` warns past it; nothing is blocked. An asset's manifest `budget_usd` overrides it |
 
 `tools/validate_style_bible.py` checks this shape and runs from `tools/check.sh`.

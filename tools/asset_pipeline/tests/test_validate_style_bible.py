@@ -36,3 +36,21 @@ def test_missing_section_fails(tmp_path):
     assert any("terrain.md" in e and "Avoid" in e for e in errs)
     (root / "classes" / "terrain.md").write_text("## Avoid\n- x\n")
     assert any("terrain.md" in e and "Style" in e for e in mod.validate())
+
+
+def _set_budget(root, value):
+    import yaml
+    f = root / "classes.yaml"
+    data = yaml.safe_load(f.read_text())
+    data["classes"]["prop"]["budget_usd"] = value
+    f.write_text(yaml.safe_dump(data))
+
+
+def test_budget_usd_is_optional_and_validated(tmp_path):
+    mod, root = load(tmp_path)
+    for ok in (0, 2, 7.5):
+        _set_budget(root, ok)
+        assert mod.validate() == []
+    for bad in (-1, "5", True, None):
+        _set_budget(root, bad)
+        assert any("budget_usd" in e for e in mod.validate()), bad
