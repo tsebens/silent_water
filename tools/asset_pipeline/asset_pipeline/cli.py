@@ -12,8 +12,8 @@ from typing import Any
 
 import yaml
 
-from . import doctor, paths, providers
-from .manifest import CLASSES, DECISIONS, BriefRecord, LineageEntry, Manifest
+from . import cleanup, doctor, paths, providers
+from .manifest import CLASSES, DECISIONS, BriefRecord, CleanupRecord, LineageEntry, Manifest
 from .writers import PromptWriterError
 
 VIEWS = ("front", "left", "back", "right")
@@ -233,6 +233,49 @@ def cmd_to3d(args: argparse.Namespace, root: Path) -> dict[str, Any]:
     return {"ok": not errors, "slug": m.slug, "stage": m.stage, "runs": runs, "errors": errors}
 
 
+def cmd_cleanup(args: argparse.Namespace, root: Path) -> dict[str, Any]:
+    """Clean a raw mesh (a `mesh` lineage entry from `to3d`) with the class profile's recipe, in headless Blender."""
+    mpath = paths.manifest_path(root, args.slug)
+    m = Manifest.load(mpath)
+    src = m.entry(args.source)
+    if src.kind != "mesh":
+        raise ValueError(f"{args.source!r} is a {src.kind}, cleanup needs a mesh run (see `asset to3d`)")
+    profile = cleanup.class_profile(root, m.asset_class)
+    brief = abspath(root, m.brief.path) if m.brief else None
+    if args.size_m is not None:
+        size_m, size_from = args.size_m, "--size-m"
+    else:
+        size_m, size_from = cleanup.brief_size_m(brief, profile)
+    lo, hi = profile["scale_range_m"]
+    if not lo <= size_m <= hi:
+        raise ValueError(f"size {size_m:g} m is outside the {m.asset_class} scale range [{lo:g}, {hi:g}] m")
+    budget = args.triangle_budget or profile["triangle_budget"]
+    recipe = list(profile["cleanup_recipe"])
+    cleanup.find_blender()  # fail before any work when Blender is missing
+    k = 1
+    while any(e.id == f"c{k}" for e in m.lineage):
+        k += 1
+    cid = f"c{k}"
+    rel = (paths.work_dir(root, args.slug) / "cleanup" / f"{cid}.glb").relative_to(root)
+    params = {"source": str(abspath(root, src.path)), "output": str(root / rel), "slug": m.slug,
+              "asset_class": m.asset_class, "recipe": recipe, "triangle_budget": budget, "size_m": size_m,
+              "palette_size": profile["palette_size"], "snap_grid_m": profile.get("snap_grid_m"),
+              "max_loose_parts": profile["gates"]["max_loose_parts"]}
+    (root / rel).parent.mkdir(parents=True, exist_ok=True)
+    result = cleanup.run_blender(params, root / rel.parent)
+    m.add(LineageEntry(id=cid, kind="mesh", path=str(rel), provider="blender",
+                       model=result.get("blender_version", ""), parent=src.id))
+    recorded = {k2: v for k2, v in params.items() if k2 in ("triangle_budget", "size_m", "palette_size", "snap_grid_m")}
+    recorded["size_from"] = size_from
+    m.cleanups.append(CleanupRecord(id=cid, source=src.id, recipe=recipe, params=recorded,
+                                    commit=cleanup.code_commit(root), script_sha256=cleanup.script_digest(),
+                                    blender=result.get("blender_version", ""), result=result))
+    m.stage = "cleanup"
+    m.save(mpath)
+    return {"slug": m.slug, "stage": m.stage, "id": cid, "source": src.id, "path": str(rel), "recipe": recipe,
+            "triangle_budget": budget, "result": result}
+
+
 def _latest_turnaround(m: Manifest) -> str:
     ids = [e.id for e in m.lineage if e.kind == "turnaround"]
     if not ids:
@@ -307,6 +350,12 @@ def build_parser() -> argparse.ArgumentParser:
     t3.add_argument("--poll-interval", type=float, default=5.0, help="seconds between polls")
     t3.add_argument("--timeout", type=float, default=1800.0, help="give up on a provider after this many seconds")
     t3.set_defaults(fn=cmd_to3d)
+    cl = sub.add_parser("cleanup", help="headless Blender cleanup of a raw mesh per the class profile")
+    cl.add_argument("slug")
+    cl.add_argument("--source", required=True, metavar="RUN", help="mesh run id from `to3d`, e.g. r1_tripo")
+    cl.add_argument("--size-m", type=float, default=None, help="largest dimension in metres (default: brief.md size_m, else class range)")
+    cl.add_argument("--triangle-budget", type=int, default=None, help="override the class profile's budget")
+    cl.set_defaults(fn=cmd_cleanup)
     return p
 
 
