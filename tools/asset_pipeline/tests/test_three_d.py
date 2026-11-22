@@ -14,7 +14,9 @@ from asset_pipeline.adapters.tripo_3d import TripoThreeD
 from asset_pipeline.manifest import Manifest
 
 FIX = Path(__file__).parent / "fixtures" / "three_d"
-GLB = providers._glb(b"\x10" * 32)
+_tmp = Path(__import__("tempfile").mkdtemp()) / "p.glb"
+providers.MockThreeDProvider().download("x", _tmp)
+GLB = _tmp.read_bytes()
 
 
 class Routes(BaseHTTPRequestHandler):

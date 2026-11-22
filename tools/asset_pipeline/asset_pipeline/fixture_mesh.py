@@ -48,6 +48,45 @@ def build(segments: int = DEFAULT_SEGMENTS, seed: int = 7) -> tuple[list[tuple[f
     return pos, col, idx
 
 
+MOCK_LAT, MOCK_LON = 36, 48  # 2 * 48 * 35 = 3360 triangles
+
+
+def mock_mesh(lat: int = MOCK_LAT, lon: int = MOCK_LON) -> tuple[list[tuple[float, float, float]], list[tuple[float, float, float, float]], list[int]]:
+    """The mock 3D provider's mesh: a closed, single-part, fish-like body (a UV sphere with shared vertices, a
+    pole at each end) of a few thousand triangles with one vertex colour per ring. It faces +Z, is tapered
+    towards -Z and has a dorsal ridge, so its four silhouettes differ. Outward winding, deterministic."""
+    pos: list[tuple[float, float, float]] = [(0.0, 0.0, 1.5)]
+    col: list[tuple[float, float, float, float]] = [(0.8, 0.8, 0.5, 1.0)]
+    bands = [(0.2, 0.5, 0.6), (0.7, 0.3, 0.2), (0.3, 0.6, 0.3), (0.8, 0.8, 0.5), (0.4, 0.3, 0.6)]
+    for i in range(1, lat):
+        th = math.pi * i / lat
+        taper = 0.6 + 0.2 * (math.cos(th) + 1.0)
+        for j in range(lon):
+            ph = 2.0 * math.pi * j / lon
+            ridge = 0.12 * max(0.0, math.sin(ph)) * math.sin(th) ** 2 * (1.0 + math.cos(th))
+            pos.append((0.5 * taper * math.sin(th) * math.cos(ph),
+                        0.4 * taper * math.sin(th) * math.sin(ph) + ridge,
+                        1.5 * math.cos(th)))
+            col.append((*bands[(i * len(bands)) // lat], 1.0))
+    pos.append((0.0, 0.0, -1.5))
+    col.append((0.4, 0.3, 0.6, 1.0))
+    south = len(pos) - 1
+    idx: list[int] = []
+
+    def ring(i: int, j: int) -> int:
+        return 1 + (i - 1) * lon + j % lon
+
+    for j in range(lon):
+        idx += [0, ring(1, j), ring(1, j + 1)]
+    for i in range(1, lat - 1):
+        for j in range(lon):
+            a, b, c, d = ring(i, j), ring(i, j + 1), ring(i + 1, j), ring(i + 1, j + 1)
+            idx += [a, c, b, b, c, d]
+    for j in range(lon):
+        idx += [south, ring(lat - 1, j + 1), ring(lat - 1, j)]
+    return pos, col, idx
+
+
 def write_glb(path: Path, pos, col, idx) -> None:
     """Write one triangle mesh with a COLOR_0 attribute as a binary glTF 2.0 file."""
     pb = b"".join(struct.pack("<3f", *p) for p in pos)

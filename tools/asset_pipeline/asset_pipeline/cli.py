@@ -95,7 +95,7 @@ def cmd_concept(args: argparse.Namespace, root: Path) -> dict[str, Any]:
     if args.notes and not args.refine:
         raise ValueError("--notes only applies with --refine")
     if not m.description:
-        raise ValueError("no concept brief: pass --brief \"...\" (it is saved in the manifest)")
+        raise ValueError("no concept brief: pass --brief \"...\", or set it with `asset describe` or `asset new --description`")
     if args.n < 1:
         raise ValueError("--n must be at least 1")
     cfg = providers.load_config()
@@ -455,13 +455,26 @@ def cmd_new(args: argparse.Namespace, root: Path) -> dict[str, Any]:
     mpath = paths.manifest_path(root, args.slug)
     if mpath.exists():
         raise FileExistsError(f"asset {args.slug!r} already exists at {mpath}")
-    m = Manifest(slug=args.slug, asset_class=args.asset_class, issue=args.issue)
+    m = Manifest(slug=args.slug, asset_class=args.asset_class, issue=args.issue,
+                 description=(args.description or "").strip())
     m.save(mpath)
     work = paths.work_dir(root, args.slug)
     work.mkdir(parents=True, exist_ok=True)
-    return {"slug": m.slug, "class": m.asset_class, "issue": m.issue, "stage": m.stage,
+    return {"slug": m.slug, "class": m.asset_class, "issue": m.issue, "stage": m.stage, "description": m.description,
             "manifest": paths.posix_rel(root, mpath), "asset_dir": paths.posix_rel(root, mpath.parent),
             "work_dir": paths.posix_rel(root, work)}
+
+
+def cmd_describe(args: argparse.Namespace, root: Path) -> dict[str, Any]:
+    """Set or replace the asset's description: the concept brief `concept` reads."""
+    mpath = paths.manifest_path(root, args.slug)
+    m = Manifest.load(mpath)
+    text = args.text.strip()
+    if not text:
+        raise ValueError("the description is empty")
+    m.description = text
+    m.save(mpath)
+    return {"slug": m.slug, "stage": m.stage, "description": m.description}
 
 
 def cmd_lock(args: argparse.Namespace, root: Path) -> dict[str, Any]:
@@ -500,7 +513,13 @@ def build_parser() -> argparse.ArgumentParser:
     n.add_argument("slug")
     n.add_argument("--class", dest="asset_class", required=True, choices=CLASSES)
     n.add_argument("--issue", type=int)
+    n.add_argument("--description", default=None, metavar="TEXT", help="what the asset is; the concept brief (saved in the manifest)")
     n.set_defaults(fn=cmd_new)
+    ds = sub.add_parser("describe", help="set or replace an asset's description (the concept brief)")
+    ds.add_argument("slug")
+    ds.add_argument("text")
+    ds.set_defaults(fn=cmd_describe)
+
     lk = sub.add_parser("lock", help="record the chosen concept variant and a reviewer decision")
     lk.add_argument("slug")
     lk.add_argument("variant")
