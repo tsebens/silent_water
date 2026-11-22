@@ -53,6 +53,20 @@ class BriefRecord:
 
 
 @dataclass
+class CleanupRecord:
+    """One cleanup run: what was cleaned, with which recipe and code, and what was measured."""
+    id: str  # the cleaned mesh's lineage id
+    source: str  # lineage id of the raw mesh
+    recipe: list[str]
+    params: dict[str, Any] = field(default_factory=dict)  # budget, size, palette size, grid
+    commit: str = ""  # git commit of the pipeline code that ran it
+    script_sha256: str = ""  # digest of the Blender script, so a dirty checkout is still identifiable
+    blender: str = ""
+    result: dict[str, Any] = field(default_factory=dict)  # measured triangles, non-manifold, colours, size
+    at: str = field(default_factory=now)
+
+
+@dataclass
 class Manifest:
     slug: str
     asset_class: str
@@ -65,6 +79,7 @@ class Manifest:
     # Decisions that did not lock (e.g. a rejection), newest last.
     decisions: list[Lock] = field(default_factory=list)
     brief: BriefRecord | None = None
+    cleanups: list[CleanupRecord] = field(default_factory=list)
 
     def entry(self, entry_id: str) -> LineageEntry:
         for e in self.lineage:
@@ -125,6 +140,7 @@ class Manifest:
             locked=Lock(**lock) if lock else None,
             decisions=[Lock(**x) for x in d.get("decisions") or []],
             brief=BriefRecord(**d["brief"]) if d.get("brief") else None,
+            cleanups=[CleanupRecord(**x) for x in d.get("cleanups") or []],
         )
 
     def save(self, path: Path) -> None:

@@ -31,6 +31,8 @@ jobs:
 
       - uses: astral-sh/setup-uv@v5
 
+      - uses: ./.github/actions/setup-blender
+
       - name: Asset pipeline tests
         working-directory: tools/asset_pipeline
         run: uv run pytest -q

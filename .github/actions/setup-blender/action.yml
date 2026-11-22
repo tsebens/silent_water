@@ -1,0 +1,38 @@
+name: Set up Blender
+description: Install headless Blender (cached) and export ASSET_BLENDER_BIN for the asset pipeline's cleanup stage.
+
+inputs:
+  version:
+    description: Blender release (4.5 LTS point release)
+    required: false
+    default: "4.5.9"
+
+runs:
+  using: composite
+  steps:
+    - name: Cache Blender
+      id: cache
+      uses: actions/cache@v4
+      with:
+        path: ~/blender
+        key: blender-${{ inputs.version }}-linux-x64
+
+    - name: Download Blender
+      if: steps.cache.outputs.cache-hit != 'true'
+      shell: bash
+      run: |
+        minor="${V%.*}"
+        mkdir -p ~/blender
+        curl -sSL --fail -o "$RUNNER_TEMP/blender.tar.xz" \
+          "https://download.blender.org/release/Blender${minor}/blender-${V}-linux-x64.tar.xz"
+        curl -sSL --fail -o "$RUNNER_TEMP/blender.sha256" \
+          "https://download.blender.org/release/Blender${minor}/blender-${V}.sha256"
+        expected=$(grep "blender-${V}-linux-x64.tar.xz" "$RUNNER_TEMP/blender.sha256" | cut -d' ' -f1)
+        echo "$expected  $RUNNER_TEMP/blender.tar.xz" | sha256sum -c -
+        tar -xf "$RUNNER_TEMP/blender.tar.xz" -C ~/blender --strip-components=1
+      env:
+        V: ${{ inputs.version }}
+
+    - name: Export ASSET_BLENDER_BIN
+      shell: bash
+      run: echo "ASSET_BLENDER_BIN=$HOME/blender/blender" >> "$GITHUB_ENV"
