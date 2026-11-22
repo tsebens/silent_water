@@ -51,10 +51,35 @@ def abspath(root: Path, rel: str) -> Path:
     return root / rel
 
 
-def full_prompt(root: Path, body: str) -> str:
-    """The style bible's canonical block, the writer's prompt, then the negative block."""
-    neg = read_block(root, "negative.md")
-    parts = [read_block(root, "style.md"), body]
+def class_section(root: Path, asset_class: str, heading: str) -> str:
+    """The body of one `## <heading>` section of the class file, or "" when absent."""
+    f = style_dir(root) / "classes" / f"{asset_class}.md"
+    if not f.is_file():
+        return ""
+    out: list[str] = []
+    inside = False
+    for line in f.read_text().splitlines():
+        if line.startswith("## "):
+            inside = line[3:].strip().lower() == heading.lower()
+        elif inside:
+            out.append(line)
+    return "\n".join(out).strip()
+
+
+def style_block(root: Path, asset_class: str) -> str:
+    """Shared style, then the class style."""
+    return "\n\n".join(x for x in (read_block(root, "style.md"), class_section(root, asset_class, "Style")) if x)
+
+
+def negative_block(root: Path, asset_class: str) -> str:
+    """Shared negative list, then the class's Avoid list."""
+    return "\n".join(x for x in (read_block(root, "negative.md"), class_section(root, asset_class, "Avoid")) if x)
+
+
+def full_prompt(root: Path, asset_class: str, body: str) -> str:
+    """Shared style, class style, the writer's prompt, shared negative, class negative."""
+    neg = negative_block(root, asset_class)
+    parts = [style_block(root, asset_class), body]
     if neg:
         parts.append("Avoid:\n" + neg)
     return "\n\n".join(x for x in parts if x)
@@ -85,14 +110,14 @@ def cmd_concept(args: argparse.Namespace, root: Path) -> dict[str, Any]:
             raise ValueError(f"{args.refine!r} is a {parent.kind}, only concept variants can be refined")
         refs.append(abspath(root, parent.path))
     try:
-        bodies = writer.write_prompts(m.description, read_block(root, "style.md"), args.notes or "", refs, args.n)
+        bodies = writer.write_prompts(m.description, style_block(root, m.asset_class), args.notes or "", refs, args.n)
     except PromptWriterError as e:
         raise ValueError(f"prompt writer failed: {e}") from e
     out_dir = paths.work_dir(root, args.slug) / "concept"
     made = []
     for body in bodies:
         vid = next_id(m, "v")
-        prompt = full_prompt(root, body)
+        prompt = full_prompt(root, m.asset_class, body)
         rel = (out_dir / f"{vid}.png").relative_to(root)
         img.generate(prompt, refs, root / rel)
         m.add(LineageEntry(id=vid, kind="concept", path=rel.as_posix(), provider=img.name, model=img.model,
@@ -127,7 +152,6 @@ def cmd_turnaround(args: argparse.Namespace, root: Path) -> dict[str, Any]:
     n = 1
     while any(e.id.startswith(f"t{n}_") for e in m.lineage):
         n += 1
-    style = read_block(root, "style.md")
     only = getattr(args, "view", None)
     prev: dict[str, LineageEntry] = {}
     if only:
@@ -153,7 +177,7 @@ def cmd_turnaround(args: argparse.Namespace, root: Path) -> dict[str, Any]:
         body = (f"Orthographic {view} view of this exact asset, flat neutral lighting, no perspective, "
                 f"centred, on a transparent or plain removed background, {TURNAROUND_PX}x{TURNAROUND_PX} px. "
                 "Keep every proportion and detail of the source image unchanged.")
-        prompt = (style + "\n\n" + body) if style else body
+        prompt = full_prompt(root, m.asset_class, body)
         rel = (out_dir / f"turnaround_t{n}_{view}.png").relative_to(root)
         img.edit(prompt, src_path, [], root / rel)
         eid = f"t{n}_{view}"
@@ -177,7 +201,9 @@ def cmd_brief(args: argparse.Namespace, root: Path) -> dict[str, Any]:
     cf = style_dir(root) / "classes.yaml"
     if cf.is_file():
         profile = (yaml.safe_load(cf.read_text()) or {}).get("classes", {}).get(m.asset_class, {})
+    style = style_block(root, m.asset_class)
     context = (f"Asset: {m.slug} ({m.asset_class})\nDescription: {m.description}\n"
+               + (f"Style:\n{style}\n" if style else "") +
                f"Locked concept prompt: {locked.prompt}\nClass profile:\n{yaml.safe_dump(profile)}")
     images = [abspath(root, locked.path)] + [abspath(root, e.path) for e in views]
     writer = providers.select("prompt_writer", providers.load_config(), args.prompt_writer)
