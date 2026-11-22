@@ -131,7 +131,7 @@ def cmd_turnaround(args: argparse.Namespace, root: Path) -> dict[str, Any]:
                 f"centred, on a transparent or plain removed background, {TURNAROUND_PX}x{TURNAROUND_PX} px. "
                 "Keep every proportion and detail of the source image unchanged.")
         prompt = (style + "\n\n" + body) if style else body
-        rel = (out_dir / f"turnaround_{view}.png").relative_to(root)
+        rel = (out_dir / f"turnaround_t{n}_{view}.png").relative_to(root)
         img.edit(prompt, src_path, [], root / rel)
         eid = f"t{n}_{view}"
         m.add(LineageEntry(id=eid, kind="turnaround", path=str(rel), provider=img.name, model=img.model,

@@ -82,7 +82,7 @@ def test_turnaround_and_brief(root, capsys):
     assert code == 0 and out["stage"] == "brief"
     d = paths.asset_dir(root, "angler") / "concept"
     assert "anglerfish" in (d / "brief.md").read_text() and (d / ".gdignore").exists()
-    assert (d / "turnaround_front.png").is_file()
+    assert (d / "turnaround_t1_front.png").is_file()
     m = Manifest.load(paths.manifest_path(root, "angler"))
     t = [e for e in m.lineage if e.kind == "turnaround"]
     assert len(t) == 4 and all(e.parent == "v1" and "2048" in e.prompt for e in t)
@@ -90,4 +90,7 @@ def test_turnaround_and_brief(root, capsys):
     # regenerating adds a new set rather than clobbering lineage
     run(capsys, "turnaround", "angler")
     m = Manifest.load(paths.manifest_path(root, "angler"))
-    assert len([e for e in m.lineage if e.kind == "turnaround"]) == 8
+    t = [e for e in m.lineage if e.kind == "turnaround"]
+    assert len(t) == 8
+    assert len({e.path for e in t}) == 8
+    assert all((root / e.path).is_file() for e in t)
