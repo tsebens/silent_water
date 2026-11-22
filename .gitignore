@@ -7,3 +7,9 @@
 /tools/asset_pipeline/.venv/
 __pycache__/
 .pytest_cache/
+# Raw Onshape exports over the 5 MB asset limit; kept locally only (see README, #247)
+/assets/media/sub/Assembly 1.gltf
+/assets/media/sub/Assembly 1.zip
+/assets/media/sub/assembly/Assembly 1 - Deck.gltf
+/assets/media/sub/assembly/Assembly 1 - Front Window.gltf
+/assets/media/sub/assembly/Assembly 1 - Shell.gltf
