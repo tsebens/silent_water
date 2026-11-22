@@ -9,6 +9,12 @@ var data: Dictionary = {}
 var exit_code: int = 0
 
 
+## Joins a manifest path (repo-relative, forward slashes on every OS) to the project root.
+## Backslashes are tolerated so a manifest written before paths were normalised still loads.
+static func project_path(root: String, rel: String) -> String:
+	return root.path_join(rel.replace("\\", "/"))
+
+
 ## `output` is stdout (and stderr, if the caller merged it). The backend prints one JSON
 ## object; anything else is surfaced as the error text, unmodified.
 static func parse(exit_code_: int, output: String) -> AssetBackendResult:

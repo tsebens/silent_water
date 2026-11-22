@@ -2,8 +2,13 @@
 from __future__ import annotations
 
 import os
+import re
 import shutil
+import subprocess
+from pathlib import Path
 from typing import Any
+
+import yaml
 
 from . import providers
 from .adapters._net import ImageProviderError, request
@@ -15,6 +20,41 @@ def _tool(env: str, default: str) -> tuple[bool, str]:
     if found:
         return True, found
     return False, f"{cmd!r} not found on PATH (set {env} to its full path)"
+
+
+def expected_versions() -> dict[str, Any]:
+    return yaml.safe_load((Path(__file__).resolve().parent.parent / "versions.yaml").read_text())
+
+
+def _version_output(exe: str) -> str:
+    try:
+        r = subprocess.run([exe, "--version"], capture_output=True, text=True, timeout=60)
+    except (OSError, subprocess.SubprocessError) as e:
+        return f"(could not run: {e})"
+    lines = (r.stdout.strip() or r.stderr.strip()).splitlines()
+    return lines[0] if lines else ""
+
+
+def _versioned(env: str, default: str, kind: str) -> tuple[bool, str]:
+    """`_tool`, then compare `<exe> --version` with versions.yaml; the detail names found and expected."""
+    ok, detail = _tool(env, default)
+    if not ok:
+        return ok, detail
+    want = expected_versions()[kind]
+    out = _version_output(detail)
+    if kind == "blender":
+        m = re.search(r"Blender\s+(\d+)\.(\d+)", out)
+        found = f"{m.group(1)}.{m.group(2)}" if m else None
+        expected = f"Blender {want['major_minor']}.x"
+        good = found == want["major_minor"]
+    else:
+        m = re.match(r"(\d+\.\d+(?:\.\d+)?)\.(\w+)\.(mono\.)?", out)
+        found = f"{m.group(1)}{' .NET' if m.group(3) else ' standard'}" if m else None
+        expected = f"Godot {want['version']} standard (non-.NET)"
+        good = bool(m) and m.group(1) == want["version"] and not m.group(3)
+    if good:
+        return True, f"{detail} ({out})"
+    return False, f"found {out or 'no version output'!r} at {detail}; expected {expected}"
 
 
 def _anthropic_live(base_url: str = "https://api.anthropic.com") -> str:
@@ -32,8 +72,8 @@ def run(config: dict[str, Any], live: bool = False) -> dict[str, Any]:
     def add(name: str, ok: bool, detail: str, required: bool = True) -> None:
         checks.append({"name": name, "ok": ok, "detail": detail, "required": required})
 
-    add("blender", *_tool("ASSET_BLENDER_BIN", "blender"))
-    add("godot", *_tool("GODOT", "godot"))
+    add("blender", *_versioned("ASSET_BLENDER_BIN", "blender", "blender"))
+    add("godot", *_versioned("GODOT", "godot", "godot"))
     selected = config.get("selection", {})
     for kind, entries in config["providers"].items():
         for name, entry in (entries or {}).items():

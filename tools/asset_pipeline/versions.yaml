@@ -1,0 +1,7 @@
+# Tool versions the pipeline is built and tested against. `asset doctor` fails the required
+# check for anything else.
+blender:
+  major_minor: "4.5"   # any 4.5.x (LTS)
+godot:
+  version: "4.7.2"
+  flavour: standard    # not the .NET (mono) build

@@ -353,7 +353,7 @@ func _button(parent: Control, text: String, cb: Callable) -> Button:
 func _read_text(rel: String) -> String:
 	if rel == "":
 		return ""
-	var abs_path: String = ProjectSettings.globalize_path("res://").path_join(rel)
+	var abs_path: String = AssetBackendResult.project_path(ProjectSettings.globalize_path("res://"), rel)
 	return FileAccess.get_file_as_string(abs_path) if FileAccess.file_exists(abs_path) else ""
 
 
@@ -435,7 +435,7 @@ func _on_draft_brief() -> void:
 func save_brief() -> bool:
 	if not turnaround.can_save_brief():
 		return false
-	var abs_path: String = ProjectSettings.globalize_path("res://").path_join(turnaround.target_brief_path())
+	var abs_path: String = AssetBackendResult.project_path(ProjectSettings.globalize_path("res://"), turnaround.target_brief_path())
 	DirAccess.make_dir_recursive_absolute(abs_path.get_base_dir())
 	var f: FileAccess = FileAccess.open(abs_path, FileAccess.WRITE)
 	if f == null:
@@ -507,7 +507,7 @@ func _load_run_node(r: Dictionary) -> Node3D:
 	var rel: String = str(r.get("path", ""))
 	if rel == "":
 		return null
-	return AssetModelPreview.load_glb(ProjectSettings.globalize_path("res://").path_join(rel))
+	return AssetModelPreview.load_glb(AssetBackendResult.project_path(ProjectSettings.globalize_path("res://"), rel))
 
 
 func _refresh_model_controls() -> void:
@@ -537,7 +537,7 @@ func _show_lineage(id: String) -> void:
 
 
 func _load_texture(rel: String) -> Texture2D:
-	var abs_path: String = ProjectSettings.globalize_path("res://").path_join(rel)
+	var abs_path: String = AssetBackendResult.project_path(ProjectSettings.globalize_path("res://"), rel)
 	if rel == "" or not FileAccess.file_exists(abs_path):
 		return null
 	var img: Image = Image.load_from_file(abs_path)
