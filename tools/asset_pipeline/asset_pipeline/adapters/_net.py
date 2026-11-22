@@ -105,6 +105,18 @@ def post_multipart(provider: str, url: str, headers: dict[str, str], fields: dic
         raise ImageProviderError(f"{provider} returned invalid JSON: {e}") from e
 
 
+def token_usage(usage: Any, keys: tuple[str, ...], names: tuple[str, ...] | None = None) -> dict[str, Any]:
+    """Usage of one image call for the cost ledger: the token counts the reply reported (renamed to `names`)
+    plus the one image requested. Counts the reply did not carry are left out, never zero."""
+    out: dict[str, Any] = {}
+    if isinstance(usage, dict):
+        for k, name in zip(keys, names or keys):
+            if isinstance(usage.get(k), int) and not isinstance(usage.get(k), bool):
+                out[name] = usage[k]
+    out["images"] = 1
+    return out
+
+
 def write_image(out: Path, data: bytes) -> Path:
     if not data:
         raise ImageProviderError("provider returned an empty image")

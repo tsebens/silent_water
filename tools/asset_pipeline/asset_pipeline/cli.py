@@ -8,12 +8,13 @@ import os
 import shutil
 import sys
 import time
+from contextlib import contextmanager
 from pathlib import Path
 from typing import Any
 
 import yaml
 
-from . import check, cleanup, doctor, godot_stage, paths, providers
+from . import check, cleanup, cost, doctor, godot_stage, paths, providers
 from .manifest import (CLASSES, DECISIONS, BriefRecord, CheckRecord, CleanupRecord, ExportRecord, GodotCheckRecord,
                        LineageEntry, Manifest)
 from .writers import PromptWriterError
@@ -85,6 +86,21 @@ def full_prompt(root: Path, asset_class: str, body: str) -> str:
     return "\n\n".join(x for x in parts if x)
 
 
+@contextmanager
+def _ledger_guard(mpath: Path, m: Manifest):
+    """If a command fails part-way, the manifest is not saved, but money already spent still counts:
+    write the cost entries added so far onto the manifest on disk, then let the error through."""
+    n0 = len(m.costs)
+    try:
+        yield
+    except BaseException:
+        if len(m.costs) > n0:
+            disk = Manifest.load(mpath)
+            disk.costs.extend(m.costs[n0:])
+            disk.save(mpath)
+        raise
+
+
 def cmd_concept(args: argparse.Namespace, root: Path) -> dict[str, Any]:
     mpath = paths.manifest_path(root, args.slug)
     m = Manifest.load(mpath)
@@ -109,21 +125,27 @@ def cmd_concept(args: argparse.Namespace, root: Path) -> dict[str, Any]:
         if parent.kind != "concept":
             raise ValueError(f"{args.refine!r} is a {parent.kind}, only concept variants can be refined")
         refs.append(abspath(root, parent.path))
-    try:
-        bodies = writer.write_prompts(m.description, style_block(root, m.asset_class), args.notes or "", refs, args.n)
-    except PromptWriterError as e:
-        raise ValueError(f"prompt writer failed: {e}") from e
+    prices = cost.load_prices()
+    stage = "refine" if args.refine else "concept"
     out_dir = paths.work_dir(root, args.slug) / "concept"
     made = []
-    for body in bodies:
-        vid = next_id(m, "v")
-        prompt = full_prompt(root, m.asset_class, body)
-        rel = (out_dir / f"{vid}.png").relative_to(root)
-        img.generate(prompt, refs, root / rel)
-        m.add(LineageEntry(id=vid, kind="concept", path=rel.as_posix(), provider=img.name, model=img.model,
-                           prompt=prompt, parent=parent.id if parent else None,
-                           writer=f"{writer.name}:{writer.model}", references=[_rel(root, r) for r in refs]))
-        made.append({"id": vid, "path": rel.as_posix(), "parent": parent.id if parent else None})
+    with _ledger_guard(mpath, m):
+        try:
+            bodies = cost.paid_call(
+                m, writer, "prompt_writer", prices, command="concept", stage=stage,
+                fn=lambda: writer.write_prompts(m.description, style_block(root, m.asset_class), args.notes or "", refs, args.n))
+        except PromptWriterError as e:
+            raise ValueError(f"prompt writer failed: {e}") from e
+        for body in bodies:
+            vid = next_id(m, "v")
+            prompt = full_prompt(root, m.asset_class, body)
+            rel = (out_dir / f"{vid}.png").relative_to(root)
+            cost.paid_call(m, img, "image", prices, lambda: img.generate(prompt, refs, root / rel),
+                           command="concept", stage=stage, lineage=vid)
+            m.add(LineageEntry(id=vid, kind="concept", path=rel.as_posix(), provider=img.name, model=img.model,
+                               prompt=prompt, parent=parent.id if parent else None,
+                               writer=f"{writer.name}:{writer.model}", references=[_rel(root, r) for r in refs]))
+            made.append({"id": vid, "path": rel.as_posix(), "parent": parent.id if parent else None})
     if m.stage in ("new", "concept"):
         m.stage = "concept"
     m.save(mpath)
@@ -162,6 +184,16 @@ def cmd_turnaround(args: argparse.Namespace, root: Path) -> dict[str, Any]:
             raise ValueError(f"--view needs a complete turnaround to start from: run `asset turnaround` first "
                              f"(missing {', '.join(missing)})")
     views = []
+    prices = cost.load_prices()
+    with _ledger_guard(mpath, m):
+        _turnaround_views(args, root, m, img, src, src_path, out_dir, n, only, prev, views, prices)
+    if m.stage in ("new", "concept", "locked", "turnaround"):
+        m.stage = "turnaround"
+    m.save(mpath)
+    return {"slug": m.slug, "stage": m.stage, "views": views, "image_provider": f"{img.name}:{img.model}"}
+
+
+def _turnaround_views(args, root, m, img, src, src_path, out_dir, n, only, prev, views, prices) -> None:
     for view in VIEWS:
         if only and view != only:
             # carry the view over so the new set is complete: copy the file, keep prompt and provenance
@@ -179,15 +211,12 @@ def cmd_turnaround(args: argparse.Namespace, root: Path) -> dict[str, Any]:
                 "Keep every proportion and detail of the source image unchanged.")
         prompt = full_prompt(root, m.asset_class, body)
         rel = (out_dir / f"turnaround_t{n}_{view}.png").relative_to(root)
-        img.edit(prompt, src_path, [], root / rel)
         eid = f"t{n}_{view}"
+        cost.paid_call(m, img, "image", prices, lambda: img.edit(prompt, src_path, [], root / rel),
+                       command="turnaround", stage="turnaround", lineage=eid)
         m.add(LineageEntry(id=eid, kind="turnaround", path=rel.as_posix(), provider=img.name, model=img.model,
                            prompt=prompt, parent=src.id, references=[src.path]))
         views.append({"id": eid, "view": view, "path": rel.as_posix(), "parent": src.id})
-    if m.stage in ("new", "concept", "locked", "turnaround"):
-        m.stage = "turnaround"
-    m.save(mpath)
-    return {"slug": m.slug, "stage": m.stage, "views": views, "image_provider": f"{img.name}:{img.model}"}
 
 
 def cmd_brief(args: argparse.Namespace, root: Path) -> dict[str, Any]:
@@ -207,10 +236,12 @@ def cmd_brief(args: argparse.Namespace, root: Path) -> dict[str, Any]:
                f"Locked concept prompt: {locked.prompt}\nClass profile:\n{yaml.safe_dump(profile)}")
     images = [abspath(root, locked.path)] + [abspath(root, e.path) for e in views]
     writer = providers.select("prompt_writer", providers.load_config(), args.prompt_writer)
-    try:
-        text = writer.write_brief(context, images)
-    except PromptWriterError as e:
-        raise ValueError(f"prompt writer failed: {e}") from e
+    with _ledger_guard(mpath, m):
+        try:
+            text = cost.paid_call(m, writer, "prompt_writer", cost.load_prices(), lambda: writer.write_brief(context, images),
+                                  command="brief", stage="brief")
+        except PromptWriterError as e:
+            raise ValueError(f"prompt writer failed: {e}") from e
     out = paths.asset_dir(root, args.slug) / "concept" / "brief.md"
     out.parent.mkdir(parents=True, exist_ok=True)
     (out.parent / ".gdignore").touch()

@@ -1,1 +1,1 @@
-{"created": 1, "data": [{"b64_json": "iVBORw0KGgoAAAANSUhEUgAAAAgAAAAICAIAAABLbSncAAAAEUlEQVR4nGNITErGihiGlgQAt+xJgYSP5MIAAAAASUVORK5CYII="}], "usage": {"total_tokens": 100}}
+{"created": 1, "data": [{"b64_json": "iVBORw0KGgoAAAANSUhEUgAAAAgAAAAICAIAAABLbSncAAAAEUlEQVR4nGNITErGihiGlgQAt+xJgYSP5MIAAAAASUVORK5CYII="}], "usage": {"input_tokens": 40, "output_tokens": 60, "total_tokens": 100}}

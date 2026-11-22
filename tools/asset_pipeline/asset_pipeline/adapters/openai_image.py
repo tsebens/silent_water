@@ -7,7 +7,7 @@ from pathlib import Path
 
 from ..providers import REGISTRY, ImageProvider
 from . import _net
-from ._net import ImageProviderError
+from ._net import ImageProviderError, token_usage
 
 
 class OpenAIImage(ImageProvider):
@@ -44,6 +44,8 @@ class OpenAIImage(ImageProvider):
         else:
             reply = _net.post_json("openai", self.base_url + "/v1/images/generations", headers,
                                    {"model": self.model, "prompt": prompt, "size": self.size, "n": 1}, self.timeout)
+        self.last_usage = token_usage(reply.get("usage") if isinstance(reply, dict) else None,
+                                      ("input_tokens", "output_tokens", "total_tokens"))
         return self._save(reply, out)
 
     def generate(self, prompt: str, references: list[Path], out: Path) -> Path:
