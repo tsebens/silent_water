@@ -21,7 +21,7 @@ Reject if any of these fail; otherwise approve. Do not reject on taste.
 - **Design.** No arc contradicts the design doc. If the concept itself contradicts the design doc, that is a `needs-human` escalation, not a rejection.
 - **Size.** Each arc is finishable in one development job (about three hours). Anything marked L, or that reads like two features, should be split.
 - **Verifiability.** Every acceptance criterion can be checked headless. Vague criteria ("feels good", "works well") must be rewritten or moved out of the checklist.
-- **Dependencies.** `Blocked by:` is complete: every overlapping `Touches:` pair is chained, references to existing issues are real and open, and there are no cycles.
+- **Dependencies.** `Blocked by:` is complete: every overlapping `Touches:` pair is chained (exact-path comparison for `tests/`, `docs/` and the design doc, prefix for the rest), references to existing issues are real and open, and there are no cycles.
 - **Naming.** Each title is `M<n>.? · <name>` with `<n>` an existing, open milestone. That is the whole check. The `<k>` is yours to assign at creation, so numbering is never a reason to reject; if the organizer wrote a concrete `<k>`, ignore it and assign your own.
 
 ## On rejection
