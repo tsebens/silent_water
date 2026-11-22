@@ -27,6 +27,12 @@ STALE_MINUTES="${STALE_MINUTES:-30}"
 DEVELOPMENT_WORKFLOW="${DEVELOPMENT_WORKFLOW:-role-development.yml}"
 DRY_RUN="${DRY_RUN:-false}"
 
+# Shared-but-safe prefixes. Arcs routinely add a new test file or docs page, so naming the whole directory in
+# Touches: would serialise arcs that only ever edit different files. A path in this list is compared by EXACT path
+# only: `tests/unit` vs `tests/unit` does not overlap, `tests/unit/test_a.gd` vs `tests/unit/test_a.gd` does.
+# Everything else, including all of src/, keeps the prefix-directory rule.
+SHARED_PREFIXES=("docs" "tests" "tests/unit" "Silent Water — Design Doc.md")
+
 if [ "${PIPELINE_PAUSED:-false}" = "true" ]; then
   echo "PIPELINE_PAUSED=true; nothing dispatched."
   exit 0
@@ -91,17 +97,30 @@ drop_stray_ready() { # number
   return 1
 }
 
-# Two path lists overlap if any pair is equal or one is a prefix directory of the other.
+# Two path lists overlap if any pair is equal or one is a prefix directory of the other, except for SHARED_PREFIXES.
 paths_overlap() { # "list a (newline sep)" "list b"
   local a b
   while IFS= read -r a; do
     [ -z "$a" ] && continue
     while IFS= read -r b; do
       [ -z "$b" ] && continue
-      if [ "$a" = "$b" ] || [[ "$a" == "$b"/* ]] || [[ "$b" == "$a"/* ]]; then return 0; fi
+      if path_pair_overlaps "$a" "$b"; then return 0; fi
     done <<<"$2"
   done <<<"$1"
   return 1
+}
+
+path_pair_overlaps() { # a b
+  local a="$1" b="$2" p
+  if [ "$a" = "$b" ]; then
+    for p in "${SHARED_PREFIXES[@]}"; do [ "$a" = "$p" ] && return 1; done
+    return 0
+  fi
+  for p in "${SHARED_PREFIXES[@]}"; do
+    # a shared prefix never claims its subtree; only identical file paths collide.
+    if [ "$a" = "$p" ] || [ "$b" = "$p" ]; then return 1; fi
+  done
+  [[ "$a" == "$b"/* ]] || [[ "$b" == "$a"/* ]]
 }
 
 # ---------------------------------------------------------------------------

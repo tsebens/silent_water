@@ -42,6 +42,14 @@ paths_overlap $'src/noise' $'src/noisemaker'; check "overlap: shared prefix is n
 paths_overlap $'src/noise\nsrc/sub' $'docs\nsrc/sub/pilot'; check "overlap: any pair" 0 $?
 paths_overlap $'docs' $'src/noise'; check "overlap: disjoint" 1 $?
 paths_overlap "" $'src/noise'; check "overlap: empty list" 1 $?
+paths_overlap $'tests/unit' $'tests/unit'; check "overlap: shared tests/unit twice" 1 $?
+paths_overlap $'docs' $'docs'; check "overlap: shared docs twice" 1 $?
+paths_overlap $'tests/unit/test_a.gd' $'tests/unit/test_a.gd'; check "overlap: same test file" 0 $?
+paths_overlap $'tests/unit/test_a.gd' $'tests/unit/test_b.gd'; check "overlap: different test files" 1 $?
+paths_overlap $'tests/unit' $'tests/unit/test_a.gd'; check "overlap: shared dir vs its file" 1 $?
+paths_overlap $'docs/process.md' $'docs/process.md'; check "overlap: same docs file" 0 $?
+paths_overlap $'src/sub' $'src/sub/foo.gd'; check "overlap: src parent vs file" 0 $?
+paths_overlap $'src/sub' $'src/noise'; check "overlap: src siblings" 1 $?
 
 # blockers_of unions the body line with the native dependency API; stub the API call.
 gh() { if [[ "$*" == *dependencies/blocked_by* ]]; then echo 9; echo 1; else return 1; fi; }
