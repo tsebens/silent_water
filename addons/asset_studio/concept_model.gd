@@ -6,6 +6,7 @@ extends RefCounted
 
 var slug: String = ""
 var asset_class: String = ""
+var description: String = ""
 var variants: Array[Dictionary] = []
 var image_providers: PackedStringArray = PackedStringArray()
 var default_provider: String = ""
@@ -15,6 +16,7 @@ var _lineage: Array = []
 func load_asset(asset: Dictionary, providers: Dictionary = {}, selected: Dictionary = {}) -> void:
 	slug = str(asset.get("slug", ""))
 	asset_class = str(asset.get("class", ""))
+	description = str(asset.get("description", ""))
 	_lineage = asset.get("lineage", [])
 	var locked_id: String = ""
 	var locked: Variant = asset.get("locked")
@@ -114,3 +116,19 @@ func generate_more_args(n: int, provider: String = "") -> PackedStringArray:
 	if provider != "":
 		a.append_array(PackedStringArray(["--image-provider", provider]))
 	return a
+
+
+## Generating needs a brief: the backend reads the description, so an empty one has no prompt.
+func can_generate_more(edited_description: String = description) -> bool:
+	return slug != "" and edited_description.strip_edges() != ""
+
+
+func generate_hint(edited_description: String = description) -> String:
+	return "" if can_generate_more(edited_description) else "Add a description to generate concepts."
+
+
+## Empty when there is nothing to save (no asset, or a blank description).
+func describe_args(text: String) -> PackedStringArray:
+	if slug == "" or text.strip_edges() == "":
+		return PackedStringArray()
+	return PackedStringArray(["describe", slug, text.strip_edges()])

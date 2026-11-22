@@ -49,6 +49,17 @@ var _gate_text: RichTextLabel
 var _export_btn: Button
 var _model_actions: HBoxContainer
 var _shown_run: String = ""
+var new_asset: AssetNewAssetModel = AssetNewAssetModel.new()
+var _new_btn: Button
+var _new_dialog: ConfirmationDialog
+var _new_slug: LineEdit
+var _new_class: OptionButton
+var _new_issue: LineEdit
+var _new_desc: TextEdit
+var _new_hint: Label
+var _desc_edit: TextEdit
+var _desc_save_btn: Button
+var _more_hint: Label
 
 
 func _init() -> void:
@@ -96,6 +107,7 @@ func _build() -> void:
 	_refresh_btn.text = "Refresh"
 	_refresh_btn.pressed.connect(func() -> void: refresh())
 	bar.add_child(_refresh_btn)
+	_new_btn = _button(bar, "New asset", open_new_asset)
 	_status = Label.new()
 	_status.text = "Idle"
 	_status.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -135,6 +147,14 @@ func _build() -> void:
 	_title = Label.new()
 	_title.text = "Concept"
 	right.add_child(_title)
+	var dl: Label = Label.new()
+	dl.text = "Description (the concept brief, editable)"
+	right.add_child(dl)
+	_desc_edit = TextEdit.new()
+	_desc_edit.custom_minimum_size = Vector2(0, 90)
+	_desc_edit.text_changed.connect(func() -> void: _update_description_controls(runner != null and runner.busy))
+	right.add_child(_desc_edit)
+	_desc_save_btn = _button(right, "Save description", _on_save_description)
 	var scroll: ScrollContainer = ScrollContainer.new()
 	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	right.add_child(scroll)
@@ -154,6 +174,8 @@ func _build() -> void:
 	_more_btn.text = "Generate more"
 	_more_btn.pressed.connect(_on_generate_more)
 	more.add_child(_more_btn)
+	_more_hint = Label.new()
+	more.add_child(_more_hint)
 
 	_lineage_title = Label.new()
 	_lineage_title.text = "Lineage"
@@ -163,12 +185,86 @@ func _build() -> void:
 	_lineage.bbcode_enabled = false
 	right.add_child(_lineage)
 
+	_build_new_dialog()
 	_error = RichTextLabel.new()
 	_error.bbcode_enabled = true
 	_error.fit_content = true
 	_error.selection_enabled = true
 	_error.visible = false
 	add_child(_error)
+
+
+func _build_new_dialog() -> void:
+	_new_dialog = ConfirmationDialog.new()
+	_new_dialog.title = "New asset"
+	_new_dialog.ok_button_text = "Create"
+	_new_dialog.min_size = Vector2i(460, 360)
+	var box: VBoxContainer = VBoxContainer.new()
+	_new_dialog.add_child(box)
+	_new_slug = LineEdit.new()
+	_new_slug.placeholder_text = "slug (lowercase letters, digits, _)"
+	box.add_child(_new_slug)
+	_new_class = OptionButton.new()
+	for c: String in AssetNewAssetModel.CLASSES:
+		_new_class.add_item(c)
+	box.add_child(_new_class)
+	_new_issue = LineEdit.new()
+	_new_issue.placeholder_text = "Issue number (optional)"
+	box.add_child(_new_issue)
+	_new_desc = TextEdit.new()
+	_new_desc.placeholder_text = "Description (required): what the asset is"
+	_new_desc.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	_new_desc.custom_minimum_size = Vector2(0, 140)
+	box.add_child(_new_desc)
+	_new_hint = Label.new()
+	box.add_child(_new_hint)
+	_new_slug.text_changed.connect(func(_t: String) -> void: _sync_new_dialog())
+	_new_issue.text_changed.connect(func(_t: String) -> void: _sync_new_dialog())
+	_new_desc.text_changed.connect(_sync_new_dialog)
+	_new_class.item_selected.connect(func(_i: int) -> void: _sync_new_dialog())
+	_new_dialog.confirmed.connect(_on_new_confirmed)
+	add_child(_new_dialog)
+
+
+func open_new_asset() -> void:
+	_new_slug.text = ""
+	_new_issue.text = ""
+	_new_desc.text = ""
+	_new_class.select(0)
+	var slugs: PackedStringArray = PackedStringArray()
+	for r: Dictionary in queue.rows:
+		slugs.append(str(r["slug"]))
+	new_asset.load_existing(slugs)
+	_sync_new_dialog()
+	_new_dialog.popup_centered()
+
+
+func _sync_new_dialog() -> void:
+	new_asset.slug = _new_slug.text
+	new_asset.asset_class = _new_class.get_item_text(_new_class.selected)
+	new_asset.issue_text = _new_issue.text
+	new_asset.description = _new_desc.text
+	_new_hint.text = new_asset.error()
+	_new_dialog.get_ok_button().disabled = not new_asset.is_valid()
+
+
+func _on_new_confirmed() -> void:
+	_sync_new_dialog()
+	var args: PackedStringArray = new_asset.new_args()
+	if args.is_empty():
+		return
+	_selected_slug = new_asset.slug
+	_command(args)
+
+
+func _update_description_controls(busy: bool = false) -> void:
+	_desc_save_btn.disabled = busy or concept.describe_args(_desc_edit.text).is_empty()
+	_more_btn.disabled = busy or not concept.can_generate_more(_desc_edit.text)
+	_more_hint.text = concept.generate_hint(_desc_edit.text)
+
+
+func _on_save_description() -> void:
+	_command(concept.describe_args(_desc_edit.text))
 
 
 func _build_turnaround_tab() -> void:
@@ -293,12 +389,17 @@ func _show_asset(slug: String) -> void:
 			asset = a
 	if asset.is_empty():
 		_title.text = "Concept: no asset selected"
+		concept.load_asset({})
+		_desc_edit.text = ""
+		_update_description_controls()
 		_show_turnaround({})
 		_show_model({})
 		return
 	_show_turnaround(asset)
 	_show_model(asset)
 	concept.load_asset(asset, _providers, _selected)
+	_desc_edit.text = concept.description
+	_update_description_controls()
 	_title.text = "Concept: %s (%s)" % [concept.slug, concept.asset_class]
 	for p: String in concept.image_providers:
 		_provider_pick.add_item(p)
@@ -591,9 +692,10 @@ func _on_finished(args: PackedStringArray, result: AssetBackendResult) -> void:
 
 func _set_busy(busy: bool) -> void:
 	_refresh_btn.disabled = busy
-	_more_btn.disabled = busy
+	_new_btn.disabled = busy
 	for b: Button in [_turn_all_btn, _brief_save_btn, _brief_draft_btn, _export_btn]:
 		b.disabled = busy or b.disabled
+	_update_description_controls(busy)
 	if not busy:
 		_update_brief_buttons()
 		_refresh_model_controls()
