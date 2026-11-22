@@ -43,7 +43,7 @@ Seven roles. Six are Claude jobs; the dispatcher is deterministic code.
 | --- | --- | --- | --- | --- |
 | **Head developer** | Interactive Claude session with Tristan | Conversation | Ideas | A `concept` issue (labelled `concept` when ready for breakdown) |
 | **Organization agent** | `role-organization.yml` | `concept` or `plan-rejected` added to an issue | The concept | A `## Proposed breakdown` comment; `plan-proposed` |
-| **Plan-review agent** | `role-plan-review.yml` | `plan-proposed` added | The proposal | Arc issues (`blocked`, then `ready` for unblocked ones) and `plan-approved`; or objections and `plan-rejected` |
+| **Plan-review agent** | `role-plan-review.yml` | `plan-proposed` added | The proposal | Arc issues (`blocked`; the dispatcher promotes) and `plan-approved`; or objections and `plan-rejected` |
 | **Dispatcher** | `dispatch.yml`, shell | Any label change or close on issues and PRs; cron `*/30` | Labels | Unblocks arcs, claims up to the worker cap, starts development builds, projects labels onto the board |
 | **Development agent** | `role-development.yml` | Build: `gh workflow run` from the dispatcher. Rework: `changes-requested` added to an `arc/*` PR | A `claimed` arc, or a sent-back PR | A PR into `dev` with a `## Handoff` comment; or a pushed fix with a `## Rework` reply |
 | **Review agent** | `role-review.yml` | `ci-green` added to a PR into `dev` | The PR | `## Review: accepted` + `approved` + squash-merge; or `## Review: changes requested` + `rework:N` + `changes-requested`; or escalation |
@@ -61,7 +61,7 @@ Reads the concept, the design doc, the open milestones and the open arcs. Decide
 
 ### Plan-review agent
 
-Checks the proposal against the concept and the design doc: fidelity, design consistency, size (one development job each), verifiability, dependencies, naming (only that the milestone exists and is open; arc numbers are never a rejection reason). On approval it assigns each arc's `<k>` (next free under the milestone, open and closed sub-issues counted; plan review is serialised so this cannot race), creates the arcs as sub-issues of their milestones with `arc` and `blocked`, then adds `ready` as a separate final label change to those with no open blockers, and applies `plan-approved`. On rejection it comments objections and swaps `plan-proposed` for `plan-rejected`, which starts another organization job. A second rejection escalates to `needs-human` instead.
+Checks the proposal against the concept and the design doc: fidelity, design consistency, size (one development job each), verifiability, dependencies, naming (only that the milestone exists and is open; arc numbers are never a rejection reason). On approval it assigns each arc's `<k>` (next free under the milestone, open and closed sub-issues counted; plan review is serialised so this cannot race), creates the arcs as sub-issues of their milestones with `arc` and `blocked` and stops (the dispatcher's Unblock step promotes unblocked arcs to `ready`; the approval comment lists which are ready now), and applies `plan-approved`. On rejection it comments objections and swaps `plan-proposed` for `plan-rejected`, which starts another organization job. A second rejection escalates to `needs-human` instead.
 
 ### Dispatcher
 
@@ -70,7 +70,7 @@ Checks the proposal against the concept and the design doc: fidelity, design con
 1. Exits immediately if the repository variable `PIPELINE_PAUSED` is `true`.
 2. **Mirrors the board.** Arcs whose board Status is Ready but which lack the `ready` label get it, so Tristan can promote work from the board UI.
 3. **Unblocks.** For each `blocked` arc, if every issue in its `Blocked by:` line and in GitHub's native blocked-by dependencies is closed, swap `blocked` for `ready`. A blocker that cannot be looked up counts as still open.
-4. **Claims.** In-flight count = open arcs labeled `claimed` or `in-review` (a PR awaiting review or rework still occupies its slice of `dev`). While in-flight is below `WORKER_CAP` (repository variable, start at 2): take the oldest `ready` arc whose `Touches:` do not overlap any in-flight arc (prefix-directory match; an arc with no `Touches:` line counts as touching everything), swap `ready` for `claimed`, start `role-development.yml` with `gh workflow run`, and comment the run URL on the arc. If the run cannot be started, revert to `ready`.
+4. **Claims.** First drops a stray `ready` from any arc already `claimed` or `in-review`. In-flight count = open arcs labeled `claimed` or `in-review` (a PR awaiting review or rework still occupies its slice of `dev`). While in-flight is below `WORKER_CAP` (repository variable, start at 2): take the oldest `ready` arc whose `Touches:` do not overlap any in-flight arc (prefix-directory match; an arc with no `Touches:` line counts as touching everything), swap `ready` for `claimed`, start `role-development.yml` with `gh workflow run`, and comment the run URL on the arc. If the run cannot be started, revert to `ready`.
 5. **Closes finished concepts.** Any open `concept` issue carrying `plan-approved` (and not `needs-human`) whose arcs, found by their `Concept: #<n>` line, are all closed is closed as completed; a concept with no arcs is never closed. This backstops the review agent's Accept step 4.
 6. **Projects labels onto the board**, first adding any arc, concept or `design` issue that is not yet a project item (plan review creates arcs without touching the board): arcs `blocked` → Backlog, `ready` → Ready, `claimed` → In progress, `in-review` → In review (or In progress while the PR carries `changes-requested`), closed → Done; concepts `plan-approved` → In progress, otherwise Backlog; open issues labelled `design` (draft concepts and `Design:` notes) → Backlog, closed → Done. Closed arcs also lose any stale state label. Items carrying `needs-human` are left where they are.
 7. **Logs anomalies**: an arc PR that has carried `changes-requested` for 30+ minutes with no rework run clearing it.
@@ -127,7 +127,7 @@ Every workflow fires on a label being **added**; a label already present fires n
 | `plan-approved` | concept | Arcs created; concept closes with its last arc | Plan-review agent | never |
 | `arc` | issue | A unit of work | Plan-review agent | never |
 | `blocked` | arc | Waits on `Blocked by:` issues | Plan-review agent | Dispatcher |
-| `ready` | arc | Queued for the dispatcher | Plan-review agent, dispatcher, Tristan | Dispatcher (claim) |
+| `ready` | arc | Queued for the dispatcher | Dispatcher, Tristan | Dispatcher (claim; also drops a stray `ready` from a claimed/in-review arc) |
 | `claimed` | arc | A development build has it | Dispatcher | Development agent |
 | `in-review` | arc | Has an open PR | Development agent | Dispatcher, when the arc closes |
 | `ci-green` | PR | CI passed on the current head | CI workflow, with the PAT (starts review) | CI workflow, on the next push |
