@@ -1,0 +1,1 @@
+{"ok": false, "error": "OPENAI_API_KEY is not set (put it in tools/asset_pipeline/.env)"}

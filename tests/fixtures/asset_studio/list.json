@@ -1,0 +1,20 @@
+{"ok": true,
+ "providers": {"image": ["fal", "google", "mock", "openai"], "three_d": ["mock", "tripo"], "prompt_writer": ["mock"]},
+ "selected": {"image": "mock", "three_d": "mock", "prompt_writer": "mock"},
+ "assets": [
+  {"slug": "angler", "class": "creature", "issue": 12, "stage": "locked", "description": "A deep-sea angler.",
+   "created": "2026-11-01T10:00:00Z",
+   "lineage": [
+    {"id": "v1", "kind": "concept", "path": "", "provider": "mock", "model": "mock-image-1", "prompt": "angler, side view", "parent": null, "created": "2026-11-01T10:01:00Z"},
+    {"id": "v2", "kind": "concept", "path": "", "provider": "openai", "model": "gpt-image-1", "prompt": "angler, bigger lure", "parent": "v1", "created": "2026-11-01T10:05:00Z"},
+    {"id": "v3", "kind": "concept", "path": "", "provider": "openai", "model": "gpt-image-1", "prompt": "angler, glowing red lure", "parent": "v2", "created": "2026-11-01T10:09:00Z"}],
+   "locked": {"variant": "v3", "decision": "approved", "reviewer": "tristan", "notes": "", "at": "2026-11-01T10:20:00Z"},
+   "decisions": [{"variant": "v1", "decision": "rejected", "reviewer": "tristan", "notes": "too cute", "at": "2026-11-01T10:12:00Z"}]},
+  {"slug": "bulkhead", "class": "architecture", "issue": null, "stage": "checked", "description": "",
+   "created": "2026-11-02T09:00:00Z",
+   "lineage": [
+    {"id": "m1", "kind": "mesh", "path": "", "provider": "blender", "model": "", "prompt": "", "parent": null, "created": "2026-11-02T09:30:00Z"}],
+   "locked": null, "decisions": [],
+   "checks": [{"id": "m1", "report": "assets/models/bulkhead/checks/m1.json", "ok": false, "failed": ["triangles", "bbox"], "at": "2026-11-02T09:40:00Z"}]},
+  {"slug": "coral", "class": "terrain", "issue": 20, "stage": "new", "description": "", "created": "2026-11-03T09:00:00Z", "lineage": [], "locked": null, "decisions": []}
+ ]}
