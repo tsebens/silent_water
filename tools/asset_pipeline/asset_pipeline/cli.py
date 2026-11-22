@@ -6,6 +6,7 @@ import getpass
 import json
 import os
 import sys
+import time
 from pathlib import Path
 from typing import Any
 
@@ -175,6 +176,63 @@ def cmd_brief(args: argparse.Namespace, root: Path) -> dict[str, Any]:
             "prompt_writer": f"{writer.name}:{writer.model}"}
 
 
+def _wait_for(prov: Any, job: str, interval: float, timeout: float) -> None:
+    """Poll until the job is done; raise on failure or timeout."""
+    deadline = time.monotonic() + timeout
+    while True:
+        state = prov.poll(job)
+        if state == "done":
+            return
+        if state == "failed":
+            why = prov.failure_reason(job)
+            raise ValueError(f"{prov.name} job {job} failed" + (f": {why}" if why else ""))
+        if state not in ("pending", "running"):
+            raise ValueError(f"{prov.name} job {job} reported unknown state {state!r}")
+        if time.monotonic() >= deadline:
+            raise ValueError(f"{prov.name} job {job} timed out after {timeout:g}s")
+        time.sleep(interval)
+
+
+def cmd_to3d(args: argparse.Namespace, root: Path) -> dict[str, Any]:
+    """Send the latest turnaround to each named 3D provider (several is the bake-off) and record each run.
+    A provider that fails is reported under `errors` and does not stop the others."""
+    mpath = paths.manifest_path(root, args.slug)
+    m = Manifest.load(mpath)
+    tid = _latest_turnaround(m)
+    by_view = {e.id[len(tid):]: e for e in m.lineage if e.kind == "turnaround" and e.id.startswith(tid)}
+    if not by_view:
+        raise ValueError("no turnaround: run `asset turnaround` first")
+    ordered = [by_view[v] for v in VIEWS if v in by_view]
+    views = [abspath(root, e.path) for e in ordered]
+    cfg = providers.load_config()
+    names = list(dict.fromkeys(args.three_d_provider or [None]))
+    built = [providers.select("three_d", cfg, n) for n in names]  # fail on a bad name before any spend
+    out_dir = paths.work_dir(root, args.slug) / "to3d"
+    runs: list[dict[str, Any]] = []
+    errors: list[dict[str, str]] = []
+    for prov in built:
+        try:
+            job = prov.submit(views)
+            _wait_for(prov, job, args.poll_interval, args.timeout)
+            k = 1
+            while any(e.id == f"r{k}_{prov.name}" for e in m.lineage):
+                k += 1
+            rid = f"r{k}_{prov.name}"
+            rel = (out_dir / f"{rid}.glb").relative_to(root)
+            prov.download(job, root / rel)
+        except (ValueError, OSError) as e:
+            errors.append({"provider": prov.name, "error": str(e)})
+            continue
+        m.add(LineageEntry(id=rid, kind="mesh", path=str(rel), provider=prov.name, model=prov.model,
+                           parent=ordered[0].id, references=[e.path for e in ordered], task_id=job))
+        m.save(mpath)  # per run, so a later provider's crash keeps this one
+        runs.append({"id": rid, "provider": prov.name, "model": prov.model, "task_id": job, "path": str(rel)})
+    if runs and m.stage in ("new", "concept", "locked", "turnaround", "brief", "to3d"):
+        m.stage = "to3d"
+        m.save(mpath)
+    return {"ok": not errors, "slug": m.slug, "stage": m.stage, "runs": runs, "errors": errors}
+
+
 def _latest_turnaround(m: Manifest) -> str:
     ids = [e.id for e in m.lineage if e.kind == "turnaround"]
     if not ids:
@@ -243,6 +301,12 @@ def build_parser() -> argparse.ArgumentParser:
     b.add_argument("slug")
     b.add_argument("--prompt-writer", default=None)
     b.set_defaults(fn=cmd_brief)
+    t3 = sub.add_parser("to3d", help="image-to-3D from the turnaround; several providers is a bake-off")
+    t3.add_argument("slug")
+    t3.add_argument("--3d-provider", dest="three_d_provider", nargs="+", default=None, metavar="P")
+    t3.add_argument("--poll-interval", type=float, default=5.0, help="seconds between polls")
+    t3.add_argument("--timeout", type=float, default=1800.0, help="give up on a provider after this many seconds")
+    t3.set_defaults(fn=cmd_to3d)
     return p
 
 

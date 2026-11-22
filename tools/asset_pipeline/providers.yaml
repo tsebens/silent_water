@@ -26,6 +26,12 @@ providers:
     # flux-kontext: {adapter: fal, model: fal-ai/flux-pro/kontext, edit_model: fal-ai/flux-pro/kontext}
   three_d:
     mock: {model: mock-3d-1}
+    # Hosted image-to-3D, all taking the four turnaround views. Keys: TRIPO_API_KEY, MESHY_API_KEY,
+    # RODIN_API_KEY (model = tier), FAL_KEY. Hunyuan3D is not shipped (licence excludes EU/UK/KR, #219).
+    tripo: {model: v2.5-20250123}
+    meshy: {model: meshy-5}
+    rodin: {model: Regular}
+    trellis: {model: fal-ai/trellis-2}
   prompt_writer:
     mock: {model: mock-writer-1}
     # Claude Code CLI: `claude -p ... --output-format json`, uses the logged-in subscription
