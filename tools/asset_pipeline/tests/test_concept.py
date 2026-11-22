@@ -1,3 +1,4 @@
+import pytest
 import json
 
 from asset_pipeline import cli, paths
@@ -94,3 +95,24 @@ def test_turnaround_and_brief(root, capsys):
     assert len(t) == 8
     assert len({e.path for e in t}) == 8
     assert all((root / e.path).is_file() for e in t)
+
+
+def test_turnaround_single_view(root, capsys):
+    seed(root, capsys)
+    run(capsys, "concept", "angler", "--n", "1", "--brief", "an anglerfish")
+    run(capsys, "lock", "angler", "v1", "--reviewer", "t")
+    code, out = run(capsys, "turnaround", "angler", "--view", "left")
+    assert code == 1 and "complete turnaround" in out["error"]
+    run(capsys, "turnaround", "angler")
+    code, out = run(capsys, "turnaround", "angler", "--view", "back")
+    assert code == 0 and [v["id"] for v in out["views"]] == ["t2_front", "t2_left", "t2_back", "t2_right"]
+    m = Manifest.load(paths.manifest_path(root, "angler"))
+    t2 = {e.id: e for e in m.lineage if e.id.startswith("t2_")}
+    assert len(t2) == 4 and len({e.path for e in t2.values()}) == 4
+    assert all((root / e.path).is_file() for e in t2.values())
+    assert (root / t2["t2_front"].path).read_bytes() == (root / m.entry("t1_front").path).read_bytes()
+    assert t2["t2_front"].parent == "v1"
+    code, out = run(capsys, "brief", "angler")
+    assert code == 0
+    with pytest.raises(SystemExit):
+        run(capsys, "turnaround", "angler", "--view", "top")

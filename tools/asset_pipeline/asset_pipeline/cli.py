@@ -128,8 +128,28 @@ def cmd_turnaround(args: argparse.Namespace, root: Path) -> dict[str, Any]:
     while any(e.id.startswith(f"t{n}_") for e in m.lineage):
         n += 1
     style = read_block(root, "style.md")
+    only = getattr(args, "view", None)
+    prev: dict[str, LineageEntry] = {}
+    if only:
+        old = _latest_turnaround(m)
+        prev = {e.id[len(old):]: e for e in m.lineage if e.kind == "turnaround" and e.id.startswith(old)}
+        missing = [v for v in VIEWS if v not in prev]
+        if missing:
+            raise ValueError(f"--view needs a complete turnaround to start from: run `asset turnaround` first "
+                             f"(missing {', '.join(missing)})")
     views = []
     for view in VIEWS:
+        if only and view != only:
+            # carry the view over so the new set is complete: copy the file, keep prompt and provenance
+            old_e = prev[view]
+            rel = (out_dir / f"turnaround_t{n}_{view}.png").relative_to(root)
+            shutil.copyfile(abspath(root, old_e.path), root / rel)
+            eid = f"t{n}_{view}"
+            m.add(LineageEntry(id=eid, kind="turnaround", path=str(rel), provider=old_e.provider,
+                               model=old_e.model, prompt=old_e.prompt, parent=old_e.parent,
+                               references=list(old_e.references)))
+            views.append({"id": eid, "view": view, "path": str(rel), "parent": old_e.parent, "carried_from": old_e.id})
+            continue
         body = (f"Orthographic {view} view of this exact asset, flat neutral lighting, no perspective, "
                 f"centred, on a transparent or plain removed background, {TURNAROUND_PX}x{TURNAROUND_PX} px. "
                 "Keep every proportion and detail of the source image unchanged.")
@@ -474,6 +494,8 @@ def build_parser() -> argparse.ArgumentParser:
     t = sub.add_parser("turnaround", help="front, left, back, right views of the locked concept")
     t.add_argument("slug")
     t.add_argument("--image-provider", default=None)
+    t.add_argument("--view", choices=VIEWS, default=None,
+                   help="regenerate one view into a new complete set (the other three are copied from the latest)")
     t.set_defaults(fn=cmd_turnaround)
     b = sub.add_parser("brief", help="draft brief.md from the locked concept and views")
     b.add_argument("slug")
