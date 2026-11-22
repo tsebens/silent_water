@@ -91,7 +91,7 @@ def test_tripo_submit_poll_download(server, tmp_path, monkeypatch, views):
     uploads = [r for r in Routes.seen if r["path"] == "/upload"]
     assert len(uploads) == 4 and uploads[0]["headers"]["authorization"] == "Bearer tk"
     task = json.loads([r for r in Routes.seen if r["path"] == "/task" and r["method"] == "POST"][0]["body"])
-    assert task["type"] == "multiview_to_model" and task["model_version"] == "v2.5-20250123"
+    assert task["type"] == "multiview_to_model" and task["model_version"] == "v3.1-20260211"
     assert [f["file_token"] for f in task["files"]] == ["tok-1"] * 4 and task["files"][0]["type"] == "png"
 
 

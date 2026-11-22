@@ -66,7 +66,7 @@ def test_openai_generate_without_refs_uses_generations(server, tmp_path, monkeyp
     assert out.read_bytes().startswith(PNG_MAGIC)
     r = Stub.seen[0]
     assert r["path"] == "/v1/images/generations" and r["headers"]["authorization"] == "Bearer sk-o"
-    assert json.loads(r["body"]) == {"model": "gpt-image-1", "prompt": "an angler", "size": "1024x1024", "n": 1}
+    assert json.loads(r["body"]) == {"model": "gpt-image-2.5-sunburst", "prompt": "an angler", "size": "1024x1024", "n": 1}
 
 
 def test_openai_references_upload_as_multipart_edit(server, tmp_path, monkeypatch, refs):
@@ -87,7 +87,7 @@ def test_openai_live_check(server, monkeypatch):
     monkeypatch.setenv("OPENAI_API_KEY", "sk-o")
     Stub.fixture = "openai_images_response.json"
     assert "reachable" in OpenAIImage(base_url=server).live_check()
-    assert Stub.seen[0]["method"] == "GET" and Stub.seen[0]["path"] == "/v1/models/gpt-image-1"
+    assert Stub.seen[0]["method"] == "GET" and Stub.seen[0]["path"] == "/v1/models/gpt-image-2.5-sunburst"
 
 
 # ---- Google ----------------------------------------------------------------
@@ -318,7 +318,7 @@ def test_doctor_live_runs_one_call_per_keyed_provider(clean_env, server, monkeyp
     on = checks(doctor.run(cfg, live=True))
     assert on["image:openai live"]["ok"] and on["image:fal live"]["ok"] and on["prompt_writer:anthropic-api live"]["ok"]
     assert "image:google live" not in on  # no key, no call
-    assert sorted(s["path"] for s in Stub.seen) == ["/fal-ai/flux-pro/v1.1", "/fal-ai/trellis-2", "/v1/models/gpt-image-1"]
+    assert sorted(s["path"] for s in Stub.seen) == ["/fal-ai/flux-pro/v1.1", "/fal-ai/trellis-2", "/v1/models/gpt-image-2.5-sunburst"]
     Stub.status = 401
     bad = checks(doctor.run(cfg, live=True))
     assert not bad["image:openai live"]["ok"] and "HTTP 401" in bad["image:openai live"]["detail"]

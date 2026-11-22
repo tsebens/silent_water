@@ -15,7 +15,7 @@ class MeshyThreeD(HostedThreeD):
     name = "meshy"
     env_key = "MESHY_API_KEY"
 
-    def __init__(self, model: str = "meshy-5", base_url: str = "https://api.meshy.ai/openapi/v1",
+    def __init__(self, model: str = "meshy-7.1", base_url: str = "https://api.meshy.ai/openapi/v1",
                  timeout: int = 300) -> None:
         super().__init__()
         self.model, self.base_url, self.timeout = model, base_url.rstrip("/"), timeout

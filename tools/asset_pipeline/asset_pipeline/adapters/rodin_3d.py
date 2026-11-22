@@ -15,7 +15,7 @@ class RodinThreeD(HostedThreeD):
     name = "rodin"
     env_key = "RODIN_API_KEY"
 
-    def __init__(self, model: str = "Regular", base_url: str = "https://api.hyper3d.com/api/v2",
+    def __init__(self, model: str = "Gen-2.5-Medium", base_url: str = "https://api.hyper3d.com/api/v2",
                  timeout: int = 300) -> None:
         super().__init__()
         self.model, self.base_url, self.timeout = model, base_url.rstrip("/"), timeout  # model is the tier

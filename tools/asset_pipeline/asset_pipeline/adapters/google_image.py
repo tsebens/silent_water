@@ -14,7 +14,7 @@ class GoogleImage(ImageProvider):
     name = "google"
     env_key = "GEMINI_API_KEY"
 
-    def __init__(self, model: str = "gemini-2.5-flash-image",
+    def __init__(self, model: str = "gemini-nano-banana-2.1",
                  base_url: str = "https://generativelanguage.googleapis.com", timeout: int = 180) -> None:
         self.model, self.base_url, self.timeout = model, base_url.rstrip("/"), timeout
 

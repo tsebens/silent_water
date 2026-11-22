@@ -18,7 +18,7 @@ class TripoThreeD(HostedThreeD):
     name = "tripo"
     env_key = "TRIPO_API_KEY"
 
-    def __init__(self, model: str = "v2.5-20250123", base_url: str = "https://api.tripo3d.ai/v2/openapi",
+    def __init__(self, model: str = "v3.1-20260211", base_url: str = "https://api.tripo3d.ai/v2/openapi",
                  timeout: int = 300) -> None:
         super().__init__()
         self.model, self.base_url, self.timeout = model, base_url.rstrip("/"), timeout
