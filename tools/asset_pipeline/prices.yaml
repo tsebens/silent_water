@@ -1,0 +1,72 @@
+# Unit prices for the cost ledger (asset_pipeline/cost.py). Prices are config, not code: edit here.
+# Layout: <kind>: <provider>: <model id>: {rates..., source, checked}.
+# Rates (any combination; the ledger stores the ones it used on each entry):
+#   usd_per_image, usd_per_generation, usd_per_credit,
+#   usd_per_mtok_input, usd_per_mtok_output, usd_per_mtok_total (USD per million tokens).
+# A model with no entry here is recorded as `unknown` (null usd), never as zero.
+# PLACEHOLDER VALUES: the figures below were not confirmed against the providers' pricing pages.
+# `checked: unverified` marks that; set it to the date you checked the source when you correct a price.
+image:
+  openai:
+    gpt-image-2.5-sunburst:
+      usd_per_mtok_input: 5.0
+      usd_per_mtok_output: 40.0
+      usd_per_image: 0.10
+      source: https://developers.openai.com/api/docs/pricing
+      checked: unverified
+  google:
+    gemini-nano-banana-2.1:
+      usd_per_mtok_input: 0.30
+      usd_per_mtok_output: 30.0
+      usd_per_image: 0.04
+      source: https://ai.google.dev/gemini-api/docs/pricing
+      checked: unverified
+    gemini-3-pro-image:
+      usd_per_mtok_input: 2.0
+      usd_per_mtok_output: 120.0
+      usd_per_image: 0.13
+      source: https://ai.google.dev/gemini-api/docs/pricing
+      checked: unverified
+  fal:
+    fal-ai/flux-pro/v1.1:
+      usd_per_image: 0.04
+      source: https://fal.ai/models/fal-ai/flux-pro/v1.1
+      checked: unverified
+    fal-ai/flux-pro/kontext:
+      usd_per_image: 0.04
+      source: https://fal.ai/models/fal-ai/flux-pro/kontext
+      checked: unverified
+prompt_writer:
+  anthropic-api:
+    claude-sonnet-5-5:
+      usd_per_mtok_input: 3.0
+      usd_per_mtok_output: 15.0
+      source: https://www.anthropic.com/pricing
+      checked: unverified
+  # claude-cli runs on the logged-in subscription: it records usd 0 / basis subscription, so it needs no price.
+three_d:
+  # Credit-based providers. Every usd_per_credit line must be preceded by a comment naming the assumed
+  # plan (tests/test_cost.py enforces it); Tristan corrects the figure once the keys are set up.
+  tripo:
+    v3.1-20260211:
+      # Assumed plan: Tripo Professional, pay-as-you-go credits (placeholder $/credit).
+      usd_per_credit: 0.01
+      source: https://www.tripo3d.ai/pricing
+      checked: unverified
+  meshy:
+    meshy-7.1:
+      # Assumed plan: Meshy Pro monthly credits (placeholder $/credit).
+      usd_per_credit: 0.02
+      source: https://www.meshy.ai/pricing
+      checked: unverified
+  rodin:
+    Gen-2.5-Medium:
+      # Assumed plan: Hyper3D Rodin Creator subscription credits (placeholder $/credit).
+      usd_per_credit: 0.05
+      source: https://hyper3d.ai/pricing
+      checked: unverified
+  trellis:
+    fal-ai/trellis-2:
+      usd_per_generation: 0.25
+      source: https://fal.ai/models/fal-ai/trellis-2
+      checked: unverified

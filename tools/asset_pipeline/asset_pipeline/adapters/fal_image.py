@@ -33,6 +33,7 @@ class FalImage(ImageProvider):
         if images:
             payload["image_urls"] = [_net.data_uri(p) for p in images]
         reply = _net.post_json("fal", f"{self.base_url}/{endpoint}", self._headers(), payload, self.timeout)
+        self.last_usage = {"images": 1}  # fal reports no usage: one image requested, priced per image
         items = reply.get("images") if isinstance(reply, dict) else None
         url = items[0].get("url") if items and isinstance(items[0], dict) else None
         if not url:

@@ -1,0 +1,14 @@
+# Round-number prices so ledger tests do not move when the real prices.yaml is corrected.
+image:
+  openai:
+    gpt-image-2.5-sunburst: {usd_per_mtok_input: 5.0, usd_per_mtok_output: 40.0, usd_per_image: 0.1}
+  google:
+    gemini-nano-banana-2.1: {usd_per_mtok_input: 1.0, usd_per_mtok_output: 10.0}
+  fal:
+    fal-ai/flux-pro/v1.1: {usd_per_image: 0.04}
+prompt_writer:
+  anthropic-api:
+    claude-sonnet-5-5: {usd_per_mtok_input: 3.0, usd_per_mtok_output: 15.0}
+three_d:
+  tripo:
+    v3.1-20260211: {usd_per_credit: 0.01}

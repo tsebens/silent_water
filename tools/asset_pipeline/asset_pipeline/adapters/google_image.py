@@ -7,7 +7,7 @@ from pathlib import Path
 
 from ..providers import REGISTRY, ImageProvider
 from . import _net
-from ._net import ImageProviderError
+from ._net import ImageProviderError, token_usage
 
 
 class GoogleImage(ImageProvider):
@@ -30,6 +30,9 @@ class GoogleImage(ImageProvider):
         reply = _net.post_json("google", f"{self.base_url}/v1beta/models/{self.model}:generateContent",
                                self._headers(), {"contents": [{"parts": parts}],
                                                  "generationConfig": {"responseModalities": ["IMAGE"]}}, self.timeout)
+        meta = reply.get("usageMetadata") if isinstance(reply, dict) else None
+        self.last_usage = token_usage(meta, ("promptTokenCount", "candidatesTokenCount", "totalTokenCount"),
+                                      ("input_tokens", "output_tokens", "total_tokens"))
         for cand in (reply.get("candidates") or []) if isinstance(reply, dict) else []:
             for part in (cand.get("content") or {}).get("parts") or []:
                 blob = part.get("inlineData") or part.get("inline_data")

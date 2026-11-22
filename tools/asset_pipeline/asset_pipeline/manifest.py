@@ -112,6 +112,23 @@ class ExportRecord:
 
 
 @dataclass
+class CostRecord:
+    """One paid backend call: usage as reported, USD, how the USD was arrived at, and the unit price used."""
+    command: str
+    stage: str
+    provider: str
+    model: str
+    usd: float | None  # null when basis is `unknown`
+    basis: str  # reported | estimated | mock | unknown | subscription
+    lineage: str | None = None  # id of the lineage entry the call produced, if any
+    units: dict[str, Any] = field(default_factory=dict)
+    unit_price: dict[str, Any] = field(default_factory=dict)
+    api_equivalent_usd: float | None = None  # claude-cli only; informational, never counted as spend
+    error: str = ""  # set when the call failed but was billed
+    at: str = field(default_factory=now)
+
+
+@dataclass
 class Manifest:
     slug: str
     asset_class: str
@@ -128,6 +145,8 @@ class Manifest:
     checks: list[CheckRecord] = field(default_factory=list)
     godot_checks: list[GodotCheckRecord] = field(default_factory=list)
     exports: list[ExportRecord] = field(default_factory=list)
+    # The cost ledger (see cost.py): append-only, so reject, delete and regenerate never remove entries.
+    costs: list[CostRecord] = field(default_factory=list)
 
     def entry(self, entry_id: str) -> LineageEntry:
         for e in self.lineage:
@@ -193,6 +212,7 @@ class Manifest:
             checks=[CheckRecord(**x) for x in d.get("checks") or []],
             godot_checks=[GodotCheckRecord(**x) for x in d.get("godot_checks") or []],
             exports=[ExportRecord(**x) for x in d.get("exports") or []],
+            costs=[CostRecord(**x) for x in d.get("costs") or []],
         )
 
     def save(self, path: Path) -> None:

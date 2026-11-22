@@ -68,6 +68,7 @@ def parse_prompts(text: str, n: int) -> list[str]:
 class ClaudeCliWriter(PromptWriter):
     """`claude -p <prompt> --output-format json`, with read access to the images' folders."""
     name = "claude-cli"
+    billing = "subscription"  # the logged-in plan pays; cost.py records usd 0 and the API-equivalent figure
 
     def __init__(self, model: str = "claude-sonnet-5-5", command: str | None = None, timeout: int = 300) -> None:
         self.model = model
@@ -98,6 +99,11 @@ class ClaudeCliWriter(PromptWriter):
             out = json.loads(proc.stdout)
         except json.JSONDecodeError as e:
             raise PromptWriterError(f"claude CLI did not print JSON: {proc.stdout[:200]!r}") from e
+        if isinstance(out, dict):
+            usage = out.get("usage") if isinstance(out.get("usage"), dict) else {}
+            self.last_usage = {k: usage[k] for k in ("input_tokens", "output_tokens") if isinstance(usage.get(k), int)}
+            if isinstance(out.get("total_cost_usd"), (int, float)):
+                self.last_usage["api_equivalent_usd"] = out["total_cost_usd"]
         if not isinstance(out, dict) or out.get("is_error"):
             raise PromptWriterError(f"claude CLI reported an error: {str(out.get('result', out))[:500]}")
         result = out.get("result")
@@ -150,6 +156,8 @@ class AnthropicApiWriter(PromptWriter):
             raise PromptWriterError(f"Anthropic API unreachable: {e}") from e
         except json.JSONDecodeError as e:
             raise PromptWriterError(f"Anthropic API returned invalid JSON: {e}") from e
+        usage = data.get("usage") if isinstance(data.get("usage"), dict) else {}
+        self.last_usage = {k: usage[k] for k in ("input_tokens", "output_tokens") if isinstance(usage.get(k), int)}
         text = "".join(b.get("text", "") for b in data.get("content", []) if b.get("type") == "text")
         if not text.strip():
             raise PromptWriterError("Anthropic API reply has no text")

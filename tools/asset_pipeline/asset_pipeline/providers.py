@@ -22,6 +22,8 @@ KINDS = ("image", "three_d", "prompt_writer")
 class ImageProvider(ABC):
     name: str
     model: str
+    billing = "paid"  # "mock" and "subscription" are never priced from prices.yaml
+    last_usage: dict[str, Any] | None = None  # usage of the latest call, as the provider reported it (cost.py)
 
     @abstractmethod
     def generate(self, prompt: str, references: list[Path], out: Path) -> Path:
@@ -35,6 +37,8 @@ class ImageProvider(ABC):
 class ThreeDProvider(ABC):
     name: str
     model: str
+    billing = "paid"  # "mock" and "subscription" are never priced from prices.yaml
+    last_usage: dict[str, Any] | None = None  # usage of the latest call, as the provider reported it (cost.py)
 
     @abstractmethod
     def submit(self, views: list[Path]) -> str:
@@ -56,6 +60,8 @@ class ThreeDProvider(ABC):
 class PromptWriter(ABC):
     name: str
     model: str
+    billing = "paid"  # "mock" and "subscription" are never priced from prices.yaml
+    last_usage: dict[str, Any] | None = None  # usage of the latest call, as the provider reported it (cost.py)
 
     @abstractmethod
     def write_prompts(self, brief: str, style: str, notes: str, images: list[Path], n: int) -> list[str]:
@@ -89,6 +95,7 @@ def _png(seed: bytes, size: int = 8) -> bytes:
 
 class MockImageProvider(ImageProvider):
     name = "mock"
+    billing = "mock"
 
     def __init__(self, model: str = "mock-image-1") -> None:
         self.model = model
@@ -112,6 +119,7 @@ class MockImageProvider(ImageProvider):
 
 class MockThreeDProvider(ThreeDProvider):
     name = "mock"
+    billing = "mock"
 
     def __init__(self, model: str = "mock-3d-1") -> None:
         self.model = model
@@ -130,6 +138,7 @@ class MockThreeDProvider(ThreeDProvider):
 
 class MockPromptWriter(PromptWriter):
     name = "mock"
+    billing = "mock"
 
     def __init__(self, model: str = "mock-writer-1") -> None:
         self.model = model

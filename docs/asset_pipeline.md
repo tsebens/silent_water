@@ -14,6 +14,10 @@ Copies the cleaned GLB to `build/asset_check/<slug>/` (git-ignored), imports it 
 
 Needs a mesh that passed `asset check`. Writes to `assets/models/<slug>/`: `<slug>.glb`, `<slug>.glb.import`, `<slug>.tscn` (an instance of the GLB), `concept/` (locked concept as `locked.<ext>`, the turnaround views and `brief.md`, with a `.gdignore`; PNGs over 2048 px are shrunk, other formats over 2048 px are an error) and `asset.yaml`.
 
+## Cost ledger
+
+The manifest's append-only `costs` list records every paid backend call (units, USD, basis, the unit price used); prices live in `tools/asset_pipeline/prices.yaml`. Godot-side code does not read it yet. See the backend README for the entry fields and bases.
+
 ## Repo gates (`tools/check.sh`)
 
 - `asset_sizes`: fails on any file over 5 MB under `assets/` (`tools/check_asset_sizes.py`). Files already committed over the limit are listed in `tools/asset_size_allowlist.txt`; do not add to it.
