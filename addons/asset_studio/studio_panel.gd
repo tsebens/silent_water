@@ -10,6 +10,8 @@ const THUMB: Vector2 = Vector2(220, 220)
 var runner: AssetBackendRunner
 var queue: AssetQueueModel = AssetQueueModel.new()
 var concept: AssetConceptModel = AssetConceptModel.new()
+var turnaround: AssetTurnaroundModel = AssetTurnaroundModel.new()
+var model: AssetModelModel = AssetModelModel.new()
 
 var _assets: Array = []
 var _providers: Dictionary = {}
@@ -26,6 +28,27 @@ var _lineage: RichTextLabel
 var _refresh_btn: Button
 var _more_btn: Button
 var _lineage_title: Label
+var _tabs: TabContainer
+var _turn_title: Label
+var _turn_views: HBoxContainer
+var _turn_provider: OptionButton
+var _turn_all_btn: Button
+var _brief_edit: TextEdit
+var _brief_save_btn: Button
+var _brief_draft_btn: Button
+var _model_title: Label
+var _previews: HBoxContainer
+var _run_list: VBoxContainer
+var _model_provider: OptionButton
+var _light_btn: Button
+var _wire_btn: Button
+var _turntable_btn: Button
+var _tri_label: Label
+var _gate_title: Label
+var _gate_text: RichTextLabel
+var _export_btn: Button
+var _model_actions: HBoxContainer
+var _shown_run: String = ""
 
 
 func _init() -> void:
@@ -100,9 +123,15 @@ func _build() -> void:
 	_tree.item_selected.connect(_on_row_selected)
 	split.add_child(_tree)
 
+	_tabs = TabContainer.new()
+	_tabs.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	split.add_child(_tabs)
 	var right: VBoxContainer = VBoxContainer.new()
+	right.name = "Concept"
 	right.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	split.add_child(right)
+	_tabs.add_child(right)
+	_build_turnaround_tab()
+	_build_model_tab()
 	_title = Label.new()
 	_title.text = "Concept"
 	right.add_child(_title)
@@ -142,6 +171,94 @@ func _build() -> void:
 	add_child(_error)
 
 
+func _build_turnaround_tab() -> void:
+	var box: VBoxContainer = VBoxContainer.new()
+	box.name = "Turnaround"
+	_tabs.add_child(box)
+	_turn_title = Label.new()
+	_turn_title.text = "Turnaround: no asset selected"
+	box.add_child(_turn_title)
+	_turn_views = HBoxContainer.new()
+	_turn_views.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	box.add_child(_turn_views)
+	var bar: HBoxContainer = HBoxContainer.new()
+	box.add_child(bar)
+	var lbl: Label = Label.new()
+	lbl.text = "Image provider"
+	bar.add_child(lbl)
+	_turn_provider = OptionButton.new()
+	bar.add_child(_turn_provider)
+	_turn_all_btn = _button(bar, "Generate turnaround", func() -> void: _command(turnaround.generate_args(_picked(_turn_provider))))
+	var bl: Label = Label.new()
+	bl.text = "Brief (brief.md, editable)"
+	box.add_child(bl)
+	_brief_edit = TextEdit.new()
+	_brief_edit.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	_brief_edit.custom_minimum_size = Vector2(0, 160)
+	_brief_edit.text_changed.connect(_on_brief_changed)
+	box.add_child(_brief_edit)
+	var row: HBoxContainer = HBoxContainer.new()
+	box.add_child(row)
+	_brief_save_btn = _button(row, "Save brief", save_brief)
+	_brief_draft_btn = _button(row, "Draft brief", _on_draft_brief)
+
+
+func _build_model_tab() -> void:
+	var box: VBoxContainer = VBoxContainer.new()
+	box.name = "Model"
+	_tabs.add_child(box)
+	_model_title = Label.new()
+	_model_title.text = "Model: no asset selected"
+	box.add_child(_model_title)
+	var tools: HBoxContainer = HBoxContainer.new()
+	box.add_child(tools)
+	_light_btn = _button(tools, "Light: white", func() -> void:
+		model.toggle_light()
+		_refresh_model_controls())
+	_wire_btn = _button(tools, "Wireframe: off", func() -> void:
+		model.toggle_wireframe()
+		_refresh_model_controls())
+	_turntable_btn = _button(tools, "Turntable: on", func() -> void:
+		model.toggle_turntable()
+		_refresh_model_controls())
+	_tri_label = Label.new()
+	_tri_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	tools.add_child(_tri_label)
+	_previews = HBoxContainer.new()
+	_previews.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	_previews.custom_minimum_size = Vector2(0, 280)
+	box.add_child(_previews)
+	var rl: Label = Label.new()
+	rl.text = "Runs (tick up to %d to compare side by side)" % AssetModelModel.MAX_COMPARE
+	box.add_child(rl)
+	_run_list = VBoxContainer.new()
+	box.add_child(_run_list)
+	_gate_title = Label.new()
+	_gate_title.text = "Gate report"
+	box.add_child(_gate_title)
+	_gate_text = RichTextLabel.new()
+	_gate_text.custom_minimum_size = Vector2(0, 120)
+	_gate_text.bbcode_enabled = true
+	_gate_text.selection_enabled = true
+	box.add_child(_gate_text)
+	_model_actions = HBoxContainer.new()
+	box.add_child(_model_actions)
+	var pl: Label = Label.new()
+	pl.text = "3D provider"
+	_model_actions.add_child(pl)
+	_model_provider = OptionButton.new()
+	_model_actions.add_child(_model_provider)
+	_button(_model_actions, "Send to provider", func() -> void: _command(model.to3d_args(PackedStringArray([_picked(_model_provider)]) if _picked(_model_provider) != "" else PackedStringArray())))
+	_button(_model_actions, "Bake-off (all)", func() -> void: _command(model.to3d_args(model.three_d_providers)))
+	_button(_model_actions, "Clean up", func() -> void: _command(model.cleanup_args(_shown_run)))
+	_button(_model_actions, "Check", func() -> void: _command(model.check_args(_shown_run)))
+	_export_btn = _button(_model_actions, "Export", func() -> void: _command(model.export_args(_shown_run)))
+
+
+func _process(delta: float) -> void:
+	model.advance(delta)
+
+
 func _fill_queue() -> void:
 	_tree.clear()
 	var root: TreeItem = _tree.create_item()
@@ -176,7 +293,11 @@ func _show_asset(slug: String) -> void:
 			asset = a
 	if asset.is_empty():
 		_title.text = "Concept: no asset selected"
+		_show_turnaround({})
+		_show_model({})
 		return
+	_show_turnaround(asset)
+	_show_model(asset)
 	concept.load_asset(asset, _providers, _selected)
 	_title.text = "Concept: %s (%s)" % [concept.slug, concept.asset_class]
 	for p: String in concept.image_providers:
@@ -221,11 +342,188 @@ func _variant_card(v: Dictionary) -> Control:
 	return card
 
 
-func _button(parent: Control, text: String, cb: Callable) -> void:
+func _button(parent: Control, text: String, cb: Callable) -> Button:
 	var b: Button = Button.new()
 	b.text = text
 	b.pressed.connect(cb)
 	parent.add_child(b)
+	return b
+
+
+func _read_text(rel: String) -> String:
+	if rel == "":
+		return ""
+	var abs_path: String = ProjectSettings.globalize_path("res://").path_join(rel)
+	return FileAccess.get_file_as_string(abs_path) if FileAccess.file_exists(abs_path) else ""
+
+
+func _read_json(rel: String) -> Dictionary:
+	var parsed: Variant = JSON.parse_string(_read_text(rel))
+	return parsed as Dictionary if parsed is Dictionary else {}
+
+
+# --- turnaround and brief ----------------------------------------------------------------
+
+func _show_turnaround(asset: Dictionary) -> void:
+	for c: Node in _turn_views.get_children():
+		c.queue_free()
+	_turn_provider.clear()
+	if asset.is_empty():
+		_turn_title.text = "Turnaround: no asset selected"
+		turnaround.load_asset({})
+		_brief_edit.text = ""
+		_update_brief_buttons()
+		return
+	var brief_rel: String = str((asset.get("brief", {}) as Dictionary).get("path", "")) if asset.get("brief") is Dictionary else ""
+	turnaround.load_asset(asset, _read_text(brief_rel))
+	_turn_title.text = "Turnaround: %s (%d of 4 views)" % [turnaround.slug, turnaround.present_count()]
+	for p: String in concept_image_providers():
+		_turn_provider.add_item(p)
+		if p == _selected.get("image", ""):
+			_turn_provider.select(_turn_provider.item_count - 1)
+	for v: Dictionary in turnaround.views:
+		_turn_views.add_child(_view_card(v))
+	_brief_edit.text = turnaround.brief_text
+	_update_brief_buttons()
+
+
+func concept_image_providers() -> PackedStringArray:
+	var out: PackedStringArray = PackedStringArray()
+	for n: Variant in _providers.get("image", []):
+		out.append(str(n))
+	return out
+
+
+func _view_card(v: Dictionary) -> Control:
+	var card: PanelContainer = PanelContainer.new()
+	card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	var box: VBoxContainer = VBoxContainer.new()
+	card.add_child(box)
+	var tex: TextureRect = TextureRect.new()
+	tex.custom_minimum_size = Vector2(160, 160)
+	tex.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	tex.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	tex.texture = _load_texture(str(v["path"]))
+	box.add_child(tex)
+	var cap: Label = Label.new()
+	cap.text = str(v["caption"])
+	box.add_child(cap)
+	var name: String = str(v["view"])
+	_button(box, "Regenerate", func() -> void: _command(turnaround.regenerate_args(name, _picked(_turn_provider))))
+	return card
+
+
+func _on_brief_changed() -> void:
+	turnaround.set_brief_text(_brief_edit.text)
+	_update_brief_buttons()
+
+
+func _update_brief_buttons() -> void:
+	_brief_save_btn.disabled = not turnaround.can_save_brief()
+	_brief_draft_btn.disabled = turnaround.draft_brief_args().is_empty()
+	_turn_all_btn.disabled = turnaround.generate_args().is_empty()
+
+
+func _on_draft_brief() -> void:
+	if turnaround.dirty:
+		show_error("Save your brief edits first: drafting overwrites brief.md.")
+		return
+	_command(turnaround.draft_brief_args())
+
+
+## Writes the edited brief back to brief.md. This edits a file in the repo; no service is called.
+func save_brief() -> bool:
+	if not turnaround.can_save_brief():
+		return false
+	var abs_path: String = ProjectSettings.globalize_path("res://").path_join(turnaround.target_brief_path())
+	DirAccess.make_dir_recursive_absolute(abs_path.get_base_dir())
+	var f: FileAccess = FileAccess.open(abs_path, FileAccess.WRITE)
+	if f == null:
+		show_error("Could not write %s (error %d)" % [abs_path, FileAccess.get_open_error()])
+		return false
+	f.store_string(turnaround.brief_text)
+	f.close()
+	turnaround.mark_saved()
+	_update_brief_buttons()
+	_status.text = "Saved %s" % turnaround.target_brief_path()
+	return true
+
+
+# --- model -------------------------------------------------------------------------------
+
+func _show_model(asset: Dictionary) -> void:
+	for c: Node in _previews.get_children():
+		c.queue_free()
+	for c: Node in _run_list.get_children():
+		c.queue_free()
+	_model_provider.clear()
+	_gate_text.clear()
+	_shown_run = ""
+	if asset.is_empty():
+		_model_title.text = "Model: no asset selected"
+		model.load_asset({})
+		return
+	var reports: Dictionary = {}
+	for c: Variant in asset.get("checks", []):
+		var rel: String = str((c as Dictionary).get("report", ""))
+		if rel != "" and not reports.has(rel):
+			reports[rel] = _read_json(rel)
+	model.load_asset(asset, _providers, _selected, reports)
+	_model_title.text = "Model: %s (%d runs)" % [model.slug, model.runs.size()]
+	for p: String in model.three_d_providers:
+		_model_provider.add_item(p)
+		if p == model.default_provider:
+			_model_provider.select(_model_provider.item_count - 1)
+	for r: Dictionary in model.runs:
+		var cb: CheckBox = CheckBox.new()
+		cb.text = "%s  [%s]  %s  %s" % [r["caption"], model.gate_summary(str(r["id"])), model.triangle_text(str(r["id"])), "(exported)" if r["exported"] else ""]
+		cb.button_pressed = model.compare_ids.has(str(r["id"]))
+		var rid: String = str(r["id"])
+		cb.pressed.connect(func() -> void:
+			if not model.toggle_compare(rid):
+				cb.button_pressed = model.compare_ids.has(rid)
+			_rebuild_previews())
+		_run_list.add_child(cb)
+	_rebuild_previews()
+
+
+## Previews for every ticked run; their light, wireframe and turntable come from `model`.
+func _rebuild_previews() -> void:
+	for c: Node in _previews.get_children():
+		_previews.remove_child(c)
+		c.queue_free()
+	for id: String in model.compare_ids:
+		var r: Dictionary = model.run(id)
+		var pv: AssetModelPreview = AssetModelPreview.new()
+		pv.state = model
+		_previews.add_child(pv)
+		pv.show_node(_load_run_node(r), "%s  %s" % [r.get("caption", id), model.triangle_text(id)])
+	_shown_run = str(model.compare_ids[0]) if not model.compare_ids.is_empty() else ""
+	_refresh_model_controls()
+	_show_gate(_shown_run)
+
+
+func _load_run_node(r: Dictionary) -> Node3D:
+	var rel: String = str(r.get("path", ""))
+	if rel == "":
+		return null
+	return AssetModelPreview.load_glb(ProjectSettings.globalize_path("res://").path_join(rel))
+
+
+func _refresh_model_controls() -> void:
+	_light_btn.text = "Light: %s" % model.light
+	_wire_btn.text = "Wireframe: %s" % ("on" if model.wireframe else "off")
+	_turntable_btn.text = "Turntable: %s" % ("on" if model.turntable else "off")
+	_tri_label.text = model.triangle_text(_shown_run) if _shown_run != "" else ""
+	_export_btn.disabled = not model.can_export(_shown_run)
+
+
+func _show_gate(id: String) -> void:
+	_gate_text.clear()
+	_gate_title.text = "Gate report: %s" % (model.gate_summary(id) if id != "" else "no run")
+	for g: Dictionary in model.gate_rows(id):
+		var colour: String = "#6bd68a" if g["ok"] else "#ff6b6b"
+		_gate_text.append_text("[color=%s]%s[/color]  %s\n" % [colour, "pass" if g["ok"] else "FAIL", str(g["detail"]).replace("[", "[lb]")])
 
 
 func _show_lineage(id: String) -> void:
@@ -248,6 +546,10 @@ func _load_texture(rel: String) -> Texture2D:
 	return ImageTexture.create_from_image(img)
 
 
+func _picked(opt: OptionButton) -> String:
+	return opt.get_item_text(opt.selected) if opt.item_count > 0 and opt.selected >= 0 else ""
+
+
 func _picked_provider() -> String:
 	if _provider_pick.item_count == 0:
 		return ""
@@ -260,7 +562,7 @@ func _on_generate_more() -> void:
 
 func _command(args: PackedStringArray) -> void:
 	if args.is_empty():
-		show_error("Refine needs notes: write what to change in the box under the variant.")
+		show_error("Nothing to run: that action needs more input (refine notes, a locked concept, all four views or a passing gate).")
 		return
 	if not runner.run(args):
 		show_error("A backend command is already running.")
@@ -290,3 +592,8 @@ func _on_finished(args: PackedStringArray, result: AssetBackendResult) -> void:
 func _set_busy(busy: bool) -> void:
 	_refresh_btn.disabled = busy
 	_more_btn.disabled = busy
+	for b: Button in [_turn_all_btn, _brief_save_btn, _brief_draft_btn, _export_btn]:
+		b.disabled = busy or b.disabled
+	if not busy:
+		_update_brief_buttons()
+		_refresh_model_controls()

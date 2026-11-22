@@ -1,0 +1,24 @@
+{"ok": true,
+ "providers": {"image": ["fal", "mock", "openai"], "three_d": ["meshy", "mock", "tripo"], "prompt_writer": ["mock"]},
+ "selected": {"image": "mock", "three_d": "mock", "prompt_writer": "mock"},
+ "assets": [
+  {"slug": "angler2", "class": "creature", "issue": 12, "stage": "cleanup", "description": "A deep-sea angler.",
+   "created": "2026-11-01T10:00:00Z",
+   "lineage": [
+    {"id": "v1", "kind": "concept", "path": "", "provider": "mock", "model": "mock-image-1", "prompt": "angler", "parent": null, "created": "2026-11-01T10:01:00Z"},
+    {"id": "t1_front", "kind": "turnaround", "path": "", "provider": "mock", "model": "mock-image-1", "prompt": "front", "parent": "v1", "created": "2026-11-01T11:00:00Z"},
+    {"id": "t1_left", "kind": "turnaround", "path": "", "provider": "mock", "model": "mock-image-1", "prompt": "left", "parent": "v1", "created": "2026-11-01T11:00:00Z"},
+    {"id": "t1_back", "kind": "turnaround", "path": "", "provider": "mock", "model": "mock-image-1", "prompt": "back", "parent": "v1", "created": "2026-11-01T11:00:00Z"},
+    {"id": "t1_right", "kind": "turnaround", "path": "", "provider": "mock", "model": "mock-image-1", "prompt": "right", "parent": "v1", "created": "2026-11-01T11:00:00Z"},
+    {"id": "t2_front", "kind": "turnaround", "path": "build/asset_studio_shot/front.png", "provider": "openai", "model": "gpt-image-1", "prompt": "front", "parent": "v1", "created": "2026-11-01T12:00:00Z"},
+    {"id": "t2_left", "kind": "turnaround", "path": "build/asset_studio_shot/left.png", "provider": "openai", "model": "gpt-image-1", "prompt": "left", "parent": "v1", "created": "2026-11-01T12:00:00Z"},
+    {"id": "t2_back", "kind": "turnaround", "path": "build/asset_studio_shot/back.png", "provider": "openai", "model": "gpt-image-1", "prompt": "back", "parent": "v1", "created": "2026-11-01T12:00:00Z"},
+    {"id": "r1_tripo", "kind": "mesh", "path": "", "provider": "tripo", "model": "v2.5", "prompt": "", "parent": "t2_front", "created": "2026-11-01T13:00:00Z", "task_id": "a1"},
+    {"id": "r1_meshy", "kind": "mesh", "path": "", "provider": "meshy", "model": "meshy-5", "prompt": "", "parent": "t2_front", "created": "2026-11-01T13:01:00Z", "task_id": "b2"},
+    {"id": "c1", "kind": "mesh", "path": "", "provider": "blender", "model": "", "prompt": "", "parent": "r1_tripo", "created": "2026-11-01T14:00:00Z"}],
+   "locked": {"variant": "v1", "decision": "approved", "reviewer": "tristan", "notes": "", "at": "2026-11-01T10:20:00Z"},
+   "decisions": [],
+   "brief": {"path": "tests/fixtures/asset_studio/brief.md", "writer": "mock", "model": "mock-1", "images": [], "at": "2026-11-01T12:30:00Z"},
+   "cleanups": [{"id": "c1", "source": "r1_tripo", "recipe": ["repair", "decimate"], "params": {}, "result": {"triangles": 6120}, "at": "2026-11-01T14:00:00Z"}],
+   "checks": [{"id": "c1", "report": "tests/fixtures/asset_studio/check_report.json", "ok": false, "failed": ["triangles", "silhouette_back"], "at": "2026-11-01T14:10:00Z"}]}
+ ]}
