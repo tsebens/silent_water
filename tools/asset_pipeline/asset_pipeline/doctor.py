@@ -100,4 +100,5 @@ def run(config: dict[str, Any], live: bool = False) -> dict[str, Any]:
                 except ImageProviderError as e:
                     add(f"{kind}:{name} live", False, str(e), required)
     ok = all(c["ok"] for c in checks if c["required"])
-    return {"ok": ok, "live": live, "checks": checks}
+    return {"ok": ok, "live": live, "selected": dict(selected),
+            "selected_source": dict(config.get("selection_source", {})), "checks": checks}

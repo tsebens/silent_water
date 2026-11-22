@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import hashlib
+import os
 import re
 import struct
 import zlib
@@ -14,6 +15,7 @@ import yaml
 from . import check, fixture_mesh
 
 DEFAULT_CONFIG = Path(__file__).resolve().parent.parent / "providers.yaml"
+LOCAL_CONFIG = DEFAULT_CONFIG.with_name("providers.local.yaml")
 KINDS = ("image", "three_d", "prompt_writer")
 
 
@@ -148,11 +150,37 @@ REGISTRY: dict[str, dict[str, Any]] = {
 }
 
 
-def load_config(path: Path | None = None) -> dict[str, Any]:
+def local_config_path() -> Path:
+    """The git-ignored per-machine override; ASSET_PROVIDERS_LOCAL points elsewhere (tests use it)."""
+    env = os.environ.get("ASSET_PROVIDERS_LOCAL")
+    return Path(env) if env else LOCAL_CONFIG
+
+
+def load_config(path: Path | None = None, local: Path | None = None) -> dict[str, Any]:
+    """The committed providers.yaml, with its `selection:` overridden key by key by providers.local.yaml.
+    The local file is read only when `path` is the default config (or `local` is given). The result's
+    `selection_source` maps each kind to "committed" or "local"."""
     cfg = yaml.safe_load((path or DEFAULT_CONFIG).read_text()) or {}
     for key in ("selection", "providers"):
         if not isinstance(cfg.get(key), dict):
             raise ValueError(f"providers.yaml: missing '{key}' mapping")
+    cfg["selection_source"] = {kind: "committed" for kind in cfg["selection"]}
+    local_file = local if local is not None else (local_config_path() if path is None else None)
+    if local_file is not None and local_file.is_file():
+        data = yaml.safe_load(local_file.read_text()) or {}
+        if not isinstance(data, dict) or set(data) - {"selection"}:
+            raise ValueError(f"{local_file.name}: only a 'selection:' mapping is allowed")
+        sel = data.get("selection") or {}
+        if not isinstance(sel, dict):
+            raise ValueError(f"{local_file.name}: 'selection' must be a mapping")
+        for kind, name in sel.items():
+            if kind not in KINDS:
+                raise ValueError(f"{local_file.name}: unknown provider kind {kind!r} (expected one of {', '.join(KINDS)})")
+            if name not in (cfg["providers"].get(kind) or {}):
+                known = ", ".join(sorted(cfg["providers"].get(kind) or {}))
+                raise ValueError(f"{local_file.name}: {kind} provider {name!r} is not configured in providers.yaml (known: {known})")
+            cfg["selection"][kind] = name
+            cfg["selection_source"][kind] = "local"
     return cfg
 
 

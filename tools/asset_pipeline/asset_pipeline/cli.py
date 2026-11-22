@@ -493,7 +493,8 @@ def cmd_list(args: argparse.Namespace, root: Path) -> dict[str, Any]:
         assets.append(Manifest.load(mpath).to_dict())
     cfg = providers.load_config()
     names = {kind: sorted(cfg["providers"].get(kind) or {}) for kind in ("image", "three_d", "prompt_writer")}
-    return {"assets": assets, "providers": names, "selected": dict(cfg["selection"])}
+    return {"assets": assets, "providers": names, "selected": dict(cfg["selection"]),
+            "selected_source": dict(cfg.get("selection_source", {}))}
 
 
 def cmd_doctor(args: argparse.Namespace, root: Path) -> dict[str, Any]:

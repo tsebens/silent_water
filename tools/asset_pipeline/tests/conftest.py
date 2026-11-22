@@ -21,3 +21,9 @@ def no_live_network(monkeypatch):
         return real(self, address, *a, **k)
 
     monkeypatch.setattr(socket.socket, "connect", guarded)
+
+
+@pytest.fixture(autouse=True)
+def no_local_providers(tmp_path_factory, monkeypatch):
+    """A developer's own providers.local.yaml must never change what tests see."""
+    monkeypatch.setenv("ASSET_PROVIDERS_LOCAL", str(tmp_path_factory.mktemp("noloc") / "providers.local.yaml"))

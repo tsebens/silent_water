@@ -13,3 +13,4 @@ __pycache__/
 /assets/media/sub/assembly/Assembly 1 - Deck.gltf
 /assets/media/sub/assembly/Assembly 1 - Front Window.gltf
 /assets/media/sub/assembly/Assembly 1 - Shell.gltf
+/tools/asset_pipeline/providers.local.yaml

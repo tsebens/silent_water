@@ -70,6 +70,21 @@ func test_action_arguments() -> void:
 	expect_eq(c.generate_more_args(3, "fal"), PackedStringArray(["concept", "angler", "--n", "3", "--image-provider", "fal"]))
 
 
+func test_prompt_writer_is_passed_on_generate_refine_and_brief() -> void:
+	var l: Dictionary = _listing()
+	var c: AssetConceptModel = AssetConceptModel.new()
+	c.load_asset((l["assets"] as Array)[0] as Dictionary, {"prompt_writer": ["mock", "claude-cli"]}, {"prompt_writer": "claude-cli"})
+	expect_eq(c.prompt_writers.size(), 2)
+	expect_eq(c.default_writer, "claude-cli")
+	expect_eq(c.generate_more_args(3, "", "claude-cli"), PackedStringArray(["concept", "angler", "--n", "3", "--prompt-writer", "claude-cli"]))
+	expect_eq(
+		c.refine_args("v2", "more teeth", "fal", "mock"),
+		PackedStringArray(["concept", "angler", "--refine", "v2", "--notes", "more teeth", "--image-provider", "fal", "--prompt-writer", "mock"])
+	)
+	expect_eq(c.brief_args("claude-cli"), PackedStringArray(["brief", "angler", "--prompt-writer", "claude-cli"]))
+	expect_eq(c.brief_args(), PackedStringArray(["brief", "angler"]))
+
+
 func test_backend_success_parse() -> void:
 	var r: AssetBackendResult = AssetBackendResult.parse(0, "warming up\n" + JSON.stringify({"ok": true, "assets": []}))
 	expect(r.ok)
