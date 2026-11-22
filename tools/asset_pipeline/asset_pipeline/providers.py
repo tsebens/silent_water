@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 import hashlib
-import json
+import re
 import struct
 import zlib
 from abc import ABC, abstractmethod
@@ -10,6 +10,8 @@ from pathlib import Path
 from typing import Any
 
 import yaml
+
+from . import check, fixture_mesh
 
 DEFAULT_CONFIG = Path(__file__).resolve().parent.parent / "providers.yaml"
 KINDS = ("image", "three_d", "prompt_writer")
@@ -83,28 +85,6 @@ def _png(seed: bytes, size: int = 8) -> bytes:
     return b"\x89PNG\r\n\x1a\n" + chunk(b"IHDR", ihdr) + chunk(b"IDAT", zlib.compress(raw)) + chunk(b"IEND", b"")
 
 
-def _glb(seed: bytes) -> bytes:
-    """A minimal valid GLB containing one triangle, scaled slightly by the seed."""
-    s = 1.0 + seed[0] / 255.0
-    pos = struct.pack("<9f", 0, 0, 0, s, 0, 0, 0, s, 0)
-    doc = {
-        "asset": {"version": "2.0"},
-        "scene": 0,
-        "scenes": [{"nodes": [0]}],
-        "nodes": [{"mesh": 0}],
-        "meshes": [{"primitives": [{"attributes": {"POSITION": 0}}]}],
-        "accessors": [{"bufferView": 0, "componentType": 5126, "count": 3, "type": "VEC3",
-                       "min": [0, 0, 0], "max": [s, s, 0]}],
-        "bufferViews": [{"buffer": 0, "byteLength": len(pos)}],
-        "buffers": [{"byteLength": len(pos)}],
-    }
-    js = json.dumps(doc, separators=(",", ":")).encode()
-    js += b" " * (-len(js) % 4)
-    total = 12 + 8 + len(js) + 8 + len(pos)
-    return (struct.pack("<4sII", b"glTF", 2, total) + struct.pack("<I4s", len(js), b"JSON") + js
-            + struct.pack("<I4s", len(pos), b"BIN\0") + pos)
-
-
 class MockImageProvider(ImageProvider):
     name = "mock"
 
@@ -118,6 +98,12 @@ class MockImageProvider(ImageProvider):
 
     def edit(self, prompt: str, source: Path, references: list[Path], out: Path) -> Path:
         out.parent.mkdir(parents=True, exist_ok=True)
+        view = re.search(r"Orthographic (front|left|back|right) view", prompt)
+        if view:  # a turnaround view: the silhouette of the mock 3D provider's mesh, so the mock flow passes `check`
+            pos, _, idx = fixture_mesh.mock_mesh()
+            tris = [tuple(idx[k:k + 3]) for k in range(0, len(idx), 3)]
+            check.write_mask_png(out, check.mesh_silhouette(pos, tris, view.group(1)))
+            return out
         out.write_bytes(_png(_digest("edit", self.model, prompt, source.name, *[r.name for r in references])))
         return out
 
@@ -136,7 +122,7 @@ class MockThreeDProvider(ThreeDProvider):
 
     def download(self, job_id: str, out: Path) -> Path:
         out.parent.mkdir(parents=True, exist_ok=True)
-        out.write_bytes(_glb(_digest(job_id)))
+        fixture_mesh.write_glb(out, *fixture_mesh.mock_mesh())
         return out
 
 
