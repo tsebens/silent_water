@@ -31,7 +31,7 @@ Set `GODOT=/path/to/godot` if the binary isn't on `PATH` as `godot`.
 
 To pick up or propose work, follow [the development process](docs/process.md) and the [project board](https://github.com/users/tsebens/projects/1).
 
-After re-exporting the sub from Onshape (as a single assembly glTF to `assets/media/sub/Assembly 1.gltf`), rebuild the game model:
+The committed game model is `assets/sub/sub_model.glb`. To change the hull, re-export the sub from Onshape (as a single assembly glTF to `assets/media/sub/Assembly 1.gltf`; it is git-ignored because it is over the 5 MB asset limit) and rebuild the game model:
 
 ```bash
 python3 -m pip install numpy trimesh fast-simplification
