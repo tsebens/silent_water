@@ -44,6 +44,10 @@ class ThreeDProvider(ABC):
     def download(self, job_id: str, out: Path) -> Path:
         """Write the finished GLB to `out`."""
 
+    def failure_reason(self, job_id: str) -> str:
+        """Why a job ended `failed`, if the provider said; empty otherwise."""
+        return ""
+
 
 class PromptWriter(ABC):
     name: str

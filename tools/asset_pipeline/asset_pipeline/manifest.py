@@ -31,6 +31,7 @@ class LineageEntry:
     created: str = field(default_factory=now)
     writer: str = ""  # PromptWriter that composed the prompt, as name:model
     references: list[str] = field(default_factory=list)  # images passed to the provider
+    task_id: str = ""  # provider job id for a mesh run (image-to-3D)
 
 
 @dataclass

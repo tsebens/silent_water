@@ -243,7 +243,8 @@ def checks(result):
 
 @pytest.fixture
 def clean_env(monkeypatch, tmp_path):
-    for k in ("OPENAI_API_KEY", "GEMINI_API_KEY", "FAL_KEY", "ANTHROPIC_API_KEY"):
+    for k in ("OPENAI_API_KEY", "GEMINI_API_KEY", "FAL_KEY", "ANTHROPIC_API_KEY", "TRIPO_API_KEY",
+              "MESHY_API_KEY", "RODIN_API_KEY"):
         monkeypatch.delenv(k, raising=False)
     fake = tmp_path / "bin"
     fake.mkdir()
@@ -289,6 +290,7 @@ def test_doctor_live_runs_one_call_per_keyed_provider(clean_env, server, monkeyp
     cfg = providers.load_config()
     cfg["providers"]["image"]["openai"]["base_url"] = server
     cfg["providers"]["image"]["fal"]["base_url"] = server
+    cfg["providers"]["three_d"]["trellis"]["base_url"] = server
     monkeypatch.setattr(doctor, "_anthropic_live", lambda: "mock models list")
     assert [s["path"] for s in Stub.seen] == []
     off = doctor.run(cfg, live=False)
@@ -296,7 +298,7 @@ def test_doctor_live_runs_one_call_per_keyed_provider(clean_env, server, monkeyp
     on = checks(doctor.run(cfg, live=True))
     assert on["image:openai live"]["ok"] and on["image:fal live"]["ok"] and on["prompt_writer:anthropic-api live"]["ok"]
     assert "image:google live" not in on  # no key, no call
-    assert sorted(s["path"] for s in Stub.seen) == ["/fal-ai/flux-pro/v1.1", "/v1/models/gpt-image-1"]
+    assert sorted(s["path"] for s in Stub.seen) == ["/fal-ai/flux-pro/v1.1", "/fal-ai/trellis-2", "/v1/models/gpt-image-1"]
     Stub.status = 401
     bad = checks(doctor.run(cfg, live=True))
     assert not bad["image:openai live"]["ok"] and "HTTP 401" in bad["image:openai live"]["detail"]
