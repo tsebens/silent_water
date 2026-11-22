@@ -65,6 +65,24 @@ def test_cli_error_mapping(tmp_path, stdout, code, stderr, match):
         ClaudeCliWriter(command=cmd).write_prompts("b", "s", "", [], 2)
 
 
+def test_cli_failure_shows_result_after_long_usage_block(tmp_path):
+    # Seen on Windows: exit 1, JSON whose usage block fills the first 500 characters and whose
+    # actual message is in `result` at the end. The error must show that message.
+    out = {"duration_api_ms": 0, "total_cost_usd": 0,
+           "usage": {"input_tokens": 0, "output_tokens": 0, "padding": "x" * 600},
+           "is_error": True, "subtype": "error_during_execution",
+           "result": "Not logged in · Please run /login"}
+    cmd, _ = stub_claude(tmp_path, json.dumps(out), code=1)
+    with pytest.raises(PromptWriterError, match="exited 1: Not logged in · Please run /login"):
+        ClaudeCliWriter(command=cmd).write_prompts("b", "s", "", [], 2)
+
+
+def test_cli_failure_falls_back_to_output_tail(tmp_path):
+    cmd, _ = stub_claude(tmp_path, "x" * 900 + "THE END", code=2)
+    with pytest.raises(PromptWriterError, match="THE END"):
+        ClaudeCliWriter(command=cmd).write_prompts("b", "s", "", [], 2)
+
+
 def test_cli_missing_executable(tmp_path):
     with pytest.raises(PromptWriterError, match="not found"):
         ClaudeCliWriter(command=str(tmp_path / "nope")).write_prompts("b", "s", "", [], 1)
