@@ -14,6 +14,10 @@ Net="*res://src/net/net.gd"
 Acoustics="*res://src/noise/acoustics.gd"
 DevLog="*res://src/debug/dev_log.gd"
 
+[editor_plugins]
+
+enabled=PackedStringArray("res://addons/asset_studio/plugin.cfg")
+
 [audio]
 
 driver/enable_input=true

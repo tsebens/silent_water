@@ -427,6 +427,16 @@ def cmd_lock(args: argparse.Namespace, root: Path) -> dict[str, Any]:
             "reviewer": rec.reviewer, "locked": m.locked is not None}
 
 
+def cmd_list(args: argparse.Namespace, root: Path) -> dict[str, Any]:
+    """Every manifest as JSON (the Godot plugin cannot read YAML), sorted by slug."""
+    assets: list[dict[str, Any]] = []
+    for mpath in sorted((root / "assets" / "models").glob("*/asset.yaml")):
+        assets.append(Manifest.load(mpath).to_dict())
+    cfg = providers.load_config()
+    names = {kind: sorted(cfg["providers"].get(kind) or {}) for kind in ("image", "three_d", "prompt_writer")}
+    return {"assets": assets, "providers": names, "selected": dict(cfg["selection"])}
+
+
 def cmd_doctor(args: argparse.Namespace, root: Path) -> dict[str, Any]:
     return doctor.run(providers.load_config(), live=args.live)
 
@@ -434,6 +444,9 @@ def cmd_doctor(args: argparse.Namespace, root: Path) -> dict[str, Any]:
 def build_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(prog="asset", description="Asset Studio backend")
     sub = p.add_subparsers(dest="command", required=True)
+    ls = sub.add_parser("list", help="every asset manifest as JSON (used by the Asset Studio plugin)")
+    ls.set_defaults(fn=cmd_list)
+
     d = sub.add_parser("doctor", help="check Blender, Godot, the Claude CLI and API keys (--live adds one call per provider)")
     d.add_argument("--live", action="store_true", help="make one cheap real call per configured provider")
     d.set_defaults(fn=cmd_doctor)
