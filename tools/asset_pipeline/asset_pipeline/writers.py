@@ -115,6 +115,7 @@ class ClaudeCliWriter(PromptWriter):
 class AnthropicApiWriter(PromptWriter):
     """Messages API with ANTHROPIC_API_KEY (API billing). Never uses the OAuth token."""
     name = "anthropic-api"
+    env_key = "ANTHROPIC_API_KEY"
 
     def __init__(self, model: str = "claude-sonnet-5-5", base_url: str | None = None,
                  max_tokens: int = 4096, timeout: int = 120) -> None:

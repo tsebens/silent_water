@@ -170,14 +170,24 @@ def select(kind: str, config: dict[str, Any], override: str | None = None) -> An
     """Build the provider for `kind`: the command's override if given, else the configured default."""
     if kind not in KINDS:
         raise ValueError(f"unknown provider kind {kind!r}")
-    from . import writers  # noqa: F401  registers the real prompt writers
+    from . import adapters, writers  # noqa: F401  register the real adapters
     name = override or config["selection"].get(kind)
     if not name:
         raise ValueError(f"no {kind} provider selected")
     entry = (config["providers"].get(kind) or {}).get(name)
     if entry is None:
         raise ValueError(f"{kind} provider {name!r} is not configured in providers.yaml")
-    factory = REGISTRY[kind].get(name)
+    return build(kind, name, entry)
+
+
+def build(kind: str, name: str, entry: Any) -> Any:
+    """Instantiate a configured provider. An entry's `adapter:` picks the adapter class (default: its name),
+    so a new provider on an existing adapter is a providers.yaml entry and nothing else."""
+    opts = dict(entry) if isinstance(entry, dict) else {}
+    adapter = opts.pop("adapter", None) or name
+    factory = REGISTRY[kind].get(adapter)
     if factory is None:
-        raise ValueError(f"{kind} provider {name!r} has no adapter")
-    return factory(**entry) if isinstance(entry, dict) else factory()
+        raise ValueError(f"{kind} provider {name!r} has no adapter {adapter!r}")
+    p = factory(**opts)
+    p.name = name
+    return p

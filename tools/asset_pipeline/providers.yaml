@@ -17,6 +17,13 @@ selection:
 providers:
   image:
     mock: {model: mock-image-1}
+    # Hosted image adapters. Keys: OPENAI_API_KEY, GEMINI_API_KEY, FAL_KEY (tools/asset_pipeline/.env).
+    # A new provider on an existing adapter is an entry here: `adapter:` names the adapter file's class.
+    openai: {model: gpt-image-1, size: 1024x1024}
+    google: {model: gemini-2.5-flash-image}
+    fal: {model: fal-ai/flux-pro/v1.1}
+    # Example (FLUX Kontext keeps the source image on edits):
+    # flux-kontext: {adapter: fal, model: fal-ai/flux-pro/kontext, edit_model: fal-ai/flux-pro/kontext}
   three_d:
     mock: {model: mock-3d-1}
   prompt_writer:
