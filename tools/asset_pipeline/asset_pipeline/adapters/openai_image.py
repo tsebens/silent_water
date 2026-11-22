@@ -14,7 +14,7 @@ class OpenAIImage(ImageProvider):
     name = "openai"
     env_key = "OPENAI_API_KEY"
 
-    def __init__(self, model: str = "gpt-image-1", base_url: str = "https://api.openai.com",
+    def __init__(self, model: str = "gpt-image-2.5-sunburst", base_url: str = "https://api.openai.com",
                  size: str = "1024x1024", timeout: int = 180) -> None:
         self.model, self.base_url, self.size, self.timeout = model, base_url.rstrip("/"), size, timeout
 

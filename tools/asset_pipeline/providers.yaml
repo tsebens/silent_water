@@ -19,8 +19,14 @@ providers:
     mock: {model: mock-image-1}
     # Hosted image adapters. Keys: OPENAI_API_KEY, GEMINI_API_KEY, FAL_KEY (tools/asset_pipeline/.env).
     # A new provider on an existing adapter is an entry here: `adapter:` names the adapter file's class.
-    openai: {model: gpt-image-1, size: 1024x1024}
-    google: {model: gemini-2.5-flash-image}
+    # OpenAI GPT Image 2.5 Sunburst. Docs: https://developers.openai.com/api/docs/models (checked 2026-11-22);
+    # Replacement for the retired GPT Image 1 is named at https://developers.openai.com/api/docs/deprecations.
+    openai: {model: gpt-image-2.5-sunburst, size: 1024x1024}
+    # Nano Banana 2.1. Docs: https://aistudio.google.com/docs/models (checked 2026-11-22).
+    google: {model: gemini-nano-banana-2.1}
+    # Nano Banana Pro (Gemini 3 Pro Image), same adapter. Docs: https://aistudio.google.com/docs/models (checked 2026-11-22).
+    google-pro: {adapter: google, model: gemini-3-pro-image}
+    # fal FLUX Pro 1.1 was not part of this model-ID update; unchanged.
     fal: {model: fal-ai/flux-pro/v1.1}
     # Example (FLUX Kontext keeps the source image on edits):
     # flux-kontext: {adapter: fal, model: fal-ai/flux-pro/kontext, edit_model: fal-ai/flux-pro/kontext}
@@ -28,9 +34,13 @@ providers:
     mock: {model: mock-3d-1}
     # Hosted image-to-3D, all taking the four turnaround views. Keys: TRIPO_API_KEY, MESHY_API_KEY,
     # RODIN_API_KEY (model = tier), FAL_KEY. Hunyuan3D is not shipped (licence excludes EU/UK/KR, #219).
-    tripo: {model: v2.5-20250123}
-    meshy: {model: meshy-5}
-    rodin: {model: Regular}
+    # Tripo H3.1 snapshot. Docs: https://developers.tripo3d.ai/en/models/v3-1 (checked 2026-11-22). P2.0's ID is unconfirmed (#256).
+    tripo: {model: v3.1-20260211}
+    # Meshy 7.1. Docs: https://docs.meshy.ai/en/api/multi-image-to-3d (checked 2026-11-22).
+    meshy: {model: meshy-7.1}
+    # Rodin Gen-2.5 (model = tier). Docs: https://docs.hyper3d.ai/en/api-specification/rodin-gen2-5 (checked 2026-11-22).
+    rodin: {model: Gen-2.5-Medium}
+    # TRELLIS.2 on fal. Docs: https://fal.ai/models/fal-ai/trellis-2/api (checked 2026-11-22).
     trellis: {model: fal-ai/trellis-2}
   prompt_writer:
     mock: {model: mock-writer-1}
