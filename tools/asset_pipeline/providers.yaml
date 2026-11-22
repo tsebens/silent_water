@@ -44,6 +44,9 @@ providers:
     # fal-ai/trellis-2 takes ONE image (`image_url`), so `input: single` sends the front view only;
     # use `input: multi` (sends `image_urls`) for an endpoint that takes several views.
     trellis: {model: fal-ai/trellis-2, input: single}
+    # TRELLIS v1 multi-image on fal: up to 8 views as `image_urls`, GLB in `model_mesh`.
+    # Docs: https://fal.ai/models/fal-ai/trellis/multi/api (checked 2026-11-22; price not listed there).
+    trellis-multi: {adapter: trellis, model: fal-ai/trellis/multi, input: multi}
   prompt_writer:
     mock: {model: mock-writer-1}
     # Claude Code CLI: `claude -p ... --output-format json`, uses the logged-in subscription
