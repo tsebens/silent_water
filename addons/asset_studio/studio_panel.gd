@@ -24,6 +24,7 @@ var _status: Label
 var _progress: ProgressBar
 var _error: RichTextLabel
 var _provider_pick: OptionButton
+var _writer_pick: OptionButton
 var _lineage: RichTextLabel
 var _refresh_btn: Button
 var _more_btn: Button
@@ -170,6 +171,11 @@ func _build() -> void:
 	more.add_child(lbl)
 	_provider_pick = OptionButton.new()
 	more.add_child(_provider_pick)
+	var wl: Label = Label.new()
+	wl.text = "Prompt writer"
+	more.add_child(wl)
+	_writer_pick = OptionButton.new()
+	more.add_child(_writer_pick)
 	_more_btn = Button.new()
 	_more_btn.text = "Generate more"
 	_more_btn.pressed.connect(_on_generate_more)
@@ -382,6 +388,7 @@ func _show_asset(slug: String) -> void:
 	for c: Node in _grid.get_children():
 		c.queue_free()
 	_provider_pick.clear()
+	_writer_pick.clear()
 	_lineage.text = ""
 	var asset: Dictionary = {}
 	for a: Variant in _assets:
@@ -405,6 +412,10 @@ func _show_asset(slug: String) -> void:
 		_provider_pick.add_item(p)
 		if p == concept.default_provider:
 			_provider_pick.select(_provider_pick.item_count - 1)
+	for w: String in concept.prompt_writers:
+		_writer_pick.add_item(w)
+		if w == concept.default_writer:
+			_writer_pick.select(_writer_pick.item_count - 1)
 	for v: Dictionary in concept.variants:
 		_grid.add_child(_variant_card(v))
 	if not concept.variants.is_empty():
@@ -438,7 +449,7 @@ func _variant_card(v: Dictionary) -> Control:
 	var id: String = str(v["id"])
 	_button(row, "Approve", func() -> void: _command(concept.approve_args(id, notes.text)))
 	_button(row, "Reject", func() -> void: _command(concept.reject_args(id, notes.text)))
-	_button(row, "Refine", func() -> void: _command(concept.refine_args(id, notes.text, _picked_provider())))
+	_button(row, "Refine", func() -> void: _command(concept.refine_args(id, notes.text, _picked_provider(), _picked(_writer_pick))))
 	_button(row, "Lineage", func() -> void: _show_lineage(id))
 	return card
 
@@ -529,7 +540,7 @@ func _on_draft_brief() -> void:
 	if turnaround.dirty:
 		show_error("Save your brief edits first: drafting overwrites brief.md.")
 		return
-	_command(turnaround.draft_brief_args())
+	_command(concept.brief_args(_picked(_writer_pick)) if not turnaround.draft_brief_args().is_empty() else PackedStringArray())
 
 
 ## Writes the edited brief back to brief.md. This edits a file in the repo; no service is called.
@@ -658,7 +669,7 @@ func _picked_provider() -> String:
 
 
 func _on_generate_more() -> void:
-	_command(concept.generate_more_args(3, _picked_provider()))
+	_command(concept.generate_more_args(3, _picked_provider(), _picked(_writer_pick)))
 
 
 func _command(args: PackedStringArray) -> void:

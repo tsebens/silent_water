@@ -1,0 +1,7 @@
+# Copy to providers.local.yaml (git-ignored) to pick real services on this machine only.
+# It holds selection only, and overrides the committed providers.yaml selection key by key.
+# Precedence: command flag, then this file, then providers.yaml. API keys stay in .env.
+selection:
+  image: google
+  three_d: tripo
+  prompt_writer: claude-cli

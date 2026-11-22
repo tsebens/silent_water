@@ -10,6 +10,8 @@ var description: String = ""
 var variants: Array[Dictionary] = []
 var image_providers: PackedStringArray = PackedStringArray()
 var default_provider: String = ""
+var prompt_writers: PackedStringArray = PackedStringArray()
+var default_writer: String = ""
 var _lineage: Array = []
 
 
@@ -52,6 +54,10 @@ func load_asset(asset: Dictionary, providers: Dictionary = {}, selected: Diction
 	for n: Variant in providers.get("image", []):
 		image_providers.append(str(n))
 	default_provider = str(selected.get("image", ""))
+	prompt_writers = PackedStringArray()
+	for w: Variant in providers.get("prompt_writer", []):
+		prompt_writers.append(str(w))
+	default_writer = str(selected.get("prompt_writer", ""))
 
 
 func variant(id: String) -> Dictionary:
@@ -102,19 +108,32 @@ func reject_args(variant_id: String, notes: String = "") -> PackedStringArray:
 
 
 ## Refining needs notes: the backend feeds them to the prompt writer.
-func refine_args(variant_id: String, notes: String, provider: String = "") -> PackedStringArray:
+func refine_args(variant_id: String, notes: String, provider: String = "", writer: String = "") -> PackedStringArray:
 	if notes.strip_edges() == "":
 		return PackedStringArray()
 	var a: PackedStringArray = PackedStringArray(["concept", slug, "--refine", variant_id, "--notes", notes])
 	if provider != "":
 		a.append_array(PackedStringArray(["--image-provider", provider]))
-	return a
+	return _with_writer(a, writer)
 
 
-func generate_more_args(n: int, provider: String = "") -> PackedStringArray:
+func generate_more_args(n: int, provider: String = "", writer: String = "") -> PackedStringArray:
 	var a: PackedStringArray = PackedStringArray(["concept", slug, "--n", str(maxi(n, 1))])
 	if provider != "":
 		a.append_array(PackedStringArray(["--image-provider", provider]))
+	return _with_writer(a, writer)
+
+
+## Redraft the brief with the chosen writer. The panel gates it on the turnaround model.
+func brief_args(writer: String = "") -> PackedStringArray:
+	if slug == "":
+		return PackedStringArray()
+	return _with_writer(PackedStringArray(["brief", slug]), writer)
+
+
+func _with_writer(a: PackedStringArray, writer: String) -> PackedStringArray:
+	if writer != "":
+		a.append_array(PackedStringArray(["--prompt-writer", writer]))
 	return a
 
 
