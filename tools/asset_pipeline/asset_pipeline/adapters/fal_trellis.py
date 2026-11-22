@@ -46,6 +46,7 @@ class FalTrellis(HostedThreeD):
         rid = reply.get("request_id") if isinstance(reply, dict) else None
         if not rid:
             raise ThreeDProviderError("trellis reply has no request_id")
+        self.last_usage = {"generations": 1}  # fal's queue replies report no cost: priced per generation
         return rid
 
     def poll(self, job_id: str) -> str:

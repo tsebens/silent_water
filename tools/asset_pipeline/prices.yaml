@@ -1,6 +1,7 @@
 # Unit prices for the cost ledger (asset_pipeline/cost.py). Prices are config, not code: edit here.
 # Layout: <kind>: <provider>: <model id>: {rates..., source, checked}.
 # Rates (any combination; the ledger stores the ones it used on each entry):
+#   credits_per_generation (used with usd_per_credit when a response reports no credits),
 #   usd_per_image, usd_per_generation, usd_per_credit,
 #   usd_per_mtok_input, usd_per_mtok_output, usd_per_mtok_total (USD per million tokens).
 # A model with no entry here is recorded as `unknown` (null usd), never as zero.
@@ -51,18 +52,21 @@ three_d:
     v3.1-20260211:
       # Assumed plan: Tripo Professional, pay-as-you-go credits (placeholder $/credit).
       usd_per_credit: 0.01
+      credits_per_generation: 40  # fallback when the response reports no credits
       source: https://www.tripo3d.ai/pricing
       checked: unverified
   meshy:
     meshy-7.1:
       # Assumed plan: Meshy Pro monthly credits (placeholder $/credit).
       usd_per_credit: 0.02
+      credits_per_generation: 30  # fallback when the response reports no credits
       source: https://www.meshy.ai/pricing
       checked: unverified
   rodin:
     Gen-2.5-Medium:
       # Assumed plan: Hyper3D Rodin Creator subscription credits (placeholder $/credit).
       usd_per_credit: 0.05
+      credits_per_generation: 1  # fallback when the response reports no credits
       source: https://hyper3d.ai/pricing
       checked: unverified
   trellis:

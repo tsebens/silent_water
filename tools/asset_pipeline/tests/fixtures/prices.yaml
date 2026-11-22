@@ -12,3 +12,15 @@ prompt_writer:
 three_d:
   tripo:
     v3.1-20260211: {usd_per_credit: 0.01}
+  meshy:
+    meshy-7.1: {usd_per_credit: 0.02, credits_per_generation: 30}
+  rodin:
+    Gen-2.5-Medium: {usd_per_credit: 0.05, credits_per_generation: 1}
+  trellis:
+    fal-ai/trellis-2: {usd_per_generation: 0.25}
+  mock-a:
+    m: {usd_per_generation: 0.1}
+  mock-b:
+    m: {usd_per_generation: 0.2}
+  mock-c:
+    m: {usd_per_generation: 0.3}

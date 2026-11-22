@@ -47,14 +47,19 @@ class TripoThreeD(HostedThreeD):
         task = self._data(reply, "task").get("task_id")
         if not task:
             raise ThreeDProviderError("tripo task reply has no task_id")
+        self.last_usage = {"generations": 1}  # the task is accepted, so it is billed whether or not it succeeds
         return task
 
     def _task(self, job_id: str) -> dict:
         raw = _net.request("tripo", f"{self.base_url}/task/{job_id}", self._auth(), timeout=self.timeout)
         try:
-            return self._data(json.loads(raw), "poll")
+            data = self._data(json.loads(raw), "poll")
         except json.JSONDecodeError as e:
             raise ThreeDProviderError(f"tripo returned invalid JSON: {e}") from e
+        credit = data.get("consumed_credit")  # the task's own charge, the most direct figure Tripo gives
+        if isinstance(credit, (int, float)) and not isinstance(credit, bool) and self.last_usage is not None:
+            self.last_usage = {**self.last_usage, "credits": credit}
+        return data
 
     def poll(self, job_id: str) -> str:
         data = self._task(job_id)
