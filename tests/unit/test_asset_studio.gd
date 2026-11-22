@@ -346,3 +346,50 @@ func test_project_path_joins_posix_manifest_path() -> void:
 	expect(AssetBackendResult.project_path("C:/games/silent_water", "assets/models/a/concept/v1.png") == "C:/games/silent_water/assets/models/a/concept/v1.png")
 	expect(AssetBackendResult.project_path("/home/u/sw/", "assets/models/a/brief.md") == "/home/u/sw/assets/models/a/brief.md")
 	expect(AssetBackendResult.project_path("C:/sw", "assets\\models\\a.glb") == "C:/sw/assets/models/a.glb")
+
+
+func test_new_asset_slug_validation() -> void:
+	var m: AssetNewAssetModel = AssetNewAssetModel.new()
+	m.load_existing(PackedStringArray(["angler"]))
+	expect(m.slug_error() != "", "empty slug rejected")
+	for bad: String in ["Angler", "my-asset", "a b", "é"]:
+		m.slug = bad
+		expect(m.slug_error() != "", "format rejects '%s'" % bad)
+	m.slug = "angler"
+	expect(m.slug_error().contains("already exists"), "duplicate rejected")
+	m.slug = "reef_fish2"
+	expect_eq(m.slug_error(), "")
+
+
+func test_new_asset_builds_backend_call() -> void:
+	var m: AssetNewAssetModel = AssetNewAssetModel.new()
+	m.slug = "reef_fish"
+	m.asset_class = "creature"
+	expect(m.new_args().is_empty(), "no description, no call")
+	m.description = "  A small reef fish.\nStriped.  "
+	expect_eq(m.new_args(), PackedStringArray(["new", "reef_fish", "--class", "creature", "--description", "A small reef fish.\nStriped."]))
+	m.issue_text = "#42"
+	expect_eq(m.new_args(), PackedStringArray(["new", "reef_fish", "--class", "creature", "--issue", "42", "--description", "A small reef fish.\nStriped."]))
+	m.issue_text = "abc"
+	expect(m.new_args().is_empty(), "bad issue rejected")
+
+
+func test_generate_more_needs_description() -> void:
+	var l: Dictionary = _listing()
+	var c: AssetConceptModel = AssetConceptModel.new()
+	c.load_asset((l["assets"] as Array)[1] as Dictionary)
+	expect(not c.can_generate_more(), "bulkhead has no description")
+	expect(c.generate_hint() != "", "hint shown")
+	expect(not c.can_generate_more("   "), "blank edit still disabled")
+	expect(c.can_generate_more("A hatch."), "enabled with a description")
+	expect_eq(c.generate_hint("A hatch."), "")
+	c.load_asset((l["assets"] as Array)[0] as Dictionary)
+	expect(c.can_generate_more(), "angler has a description")
+
+
+func test_describe_args() -> void:
+	var l: Dictionary = _listing()
+	var c: AssetConceptModel = AssetConceptModel.new()
+	c.load_asset((l["assets"] as Array)[0] as Dictionary)
+	expect_eq(c.describe_args(" Bigger lure. "), PackedStringArray(["describe", "angler", "Bigger lure."]))
+	expect(c.describe_args("  ").is_empty(), "blank description builds no command")
