@@ -3,8 +3,10 @@
 Concept record for the cockpit: the transparent dome at the nose of the sub and the two stations
 that use it. Tracked in #328. The locked primary concept art is `cockpit_primary.png`;
 `cockpit_pilot_view_reference.png` is the companion first-person shot of the pilot's station,
-which did not change between the round it was drawn in and the locked arrangement. Everything
-else explored on the way is linked below by commit permalink.
+which did not change between the round it was drawn in and the locked arrangement, and
+`cockpit_sonar_console_reference.png` is the reference for the sonar console itself: the layout
+comes from the primary, the console's design from this shot. Everything else explored on the way
+is linked below by commit permalink.
 
 ## The two stations
 
@@ -58,6 +60,12 @@ The screen shows where the passive array is pointed.
 - On the desk: a trackball (a joystick is the alternative) for pointing the array, a large
   guarded active sonar toggle with an indicator lamp, map controls (zoom, pan, rotate), and a
   headset on a hook.
+- **The console as drawn in the sonar console reference is the one to build:** the screen in a
+  deep bezel on a steeply raked desk with an orange-framed structure, and a slim control strip
+  along its lower edge carrying the active sonar toggle, the trackball and the map keys under
+  the operator's hands. The primary shot's flatter desk and smaller screen are superseded by it.
+
+![Sonar console reference](cockpit_sonar_console_reference.png)
 
 **Look.** Modern, utilitarian, reliable because it is overbuilt and well kept, not because it is
 old. Powder-coated matte grey with safety-orange grab rails and accents, modern switch boards,
@@ -104,7 +112,11 @@ immediately behind the pilot was the intriguing part. Run with it.
 
 Variant 6. The sonar station moves out of the bubble to a desk just aft of the rim ring,
 starboard. [From behind](https://github.com/tsebens/silent_water/blob/0c415a8795b888ffa11997e97c031850dc9e3e90/concepts/cockpit/cockpit_var6_img1.png?raw=true) (now `cockpit_primary.png`, **locked**) and
-[the sonar operator's view past the pilot](https://github.com/tsebens/silent_water/blob/0c415a8795b888ffa11997e97c031850dc9e3e90/concepts/cockpit/cockpit_var6_img2.png?raw=true).
+[the sonar operator's view past the pilot](https://github.com/tsebens/silent_water/blob/0c415a8795b888ffa11997e97c031850dc9e3e90/concepts/cockpit/cockpit_var6_img2.png?raw=true) (now `cockpit_sonar_console_reference.png`).
+
+Feedback: the first shot's layout is the better one, but the sonar console as drawn in the
+second is better than the first's. Both are kept: layout from the primary, console from the
+reference.
 
 ## Decisions made in this session
 
@@ -131,6 +143,8 @@ starboard. [From behind](https://github.com/tsebens/silent_water/blob/0c415a8795
 - The pilot's view with nothing below the sightline but the hologram cylinder (round 2).
 - The seat spacing and finish of round 2's from-behind shot.
 - The sonar screen immediately behind the pilot.
+- The sonar console as drawn in round 3's sonar view: raked desk, deep bezel, orange frame,
+  control strip under the hands.
 
 ## Actively rejected
 
