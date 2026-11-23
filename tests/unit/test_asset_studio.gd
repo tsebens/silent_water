@@ -44,6 +44,80 @@ func test_concept_variants_and_state() -> void:
 	expect_eq(c.default_provider, "mock")
 
 
+func _concept_asset(decisions: Array, locked: Variant) -> Dictionary:
+	var lin: Array = []
+	for id: String in ["v1", "v2", "v3", "v4"]:
+		lin.append({"id": id, "kind": "concept", "path": "", "provider": "mock", "model": "m", "prompt": "p", "parent": null})
+	return {"slug": "x", "lineage": lin, "decisions": decisions, "locked": locked}
+
+
+func test_concept_groups_pending_accepted_rejected() -> void:
+	var c: AssetConceptModel = AssetConceptModel.new()
+	c.load_asset(_concept_asset([
+		{"variant": "v1", "decision": "approved"},
+		{"variant": "v2", "decision": "rejected"},
+		{"variant": "v3", "decision": "approved"},
+	], {"variant": "v3", "decision": "approved"}))
+	expect_eq(c.group("accepted").size(), 2)
+	expect_eq(c.group("accepted")[0]["id"], "v3")
+	expect_eq(c.variant("v3")["state"], "locked")
+	expect_eq(c.variant("v1")["state"], "accepted")
+	expect_eq(c.locked_id(), "v3")
+	expect_eq(c.group("rejected").size(), 1)
+	expect_eq(c.group("pending").size(), 1)
+	c.in_flight = 2
+	expect_eq(c.section_title("pending"), "Pending (3)")
+	expect_eq(c.section_title("accepted"), "Accepted (2)")
+	expect_eq(c.section_title("rejected"), "Rejected (1)")
+
+
+func test_concept_approve_reject_regroup_at_once() -> void:
+	var c: AssetConceptModel = AssetConceptModel.new()
+	c.load_asset(_concept_asset([], null))
+	expect_eq(c.group("pending").size(), 4)
+	c.approve("v1")
+	expect_eq(c.locked_id(), "v1")
+	c.approve("v2")
+	expect_eq(c.locked_id(), "v2", "lock moves to the latest approval")
+	expect_eq(c.variant("v1")["state"], "accepted")
+	expect_eq(c.group("accepted").size(), 2)
+	c.reject("v2")
+	expect_eq(c.locked_id(), "v1", "rejecting the lock hands it back to the previous approval")
+	expect_eq(c.group("rejected").size(), 1)
+	c.reject("v1")
+	expect_eq(c.locked_id(), "")
+	expect_eq(c.group("pending").size(), 2)
+	c.approve("v1")
+	expect_eq(c.group("rejected").size(), 1, "re-approving leaves rejected")
+	c.approve("nope")
+	expect_eq(c.group("accepted").size(), 1)
+
+
+func test_texture_cache_loads_each_file_once() -> void:
+	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path("res://build/"))
+	var good: String = ProjectSettings.globalize_path("res://build/tc_good.png")
+	var bad: String = ProjectSettings.globalize_path("res://build/tc_bad.png")
+	var img: Image = Image.create(4, 4, false, Image.FORMAT_RGBA8)
+	img.save_png(good)
+	var f: FileAccess = FileAccess.open(bad, FileAccess.WRITE)
+	f.store_string("not a png")
+	f.close()
+	var cache: AssetTextureCache = AssetTextureCache.new()
+	var t1: Texture2D = cache.get_texture(good)
+	expect(t1 != null, "good file loads")
+	expect(cache.get_texture(good) == t1, "same texture on redraw")
+	expect_eq(cache.loads, 1)
+	expect(cache.get_texture(bad) == null)
+	expect(cache.get_texture(bad) == null)
+	expect(cache.get_texture(bad) == null)
+	expect_eq(cache.loads, 2, "bad file read once")
+	expect_eq(cache.warnings, 1, "one warning for the bad file")
+	expect(cache.error_for(bad) != "", "reason kept for the placeholder")
+	expect_eq(cache.error_for(good), "")
+	DirAccess.remove_absolute(good)
+	DirAccess.remove_absolute(bad)
+
+
 func test_concept_lineage_panel() -> void:
 	var l: Dictionary = _listing()
 	var c: AssetConceptModel = AssetConceptModel.new()

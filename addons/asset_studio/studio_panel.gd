@@ -31,7 +31,13 @@ var _folder_input_mode: String = ""
 var _menu_folder: String = ""
 ## Folder paths the user collapsed; kept across refreshes.
 var _collapsed: Dictionary = {}
-var _grid: GridContainer
+var _sections: Dictionary = {}
+var _section_boxes: Dictionary = {}
+var _desc_toggle: Button
+var _lineage_toggle: Button
+var _desc_body: Control
+var _lineage_body: Control
+var textures: AssetTextureCache = AssetTextureCache.new()
 var _title: Label
 var _status: Label
 var _progress: ProgressBar
@@ -74,7 +80,7 @@ var _new_hint: Label
 var _desc_edit: TextEdit
 var _desc_save_btn: Button
 var _more_hint: Label
-var _cost_title: Label
+var _cost_title: Button
 var _cost_text: Label
 ## Action key -> [{button, base}]: paid-action buttons that show an estimate.
 var _est_buttons: Dictionary = {}
@@ -179,24 +185,62 @@ func _build() -> void:
 	_title = Label.new()
 	_title.text = "Concept"
 	right.add_child(_title)
-	var dl: Label = Label.new()
-	dl.text = "Description (the concept brief, editable)"
-	right.add_child(dl)
+	var cols: HBoxContainer = HBoxContainer.new()
+	cols.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	cols.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	right.add_child(cols)
+	# Left column (~1/3): the description and the lineage, each collapsible.
+	var left: VBoxContainer = VBoxContainer.new()
+	left.size_flags_stretch_ratio = 1.0
+	left.custom_minimum_size = Vector2(260, 0)
+	left.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	cols.add_child(left)
+	var desc_box: VBoxContainer = VBoxContainer.new()
+	_desc_toggle = _toggle_header(left, "Description (the concept brief, editable)", desc_box, true)
+	left.add_child(desc_box)
+	_desc_body = desc_box
 	_desc_edit = TextEdit.new()
-	_desc_edit.custom_minimum_size = Vector2(0, 90)
+	_desc_edit.custom_minimum_size = Vector2(0, 160)
+	_desc_edit.wrap_mode = TextEdit.LINE_WRAPPING_BOUNDARY
 	_desc_edit.text_changed.connect(func() -> void: _update_description_controls(runner != null and runner.busy))
-	right.add_child(_desc_edit)
-	_desc_save_btn = _button(right, "Save description", _on_save_description)
+	desc_box.add_child(_desc_edit)
+	_desc_save_btn = _button(desc_box, "Save description", _on_save_description)
+	var lin_box: VBoxContainer = VBoxContainer.new()
+	lin_box.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	_lineage_toggle = _toggle_header(left, "Lineage: the full prompt, model and parent behind the selected image", lin_box, true)
+	left.add_child(lin_box)
+	_lineage_body = lin_box
+	_lineage_title = Label.new()
+	_lineage_title.text = "Select an image and press Lineage"
+	_lineage_title.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	lin_box.add_child(_lineage_title)
+	_lineage = RichTextLabel.new()
+	_lineage.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	_lineage.custom_minimum_size = Vector2(0, 110)
+	_lineage.bbcode_enabled = false
+	_lineage.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	lin_box.add_child(_lineage)
+
+	# Right column (~2/3): one image per row in Pending / Accepted / Rejected.
+	var side: VBoxContainer = VBoxContainer.new()
+	side.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	side.size_flags_stretch_ratio = 2.0
+	cols.add_child(side)
 	var scroll: ScrollContainer = ScrollContainer.new()
 	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	right.add_child(scroll)
-	_grid = GridContainer.new()
-	_grid.columns = 2
-	_grid.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	scroll.add_child(_grid)
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	side.add_child(scroll)
+	var secs: VBoxContainer = VBoxContainer.new()
+	secs.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	scroll.add_child(secs)
+	for sec: String in ["pending", "accepted", "rejected"]:
+		var body: VBoxContainer = VBoxContainer.new()
+		_section_boxes[sec] = body
+		_sections[sec] = _toggle_header(secs, sec.capitalize(), body, sec != "rejected")
+		secs.add_child(body)
 
 	var more: HBoxContainer = HBoxContainer.new()
-	right.add_child(more)
+	side.add_child(more)
 	var lbl: Label = Label.new()
 	lbl.text = "Image provider"
 	more.add_child(lbl)
@@ -213,19 +257,11 @@ func _build() -> void:
 	_more_hint = Label.new()
 	more.add_child(_more_hint)
 
-	_cost_title = Label.new()
-	_cost_title.text = "Cost"
-	right.add_child(_cost_title)
+	var cost_box: VBoxContainer = VBoxContainer.new()
+	_cost_title = _toggle_header(left, "Cost", cost_box, false)
+	left.add_child(cost_box)
 	_cost_text = Label.new()
-	right.add_child(_cost_text)
-
-	_lineage_title = Label.new()
-	_lineage_title.text = "Lineage"
-	right.add_child(_lineage_title)
-	_lineage = RichTextLabel.new()
-	_lineage.custom_minimum_size = Vector2(0, 110)
-	_lineage.bbcode_enabled = false
-	right.add_child(_lineage)
+	cost_box.add_child(_cost_text)
 
 	_build_new_dialog()
 	_error = RichTextLabel.new()
@@ -234,6 +270,63 @@ func _build() -> void:
 	_error.selection_enabled = true
 	_error.visible = false
 	add_child(_error)
+
+
+## A flat button that shows or hides `body`. Its label is `title`, with a triangle.
+func _toggle_header(parent: Control, title: String, body: Control, open: bool) -> Button:
+	var b: Button = Button.new()
+	b.flat = true
+	b.clip_text = true
+	b.alignment = HORIZONTAL_ALIGNMENT_LEFT
+	b.set_meta("title", title)
+	body.visible = open
+	_set_toggle_text(b, open)
+	b.pressed.connect(func() -> void:
+		body.visible = not body.visible
+		_set_toggle_text(b, body.visible))
+	parent.add_child(b)
+	return b
+
+
+func _set_toggle_text(b: Button, open: bool) -> void:
+	b.text = "%s %s" % ["▼" if open else "▶", str(b.get_meta("title"))]
+
+
+## Rebuild the three sections from the concept model; titles carry their counts.
+func _fill_sections() -> void:
+	for sec: String in _section_boxes:
+		var body: Control = _section_boxes[sec]
+		for c: Node in body.get_children():
+			body.remove_child(c)
+			c.queue_free()
+		for v: Dictionary in concept.group(sec):
+			body.add_child(_variant_card(v))
+		if sec == "pending":
+			for i: int in concept.in_flight:
+				body.add_child(_placeholder_card())
+		var btn: Button = _sections[sec]
+		btn.set_meta("title", concept.section_title(sec))
+		_set_toggle_text(btn, body.visible)
+
+
+func _placeholder_card() -> Control:
+	var card: PanelContainer = PanelContainer.new()
+	var l: Label = Label.new()
+	l.text = "Generating…"
+	l.custom_minimum_size = Vector2(0, 120)
+	l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	l.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	card.add_child(l)
+	return card
+
+
+func _decide(id: String, approve: bool, notes: String) -> void:
+	if approve:
+		concept.approve(id)
+	else:
+		concept.reject(id)
+	_fill_sections()
+	_command(concept.approve_args(id, notes) if approve else concept.reject_args(id, notes))
 
 
 func _build_new_dialog() -> void:
@@ -562,11 +655,10 @@ func _on_row_selected() -> void:
 
 
 func _show_asset(slug: String) -> void:
-	for c: Node in _grid.get_children():
-		c.queue_free()
 	_provider_pick.clear()
 	_writer_pick.clear()
 	_lineage.text = ""
+	_lineage_title.text = "Select an image and press Lineage"
 	var asset: Dictionary = {}
 	for a: Variant in _assets:
 		if str((a as Dictionary).get("slug", "")) == slug:
@@ -574,6 +666,7 @@ func _show_asset(slug: String) -> void:
 	if asset.is_empty():
 		_title.text = "Concept: no asset selected"
 		concept.load_asset({})
+		_fill_sections()
 		_desc_edit.text = ""
 		_update_description_controls()
 		_show_turnaround({})
@@ -598,8 +691,7 @@ func _show_asset(slug: String) -> void:
 		_writer_pick.add_item(w)
 		if w == concept.default_writer:
 			_writer_pick.select(_writer_pick.item_count - 1)
-	for v: Dictionary in concept.variants:
-		_grid.add_child(_variant_card(v))
+	_fill_sections()
 	if not concept.variants.is_empty():
 		_show_lineage(str(concept.variants[-1]["id"]))
 	request_estimates()
@@ -607,31 +699,34 @@ func _show_asset(slug: String) -> void:
 
 func _variant_card(v: Dictionary) -> Control:
 	var card: PanelContainer = PanelContainer.new()
+	card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	var box: VBoxContainer = VBoxContainer.new()
 	card.add_child(box)
-	var tex: TextureRect = TextureRect.new()
-	tex.custom_minimum_size = THUMB
-	tex.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	tex.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	tex.texture = _load_texture(str(v["path"]))
-	box.add_child(tex)
+	var path: String = _abs_image_path(str(v["path"]))
+	var tex_rect: TextureRect = TextureRect.new()
+	tex_rect.custom_minimum_size = Vector2(0, 200)
+	tex_rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	tex_rect.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	tex_rect.texture = textures.get_texture(path) if str(v["path"]) != "" else null
+	box.add_child(tex_rect)
+	var why: String = textures.error_for(path)
+	if why != "":
+		var bad: Label = Label.new()
+		bad.text = "unreadable image: %s" % why
+		bad.add_theme_color_override("font_color", Color("#ff6b6b"))
+		box.add_child(bad)
 	var cap: Label = Label.new()
-	cap.text = "%s [%s]" % [v["caption"], v["state"]]
+	var mark: String = " [Locked]" if v["state"] == "locked" else ""
+	cap.text = "%s%s" % [v["caption"], mark]
 	box.add_child(cap)
-	var prompt: Label = Label.new()
-	prompt.text = str(v["prompt"])
-	prompt.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	prompt.custom_minimum_size = Vector2(THUMB.x, 0)
-	prompt.max_lines_visible = 4
-	box.add_child(prompt)
 	var notes: LineEdit = LineEdit.new()
 	notes.placeholder_text = "Notes (needed to refine)"
 	box.add_child(notes)
 	var row: HBoxContainer = HBoxContainer.new()
 	box.add_child(row)
 	var id: String = str(v["id"])
-	_button(row, "Approve", func() -> void: _command(concept.approve_args(id, notes.text)))
-	_button(row, "Reject", func() -> void: _command(concept.reject_args(id, notes.text)))
+	_button(row, "Approve", func() -> void: _decide(id, true, notes.text))
+	_button(row, "Reject", func() -> void: _decide(id, false, notes.text))
 	_est_button(row, "Refine", "refine", func() -> void: _command(concept.refine_args(id, notes.text, _picked_provider(), _picked(_writer_pick))))
 	_button(row, "Lineage", func() -> void: _show_lineage(id))
 	return card
@@ -709,7 +804,8 @@ func _on_estimate_finished(_args: PackedStringArray, result: AssetBackendResult)
 
 
 func _show_cost() -> void:
-	_cost_title.text = "Cost: %s" % cost.total_text() if cost.slug != "" else "Cost"
+	_cost_title.set_meta("title", "Cost: %s" % cost.total_text() if cost.slug != "" else "Cost")
+	_set_toggle_text(_cost_title, _cost_text.get_parent().visible)
 	var lines: PackedStringArray = cost.panel_lines()
 	if cost.warning() != "":
 		lines.insert(0, "WARNING: " + cost.warning())
@@ -913,14 +1009,12 @@ func _show_lineage(id: String) -> void:
 	_lineage.text = "\n".join(lines)
 
 
+func _abs_image_path(rel: String) -> String:
+	return AssetBackendResult.project_path(ProjectSettings.globalize_path("res://"), rel) if rel != "" else ""
+
+
 func _load_texture(rel: String) -> Texture2D:
-	var abs_path: String = AssetBackendResult.project_path(ProjectSettings.globalize_path("res://"), rel)
-	if rel == "" or not FileAccess.file_exists(abs_path):
-		return null
-	var img: Image = Image.load_from_file(abs_path)
-	if img == null:
-		return null
-	return ImageTexture.create_from_image(img)
+	return textures.get_texture(_abs_image_path(rel)) if rel != "" else null
 
 
 func _picked(opt: OptionButton) -> String:
@@ -955,10 +1049,20 @@ func _on_started(args: PackedStringArray) -> void:
 	_status.text = "Running: asset %s" % " ".join(args)
 	_progress.visible = true
 	_set_busy(true)
+	if args.size() > 0 and args[0] == "concept":
+		var n: int = 1
+		var at: int = args.find("--n")
+		if at >= 0 and at + 1 < args.size():
+			n = maxi(int(args[at + 1]), 1)
+		concept.in_flight = n
+		_fill_sections()
 
 
 func _on_finished(args: PackedStringArray, result: AssetBackendResult) -> void:
 	_progress.visible = false
+	if concept.in_flight > 0:
+		concept.in_flight = 0
+		_fill_sections()
 	_set_busy(false)
 	if not result.ok:
 		_status.text = "Failed: asset %s" % " ".join(args)
