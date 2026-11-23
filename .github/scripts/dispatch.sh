@@ -5,6 +5,8 @@
 #   0. exit if PIPELINE_PAUSED=true
 #   1. mirror board Status=Ready onto the `ready` label (so Tristan can promote from the board)
 #   2. unblock: `blocked` arcs whose blockers are all closed become `ready`
+#   2b. recover: a `claimed` arc whose build run died (no live run, no open arc PR, past the grace period) goes back to
+#      `ready` once; orphaned again, it gets `needs-human`
 #   3. claim: drop a stray `ready` from arcs already claimed/in-review; while in-flight arcs < WORKER_CAP, claim the oldest `ready` arc whose
 #      Touches: do not overlap an in-flight arc, and start a development run
 #   3b. close approved concepts whose arcs are all closed (backstop for the review agent)
@@ -14,7 +16,7 @@
 # Runs on label changes and closes (the primary clock) and a 30-minute cron (recovery).
 #
 # Env:  GH_TOKEN (PAT with repo + project scope), WORKER_CAP (default 2), PIPELINE_PAUSED,
-#       PROJECT_NUMBER (default 1), STALE_MINUTES (default 30),
+#       PROJECT_NUMBER (default 1), STALE_MINUTES (default 30), ORPHAN_GRACE_MINUTES (default 15),
 #       DEVELOPMENT_WORKFLOW (default role-development.yml),
 #       DRY_RUN=true to log mutations instead of doing them.
 set -euo pipefail
@@ -24,6 +26,7 @@ OWNER="${REPO%%/*}"
 PROJECT_NUMBER="${PROJECT_NUMBER:-1}"
 WORKER_CAP="${WORKER_CAP:-2}"
 STALE_MINUTES="${STALE_MINUTES:-30}"
+ORPHAN_GRACE_MINUTES="${ORPHAN_GRACE_MINUTES:-15}"
 DEVELOPMENT_WORKFLOW="${DEVELOPMENT_WORKFLOW:-role-development.yml}"
 DRY_RUN="${DRY_RUN:-false}"
 
@@ -121,6 +124,69 @@ path_pair_overlaps() { # a b
     if [ "$a" = "$p" ] || [ "$b" = "$p" ]; then return 1; fi
   done
   [[ "$a" == "$b"/* ]] || [[ "$b" == "$a"/* ]]
+}
+
+# ---------------------------------------------------------------------------
+# Orphan recovery: a `claimed` arc whose development run died.
+# ---------------------------------------------------------------------------
+
+ORPHAN_MARKER="<!-- dispatcher:orphan-reverted -->"
+
+# Latest "claimed and started a development run" comment on an arc -> "<created_at> <run id or ->", or nothing.
+claim_info() { # number
+  local row
+  row=$(gh api --paginate "repos/$REPO/issues/$1/comments?per_page=100" \
+    --jq '[.[] | select(.body | startswith("Dispatcher: claimed"))] | last // empty
+          | "\(.created_at) \((.body | capture("actions/runs/(?<id>[0-9]+)").id) // "-")"' 2>/dev/null | tail -1) || return 0
+  echo "$row"
+}
+
+# 0 if a development run for this arc is queued or in progress. Without a known run id, any live development run counts.
+live_run_for() { # run-id-or-dash
+  local status n
+  if [ "$1" != "-" ]; then
+    status=$(gh api "repos/$REPO/actions/runs/$1" --jq .status 2>/dev/null) || return 0  # lookup failed: assume alive
+    case "$status" in queued|in_progress|waiting|pending|requested) return 0 ;; *) return 1 ;; esac
+  fi
+  n=$(gh api "repos/$REPO/actions/workflows/$DEVELOPMENT_WORKFLOW/runs?status=queued&per_page=1" --jq .total_count 2>/dev/null) || return 0
+  [ "${n:-0}" -gt 0 ] && return 0
+  n=$(gh api "repos/$REPO/actions/workflows/$DEVELOPMENT_WORKFLOW/runs?status=in_progress&per_page=1" --jq .total_count 2>/dev/null) || return 0
+  [ "${n:-0}" -gt 0 ]
+}
+
+arc_reverted_before() { # number
+  gh api --paginate "repos/$REPO/issues/$1/comments?per_page=100" --jq '.[].body' 2>/dev/null | grep -qF "$ORPHAN_MARKER"
+}
+
+# $1 = newline-separated arc numbers that have an open arc/<n>-* PR. Runs before Claim, so a revert frees its
+# in-flight slot before the cap is computed and WORKER_CAP can never be exceeded by it.
+recover_orphans() {
+  local n info created run_id age grace=$((ORPHAN_GRACE_MINUTES * 60)) now
+  now=$(date -u +%s)
+  for n in $(arcs_with claimed); do
+    arc_has "$n" needs-human && continue
+    if grep -qx "$n" <<<"$1"; then log "  #$n claimed, has an open PR; fine"; continue; fi
+    info=$(claim_info "$n")
+    if [ -z "$info" ]; then log "  #$n claimed with no dispatcher claim comment; cannot date it, leaving alone"; continue; fi
+    created=${info%% *}; run_id=${info##* }
+    age=$((now - $(date -u -d "$created" +%s)))
+    if [ "$age" -lt "$grace" ]; then log "  #$n claimed ${age}s ago, inside the ${ORPHAN_GRACE_MINUTES}m grace period; fine"; continue; fi
+    if live_run_for "$run_id"; then log "  #$n claimed, development run ${run_id} is live; fine"; continue; fi
+    log "  #$n is an orphan: claimed since $created, run ${run_id} is not live and there is no open arc PR"
+    if arc_reverted_before "$n"; then
+      log "  #$n was already reverted once; escalating"
+      log "    #$n comment: second orphaning notice"
+      comment "$n" "Dispatcher: this arc was orphaned again (development run ${run_id} is dead, no open PR). It was already returned to \`ready\` once, so it needs a human."
+      act gh issue edit "$n" -R "$REPO" --add-label needs-human --add-assignee tsebens >/dev/null
+      log "    #$n +needs-human"
+    else
+      remove_label "$n" claimed
+      add_label "$n" ready
+      log "    #$n comment: orphan notice naming run ${run_id}"
+      comment "$n" "Dispatcher: the development run for this arc (${run_id}) is dead and no PR exists; returning it to \`ready\` for another attempt. A second orphaning escalates to \`needs-human\`.
+$ORPHAN_MARKER"
+    fi
+  done
 }
 
 # ---------------------------------------------------------------------------
@@ -250,6 +316,12 @@ for n in $(arcs_with blocked); do
     log "  #$n: waiting on$open_blockers"
   fi
 done
+load_arcs
+
+log "2b. Recover orphaned claims"
+OPEN_ARC_PRS=$(gh api --paginate "repos/$REPO/pulls?state=open&per_page=100" \
+  --jq '.[] | select(.head.ref | test("^arc/[0-9]+-")) | .head.ref | capture("^arc/(?<n>[0-9]+)-").n' || true)
+recover_orphans "$OPEN_ARC_PRS"
 load_arcs
 
 log "3. Claim"
