@@ -32,7 +32,8 @@ providers:
     # flux-kontext: {adapter: fal, model: fal-ai/flux-pro/kontext, edit_model: fal-ai/flux-pro/kontext}
   three_d:
     mock: {model: mock-3d-1}
-    # Hosted image-to-3D, all taking the four turnaround views. Keys: TRIPO_API_KEY, MESHY_API_KEY,
+    # Hosted image-to-3D. `views:` (default front, left, back, right) lists the turnaround views `to3d` sends, in order;
+    # a listed view the asset does not have is skipped. Keys: TRIPO_API_KEY, MESHY_API_KEY,
     # RODIN_API_KEY (model = tier), FAL_KEY. Hunyuan3D is not shipped (licence excludes EU/UK/KR, #219).
     # Tripo H3.1 snapshot. Docs: https://developers.tripo3d.ai/en/models/v3-1 (checked 2026-11-22). P2.0's ID is unconfirmed (#256).
     tripo: {model: v3.1-20260211}
@@ -43,10 +44,10 @@ providers:
     # TRELLIS.2 on fal. Docs: https://fal.ai/models/fal-ai/trellis-2/api (checked 2026-11-22).
     # fal-ai/trellis-2 takes ONE image (`image_url`), so `input: single` sends the front view only;
     # use `input: multi` (sends `image_urls`) for an endpoint that takes several views.
-    trellis: {model: fal-ai/trellis-2, input: single}
+    trellis: {model: fal-ai/trellis-2, input: single, views: [front]}
     # TRELLIS v1 multi-image on fal: up to 8 views as `image_urls`, GLB in `model_mesh`.
     # Docs: https://fal.ai/models/fal-ai/trellis/multi/api (checked 2026-11-22; price not listed there).
-    trellis-multi: {adapter: trellis, model: fal-ai/trellis/multi, input: multi}
+    trellis-multi: {adapter: trellis, model: fal-ai/trellis/multi, input: multi, views: [front, left, back, right, top, bottom]}
   prompt_writer:
     mock: {model: mock-writer-1}
     # Claude Code CLI: `claude -p ... --output-format json`, uses the logged-in subscription

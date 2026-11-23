@@ -19,7 +19,10 @@ from .manifest import (CLASSES, DECISIONS, BriefRecord, CheckRecord, CleanupReco
                        LineageEntry, Manifest)
 from .writers import PromptWriterError
 
-VIEWS = ("front", "left", "back", "right")
+VIEWS = check.VIEWS  # the four views every turnaround has
+ALL_VIEWS = check.ALL_VIEWS
+VIEW_FRAMING = {"top": "seen straight down from directly above, the front of the asset toward the bottom of the image",
+                "bottom": "seen straight up from directly below, the front of the asset toward the top of the image"}
 TURNAROUND_PX = 2048
 MAX_ANCHORS = 4
 ANCHOR_SUFFIXES = (".png", ".jpg", ".jpeg", ".webp")
@@ -167,6 +170,19 @@ def _rel(root: Path, p: Path) -> str:
         return str(p)
 
 
+def class_views(root: Path, asset_class: str) -> list[str]:
+    """The turnaround views a class asks for (`turnaround_views` in classes.yaml), in canonical order. Without the
+    field, or without a classes file, the four standard views."""
+    cf = style_dir(root) / "classes.yaml"
+    prof = ((yaml.safe_load(cf.read_text()) or {}).get("classes", {}).get(asset_class) or {}) if cf.is_file() else {}
+    want = prof.get("turnaround_views")
+    if want is None:
+        return list(VIEWS)
+    if not isinstance(want, list) or not want or any(v not in ALL_VIEWS for v in want):
+        raise ValueError(f"classes.yaml: {asset_class} turnaround_views must be a non-empty list of {', '.join(ALL_VIEWS)}")
+    return [v for v in ALL_VIEWS if v in want]
+
+
 def cmd_turnaround(args: argparse.Namespace, root: Path) -> dict[str, Any]:
     mpath = paths.manifest_path(root, args.slug)
     m = Manifest.load(mpath)
@@ -182,28 +198,30 @@ def cmd_turnaround(args: argparse.Namespace, root: Path) -> dict[str, Any]:
     while any(e.id.startswith(f"t{n}_") for e in m.lineage):
         n += 1
     only = getattr(args, "view", None)
+    wanted = class_views(root, m.asset_class)
     prev: dict[str, LineageEntry] = {}
     if only:
         old = _latest_turnaround(m)
         prev = {e.id[len(old):]: e for e in m.lineage if e.kind == "turnaround" and e.id.startswith(old)}
-        missing = [v for v in VIEWS if v not in prev]
+        wanted = [v for v in ALL_VIEWS if v == only or v in prev]  # the rest of the set is carried over as it is
+        missing = [v for v in VIEWS if v not in prev and v != only]
         if missing:
             raise ValueError(f"--view needs a complete turnaround to start from: run `asset turnaround` first "
                              f"(missing {', '.join(missing)})")
     views = []
     prices = cost.load_prices()
     with _ledger_guard(mpath, m):
-        _turnaround_views(args, root, m, img, src, src_path, out_dir, n, only, prev, views, prices)
+        _turnaround_views(args, root, m, img, src, src_path, out_dir, n, only, prev, views, prices, wanted)
     if m.stage in ("new", "concept", "locked", "turnaround"):
         m.stage = "turnaround"
     m.save(mpath)
     return {"slug": m.slug, "stage": m.stage, "views": views, "image_provider": f"{img.name}:{img.model}"}
 
 
-def _turnaround_views(args, root, m, img, src, src_path, out_dir, n, only, prev, views, prices) -> None:
-    todo = 1 if only else len(VIEWS)
+def _turnaround_views(args, root, m, img, src, src_path, out_dir, n, only, prev, views, prices, wanted) -> None:
+    todo = 1 if only else len(wanted)
     done = 0
-    for view in VIEWS:
+    for view in wanted:
         if only and view != only:
             # carry the view over so the new set is complete: copy the file, keep prompt and provenance
             old_e = prev[view]
@@ -217,7 +235,8 @@ def _turnaround_views(args, root, m, img, src, src_path, out_dir, n, only, prev,
             continue
         done += 1
         progress(f"{view} view {done}/{todo} ({img.name})…")
-        body = (f"Orthographic {view} view of this exact asset, flat neutral lighting, no perspective, "
+        framing = f", {VIEW_FRAMING[view]}" if view in VIEW_FRAMING else ""
+        body = (f"Orthographic {view} view of this exact asset{framing}, flat neutral lighting, no perspective, "
                 f"centred, on a transparent or plain removed background, {TURNAROUND_PX}x{TURNAROUND_PX} px. "
                 "Keep every proportion and detail of the source image unchanged.")
         prompt = full_prompt(root, m.asset_class, body)
@@ -293,8 +312,7 @@ def cmd_to3d(args: argparse.Namespace, root: Path) -> dict[str, Any]:
     by_view = {e.id[len(tid):]: e for e in m.lineage if e.kind == "turnaround" and e.id.startswith(tid)}
     if not by_view:
         raise ValueError("no turnaround: run `asset turnaround` first")
-    ordered = [by_view[v] for v in VIEWS if v in by_view]
-    views = [abspath(root, e.path) for e in ordered]
+    ordered = [by_view[v] for v in ALL_VIEWS if v in by_view]
     cfg = providers.load_config()
     names = list(dict.fromkeys(args.three_d_provider or [None]))
     built = [providers.select("three_d", cfg, n) for n in names]  # fail on a bad name before any spend
@@ -307,7 +325,10 @@ def cmd_to3d(args: argparse.Namespace, root: Path) -> dict[str, Any]:
         job = ""
         try:
             progress(f"submitting to {prov.name}…")
-            job = prov.submit(views)
+            sent = [by_view[v] for v in prov.views if v in by_view]  # each provider's own views, in its order
+            if not sent:
+                raise ValueError(f"{prov.name} takes the {', '.join(prov.views)} view(s) and the turnaround has none")
+            job = prov.submit([abspath(root, e.path) for e in sent])
             progress(f"waiting for {prov.name} (job {job})…")
             _wait_for(prov, job, args.poll_interval, args.timeout)
             progress(f"downloading from {prov.name}…")
@@ -325,7 +346,7 @@ def cmd_to3d(args: argparse.Namespace, root: Path) -> dict[str, Any]:
             continue
         m.costs.append(cost.entry_for(prov, "three_d", prices, command="to3d", stage="to3d", lineage=rid))
         m.add(LineageEntry(id=rid, kind="mesh", path=rel.as_posix(), provider=prov.name, model=prov.model,
-                           parent=ordered[0].id, references=[e.path for e in ordered], task_id=job))
+                           parent=sent[0].id, references=[e.path for e in sent], task_id=job))
         m.save(mpath)  # per run, so a later provider's crash keeps this one
         runs.append({"id": rid, "provider": prov.name, "model": prov.model, "task_id": job, "path": rel.as_posix()})
     if runs and m.stage in ("new", "concept", "locked", "turnaround", "brief", "to3d"):
@@ -399,7 +420,7 @@ def cmd_check(args: argparse.Namespace, root: Path) -> dict[str, Any]:
         size_m, size_from = cleanup.brief_size_m(brief, profile)
     budget = args.triangle_budget or profile["triangle_budget"]
     prefix = _latest_turnaround(m)
-    views = {v: abspath(root, e.path) for v in VIEWS for e in m.lineage if e.id == f"{prefix}{v}"}
+    views = {v: abspath(root, e.path) for v in ALL_VIEWS for e in m.lineage if e.id == f"{prefix}{v}"}
     mesh = check.load_mesh(abspath(root, src.path))
     gates = check.run_gates(mesh, profile, size_m, size_from, budget, views)
     failed = [g["name"] for g in gates if not g["ok"]]
@@ -593,7 +614,7 @@ def cmd_estimate(args: argparse.Namespace, root: Path) -> dict[str, Any]:
         reqs = [(providers.select("prompt_writer", cfg, args.prompt_writer), "prompt_writer", 1),
                 (providers.select("image", cfg, args.image_provider), "image", args.n)]
     elif name == "turnaround":
-        reqs = [(providers.select("image", cfg, args.image_provider), "image", 1 if args.view else len(VIEWS))]
+        reqs = [(providers.select("image", cfg, args.image_provider), "image", 1 if args.view else len(class_views(root, Manifest.load(paths.manifest_path(root, args.slug)).asset_class)))]
     elif name == "brief":
         reqs = [(providers.select("prompt_writer", cfg, args.prompt_writer), "prompt_writer", 1)]
     elif name == "to3d":
@@ -662,11 +683,11 @@ def build_parser() -> argparse.ArgumentParser:
     c.add_argument("--estimate", action="store_true", help="print what this would cost from prices.yaml and the request, and call nothing")
     c.set_defaults(fn=cmd_concept)
     ESTIMATE = "print what this would cost from prices.yaml and the request, and call nothing"
-    t = sub.add_parser("turnaround", help="front, left, back, right views of the locked concept")
+    t = sub.add_parser("turnaround", help="the class's turnaround views (front, left, back, right, plus top and bottom for creatures) of the locked concept")
     t.add_argument("slug")
     t.add_argument("--image-provider", default=None)
-    t.add_argument("--view", choices=VIEWS, default=None,
-                   help="regenerate one view into a new complete set (the other three are copied from the latest)")
+    t.add_argument("--view", choices=ALL_VIEWS, default=None,
+                   help="regenerate one view into a new complete set (the other views are copied from the latest)")
     t.add_argument("--estimate", action="store_true", help=ESTIMATE)
     t.set_defaults(fn=cmd_turnaround)
     b = sub.add_parser("brief", help="draft brief.md from the locked concept and views")

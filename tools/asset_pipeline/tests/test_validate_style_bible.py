@@ -1,6 +1,8 @@
 """tools/validate_style_bible.py checks the per-class style files."""
 import importlib.util
 import shutil
+
+import yaml
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[3]
@@ -54,3 +56,21 @@ def test_budget_usd_is_optional_and_validated(tmp_path):
     for bad in (-1, "5", True, None):
         _set_budget(root, bad)
         assert any("budget_usd" in e for e in mod.validate()), bad
+
+
+def _set_views(root, value):
+    f = root / "classes.yaml"
+    data = yaml.safe_load(f.read_text())
+    data["classes"]["prop"]["turnaround_views"] = value
+    f.write_text(yaml.safe_dump(data))
+
+
+def test_turnaround_views_are_validated(tmp_path):
+    mod, root = load(tmp_path)
+    assert "turnaround_views" in yaml.safe_load((root / "classes.yaml").read_text())["classes"]["creature"]
+    for ok in (["front"], ["front", "left", "back", "right", "top", "bottom"]):
+        _set_views(root, ok)
+        assert mod.validate() == [], ok
+    for bad in ([], "front", None, ["front", "up"], ["front", "front"], [3]):
+        _set_views(root, bad)
+        assert any("turnaround_views" in e for e in mod.validate()), bad

@@ -26,6 +26,7 @@ Top-level key `classes`, with one entry each for `creature`, `prop`, `terrain`, 
 | `snap_grid_m` | Snap grid in metres, or `null` when the class has none |
 | `palette_size` | Maximum distinct vertex colours |
 | `cleanup_recipe` | Ordered list of cleanup step names |
+| `turnaround_views` | Optional. Views `asset turnaround` generates: a non-empty list of distinct names from front, left, back, right, top, bottom. Default: front, left, back, right. `check` adds `silhouette_top` / `silhouette_bottom` when those views exist |
 | `gates` | Thresholds: `triangle_tolerance` (multiplier on budget), `bbox_tolerance` (fraction), `max_loose_parts`, `max_non_manifold`, `silhouette_iou_min` (0 to 1) |
 | `budget_usd` | Optional. Soft spend limit in USD per asset of this class (a number, 0 or more). `asset cost` warns past it; nothing is blocked. An asset's manifest `budget_usd` overrides it |
 

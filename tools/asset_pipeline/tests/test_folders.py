@@ -173,7 +173,7 @@ def test_progress_on_stderr_and_stdout_is_one_json_object(root, capsys, monkeypa
         assert all(line.strip() and "{" not in line for line in cap.err.splitlines())
         seen[argv[0]] = cap.err
     assert "writing prompts (mock" in seen["concept"] and "image 2/2" in seen["concept"]
-    assert "view 4/4" in seen["turnaround"]
+    assert "view 6/6" in seen["turnaround"]
 
 
 def test_no_progress_on_estimate_or_errors(root, capsys):
