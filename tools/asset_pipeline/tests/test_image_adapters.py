@@ -308,9 +308,12 @@ def test_doctor_live_runs_one_call_per_keyed_provider(clean_env, server, monkeyp
     monkeypatch.setenv("ANTHROPIC_API_KEY", "k")
     Stub.fixture = "openai_images_response.json"
     cfg = providers.load_config()
-    cfg["providers"]["image"]["openai"]["base_url"] = server
-    cfg["providers"]["image"]["fal"]["base_url"] = server
-    cfg["providers"]["three_d"]["trellis"]["base_url"] = server
+    # Point every hosted provider at the stub, so a newly configured one can never reach the
+    # real API (a proxy on a dev machine can hide that from the network guard; CI has none).
+    for kind in ("image", "three_d"):
+        for name, entry in cfg["providers"][kind].items():
+            if name != "mock" and isinstance(entry, dict):
+                entry["base_url"] = server
     monkeypatch.setattr(doctor, "_anthropic_live", lambda: "mock models list")
     assert [s["path"] for s in Stub.seen] == []
     off = doctor.run(cfg, live=False)
@@ -318,7 +321,8 @@ def test_doctor_live_runs_one_call_per_keyed_provider(clean_env, server, monkeyp
     on = checks(doctor.run(cfg, live=True))
     assert on["image:openai live"]["ok"] and on["image:fal live"]["ok"] and on["prompt_writer:anthropic-api live"]["ok"]
     assert "image:google live" not in on  # no key, no call
-    assert sorted(s["path"] for s in Stub.seen) == ["/fal-ai/flux-pro/v1.1", "/fal-ai/trellis-2", "/v1/models/gpt-image-2.5-sunburst"]
+    assert sorted(s["path"] for s in Stub.seen) == ["/fal-ai/flux-pro/v1.1", "/fal-ai/trellis-2", "/fal-ai/trellis/multi",
+                                                   "/v1/models/gpt-image-2.5-sunburst"]
     Stub.status = 401
     bad = checks(doctor.run(cfg, live=True))
     assert not bad["image:openai live"]["ok"] and "HTTP 401" in bad["image:openai live"]["detail"]
