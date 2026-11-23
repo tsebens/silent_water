@@ -65,6 +65,63 @@ jobs:
           Run: ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID} (head ${HEAD_SHA}). The development role takes it from here in rework mode; Godot output is in the run's \`godot-logs\` artifact."
           gh pr edit "$PR" --repo "$GITHUB_REPOSITORY" --add-label changes-requested
 
+  # The Docker runner for `asset cleanup`: build the image from the versions.yaml pin (buildx, Actions
+  # cache), check Blender inside it, run the fixture cleanup through it, and make sure nothing it wrote
+  # is root-owned. The `check` job keeps setup-blender and covers the native runner.
+  docker-cleanup:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Read the Blender pin
+        id: pin
+        working-directory: tools/asset_pipeline
+        run: |
+          echo "version=$(uv run python -c "import yaml;print(yaml.safe_load(open('versions.yaml'))['blender']['version'])")" >> "$GITHUB_OUTPUT"
+          echo "major_minor=$(uv run python -c "import yaml;print(yaml.safe_load(open('versions.yaml'))['blender']['major_minor'])")" >> "$GITHUB_OUTPUT"
+
+      - name: Build the Blender image
+        uses: docker/build-push-action@v6
+        with:
+          context: tools/asset_pipeline/docker
+          file: tools/asset_pipeline/docker/blender.Dockerfile
+          build-args: BLENDER_VERSION=${{ steps.pin.outputs.version }}
+          tags: silent-water/blender-cleanup:${{ steps.pin.outputs.version }}
+          load: true
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Blender reports the pinned version
+        env:
+          IMAGE: silent-water/blender-cleanup:${{ steps.pin.outputs.version }}
+          MM: ${{ steps.pin.outputs.major_minor }}
+        run: |
+          out=$(docker run --rm "$IMAGE" --version)
+          echo "$out"
+          echo "$out" | grep -E "^Blender ${MM//./\\.}\\.[0-9]+"
+
+      - name: Docker cleanup integration test
+        working-directory: tools/asset_pipeline
+        env:
+          ASSET_BLENDER_RUNNER: docker
+        run: |
+          # Test roots live under .asset_work/ so the ownership check below sees everything written.
+          mkdir -p "$GITHUB_WORKSPACE/.asset_work"
+          uv run pytest -q -rs tests/test_cleanup_runner.py -k docker_cleanup \
+            --basetemp="$GITHUB_WORKSPACE/.asset_work/ci"
+
+      - name: No root-owned files under .asset_work
+        run: |
+          test -d .asset_work/ci
+          find .asset_work -name '*.glb' | grep -q . || { echo "no cleanup output found"; exit 1; }
+          root_owned=$(find .asset_work -user root)
+          if [ -n "$root_owned" ]; then echo "root-owned files:"; echo "$root_owned"; exit 1; fi
+
   # Manifest and report paths must be forward-slash on Windows too. Needs neither Godot nor Blender.
   windows-paths:
     runs-on: windows-latest
