@@ -115,7 +115,7 @@ def test_turnaround_single_view(root, capsys):
     code, out = run(capsys, "brief", "angler")
     assert code == 0
     with pytest.raises(SystemExit):
-        run(capsys, "turnaround", "angler", "--view", "top")
+        run(capsys, "turnaround", "angler", "--view", "sideways")
 
 
 def test_prompt_uses_asset_class_blocks(root, capsys):

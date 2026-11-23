@@ -39,6 +39,7 @@ class ThreeDProvider(ABC):
     model: str
     billing = "paid"  # "mock" and "subscription" are never priced from prices.yaml
     last_usage: dict[str, Any] | None = None  # usage of the latest call, as the provider reported it (cost.py)
+    views: tuple[str, ...] = ("front", "left", "back", "right")  # which turnaround views `to3d` sends, in order
 
     @abstractmethod
     def submit(self, views: list[Path]) -> str:
@@ -107,7 +108,7 @@ class MockImageProvider(ImageProvider):
 
     def edit(self, prompt: str, source: Path, references: list[Path], out: Path) -> Path:
         out.parent.mkdir(parents=True, exist_ok=True)
-        view = re.search(r"Orthographic (front|left|back|right) view", prompt)
+        view = re.search(r"Orthographic (front|left|back|right|top|bottom) view", prompt)
         if view:  # a turnaround view: the silhouette of the mock 3D provider's mesh, so the mock flow passes `check`
             pos, _, idx = fixture_mesh.mock_mesh()
             tris = [tuple(idx[k:k + 3]) for k in range(0, len(idx), 3)]
@@ -212,9 +213,20 @@ def build(kind: str, name: str, entry: Any) -> Any:
     so a new provider on an existing adapter is a providers.yaml entry and nothing else."""
     opts = dict(entry) if isinstance(entry, dict) else {}
     adapter = opts.pop("adapter", None) or name
+    views = opts.pop("views", None)  # 3D providers only: the turnaround views to send
+    if views is not None:
+        if kind != "three_d":
+            raise ValueError(f"{kind} provider {name!r}: `views:` applies to three_d providers only")
+        known = check.ALL_VIEWS
+        if (not isinstance(views, list) or not views or len(set(views)) != len(views)
+                or any(v not in known for v in views)):
+            raise ValueError(f"three_d provider {name!r}: views must be a non-empty list of distinct names from "
+                             f"{', '.join(known)}")
     factory = REGISTRY[kind].get(adapter)
     if factory is None:
         raise ValueError(f"{kind} provider {name!r} has no adapter {adapter!r}")
     p = factory(**opts)
     p.name = name
+    if views is not None:
+        p.views = tuple(views)
     return p

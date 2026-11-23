@@ -10,15 +10,20 @@ from typing import Any
 from .fixture_mesh import glb_document
 
 GRID = 256  # silhouette canvas, pixels per side
-VIEWS = ("front", "left", "back", "right")
-# Orthographic cameras, as (horizontal axis index, sign) of the image's right direction; image up is +Y.
-# The asset faces +Z (glTF). front: camera on +Z, so +X is right. back: camera on -Z, +X is left.
+VIEWS = ("front", "left", "back", "right")  # the views every turnaround has
+ALL_VIEWS = VIEWS + ("top", "bottom")  # top and bottom are optional (a class's `turnaround_views` asks for them)
+# Orthographic cameras, as (right axis index, sign, up axis index, sign): which mesh axis, signed, runs along the
+# image's right and up directions. The asset faces +Z (glTF), up is +Y.
+# front: camera on +Z, so +X is right. back: camera on -Z, +X is left.
 # left / right are the asset's own sides: left (its -X side) is seen from -X, where +Z is right;
 # right is seen from +X, where -Z is right.
-VIEW_AXES = {"front": (0, 1.0), "back": (0, -1.0), "left": (2, 1.0), "right": (2, -1.0)}
+# top: camera above looking straight down, +X right and the front (+Z) toward the bottom of the image.
+# bottom: camera below looking straight up, +X right and the front (+Z) toward the top of the image.
+VIEW_AXES = {"front": (0, 1.0, 1, 1.0), "back": (0, -1.0, 1, 1.0), "left": (2, 1.0, 1, 1.0), "right": (2, -1.0, 1, 1.0),
+             "top": (0, 1.0, 2, -1.0), "bottom": (0, 1.0, 2, 1.0)}
 WELD_DIGITS = 5
 COLLISION_MARKS = ("colonly",)  # Godot's import suffixes `-colonly` and `-convcolonly`
-GATE_NAMES = ("triangles", "bbox", "loose_parts", "non_manifold") + tuple(f"silhouette_{v}" for v in VIEWS)
+GATE_NAMES = ("triangles", "bbox", "loose_parts", "non_manifold") + tuple(f"silhouette_{v}" for v in VIEWS)  # always present; top and bottom are added when those views exist
 
 
 # --- mesh loading ---------------------------------------------------------------------------------------------
@@ -127,8 +132,8 @@ def _fit(w: int, h: int) -> tuple[float, float, float]:
 def mesh_silhouette(pos: list[tuple[float, float, float]], tris: list[tuple[int, int, int]], view: str) -> bytearray:
     """GRID x GRID mask (1 = covered) of the mesh projected orthographically from `view`, scaled uniformly so
     its projected extent fills the canvas, row 0 at the top."""
-    ax, sign = VIEW_AXES[view]
-    pts = [(sign * p[ax], p[1]) for p in pos]
+    ax, sign, vx, vsign = VIEW_AXES[view]
+    pts = [(sign * p[ax], vsign * p[vx]) for p in pos]
     used = {i for t in tris for i in t}
     u0, u1 = min(pts[i][0] for i in used), max(pts[i][0] for i in used)
     v0, v1 = min(pts[i][1] for i in used), max(pts[i][1] for i in used)
@@ -287,8 +292,10 @@ def run_gates(mesh: dict[str, Any], profile: dict[str, Any], size_m: float, size
                     g["max_non_manifold"], f"{topo['non_manifold_edges']} edges not shared by exactly two faces "
                     f"(holes and overlaps), at most {g['max_non_manifold']} allowed"))
     need = g["silhouette_iou_min"]
-    for view in VIEWS:
+    for view in ALL_VIEWS:
         name = f"silhouette_{view}"
+        if view not in views and view not in VIEWS:
+            continue  # top and bottom are checked only when the turnaround has them
         if view not in views:
             out.append(gate(name, False, None, need, f"no {view} turnaround view to compare against"))
             continue

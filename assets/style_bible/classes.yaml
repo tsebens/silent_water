@@ -1,10 +1,13 @@
 # Class profiles for the asset pipeline. See assets/style_bible/README.md.
 # Optional per class: budget_usd, a soft spend limit per asset (`asset cost` warns past it, nothing is blocked;
 # an asset's manifest budget_usd overrides it). Placeholder figures: tune freely.
+# Optional per class: turnaround_views, which views `asset turnaround` makes (default front, left, back, right;
+# top and bottom are the other two).
 # Seeded from docs/art_direction.md; tune freely, tools/validate_style_bible.py checks the shape.
 classes:
   creature:
     budget_usd: 5
+    turnaround_views: [front, left, back, right, top, bottom]
     build_route: image-to-3d
     triangle_budget: 8000
     scale_range_m: [0.5, 40.0]
