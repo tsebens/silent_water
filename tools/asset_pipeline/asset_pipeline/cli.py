@@ -449,26 +449,27 @@ def cmd_cleanup(args: argparse.Namespace, root: Path) -> dict[str, Any]:
         raise ValueError(f"size {size_m:g} m is outside the {m.asset_class} scale range [{lo:g}, {hi:g}] m")
     budget = args.triangle_budget or profile["triangle_budget"]
     recipe = list(profile["cleanup_recipe"])
-    cleanup.find_blender()  # fail before any work when Blender is missing
+    runner = cleanup.resolve_runner()  # fail before any work when no Blender or Docker is available
     k = 1
     while any(e.id == f"c{k}" for e in m.lineage):
         k += 1
     cid = f"c{k}"
     rel = (paths.work_dir(root, args.slug) / "cleanup" / f"{cid}.glb").relative_to(root)
-    params = {"source": str(abspath(root, src.path)), "output": str(root / rel), "slug": m.slug,
+    params = {"source": cleanup.rel_to_root(root, abspath(root, src.path)), "output": rel.as_posix(), "slug": m.slug,
               "asset_class": m.asset_class, "recipe": recipe, "triangle_budget": budget, "size_m": size_m,
               "palette_size": profile["palette_size"], "snap_grid_m": profile.get("snap_grid_m"),
               "max_loose_parts": profile["gates"]["max_loose_parts"]}
     (root / rel).parent.mkdir(parents=True, exist_ok=True)
-    progress(f"cleaning {src.id} in Blender…")
-    result = cleanup.run_blender(params, root / rel.parent)
+    progress(f"cleaning {src.id} in Blender ({runner.kind})…")
+    result = cleanup.run_blender(params, root / rel.parent, runner, root)
     m.add(LineageEntry(id=cid, kind="mesh", path=rel.as_posix(), provider="blender",
                        model=result.get("blender_version", ""), parent=src.id))
     recorded = {k2: v for k2, v in params.items() if k2 in ("triangle_budget", "size_m", "palette_size", "snap_grid_m")}
     recorded["size_from"] = size_from
     m.cleanups.append(CleanupRecord(id=cid, source=src.id, recipe=recipe, params=recorded,
                                     commit=cleanup.code_commit(root), script_sha256=cleanup.script_digest(),
-                                    blender=result.get("blender_version", ""), result=result))
+                                    blender=result.get("blender_version", ""), runner=runner.kind,
+                                    image=cleanup.image_ref(runner), result=result))
     m.stage = "cleanup"
     m.save(mpath)
     return {"slug": m.slug, "stage": m.stage, "id": cid, "source": src.id, "path": rel.as_posix(), "recipe": recipe,
@@ -742,9 +743,27 @@ def cmd_doctor(args: argparse.Namespace, root: Path) -> dict[str, Any]:
     return doctor.run(providers.load_config(), live=args.live)
 
 
+def cmd_blender_image(args: argparse.Namespace, root: Path) -> dict[str, Any]:
+    """`docker build` the Blender image for the version pinned in versions.yaml."""
+    docker = cleanup.docker_client()
+    if not docker:
+        raise ValueError("the docker client is not on PATH: install Docker")
+    version, image = cleanup.blender_version(), cleanup.image_name()
+    ctx = Path(__file__).resolve().parent.parent / "docker"
+    progress(f"building {image} (Blender {version}); the first build downloads about 300 MB…")
+    rc, _, err = cleanup._run_streaming([docker, "build", "-f", str(ctx / "blender.Dockerfile"), "--build-arg",
+                                         f"BLENDER_VERSION={version}", "-t", image, str(ctx)], 3600)
+    if rc != 0:
+        raise ValueError("docker build failed:\n" + "\n".join(err.strip().splitlines()[-12:]))
+    return {"image": image, "blender": version}
+
+
 def build_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(prog="asset", description="Asset Studio backend")
     sub = p.add_subparsers(dest="command", required=True)
+    bi = sub.add_parser("blender-image", help="the Docker image that runs `cleanup` when Blender is not installed")
+    bi.add_argument("action", choices=["build"])
+    bi.set_defaults(fn=cmd_blender_image)
     ls = sub.add_parser("list", help="every asset manifest as JSON (used by the Asset Studio plugin)")
     ls.set_defaults(fn=cmd_list)
 
