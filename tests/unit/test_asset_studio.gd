@@ -120,10 +120,9 @@ func test_runner_reports_missing_executable_without_blocking() -> void:
 	expect(r.run(PackedStringArray(["list"])))
 	expect(r.busy)
 	expect(not r.run(PackedStringArray(["list"])), "a second command is refused while one runs")
-	var frames: int = 0
-	while seen.is_empty() and frames < 600:
+	var t0: int = Time.get_ticks_msec()
+	while seen.is_empty() and Time.get_ticks_msec() - t0 < 10000:
 		await runner.get_tree().process_frame
-		frames += 1
 	expect_eq(seen.size(), 1)
 	if not seen.is_empty():
 		expect(not seen[0].ok)
@@ -493,4 +492,107 @@ func test_panel_buttons_show_stubbed_estimates() -> void:
 		found = found or (e["button"] as Button).text == "Bake-off (all) (~$0.75)"
 	expect(found, "the bake-off button shows its estimate")
 	expect(panel._cost_text.text.contains("refine"), "cost panel is filled for the selected asset")
+	panel.queue_free()
+
+
+# --- queue tree and folders (M10.22) ---------------------------------------------------------
+
+func _tree_queue() -> AssetQueueModel:
+	var l: Dictionary = JSON.parse_string(_fixture("list_tree.json")) as Dictionary
+	var q: AssetQueueModel = AssetQueueModel.new()
+	q.load_assets(l["assets"], l["folders"])
+	return q
+
+
+func test_queue_tree_from_nested_folders_keeps_empty_ones() -> void:
+	var q: AssetQueueModel = _tree_queue()
+	expect_eq(q.folder_paths(), PackedStringArray(["organic", "organic/fauna", "organic/fauna/apex", "organic/flora", "props", "props/empty_shelf"]))
+	expect_eq((q.find_folder("organic/fauna/apex")["assets"] as Array).size(), 1)
+	expect_eq((q.find_folder("organic/flora")["assets"] as Array).size(), 0, "an empty folder is kept")
+	expect_eq((q.find_folder("organic")["folders"] as Array).size(), 2)
+	expect_eq((q.root["assets"] as Array).size(), 1, "coral sits at the root")
+	expect_eq(q.find("eel")["folder"], "organic/fauna")
+	expect(q.find_folder("nope").is_empty())
+
+
+func test_queue_rows_without_folders_stay_flat() -> void:
+	var q: AssetQueueModel = AssetQueueModel.new()
+	q.load_assets(_listing()["assets"])
+	expect_eq(q.folder_paths().size(), 0)
+	expect_eq((q.root["assets"] as Array).size(), 3)
+	expect(AssetQueueModel.tooltip(q.find("angler")).contains("#12"), "details live in the tooltip")
+
+
+func test_drop_validation() -> void:
+	var q: AssetQueueModel = _tree_queue()
+	var apex: Dictionary = {"kind": "folder", "path": "organic/fauna/apex"}
+	var fauna: Dictionary = {"kind": "folder", "path": "organic/fauna"}
+	var props: Dictionary = {"kind": "folder", "path": "props"}
+	expect(not q.can_drop(fauna, fauna), "a folder into itself")
+	expect(not q.can_drop(fauna, apex), "a folder into its descendant")
+	expect(q.can_drop(apex, props), "a folder into an unrelated folder")
+	expect(q.can_drop(apex, {"kind": "folder", "path": ""}), "a folder to the root")
+	expect(not q.can_drop(apex, fauna), "already there")
+	expect(not q.can_drop({"kind": "asset", "slug": "eel"}, {"kind": "asset", "slug": "angler"}), "an asset onto an asset")
+	expect(q.can_drop({"kind": "asset", "slug": "eel"}, props))
+	expect(not q.can_drop({"kind": "asset", "slug": "eel"}, fauna), "an asset onto its own folder")
+	expect(not q.can_drop({"kind": "asset", "slug": "ghost"}, props))
+	expect_eq(q.drop_args({"kind": "asset", "slug": "eel"}, props), PackedStringArray(["move", "eel", "--to", "props"]))
+	expect_eq(q.drop_args(apex, props), PackedStringArray(["folder", "move", "organic/fauna/apex", "--to", "props"]))
+	expect(q.drop_args(fauna, apex).is_empty())
+
+
+func test_new_asset_folder_resolution() -> void:
+	var q: AssetQueueModel = _tree_queue()
+	expect_eq(q.new_asset_folder({"kind": "folder", "path": "props"}), "props")
+	expect_eq(q.new_asset_folder({"kind": "asset", "slug": "eel"}), "organic/fauna")
+	expect_eq(q.new_asset_folder({}), "")
+	expect_eq(q.new_asset_folder({"kind": "asset", "slug": "coral"}), "")
+	var m: AssetNewAssetModel = AssetNewAssetModel.new()
+	m.slug = "kelp"
+	m.description = "Tall kelp."
+	m.folder = "organic/flora"
+	expect_eq(m.new_args(), PackedStringArray(["new", "kelp", "--class", "creature", "--folder", "organic/flora", "--description", "Tall kelp."]))
+
+
+func test_folder_command_args() -> void:
+	expect_eq(AssetQueueModel.create_folder_args("props", "shelf"), PackedStringArray(["folder", "create", "props/shelf"]))
+	expect_eq(AssetQueueModel.create_folder_args("", "props"), PackedStringArray(["folder", "create", "props"]))
+	expect(AssetQueueModel.create_folder_args("", "a/b").is_empty())
+	expect_eq(AssetQueueModel.rename_args("props/shelf", "rack"), PackedStringArray(["folder", "rename", "props/shelf", "rack"]))
+	expect(AssetQueueModel.rename_args("", "x").is_empty(), "the root cannot be renamed")
+
+
+func test_latest_stderr_line_reaches_the_status_bar() -> void:
+	if OS.get_name() == "Windows":
+		return
+	var panel: AssetStudioPanel = AssetStudioPanel.new()
+	panel.set_meta("fixture", true)
+	runner.add_child(panel)
+	# A stub backend: two progress lines on stderr, one JSON object on stdout.
+	panel.runner.executable = "sh"
+	panel.runner.base_args = PackedStringArray(["-c", "echo 'writing prompts (claude-cli)...' >&2; echo 'image 2/3 (google)...' >&2; sleep 0.2; echo '{\"ok\": true}'", "stub"])
+	var lines: Array[String] = []
+	panel.runner.progress.connect(func(l: String) -> void: lines.append(l))
+	var done: Array[bool] = []
+	panel.runner.finished.connect(func(_a: PackedStringArray, _r: AssetBackendResult) -> void: done.append(true))
+	expect(panel.runner.run(PackedStringArray(["concept"])))
+	var t0: int = Time.get_ticks_msec()
+	while done.is_empty() and Time.get_ticks_msec() - t0 < 10000:
+		await runner.get_tree().process_frame
+	expect_eq(lines, ["writing prompts (claude-cli)...", "image 2/3 (google)..."] as Array[String])
+	panel._on_progress(lines[0])
+	expect_eq(panel._status.text, "writing prompts (claude-cli)...")
+	panel.queue_free()
+
+
+func test_panel_shows_folder_tree() -> void:
+	var panel: AssetStudioPanel = AssetStudioPanel.new()
+	panel.set_meta("fixture", true)
+	runner.add_child(panel)
+	panel.show_listing(JSON.parse_string(_fixture("list_tree.json")) as Dictionary)
+	var top: TreeItem = panel._tree.get_root().get_first_child()
+	expect_eq(top.get_text(0), "assets/models")
+	expect_eq(top.get_child_count(), 3, "organic, props and coral")
+	expect_eq(panel._tree.columns, 2, "name and stage only")
 	panel.queue_free()

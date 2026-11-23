@@ -3,15 +3,154 @@ extends RefCounted
 ## View model for the Queue tab: one row per asset manifest (as printed by `asset list`).
 
 var rows: Array[Dictionary] = []
+## Folder tree under assets/models/: {"path": "", "name": "", "folders": [node...], "assets": [row...]}.
+## Folders and assets are sorted by name; folders without assets are kept.
+var root: Dictionary = _folder_node("")
 
 
-## `assets` is the `assets` array from the backend's `list` output.
-func load_assets(assets: Array) -> void:
+## `assets` is the `assets` array from the backend's `list` output; each may carry a
+## `folder` ("a/b", POSIX, relative to assets/models; absent or "" for the root). `folders`
+## is the optional `folders` array of the same output, so empty folders show too.
+func load_assets(assets: Array, folders: Array = []) -> void:
 	rows.clear()
 	for a: Variant in assets:
 		if a is Dictionary:
 			rows.append(_row(a as Dictionary))
 	rows.sort_custom(func(x: Dictionary, y: Dictionary) -> bool: return str(x["slug"]) < str(y["slug"]))
+	root = _folder_node("")
+	for f: Variant in folders:
+		_ensure_folder(str(f))
+	for r: Dictionary in rows:
+		(_ensure_folder(str(r["folder"]))["assets"] as Array).append(r)
+
+
+## The folder node at `path` ("" is the root), or an empty dictionary.
+func find_folder(path: String) -> Dictionary:
+	var node: Dictionary = root
+	for part: String in _parts(path):
+		var next: Dictionary = {}
+		for f: Dictionary in node["folders"]:
+			if f["name"] == part:
+				next = f
+		if next.is_empty():
+			return {}
+		node = next
+	return node
+
+
+## Every folder path in the tree, root excluded.
+func folder_paths() -> PackedStringArray:
+	var out: PackedStringArray = PackedStringArray()
+	_collect_paths(root, out)
+	return out
+
+
+## Whether dragging `drag` onto `target` is a legal move. `drag` is {"kind": "asset", "slug"}
+## or {"kind": "folder", "path"}; `target` is {"kind": "folder", "path"} (path "" = root).
+## Rejected: any non-folder target, a folder into itself or a descendant, and a move that
+## leaves the item where it is. The backend still validates; this only keeps bad drops from
+## being offered.
+func can_drop(drag: Dictionary, target: Dictionary) -> bool:
+	if str(target.get("kind", "")) != "folder":
+		return false
+	var dest: String = str(target.get("path", ""))
+	if not find_folder(dest).has("path"):
+		return false
+	match str(drag.get("kind", "")):
+		"asset":
+			var a: Dictionary = find(str(drag.get("slug", "")))
+			return not a.is_empty() and str(a["folder"]) != dest
+		"folder":
+			var src: String = str(drag.get("path", ""))
+			if src == "" or not find_folder(src).has("path"):
+				return false
+			if dest == src or dest.begins_with(src + "/"):
+				return false
+			return _parent_of(src) != dest
+	return false
+
+
+## The backend call for a legal drop; empty when `can_drop` refuses it.
+func drop_args(drag: Dictionary, target: Dictionary) -> PackedStringArray:
+	if not can_drop(drag, target):
+		return PackedStringArray()
+	var dest: String = str(target["path"])
+	if str(drag["kind"]) == "asset":
+		return PackedStringArray(["move", str(drag["slug"]), "--to", dest])
+	return PackedStringArray(["folder", "move", str(drag["path"]), "--to", dest])
+
+
+## The folder New asset creates in: the selected folder, else the selected asset's folder,
+## else the root (""). `sel` is {"kind": "folder"|"asset", "path"|"slug"} or empty.
+func new_asset_folder(sel: Dictionary) -> String:
+	match str(sel.get("kind", "")):
+		"folder":
+			var p: String = str(sel.get("path", ""))
+			return p if find_folder(p).has("path") else ""
+		"asset":
+			return str(find(str(sel.get("slug", ""))).get("folder", ""))
+	return ""
+
+
+## `asset folder rename <path> <new-name>`; empty for a blank name or the root.
+static func rename_args(path: String, new_name: String) -> PackedStringArray:
+	if path == "" or new_name.strip_edges() == "":
+		return PackedStringArray()
+	return PackedStringArray(["folder", "rename", path, new_name.strip_edges()])
+
+
+## `asset folder create <path>` for a new folder named `name` under `parent`.
+static func create_folder_args(parent: String, name: String) -> PackedStringArray:
+	var n: String = name.strip_edges()
+	if n == "" or n.contains("/") or n.contains("\\"):
+		return PackedStringArray()
+	return PackedStringArray(["folder", "create", n if parent == "" else parent + "/" + n])
+
+
+## Tooltip text for an asset row: the details the narrow tree no longer shows.
+static func tooltip(row: Dictionary) -> String:
+	return "%s\nclass: %s\nissue: %s\ncost: %s\nlast: %s" % [
+		row["slug"], row["class"], row["issue_text"], row["cost_text"], row["last_result"]]
+
+
+static func _folder_node(path: String) -> Dictionary:
+	return {"path": path, "name": path.get_file(), "folders": [] as Array[Dictionary], "assets": [] as Array[Dictionary]}
+
+
+func _ensure_folder(path: String) -> Dictionary:
+	var node: Dictionary = root
+	var so_far: String = ""
+	for part: String in _parts(path):
+		so_far = part if so_far == "" else so_far + "/" + part
+		var next: Dictionary = {}
+		for f: Dictionary in node["folders"]:
+			if f["name"] == part:
+				next = f
+		if next.is_empty():
+			next = _folder_node(so_far)
+			(node["folders"] as Array).append(next)
+			(node["folders"] as Array).sort_custom(func(x: Dictionary, y: Dictionary) -> bool: return str(x["name"]) < str(y["name"]))
+		node = next
+	return node
+
+
+static func _parts(path: String) -> PackedStringArray:
+	var out: PackedStringArray = PackedStringArray()
+	for p: String in path.replace("\\", "/").split("/"):
+		if p != "":
+			out.append(p)
+	return out
+
+
+static func _parent_of(path: String) -> String:
+	var i: int = path.rfind("/")
+	return "" if i < 0 else path.substr(0, i)
+
+
+func _collect_paths(node: Dictionary, out: PackedStringArray) -> void:
+	for f: Dictionary in node["folders"]:
+		out.append(str(f["path"]))
+		_collect_paths(f, out)
 
 
 func find(slug: String) -> Dictionary:
@@ -26,6 +165,7 @@ static func _row(a: Dictionary) -> Dictionary:
 	return {
 		"slug": str(a.get("slug", "")),
 		"class": str(a.get("class", "")),
+		"folder": "/".join(_parts(str(a.get("folder", "")))),
 		"stage": str(a.get("stage", "new")),
 		"issue": int(issue) if issue != null else 0,
 		"issue_text": "#%d" % int(issue) if issue != null else "-",
