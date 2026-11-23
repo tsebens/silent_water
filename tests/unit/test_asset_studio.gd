@@ -670,3 +670,76 @@ func test_panel_shows_folder_tree() -> void:
 	expect_eq(top.get_child_count(), 3, "organic, props and coral")
 	expect_eq(panel._tree.columns, 2, "name and stage only")
 	panel.queue_free()
+
+
+# --- remembered provider and writer choices (M10.24) -----------------------------------------
+
+func _choice_panel() -> AssetStudioPanel:
+	var panel: AssetStudioPanel = AssetStudioPanel.new()
+	panel.set_meta("fixture", true)
+	runner.add_child(panel)
+	panel.choice.keys_set = PackedStringArray(["OPENAI_API_KEY"])
+	panel.show_listing(_listing())
+	return panel
+
+
+func test_choice_remembered_value_survives_refresh_and_asset_switch() -> void:
+	var panel: AssetStudioPanel = _choice_panel()
+	expect_eq(panel._picked(panel._provider_pick), "mock")
+	for i: int in panel._provider_pick.item_count:
+		if str(panel._provider_pick.get_item_metadata(i)) == "openai":
+			panel._provider_pick.select(i)
+	panel._remember("concept_image", panel._provider_pick)
+	panel.show_listing(_listing())
+	expect_eq(panel._picked(panel._provider_pick), "openai", "survives a refresh")
+	panel._selected_slug = panel.queue.rows[1]["slug"]
+	panel.show_listing(_listing())
+	expect_eq(panel._picked(panel._provider_pick), "openai", "survives an asset switch")
+	expect_eq(panel._picked(panel._turn_provider), "mock", "dropdowns are remembered separately")
+	panel.queue_free()
+
+
+func test_choice_stale_remembered_value_falls_back() -> void:
+	var c: AssetProviderChoice = AssetProviderChoice.new()
+	c.remembered["concept_image"] = "gone"
+	expect_eq(c.resolve("concept_image", PackedStringArray(["mock", "fal"]), "fal"), "fal")
+	expect_eq(c.resolve("other", PackedStringArray(["mock", "fal"]), "mock"), "mock")
+	c.remembered["concept_image"] = "mock"
+	expect_eq(c.resolve("concept_image", PackedStringArray(["mock", "fal"]), "fal"), "mock")
+
+
+func test_choice_fallback_order_follows_effective_selection() -> void:
+	# `asset list` already folds providers.local.yaml over providers.yaml into `selected`.
+	var c: AssetProviderChoice = AssetProviderChoice.new()
+	var opts: PackedStringArray = PackedStringArray(["fal", "mock"])
+	expect_eq(c.resolve("d", opts, "fal"), "fal", "local selection is the effective one")
+	expect_eq(c.resolve("d", opts, "mock"), "mock", "else the committed default")
+	c.remembered["d"] = "fal"
+	expect_eq(c.resolve("d", opts, "mock"), "fal", "remembered wins over both")
+	expect_eq(c.resolve("d", opts, "absent"), "fal")
+	c.remembered.clear()
+	expect_eq(c.resolve("d", opts, "absent"), "", "nothing configured selects nothing")
+
+
+func test_choice_mock_label_needs_a_keyed_real_provider() -> void:
+	var c: AssetProviderChoice = AssetProviderChoice.new()
+	var opts: PackedStringArray = PackedStringArray(["fal", "mock", "openai"])
+	expect_eq(c.label("mock", opts, "mock"), "mock", "no key set: plain mock")
+	c.keys_set = PackedStringArray(["OPENAI_API_KEY"])
+	expect_eq(c.label("mock", opts, "mock"), AssetProviderChoice.MOCK_LABEL)
+	expect_eq(c.label("mock", PackedStringArray(["mock", "fal"]), "mock"), "mock", "keyed provider not of this kind")
+	expect_eq(c.label("mock", opts, "openai"), "mock", "only when mock is the effective choice")
+	expect_eq(c.label("openai", opts, "mock"), "openai")
+
+
+func test_choice_keys_from_env_text() -> void:
+	var k: PackedStringArray = AssetProviderChoice.keys_from("# c\nFAL_KEY=abc\nexport TRIPO_API_KEY=\"x\"\nMESHY_API_KEY=\n")
+	expect(k.has("FAL_KEY") and k.has("TRIPO_API_KEY"), "set keys found")
+	expect(not k.has("MESHY_API_KEY"), "empty value is not set")
+
+
+func test_choice_panel_labels_mock_and_sends_real_name() -> void:
+	var panel: AssetStudioPanel = _choice_panel()
+	expect_eq(panel._provider_pick.get_item_text(panel._provider_pick.selected), AssetProviderChoice.MOCK_LABEL)
+	expect_eq(panel._picked_provider(), "mock", "commands get the provider name, not the label")
+	panel.queue_free()
