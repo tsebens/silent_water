@@ -32,16 +32,21 @@ crew's planning view.
 - The sub is small and the interior must feel cramped and packed. The earlier free-standing
   circular table with a walkway each side needed about 3.1 m of a 2.8 m compartment; the bay
   table leaves the whole aisle free.
+- **Countermeasures** stands against the **starboard** wall, immediately aft of the sonar
+  station, across the aisle from the table. Its operator glances across the aisle at the
+  hologram to see their decoys work. (The interior program's earlier placement, starboard and
+  forward of a central table, is superseded.)
 
 **The table**
 - A **D-shaped top**, about 2.2 m long and 0.9 m deep at the centre, its back edge following the
   curve of the hull and its front edge bowing gently out toward the aisle. A grey powder-coated
   plate with a **safety-orange edge rail**, on a single plinth, braced off the hull frames.
 - **Desk height**, about 0.75 m, because the operator sits.
-- The **operator sits** at the console built into the front edge, on a modern operator's seat:
-  a large trackball under one hand, a chunky zoom lever and a rotation hand-wheel under the
-  other, a short row of guarded toggles with LED lamps. In the locked shot the console is at the
-  aft end of the D; the brief had it at the middle of the front edge. See the open questions.
+- The **operator sits at the middle of the front edge**, on a modern operator's seat, at the
+  console built into the edge: a large trackball under one hand, a chunky zoom lever and a
+  rotation hand-wheel under the other, a short row of guarded toggles with LED lamps. The locked
+  shot inherited round 4's composition and seats them at the aft end of the D; **build it at the
+  middle**, as round 5's variant 15 shows.
 - **Observers stand** along the front edge either side of the operator, leaning in. Moulded
   holders of small physical **marker pucks** are clipped to the front edge at their positions.
 - Above the table, wrapping round the bay like the inside of an excavator cab, is **one
@@ -62,6 +67,9 @@ crew's planning view.
 - Terrain is drawn as glowing soft neon teal-cyan topographic contour lines on a dark base.
   Nothing else: no floating panels, no text, no icons.
 - Pins are small glowing markers standing on the terrain. Routes are thin lines between pins.
+- The slab is **filled**: terrain fills the volume out to its faces, and a pit is a hole in the
+  surrounding plateau, as in the earlier locked shot. It never draws an isolated plug of terrain
+  floating in empty light.
 - The seated operator and the desk-height top give the slab its height under the 2.3 m overhead;
   the standing-height table had about 4.5 ft to play with and this has more.
 
@@ -153,14 +161,13 @@ Links: [var13 context](https://github.com/tsebens/silent_water/blob/bc404ae23b9c
 
 ## Open questions
 
-- **Operator at the end or the middle.** The brief put the seated operator at the middle of the
-  front edge with observers either side; the locked shot (inherited from round 4's variant 11)
-  seats them at the aft end of the D, looking along the slab, with the whole front edge free for
-  observers. Both work. Decide when the table is blocked out in the interior.
-- **Rendering a subset.** Whether the slab is filled with terrain to its faces, or draws an
-  isolated plug of terrain with empty light round it. Round 3 produced both readings.
-- **Marker pucks.** Whether they are real objects the player picks up, or only the visual for a
-  click, is a gameplay call.
-- **Countermeasures.** The interior program puts countermeasures on the starboard wall just
-  forward of the table so its operator can glance at it. With the table on port that glance is
-  across the aisle; check it still works when the interior is laid out.
+- **Marker pucks.** The pucks are small physical tokens in holders on the table's front edge; an
+  observer sets one on the hologram to drop a pin. Whether they are real objects the player picks
+  up, or only the visual for a click, is a gameplay call.
+
+## Decisions recorded on #329
+
+- The operator sits at the **middle** of the front edge, not the aft end of the D.
+- The slab is **filled** with terrain to its faces; no isolated plug.
+- **Countermeasures** goes against the starboard wall immediately aft of the sonar station,
+  across the aisle from the table.
