@@ -14,7 +14,7 @@ from typing import Any
 
 import yaml
 
-from . import check, cleanup, cost, doctor, folders, godot_stage, paths, providers
+from . import check, cleanup, cost, doctor, folders, godot_stage, paths, providers, trash
 from .manifest import (CLASSES, DECISIONS, BriefRecord, CheckRecord, CleanupRecord, ExportRecord, GodotCheckRecord,
                        LineageEntry, Manifest)
 from .writers import PromptWriterError
@@ -653,7 +653,29 @@ def cmd_folder(args: argparse.Namespace, root: Path) -> dict[str, Any]:
         return folders.create_folder(root, args.path)
     if args.action == "move":
         return folders.move_folder(root, args.path, args.to)
+    if args.action == "delete":
+        return trash.delete_folder(root, args.path)
     return folders.rename_folder(root, args.path, args.name)
+
+
+def cmd_rename(args: argparse.Namespace, root: Path) -> dict[str, Any]:
+    return trash.rename_asset(root, args.slug, args.new_slug)
+
+
+def cmd_delete(args: argparse.Namespace, root: Path) -> dict[str, Any]:
+    return trash.delete_asset(root, args.slug)
+
+
+def cmd_summary(args: argparse.Namespace, root: Path) -> dict[str, Any]:
+    return trash.summary(root, args.slug)
+
+
+def cmd_trash(args: argparse.Namespace, root: Path) -> dict[str, Any]:
+    if args.action == "list":
+        return trash.trash_list(root)
+    if args.action == "restore":
+        return trash.trash_restore(root, args.entry)
+    return trash.trash_empty(root)
 
 
 def cmd_cost(args: argparse.Namespace, root: Path) -> dict[str, Any]:
@@ -724,7 +746,26 @@ def build_parser() -> argparse.ArgumentParser:
     fr = fsub.add_parser("rename", help="rename a folder in place")
     fr.add_argument("path")
     fr.add_argument("name")
+    fd = fsub.add_parser("delete", help="delete an empty folder, or move every asset in it to the trash")
+    fd.add_argument("path")
     fo.set_defaults(fn=cmd_folder)
+    rn = sub.add_parser("rename", help="rename an asset in place, rewriting its folder, work dir, manifest and exported files")
+    rn.add_argument("slug")
+    rn.add_argument("new_slug")
+    rn.set_defaults(fn=cmd_rename)
+    dl = sub.add_parser("delete", help="move an asset and its work dir to .asset_work/_trash/")
+    dl.add_argument("slug")
+    dl.set_defaults(fn=cmd_delete)
+    sm = sub.add_parser("summary", help="class, stage, variant and mesh counts, cost and exported files (for confirmations)")
+    sm.add_argument("slug")
+    sm.set_defaults(fn=cmd_summary)
+    tr = sub.add_parser("trash", help="list, restore or empty the trash")
+    tsub = tr.add_subparsers(dest="action", required=True)
+    tsub.add_parser("list", help="every trashed asset")
+    trs = tsub.add_parser("restore", help="put a trashed asset back (refused if its slug has been reused)")
+    trs.add_argument("entry", help="entry name from `trash list`: <slug>-<timestamp>")
+    tsub.add_parser("empty", help="permanently remove everything in the trash")
+    tr.set_defaults(fn=cmd_trash)
     ds = sub.add_parser("describe", help="set or replace an asset's description (the concept brief)")
     ds.add_argument("slug")
     ds.add_argument("text")
@@ -821,7 +862,13 @@ def main(argv: list[str] | None = None) -> int:
     try:
         if getattr(args, "slug", None) is not None:
             paths.check_slug(args.slug)
-        result = (cmd_estimate if getattr(args, "estimate", False) else args.fn)(args, paths.repo_root())
+        run_fn = cmd_estimate if getattr(args, "estimate", False) else args.fn
+        slug = getattr(args, "slug", None)
+        if slug is None or run_fn in (cmd_rename, cmd_delete):
+            result = run_fn(args, paths.repo_root())
+        else:  # mark the asset busy so rename and delete refuse while this runs
+            with trash.hold(paths.repo_root(), slug):
+                result = run_fn(args, paths.repo_root())
     except (ValueError, KeyError, OSError, yaml.YAMLError) as e:
         msg = e.args[0] if isinstance(e, KeyError) and e.args else str(e)
         print(json.dumps({"ok": False, "error": msg}))

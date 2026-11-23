@@ -24,6 +24,15 @@ Assets can live in nested folders under `assets/models/`, e.g. `assets/models/or
 
 A move rewrites every repo path recorded inside the moved assets: the manifest, the `checks/*.json` reports, and the `res://assets/models/...` references in the exported `.tscn` and `.glb.import`. Paths stay POSIX. Illegal requests are errors and change nothing: a destination that exists, is inside an asset, or is the folder itself or one of its descendants; creating a folder that already exists, hides an asset or nests inside one.
 
+## Rename, delete and trash
+
+- `asset rename <slug> <new_slug>`: renames in place (same parent folder). Moves the asset folder and `.asset_work/<slug>/`, sets the manifest `slug`, rewrites every stored repo path (POSIX) in the manifest, the check reports and the exported files, and renames `<slug>.glb`, `<slug>.glb.import` and `<slug>.tscn` with their `res://` references and the scene's root node name. The new slug follows the `asset new` rules and must be unused repo-wide. The manifest gets a `renames` entry (old, new, timestamp); lineage ids, the cost ledger and reviewer decisions are untouched.
+- `asset delete <slug>`: moves the asset folder and `.asset_work/<slug>/` to `.asset_work/_trash/<slug>-<timestamp>/` (`asset/`, `work/`, `meta.json`). `asset folder delete <path>` removes an empty folder, or trashes every asset it holds and then removes the folder.
+- `asset trash list`, `asset trash restore <entry>` (back to its original folder; refused if the slug has been reused) and `asset trash empty` (permanent).
+- `asset summary <slug>`: class, stage, variant / turnaround view / mesh counts, ledger cost and which exported files exist; also returned by rename and delete. The plugin uses it for confirmation dialogs.
+
+Rename and delete are refused while another backend command is running on the asset (each command on a slug holds a lock file in `.asset_work/_locks/`; locks of dead processes are ignored). All of this changes the working tree only: nothing is committed, so review `git status` and commit (or discard) the result yourself. `.asset_work/` is git-ignored, so trashed work files are not in git.
+
 ## CLI progress
 
 `concept`, `turnaround`, `brief`, `to3d`, `cleanup` and `godot-check` print short progress lines to **stderr** (`writing prompts (claude-cli)…`, `image 2/3 (google)…`). stdout stays one JSON object, so the plugin can parse it and show the latest stderr line in its status bar.
