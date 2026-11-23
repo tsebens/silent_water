@@ -1,10 +1,11 @@
 """Runs INSIDE Blender: `blender -b -P cleanup_bpy.py -- params.json`. Not importable outside Blender.
 
-Params (JSON): source, output, slug, asset_class, recipe (ordered step names), triangle_budget, size_m,
+Params (JSON): root, source, output (the last two relative to root), slug, asset_class, recipe (ordered step names), triangle_budget, size_m,
 palette_size, snap_grid_m, max_loose_parts. Prints one `ASSET_CLEANUP_RESULT {json}` line with the measured
 result, which the Python side records in the manifest. Y-up GLB in, Y-up GLB out."""
 import json
 import math
+import os
 import sys
 
 import bmesh
@@ -20,7 +21,12 @@ def log(msg):
 
 
 def load_params():
-    return json.load(open(sys.argv[sys.argv.index("--") + 1]))
+    p = json.load(open(sys.argv[sys.argv.index("--") + 1]))
+    root = p.get("root")
+    if root:  # paths are relative to the repo root as this process sees it (native path or the container's /work)
+        for k in ("source", "output"):
+            p[k] = os.path.join(root, p[k])
+    return p
 
 
 def mesh_objects():
