@@ -329,3 +329,17 @@ def test_to3d_polls_until_done_then_times_out(staged, root, capsys, monkeypatch)
     monkeypatch.setitem(providers.REGISTRY["three_d"], "slow", Never)
     code, out = run(capsys, "to3d", "angler", "--3d-provider", "slow", "--poll-interval", "0", "--timeout", "0")
     assert code == 1 and "timed out" in out["errors"][0]["error"]
+
+
+def test_trellis_multi_entry_uses_v1_multi_endpoint(server, tmp_path, monkeypatch, views):
+    monkeypatch.setenv("FAL_KEY", "fk")
+    cfg = providers.load_config()
+    cfg["providers"]["three_d"]["trellis-multi"]["base_url"] = server
+    p = providers.select("three_d", cfg, override="trellis-multi")
+    assert isinstance(p, FalTrellis) and p.input == "multi" and p.model == "fal-ai/trellis/multi"
+    Routes.routes = {("POST", "/fal-ai/trellis/multi"): ["trellis_submit.json"],
+                     ("GET", "/fal-ai/trellis/requests/fal-req-1/status"): ["trellis_completed.json"],
+                     ("GET", "/fal-ai/trellis/requests/fal-req-1"): ["trellis_result.json"]}
+    job, states, out = run_job(p, views, tmp_path / "m.glb", 1)
+    assert states == ["done"] and out.read_bytes() == GLB
+    assert len(json.loads(Routes.seen[0]["body"])["image_urls"]) == 4
