@@ -120,4 +120,48 @@ drop_stray_ready 32 >/dev/null; check "stray ready: plain ready arc is left alon
 check "stray ready: plain ready arc untouched" "gh issue edit 31 -R $REPO --remove-label ready" "$(cat "$CALLS")"
 rm -f "$CALLS"
 
+# Orphan recovery. gh is stubbed by endpoint; comment lookups return the already-jq-filtered "<created_at> <run id>".
+ARCS='[{"number":40,"created_at":"2026-01-01T00:00:00Z","body":"","labels":["arc","claimed"]},
+  {"number":41,"created_at":"2026-01-01T00:00:00Z","body":"","labels":["arc","claimed"]},
+  {"number":42,"created_at":"2026-01-01T00:00:00Z","body":"","labels":["arc","claimed"]},
+  {"number":43,"created_at":"2026-01-01T00:00:00Z","body":"","labels":["arc","claimed"]},
+  {"number":44,"created_at":"2026-01-01T00:00:00Z","body":"","labels":["arc","claimed"]},
+  {"number":45,"created_at":"2026-01-01T00:00:00Z","body":"","labels":["arc","claimed","needs-human"]}]'
+OLD=2026-01-01T00:00:00Z
+FUTURE=2099-01-01T00:00:00Z
+CALLS=$(mktemp)
+gh() {
+  case "$*" in
+    *"--jq .[].body"*) if [[ "$*" == *issues/44/comments* ]]; then echo "x $ORPHAN_MARKER"; fi ;;
+    *issues/40/comments*) echo "$OLD 900" ;;    # cancelled run
+    *issues/41/comments*) echo "$OLD 901" ;;    # in-progress run
+    *issues/42/comments*) echo "$OLD 902" ;;    # open PR, dead run
+    *issues/43/comments*) echo "$FUTURE 903" ;; # young claim
+    *issues/44/comments*) echo "$OLD 904" ;;    # dead run, already reverted once
+    *actions/runs/901*) echo in_progress ;;
+    *actions/runs/90[0234]*) echo completed ;;
+    *) echo "gh $*" >>"$CALLS" ;;
+  esac
+}
+out=$(recover_orphans "42")
+check "orphan: dead run is logged" 1 "$(grep -c '#40 is an orphan' <<<"$out")"
+check "orphan: claimed removed" 1 "$(grep -c 'gh issue edit 40 -R '"$REPO"' --remove-label claimed' "$CALLS")"
+check "orphan: ready added" 1 "$(grep -c 'gh issue edit 40 -R '"$REPO"' --add-label ready' "$CALLS")"
+check "orphan: comment carries marker" 1 "$(grep -zc 'gh issue comment 40.*dispatcher:orphan-reverted' "$CALLS")"
+check "orphan: live run left alone" 0 "$(grep -c 'issue [a-z]* 41 ' "$CALLS")"
+check "orphan: open PR left alone" 0 "$(grep -c 'issue [a-z]* 42 ' "$CALLS")"
+check "orphan: young claim left alone" 0 "$(grep -c 'issue [a-z]* 43 ' "$CALLS")"
+check "orphan: second orphaning escalates" 1 "$(grep -c 'gh issue edit 44 -R '"$REPO"' --add-label needs-human --add-assignee tsebens' "$CALLS")"
+check "orphan: second orphaning not reverted" 0 "$(grep -c 'edit 44 .*--add-label ready' "$CALLS")"
+check "orphan: needs-human arc skipped" 0 "$(grep -c 'issue [a-z]* 45 ' "$CALLS")"
+check "orphan: only existing labels used" 0 "$(grep -- '--add-label' "$CALLS" | grep -cvE -- '--add-label (ready|needs-human)')"
+: >"$CALLS"
+DRY_RUN=true
+out=$(recover_orphans "42")
+check "orphan dry run: nothing mutated" "" "$(cat "$CALLS")"
+check "orphan dry run: plans revert and comment" 1 "$(grep -c '^    #40 comment: orphan notice' <<<"$out")"
+check "orphan dry run: plans revert to ready" 1 "$(grep -c '^    #40 +ready' <<<"$out")"
+DRY_RUN=false
+rm -f "$CALLS"
+
 exit $fails

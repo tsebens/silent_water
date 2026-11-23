@@ -74,3 +74,10 @@ three_d:
       usd_per_generation: 0.25
       source: https://fal.ai/models/fal-ai/trellis-2
       checked: unverified
+  trellis-multi:
+    fal-ai/trellis/multi:
+      # The model page says "$0.02 per unit" (unit undefined); fal-ai/trellis (same model, one image)
+      # is "$0.02 per generation" on https://fal.ai/pricing. Assumed per generation.
+      usd_per_generation: 0.02
+      source: https://fal.ai/models/fal-ai/trellis/multi
+      checked: 2026-11-22
