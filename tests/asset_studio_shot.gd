@@ -22,6 +22,11 @@ func _ready() -> void:
 	panel.show_listing(JSON.parse_string(FileAccess.get_file_as_string("res://tests/fixtures/asset_studio/" + fixture)) as Dictionary)
 	if not multi:
 		panel.show_error("OPENAI_API_KEY is not set (put it in tools/asset_pipeline/.env)")
+	# Stubbed `--estimate` results, so the action buttons show their estimates.
+	panel.cost.set_estimate("more", {"estimate": {"usd": 0.36, "calls": [{"basis": "estimated"}], "unknown": []}})
+	panel.cost.set_estimate("refine", {"estimate": {"usd": 0.36, "calls": [{"basis": "estimated"}], "unknown": []}})
+	panel.cost.set_estimate("bakeoff", {"estimate": {"usd": 0.75, "calls": [{"basis": "estimated"}], "unknown": []}})
+	panel._refresh_est_labels()
 	await _frames()
 	_save(args[0] if args.size() > 0 else "asset_studio.png")
 	if multi:

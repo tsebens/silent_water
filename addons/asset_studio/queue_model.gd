@@ -30,6 +30,9 @@ static func _row(a: Dictionary) -> Dictionary:
 		"issue": int(issue) if issue != null else 0,
 		"issue_text": "#%d" % int(issue) if issue != null else "-",
 		"last_result": last_result(a),
+		"cost_usd": AssetCostModel.total_of(a.get("costs", [])),
+		"cost_text": AssetCostModel.money(AssetCostModel.total_of(a.get("costs", [])), AssetCostModel.has_estimated(a.get("costs", []))),
+		"over_budget": a.get("budget_usd") != null and AssetCostModel.total_of(a.get("costs", [])) > float(a["budget_usd"]),
 	}
 
 

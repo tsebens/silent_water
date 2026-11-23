@@ -408,3 +408,89 @@ func test_describe_args() -> void:
 	c.load_asset((l["assets"] as Array)[0] as Dictionary)
 	expect_eq(c.describe_args(" Bigger lure. "), PackedStringArray(["describe", "angler", "Bigger lure."]))
 	expect(c.describe_args("  ").is_empty(), "blank description builds no command")
+
+
+# --- cost UI (M10.20) ------------------------------------------------------------------------
+
+func test_queue_exposes_per_asset_cost_totals() -> void:
+	var q: AssetQueueModel = AssetQueueModel.new()
+	q.load_assets(_listing()["assets"])
+	var a: Dictionary = q.find("angler")
+	# 0.12 reported + 0.08 and 0.40 estimated; the subscription entry and the unknown one add nothing.
+	expect_eq(snappedf(float(a["cost_usd"]), 0.001), 0.6)
+	expect_eq(a["cost_text"], "~$0.60")
+	expect(bool(a["over_budget"]), "0.60 is over the 0.50 budget")
+	var b: Dictionary = q.find("bulkhead")
+	expect_eq(b["cost_text"], "$0.35")
+	expect(not bool(b["over_budget"]))
+	expect_eq(q.find("coral")["cost_text"], "$0.00")
+
+
+func test_cost_panel_groups_by_stage_and_provider_and_marks_estimates() -> void:
+	var m: AssetCostModel = AssetCostModel.new()
+	m.load_asset(_listing()["assets"][0])
+	expect_eq(m.total_text(), "~$0.60")
+	expect_eq(m.unknown_count, 1)
+	var stages: Dictionary = {}
+	for r: Dictionary in m.by_stage:
+		stages[r["name"]] = r
+	expect_eq((stages["concept"] as Dictionary)["usd"], 0.12)
+	expect(not bool((stages["concept"] as Dictionary)["estimated"]), "a reported figure is not marked")
+	expect(bool((stages["refine"] as Dictionary)["estimated"]))
+	expect_eq((stages["to3d"] as Dictionary)["unknown"], 1)
+	var providers: Dictionary = {}
+	for r: Dictionary in m.by_provider:
+		providers[r["name"]] = r
+	expect(not providers.has("claude-cli"), "subscription calls are not spend")
+	expect_eq((providers["tripo"] as Dictionary)["count"], 1)
+	var text: String = "\n".join(m.panel_lines())
+	expect(text.contains("refine  ~$0.08"), "estimated figures carry a ~")
+	expect(text.contains("concept  $0.12"))
+	expect(text.contains("could not be priced"))
+	expect(m.warning().contains("over its $0.50 budget"))
+
+
+func test_cost_panel_with_no_calls() -> void:
+	var m: AssetCostModel = AssetCostModel.new()
+	m.load_asset(_listing()["assets"][2])
+	expect(not m.over_budget())
+	expect_eq(m.warning(), "")
+	expect_eq(m.panel_lines()[0], "No paid calls recorded yet.")
+
+
+func test_estimate_args_and_text_from_stubbed_backend_result() -> void:
+	var a: PackedStringArray = AssetCostModel.estimate_args(PackedStringArray(["concept", "angler", "--n", "3"]))
+	expect_eq(a[a.size() - 1], "--estimate")
+	expect(AssetCostModel.estimate_args(PackedStringArray()).is_empty(), "no action, no estimate")
+	var paid: Dictionary = {"estimate": {"usd": 0.36, "calls": [{"basis": "estimated", "usd": 0.36}], "unknown": []}}
+	expect_eq(AssetCostModel.estimate_text(paid), "~$0.36")
+	var mock: Dictionary = {"estimate": {"usd": 0.0, "calls": [{"basis": "mock"}], "unknown": []}}
+	expect_eq(AssetCostModel.estimate_text(mock), "free")
+	var mixed: Dictionary = {"estimate": {"usd": 0.4, "calls": [{"basis": "estimated"}, {"basis": "unknown"}], "unknown": [{"basis": "unknown"}]}}
+	expect_eq(AssetCostModel.estimate_text(mixed), "~$0.40 + unknown")
+	var none: Dictionary = {"estimate": {"usd": 0.0, "calls": [{"basis": "unknown"}], "unknown": [{"basis": "unknown"}]}}
+	expect_eq(AssetCostModel.estimate_text(none), "cost unknown")
+	var m: AssetCostModel = AssetCostModel.new()
+	m.set_estimate("more", paid)
+	expect_eq(m.label("more", "Generate more"), "Generate more (~$0.36)")
+	expect_eq(m.label("send", "Send to provider"), "Send to provider")
+
+
+func test_panel_buttons_show_stubbed_estimates() -> void:
+	var panel: AssetStudioPanel = AssetStudioPanel.new()
+	panel.set_meta("fixture", true)
+	runner.add_child(panel)
+	panel.show_listing(_listing())
+	var cmds: Dictionary = panel.estimate_commands()
+	expect(not (cmds["more"] as PackedStringArray).is_empty())
+	expect_eq((cmds["more"] as PackedStringArray)[0], "concept")
+	panel.cost.set_estimate("more", {"estimate": {"usd": 0.36, "calls": [{"basis": "estimated"}], "unknown": []}})
+	panel.cost.set_estimate("bakeoff", {"estimate": {"usd": 0.75, "calls": [{"basis": "estimated"}], "unknown": []}})
+	panel._refresh_est_labels()
+	expect_eq(panel._more_btn.text, "Generate more (~$0.36)")
+	var found: bool = false
+	for e: Variant in panel._est_buttons["bakeoff"]:
+		found = found or (e["button"] as Button).text == "Bake-off (all) (~$0.75)"
+	expect(found, "the bake-off button shows its estimate")
+	expect(panel._cost_text.text.contains("refine"), "cost panel is filled for the selected asset")
+	panel.queue_free()

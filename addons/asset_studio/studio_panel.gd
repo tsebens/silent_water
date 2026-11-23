@@ -12,6 +12,9 @@ var queue: AssetQueueModel = AssetQueueModel.new()
 var concept: AssetConceptModel = AssetConceptModel.new()
 var turnaround: AssetTurnaroundModel = AssetTurnaroundModel.new()
 var model: AssetModelModel = AssetModelModel.new()
+var cost: AssetCostModel = AssetCostModel.new()
+## Runs `--estimate` commands one at a time, apart from `runner` so it never blocks real work.
+var estimator: AssetBackendRunner
 
 var _assets: Array = []
 var _providers: Dictionary = {}
@@ -61,6 +64,12 @@ var _new_hint: Label
 var _desc_edit: TextEdit
 var _desc_save_btn: Button
 var _more_hint: Label
+var _cost_title: Label
+var _cost_text: Label
+## Action key -> [{button, base}]: paid-action buttons that show an estimate.
+var _est_buttons: Dictionary = {}
+var _est_queue: Array = []
+var _est_stale: bool = false
 
 
 func _init() -> void:
@@ -75,6 +84,9 @@ func _ready() -> void:
 	add_child(runner)
 	runner.started.connect(_on_started)
 	runner.finished.connect(_on_finished)
+	estimator = AssetBackendRunner.new()
+	add_child(estimator)
+	estimator.finished.connect(_on_estimate_finished)
 	if Engine.is_editor_hint() and not has_meta("fixture"):
 		refresh()
 
@@ -124,13 +136,15 @@ func _build() -> void:
 	add_child(split)
 
 	_tree = Tree.new()
-	_tree.columns = 5
+	_tree.columns = 6
 	_tree.column_titles_visible = true
-	for i: int in 5:
-		_tree.set_column_title(i, ["Asset", "Class", "Stage", "Issue", "Last result"][i])
+	for i: int in 6:
+		_tree.set_column_title(i, ["Asset", "Class", "Stage", "Issue", "Cost", "Last result"][i])
 	_tree.set_column_expand(0, false)
 	_tree.set_column_custom_minimum_width(0, 120)
-	_tree.set_column_expand(4, true)
+	_tree.set_column_expand(4, false)
+	_tree.set_column_custom_minimum_width(4, 70)
+	_tree.set_column_expand(5, true)
 	_tree.custom_minimum_size = Vector2(440, 0)
 	_tree.hide_root = true
 	_tree.item_selected.connect(_on_row_selected)
@@ -170,18 +184,23 @@ func _build() -> void:
 	lbl.text = "Image provider"
 	more.add_child(lbl)
 	_provider_pick = OptionButton.new()
+	_provider_pick.item_selected.connect(func(_i: int) -> void: request_estimates())
 	more.add_child(_provider_pick)
 	var wl: Label = Label.new()
 	wl.text = "Prompt writer"
 	more.add_child(wl)
 	_writer_pick = OptionButton.new()
+	_writer_pick.item_selected.connect(func(_i: int) -> void: request_estimates())
 	more.add_child(_writer_pick)
-	_more_btn = Button.new()
-	_more_btn.text = "Generate more"
-	_more_btn.pressed.connect(_on_generate_more)
-	more.add_child(_more_btn)
+	_more_btn = _est_button(more, "Generate more", "more", _on_generate_more)
 	_more_hint = Label.new()
 	more.add_child(_more_hint)
+
+	_cost_title = Label.new()
+	_cost_title.text = "Cost"
+	right.add_child(_cost_title)
+	_cost_text = Label.new()
+	right.add_child(_cost_text)
 
 	_lineage_title = Label.new()
 	_lineage_title.text = "Lineage"
@@ -289,8 +308,9 @@ func _build_turnaround_tab() -> void:
 	lbl.text = "Image provider"
 	bar.add_child(lbl)
 	_turn_provider = OptionButton.new()
+	_turn_provider.item_selected.connect(func(_i: int) -> void: request_estimates())
 	bar.add_child(_turn_provider)
-	_turn_all_btn = _button(bar, "Generate turnaround", func() -> void: _command(turnaround.generate_args(_picked(_turn_provider))))
+	_turn_all_btn = _est_button(bar, "Generate turnaround", "turnaround", func() -> void: _command(turnaround.generate_args(_picked(_turn_provider))))
 	var bl: Label = Label.new()
 	bl.text = "Brief (brief.md, editable)"
 	box.add_child(bl)
@@ -349,9 +369,10 @@ func _build_model_tab() -> void:
 	pl.text = "3D provider"
 	_model_actions.add_child(pl)
 	_model_provider = OptionButton.new()
+	_model_provider.item_selected.connect(func(_i: int) -> void: request_estimates())
 	_model_actions.add_child(_model_provider)
-	_button(_model_actions, "Send to provider", func() -> void: _command(model.to3d_args(PackedStringArray([_picked(_model_provider)]) if _picked(_model_provider) != "" else PackedStringArray())))
-	_button(_model_actions, "Bake-off (all)", func() -> void: _command(model.to3d_args(model.three_d_providers)))
+	_est_button(_model_actions, "Send to provider", "send", func() -> void: _command(model.to3d_args(PackedStringArray([_picked(_model_provider)]) if _picked(_model_provider) != "" else PackedStringArray())))
+	_est_button(_model_actions, "Bake-off (all)", "bakeoff", func() -> void: _command(model.to3d_args(model.three_d_providers)))
 	_button(_model_actions, "Clean up", func() -> void: _command(model.cleanup_args(_shown_run)))
 	_button(_model_actions, "Check", func() -> void: _command(model.check_args(_shown_run)))
 	_export_btn = _button(_model_actions, "Export", func() -> void: _command(model.export_args(_shown_run)))
@@ -370,7 +391,11 @@ func _fill_queue() -> void:
 		item.set_text(1, str(r["class"]))
 		item.set_text(2, str(r["stage"]))
 		item.set_text(3, str(r["issue_text"]))
-		item.set_text(4, str(r["last_result"]))
+		item.set_text(4, str(r["cost_text"]))
+		if bool(r["over_budget"]):
+			item.set_custom_color(4, Color(1.0, 0.42, 0.42))
+			item.set_tooltip_text(4, "Over its soft budget")
+		item.set_text(5, str(r["last_result"]))
 		item.set_metadata(0, str(r["slug"]))
 		if str(r["slug"]) == _selected_slug:
 			item.select(0)
@@ -401,7 +426,11 @@ func _show_asset(slug: String) -> void:
 		_update_description_controls()
 		_show_turnaround({})
 		_show_model({})
+		cost.load_asset({})
+		_show_cost()
 		return
+	cost.load_asset(asset)
+	_show_cost()
 	_show_turnaround(asset)
 	_show_model(asset)
 	concept.load_asset(asset, _providers, _selected)
@@ -420,6 +449,7 @@ func _show_asset(slug: String) -> void:
 		_grid.add_child(_variant_card(v))
 	if not concept.variants.is_empty():
 		_show_lineage(str(concept.variants[-1]["id"]))
+	request_estimates()
 
 
 func _variant_card(v: Dictionary) -> Control:
@@ -449,9 +479,91 @@ func _variant_card(v: Dictionary) -> Control:
 	var id: String = str(v["id"])
 	_button(row, "Approve", func() -> void: _command(concept.approve_args(id, notes.text)))
 	_button(row, "Reject", func() -> void: _command(concept.reject_args(id, notes.text)))
-	_button(row, "Refine", func() -> void: _command(concept.refine_args(id, notes.text, _picked_provider(), _picked(_writer_pick))))
+	_est_button(row, "Refine", "refine", func() -> void: _command(concept.refine_args(id, notes.text, _picked_provider(), _picked(_writer_pick))))
 	_button(row, "Lineage", func() -> void: _show_lineage(id))
 	return card
+
+
+## A button for a paid action; its label gains the backend's estimate once known.
+func _est_button(parent: Control, text: String, action: String, cb: Callable) -> Button:
+	var b: Button = _button(parent, text, cb)
+	if not _est_buttons.has(action):
+		_est_buttons[action] = []
+	(_est_buttons[action] as Array).append({"button": b, "base": text})
+	b.text = cost.label(action, text)
+	return b
+
+
+func _refresh_est_labels() -> void:
+	for action: String in _est_buttons:
+		var live: Array = []
+		for e: Variant in _est_buttons[action]:
+			var d: Dictionary = e
+			if is_instance_valid(d["button"]):
+				(d["button"] as Button).text = cost.label(action, str(d["base"]))
+				live.append(d)
+		_est_buttons[action] = live
+
+
+## The estimate commands for the selected asset and current provider picks, by action.
+func estimate_commands() -> Dictionary:
+	var img: String = _picked_provider()
+	var out: Dictionary = {
+		"more": concept.generate_more_args(3, img, _picked(_writer_pick)),
+		"turnaround": turnaround.generate_args(_picked(_turn_provider)),
+		"view": turnaround.regenerate_args("front", _picked(_turn_provider)),
+		"bakeoff": model.to3d_args(model.three_d_providers),
+	}
+	out["refine"] = out["more"]
+	var pick: String = _picked(_model_provider)
+	out["send"] = model.to3d_args(PackedStringArray([pick]) if pick != "" else PackedStringArray())
+	return out
+
+
+## Asks the backend what each paid action would cost now. Skipped for fixture panels.
+func request_estimates() -> void:
+	cost.estimates.clear()
+	_est_queue.clear()
+	var cmds: Dictionary = estimate_commands()
+	for action: String in AssetCostModel.ACTIONS:
+		var a: PackedStringArray = AssetCostModel.estimate_args(cmds.get(action, PackedStringArray()))
+		if not a.is_empty():
+			_est_queue.append([action, a])
+	_refresh_est_labels()
+	if estimator != null and not has_meta("fixture"):
+		_est_stale = estimator.busy
+		_next_estimate()
+
+
+func _next_estimate() -> void:
+	if _est_queue.is_empty() or estimator.busy:
+		return
+	estimator.run((_est_queue[0] as Array)[1])
+
+
+func _on_estimate_finished(_args: PackedStringArray, result: AssetBackendResult) -> void:
+	if _est_stale:
+		_est_stale = false
+		_next_estimate()
+		return
+	if _est_queue.is_empty():
+		return
+	var item: Array = _est_queue.pop_front()
+	if result.ok:
+		cost.set_estimate(str(item[0]), result.data)
+		_refresh_est_labels()
+	_next_estimate()
+
+
+func _show_cost() -> void:
+	_cost_title.text = "Cost: %s" % cost.total_text() if cost.slug != "" else "Cost"
+	var lines: PackedStringArray = cost.panel_lines()
+	if cost.warning() != "":
+		lines.insert(0, "WARNING: " + cost.warning())
+		_cost_text.add_theme_color_override("font_color", Color(1.0, 0.42, 0.42))
+	else:
+		_cost_text.remove_theme_color_override("font_color")
+	_cost_text.text = "\n".join(lines)
 
 
 func _button(parent: Control, text: String, cb: Callable) -> Button:
@@ -521,7 +633,7 @@ func _view_card(v: Dictionary) -> Control:
 	cap.text = str(v["caption"])
 	box.add_child(cap)
 	var name: String = str(v["view"])
-	_button(box, "Regenerate", func() -> void: _command(turnaround.regenerate_args(name, _picked(_turn_provider))))
+	_est_button(box, "Regenerate", "view", func() -> void: _command(turnaround.regenerate_args(name, _picked(_turn_provider))))
 	return card
 
 
