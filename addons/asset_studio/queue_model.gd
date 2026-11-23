@@ -107,6 +107,86 @@ static func create_folder_args(parent: String, name: String) -> PackedStringArra
 	return PackedStringArray(["folder", "create", n if parent == "" else parent + "/" + n])
 
 
+## Right-click menu entries for a queue row. `kind` is "asset" or "folder"; `is_root` marks
+## the assets/models root. Ids: new_here, new_folder, rename_folder, rename, delete.
+## Everything is disabled while a backend command runs.
+static func menu_items(kind: String, is_root: bool, busy: bool) -> Array[Dictionary]:
+	var out: Array[Dictionary] = []
+	if kind == "asset":
+		out.append({"id": "rename", "label": "Rename…", "disabled": busy})
+		out.append({"id": "delete", "label": "Delete…", "disabled": busy})
+	elif kind == "folder":
+		out.append({"id": "new_here", "label": "New asset here", "disabled": busy})
+		out.append({"id": "new_folder", "label": "New folder", "disabled": busy})
+		out.append({"id": "rename_folder", "label": "Rename", "disabled": busy or is_root})
+		out.append({"id": "delete", "label": "Delete…", "disabled": busy or is_root})
+	return out
+
+
+## `asset folder delete <path>`; empty for the root.
+static func folder_delete_args(path: String) -> PackedStringArray:
+	if path == "":
+		return PackedStringArray()
+	return PackedStringArray(["folder", "delete", path])
+
+
+## `asset delete <slug>`; empty for a blank slug.
+static func delete_args(slug: String) -> PackedStringArray:
+	if slug == "":
+		return PackedStringArray()
+	return PackedStringArray(["delete", slug])
+
+
+## Confirmation text for deleting an asset, from its manifest (as printed by `asset list`).
+## `present_files` are the last export's files that exist on disk.
+static func delete_summary(asset: Dictionary, present_files: PackedStringArray) -> String:
+	var kinds: Array[String] = []
+	for e: Variant in asset.get("lineage", []):
+		kinds.append(str((e as Dictionary).get("kind", "")))
+	var costs: Array = asset.get("costs", [])
+	var lines: PackedStringArray = PackedStringArray([
+		"Delete asset '%s'?" % str(asset.get("slug", "")),
+		"Class: %s, stage: %s" % [str(asset.get("class", "")), str(asset.get("stage", "new"))],
+		"Variants: %d, turnaround views: %d, meshes: %d" % [kinds.count("concept"), kinds.count("turnaround"), kinds.count("mesh")],
+		"Cost spent: %s" % AssetCostModel.money(AssetCostModel.total_of(costs), AssetCostModel.has_estimated(costs)),
+	])
+	if present_files.is_empty():
+		lines.append("No exported files.")
+	else:
+		lines.append("Exported files: %s" % ", ".join(present_files))
+	lines.append("It moves to .asset_work/_trash/ and can be recovered from there.")
+	return "\n".join(lines)
+
+
+## The last export's files for `asset`, which the panel filters by existence on disk.
+static func exported_files(asset: Dictionary) -> PackedStringArray:
+	var out: PackedStringArray = PackedStringArray()
+	var exports: Array = asset.get("exports", [])
+	if not exports.is_empty():
+		for f: Variant in (exports[-1] as Dictionary).get("files", []):
+			out.append(str(f))
+	return out
+
+
+## Confirmation text for deleting a folder; lists the assets it holds (recursively).
+func delete_folder_summary(path: String) -> String:
+	var slugs: PackedStringArray = PackedStringArray()
+	_collect_slugs(find_folder(path), slugs)
+	if slugs.is_empty():
+		return "Delete empty folder '%s'?" % path
+	slugs.sort()
+	return "Delete folder '%s' and move its %d asset(s) to the trash?\n%s" % [path, slugs.size(), ", ".join(slugs)]
+
+
+func _collect_slugs(node: Dictionary, out: PackedStringArray) -> void:
+	if node.is_empty():
+		return
+	for r: Dictionary in node["assets"]:
+		out.append(str(r["slug"]))
+	for f: Dictionary in node["folders"]:
+		_collect_slugs(f, out)
+
+
 ## Tooltip text for an asset row: the details the narrow tree no longer shows.
 static func tooltip(row: Dictionary) -> String:
 	return "%s\nclass: %s\nissue: %s\ncost: %s\nlast: %s" % [

@@ -858,3 +858,48 @@ func test_choice_panel_labels_mock_and_sends_real_name() -> void:
 	expect_eq(panel._provider_pick.get_item_text(panel._provider_pick.selected), AssetProviderChoice.MOCK_LABEL)
 	expect_eq(panel._picked_provider(), "mock", "commands get the provider name, not the label")
 	panel.queue_free()
+
+
+func test_queue_menu_items() -> void:
+	var asset: Array[Dictionary] = AssetQueueModel.menu_items("asset", false, false)
+	expect_eq(asset.map(func(e: Dictionary) -> String: return e["id"]), ["rename", "delete"])
+	expect(not asset[0]["disabled"] and not asset[1]["disabled"])
+	var folder: Array[Dictionary] = AssetQueueModel.menu_items("folder", false, false)
+	expect_eq(folder.map(func(e: Dictionary) -> String: return e["id"]), ["new_here", "new_folder", "rename_folder", "delete"])
+	for e: Dictionary in AssetQueueModel.menu_items("asset", false, true) + AssetQueueModel.menu_items("folder", false, true):
+		expect(e["disabled"], "%s disabled while busy" % e["id"])
+	for e: Dictionary in AssetQueueModel.menu_items("folder", true, false):
+		expect_eq(e["disabled"], e["id"] in ["rename_folder", "delete"], "root: %s" % e["id"])
+
+
+func test_rename_dialog_model() -> void:
+	var m: AssetRenameModel = AssetRenameModel.new()
+	m.open("eel", PackedStringArray(["eel", "angler"]))
+	expect(not m.is_valid(), "unchanged slug")
+	m.new_slug = "Bad Name"
+	expect(m.error() != "")
+	m.new_slug = "angler"
+	expect(m.error().contains("already exists"))
+	expect(m.rename_args().is_empty())
+	m.new_slug = "moray"
+	expect_eq(m.error(), "")
+	expect_eq(m.rename_args(), PackedStringArray(["rename", "eel", "moray"]))
+
+
+func test_delete_dialog_summary() -> void:
+	var asset: Dictionary = {"slug": "eel", "class": "creature", "stage": "locked",
+		"lineage": [{"kind": "concept"}, {"kind": "concept"}, {"kind": "turnaround"}, {"kind": "mesh"}],
+		"exports": [{"files": ["a/eel.glb", "a/eel.tscn"]}]}
+	var text: String = AssetQueueModel.delete_summary(asset, PackedStringArray(["a/eel.glb"]))
+	expect(text.contains("'eel'"))
+	expect(text.contains("Class: creature, stage: locked"))
+	expect(text.contains("Variants: 2, turnaround views: 1, meshes: 1"))
+	expect(text.contains("Exported files: a/eel.glb"))
+	expect(AssetQueueModel.delete_summary(asset, PackedStringArray()).contains("No exported files"))
+	expect_eq(AssetQueueModel.exported_files(asset), PackedStringArray(["a/eel.glb", "a/eel.tscn"]))
+	expect_eq(AssetQueueModel.delete_args("eel"), PackedStringArray(["delete", "eel"]))
+	expect_eq(AssetQueueModel.folder_delete_args("props"), PackedStringArray(["folder", "delete", "props"]))
+	expect(AssetQueueModel.folder_delete_args("").is_empty())
+	var q: AssetQueueModel = _tree_queue()
+	expect(q.delete_folder_summary("props/empty_shelf").begins_with("Delete empty folder"))
+	expect(q.delete_folder_summary("organic").contains("eel"))

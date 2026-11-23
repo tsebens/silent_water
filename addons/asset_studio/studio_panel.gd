@@ -31,6 +31,16 @@ var _folder_input_edit: LineEdit
 ## What the folder-name dialog does on OK: "create" under, or "rename" of, `_menu_folder`.
 var _folder_input_mode: String = ""
 var _menu_folder: String = ""
+var _menu_asset: String = ""
+## Selection to adopt once the running rename/delete succeeds ("-" is no slug: nothing selected).
+var _pending_slug: String = ""
+var _menu_kind: String = ""
+var _menu_ids: Array[String] = []
+var _rename_dialog: ConfirmationDialog
+var _rename_edit: LineEdit
+var _rename_hint: Label
+var _delete_dialog: ConfirmationDialog
+var rename: AssetRenameModel = AssetRenameModel.new()
 ## Folder paths the user collapsed; kept across refreshes.
 var _collapsed: Dictionary = {}
 var _sections: Dictionary = {}
@@ -375,9 +385,6 @@ func _build_new_dialog() -> void:
 
 func _build_folder_menu() -> void:
 	_folder_menu = PopupMenu.new()
-	_folder_menu.add_item("New asset here", 0)
-	_folder_menu.add_item("New folder", 1)
-	_folder_menu.add_item("Rename", 2)
 	_folder_menu.id_pressed.connect(_on_folder_menu)
 	add_child(_folder_menu)
 	_folder_input = ConfirmationDialog.new()
@@ -385,6 +392,23 @@ func _build_folder_menu() -> void:
 	_folder_input.add_child(_folder_input_edit)
 	_folder_input.confirmed.connect(_on_folder_input_confirmed)
 	add_child(_folder_input)
+	_rename_dialog = ConfirmationDialog.new()
+	_rename_dialog.title = "Rename asset"
+	_rename_dialog.ok_button_text = "Rename"
+	var rbox: VBoxContainer = VBoxContainer.new()
+	_rename_dialog.add_child(rbox)
+	_rename_edit = LineEdit.new()
+	rbox.add_child(_rename_edit)
+	_rename_hint = Label.new()
+	rbox.add_child(_rename_hint)
+	_rename_edit.text_changed.connect(func(_t: String) -> void: _sync_rename_dialog())
+	_rename_dialog.confirmed.connect(_on_rename_confirmed)
+	add_child(_rename_dialog)
+	_delete_dialog = ConfirmationDialog.new()
+	_delete_dialog.title = "Delete"
+	_delete_dialog.ok_button_text = "Delete"
+	_delete_dialog.confirmed.connect(_on_delete_confirmed)
+	add_child(_delete_dialog)
 
 
 func _on_item_mouse_selected(_pos: Vector2, mouse_button: int) -> void:
@@ -394,29 +418,91 @@ func _on_item_mouse_selected(_pos: Vector2, mouse_button: int) -> void:
 	if item == null or not (item.get_metadata(0) is Dictionary):
 		return
 	var meta: Dictionary = item.get_metadata(0)
-	if meta["kind"] != "folder":
-		return
-	_menu_folder = str(meta["path"])
-	_folder_menu.set_item_disabled(2, _menu_folder == "")
+	_menu_kind = str(meta["kind"])
+	if _menu_kind == "folder":
+		_menu_folder = str(meta["path"])
+	else:
+		_menu_asset = str(meta["slug"])
+	var busy: bool = runner != null and runner.busy
+	_folder_menu.clear()
+	_menu_ids.clear()
+	for entry: Dictionary in AssetQueueModel.menu_items(_menu_kind, _menu_kind == "folder" and _menu_folder == "", busy):
+		_folder_menu.add_item(str(entry["label"]), _menu_ids.size())
+		_folder_menu.set_item_disabled(_menu_ids.size(), bool(entry["disabled"]))
+		_menu_ids.append(str(entry["id"]))
 	_folder_menu.position = Vector2i(DisplayServer.mouse_get_position())
 	_folder_menu.popup()
 
 
 func _on_folder_menu(id: int) -> void:
-	match id:
-		0:
+	match _menu_ids[id]:
+		"new_here":
 			open_new_asset(_menu_folder)
-		1:
+		"new_folder":
 			_folder_input_mode = "create"
 			_folder_input.title = "New folder"
 			_folder_input_edit.text = ""
 			_folder_input_edit.placeholder_text = "folder name"
 			_folder_input.popup_centered(Vector2i(320, 100))
-		2:
+		"rename_folder":
 			_folder_input_mode = "rename"
 			_folder_input.title = "Rename folder"
 			_folder_input_edit.text = _menu_folder.get_file()
 			_folder_input.popup_centered(Vector2i(320, 100))
+		"rename":
+			var slugs: PackedStringArray = PackedStringArray()
+			for r: Dictionary in queue.rows:
+				slugs.append(str(r["slug"]))
+			rename.open(_menu_asset, slugs)
+			_rename_edit.text = _menu_asset
+			_sync_rename_dialog()
+			_rename_dialog.popup_centered(Vector2i(360, 120))
+		"delete":
+			if _menu_kind == "asset":
+				var asset: Dictionary = {}
+				for a: Variant in _assets:
+					if str((a as Dictionary).get("slug", "")) == _menu_asset:
+						asset = a
+				var present: PackedStringArray = PackedStringArray()
+				for f: String in AssetQueueModel.exported_files(asset):
+					if FileAccess.file_exists(AssetBackendResult.project_path(ProjectSettings.globalize_path("res://"), f)):
+						present.append(f)
+				_delete_dialog.dialog_text = AssetQueueModel.delete_summary(asset, present)
+			else:
+				_delete_dialog.dialog_text = queue.delete_folder_summary(_menu_folder)
+			_delete_dialog.popup_centered(Vector2i(420, 200))
+
+
+func _sync_rename_dialog() -> void:
+	rename.new_slug = _rename_edit.text
+	_rename_hint.text = rename.error()
+	_rename_dialog.get_ok_button().disabled = not rename.is_valid()
+
+
+func _on_rename_confirmed() -> void:
+	_sync_rename_dialog()
+	var args: PackedStringArray = rename.rename_args()
+	if args.is_empty():
+		return
+	_pending_slug = rename.new_slug if _selected_slug == rename.old_slug else ""
+	_command(args)
+
+
+func _on_delete_confirmed() -> void:
+	var args: PackedStringArray
+	if _menu_kind == "asset":
+		args = AssetQueueModel.delete_args(_menu_asset)
+		_pending_slug = "-" if _selected_slug == _menu_asset else ""
+	else:
+		args = AssetQueueModel.folder_delete_args(_menu_folder)
+		_pending_slug = "-" if _folder_holds(queue.find_folder(_menu_folder), _selected_slug) else ""
+	_command(args)
+
+
+func _folder_holds(node: Dictionary, slug: String) -> bool:
+	var slugs: PackedStringArray = PackedStringArray()
+	queue._collect_slugs(node, slugs)
+	return slugs.has(slug)
 
 
 func _on_folder_input_confirmed() -> void:
@@ -1210,8 +1296,12 @@ func _on_finished(args: PackedStringArray, result: AssetBackendResult) -> void:
 	if not result.ok:
 		_status.text = "Failed: asset %s" % " ".join(args)
 		show_error(result.error)
+		_pending_slug = ""
 		return
 	_status.text = "Done: asset %s" % " ".join(args)
+	if _pending_slug != "":
+		_selected_slug = _pending_slug
+		_pending_slug = ""
 	if args.size() > 0 and args[0] == "list":
 		show_listing(result.data)
 	else:
