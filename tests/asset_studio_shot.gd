@@ -88,10 +88,10 @@ func _save(path: String) -> void:
 	get_viewport().get_texture().get_image().save_png(path)
 
 
-## Four silhouettes standing in for the turnaround views.
+## Six silhouettes (the fixture asset has four views, so top and bottom show as empty slots; generated anyway) standing in for the turnaround views.
 func _make_views() -> void:
 	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(SHOT_DIR))
-	var widths: Dictionary = {"front": 90, "left": 150, "back": 90, "right": 150}
+	var widths: Dictionary = {"front": 90, "left": 150, "back": 90, "right": 150, "top": 90, "bottom": 90}
 	for v: String in widths:
 		var img: Image = Image.create(256, 256, false, Image.FORMAT_RGBA8)
 		img.fill(Color(0.08, 0.12, 0.15))
