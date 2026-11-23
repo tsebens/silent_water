@@ -903,3 +903,44 @@ func test_delete_dialog_summary() -> void:
 	var q: AssetQueueModel = _tree_queue()
 	expect(q.delete_folder_summary("props/empty_shelf").begins_with("Delete empty folder"))
 	expect(q.delete_folder_summary("organic").contains("eel"))
+
+
+func test_reference_list_builds_backend_args() -> void:
+	var c: AssetConceptModel = AssetConceptModel.new()
+	c.slug = "angler"
+	expect_eq(c.reference_args(), PackedStringArray())
+	expect(c.add_reference("/home/me/sketch.PNG"))
+	expect(c.add_reference("/home/me/photo.webp"))
+	expect(not c.add_reference("/home/me/sketch.PNG"), "a duplicate is ignored")
+	expect(not c.add_reference("/home/me/notes.txt"), "only PNG, JPEG and WebP")
+	expect_eq(c.references.size(), 2)
+	expect_eq(c.generate_more_args(3, "fal"), PackedStringArray([
+		"concept", "angler", "--n", "3", "--image-provider", "fal",
+		"--reference", "/home/me/sketch.PNG", "--reference", "/home/me/photo.webp", "--mode", "paint-over"]))
+	c.set_reference_mode("inspire")
+	c.set_reference_mode("bogus")
+	expect_eq(c.reference_mode, "inspire")
+	c.remove_reference(0)
+	expect_eq(c.generate_more_args(2), PackedStringArray([
+		"concept", "angler", "--n", "2", "--reference", "/home/me/photo.webp", "--mode", "inspire"]))
+	expect_eq(c.generate_more_args(2, "", "", false), PackedStringArray(["concept", "angler", "--n", "2"]))
+	c.remove_reference(5)
+	c.remove_reference(0)
+	expect_eq(c.generate_more_args(1), PackedStringArray(["concept", "angler", "--n", "1"]))
+	c.references = PackedStringArray(["/a.png"])
+	expect(c.refine_args("v1", "more teeth").has("--reference") == false, "a refine keeps its own reference")
+
+
+func test_variant_cards_expose_their_reference() -> void:
+	var c: AssetConceptModel = AssetConceptModel.new()
+	c.load_asset({"slug": "angler", "lineage": [
+		{"id": "v1", "kind": "concept", "path": "a/v1.png", "provider": "mock", "model": "m", "prompt": "p", "parent": null,
+			"reference": {"name": "sketch.png", "sha256": "0123456789abcdef0123"}, "mode": "paint-over"},
+		{"id": "v2", "kind": "concept", "path": "a/v2.png", "provider": "mock", "model": "m", "prompt": "p", "parent": null},
+	]})
+	var r: Dictionary = c.variant("v1")["reference"]
+	expect_eq(r["name"], "sketch.png")
+	expect_eq(r["path"], ".asset_work/angler/references/0123456789ab.png")
+	expect_eq(c.variant("v1")["mode"], "paint-over")
+	expect(c.variant("v2")["reference"].is_empty(), "no reference when the manifest has none")
+	expect_eq(c.lineage_of("v1")[0]["reference"]["name"], "sketch.png")

@@ -57,6 +57,34 @@ def _versioned(env: str, default: str, kind: str) -> tuple[bool, str]:
     return False, f"found {out or 'no version output'!r} at {detail}; expected {expected}"
 
 
+def _blender_check() -> tuple[bool, str]:
+    """The `blender` check for whichever runner `asset cleanup` would use."""
+    from . import cleanup
+    try:
+        runner = cleanup.resolve_runner()
+    except ValueError as e:
+        return False, str(e)
+    if runner.kind == "native":
+        return _versioned("ASSET_BLENDER_BIN", "blender", "blender")
+    try:
+        have = subprocess.run([runner.exe, "image", "inspect", runner.image], capture_output=True, timeout=30).returncode == 0
+    except (OSError, subprocess.SubprocessError):
+        have = False
+    if not have:
+        return False, f"docker: image {runner.image} not found: run `asset blender-image build`"
+    try:
+        r = subprocess.run([runner.exe, "run", "--rm", runner.image, "--version"], capture_output=True, text=True, timeout=120)
+    except (OSError, subprocess.SubprocessError) as e:
+        return False, f"docker: could not run {runner.image}: {e}"
+    out = (r.stdout.strip() or r.stderr.strip()).splitlines()
+    out_line = out[0] if out else ""
+    m = re.search(r"Blender\s+(\d+)\.(\d+)", out_line)
+    want = expected_versions()["blender"]["major_minor"]
+    if m and f"{m.group(1)}.{m.group(2)}" == want:
+        return True, f"docker: {runner.image}, {out_line}"
+    return False, f"docker: {runner.image} reports {out_line or 'no version output'!r}; expected Blender {want}.x"
+
+
 def _anthropic_live(base_url: str = "https://api.anthropic.com") -> str:
     request("anthropic-api", base_url + "/v1/models?limit=1",
             {"x-api-key": os.environ["ANTHROPIC_API_KEY"], "anthropic-version": "2023-06-01"}, timeout=30)
@@ -72,7 +100,7 @@ def run(config: dict[str, Any], live: bool = False) -> dict[str, Any]:
     def add(name: str, ok: bool, detail: str, required: bool = True) -> None:
         checks.append({"name": name, "ok": ok, "detail": detail, "required": required})
 
-    add("blender", *_versioned("ASSET_BLENDER_BIN", "blender", "blender"))
+    add("blender", *_blender_check())
     add("godot", *_versioned("GODOT", "godot", "godot"))
     selected = config.get("selection", {})
     for kind, entries in config["providers"].items():

@@ -24,7 +24,16 @@ class PromptWriterError(RuntimeError):
     """The writer could not produce text (missing tool, auth, HTTP or malformed output)."""
 
 
-def prompts_request(brief: str, style: str, notes: str, n: int, has_images: bool) -> str:
+MODE_TEXT = {
+    "paint-over": ("The FIRST attached image is a reference to paint over. KEEP its composition, camera, "
+                   "proportions and major shapes exactly; change only materials, surface detail, colour and "
+                   "lighting to match the style bible. Every prompt must say so.\n"),
+    "inspire": ("The FIRST attached image is a loose visual starting point. Take mood, motifs and shapes from it, "
+                "but the composition, camera and proportions may change freely.\n"),
+}
+
+
+def prompts_request(brief: str, style: str, notes: str, n: int, has_images: bool, mode: str | None = None) -> str:
     refs = ("The attached images are style anchors (and, when refining, the parent variant). "
             "Match their look and, when refining, keep what the notes do not change.\n") if has_images else ""
     return (
@@ -33,6 +42,7 @@ def prompts_request(brief: str, style: str, notes: str, n: int, has_images: bool
         f"ASSET BRIEF:\n{brief}\n\n"
         + (f"REFINE NOTES (what to change):\n{notes}\n\n" if notes else "")
         + refs
+        + (MODE_TEXT[mode] + "\n" if mode else "")
         + f"Write {n} distinct prompts for one hero concept image of this asset, differing in "
         f"silhouette or composition. Reply with ONLY a JSON array of {n} strings."
     )
@@ -130,8 +140,9 @@ class ClaudeCliWriter(PromptWriter):
             raise PromptWriterError("claude CLI JSON has no result text")
         return result
 
-    def write_prompts(self, brief: str, style: str, notes: str, images: list[Path], n: int) -> list[str]:
-        return parse_prompts(self._ask(prompts_request(brief, style, notes, n, bool(images)), images), n)
+    def write_prompts(self, brief: str, style: str, notes: str, images: list[Path], n: int,
+                      mode: str | None = None) -> list[str]:
+        return parse_prompts(self._ask(prompts_request(brief, style, notes, n, bool(images), mode), images), n)
 
     def write_brief(self, context: str, images: list[Path]) -> str:
         return self._ask(brief_request(context, bool(images)), images).strip() + "\n"
@@ -182,8 +193,9 @@ class AnthropicApiWriter(PromptWriter):
             raise PromptWriterError("Anthropic API reply has no text")
         return text
 
-    def write_prompts(self, brief: str, style: str, notes: str, images: list[Path], n: int) -> list[str]:
-        return parse_prompts(self._ask(prompts_request(brief, style, notes, n, bool(images)), images), n)
+    def write_prompts(self, brief: str, style: str, notes: str, images: list[Path], n: int,
+                      mode: str | None = None) -> list[str]:
+        return parse_prompts(self._ask(prompts_request(brief, style, notes, n, bool(images), mode), images), n)
 
     def write_brief(self, context: str, images: list[Path]) -> str:
         return self._ask(brief_request(context, bool(images)), images).strip() + "\n"

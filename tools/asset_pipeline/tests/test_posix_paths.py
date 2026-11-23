@@ -47,3 +47,26 @@ def test_manifest_with_backslash_paths_loads_normalised(tmp_path):
     loaded = Manifest.load(p)
     assert loaded.lineage[0].path == ".asset_work/a/concept/v1.png"
     assert loaded.lineage[0].references == ["assets/style/x.png"]
+
+
+def test_reference_flow_records_no_absolute_path(root, capsys, tmp_path):
+    from PIL import Image
+    sb = root / "assets" / "style_bible"
+    (sb / "anchors" / "prop").mkdir(parents=True)
+    (sb / "anchors" / "prop" / "a0.png").write_bytes(b"x")
+    ref = tmp_path / "somewhere" / "view.jpg"
+    ref.parent.mkdir()
+    Image.new("RGB", (8, 8)).save(ref, format="JPEG")
+    outputs = []
+    for argv in (("new", "cabin", "--class", "prop"),
+                 ("concept", "cabin", "--brief", "b", "--n", "1", "--reference", str(ref)),
+                 ("concept", "cabin", "--refine", "v1", "--notes", "n", "--n", "1")):
+        code, out = run(capsys, *argv)
+        assert code == 0, out
+        outputs.append(out)
+    outputs += [f.read_text() for f in root.rglob("asset.yaml")]
+    for o in outputs:
+        assert str(tmp_path) not in o and str(tmp_path).replace("\\", "/") not in o
+        assert "\\" not in o.replace("\\n", "")
+    assert any("view.jpg" in o for o in outputs)
+    assert any(".asset_work/cabin/references/" in o for o in outputs)

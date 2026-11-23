@@ -80,16 +80,18 @@ def test_brief_size_parsing(tmp_path):
     assert cleanup.brief_size_m(None, prof)[1] == "class scale range"
 
 
-def test_cleanup_without_blender_errors_cleanly(asset, monkeypatch, capsys):
+def test_cleanup_without_blender_errors_cleanly(asset, monkeypatch, capsys, tmp_path):
     monkeypatch.setenv("ASSET_BLENDER_BIN", "definitely-not-blender")
+    monkeypatch.setenv("PATH", str(tmp_path))  # no blender, no docker
     assert run("cleanup", "blob", "--source", "r1_mock") == 1
     out = json.loads(capsys.readouterr().out)
     assert out["ok"] is False and "Blender not found" in out["error"]
     assert Manifest.load(asset / "assets" / "models" / "blob" / "asset.yaml").cleanups == []
 
 
-def test_doctor_reports_missing_blender(monkeypatch):
+def test_doctor_reports_missing_blender(monkeypatch, tmp_path):
     monkeypatch.setenv("ASSET_BLENDER_BIN", "definitely-not-blender")
+    monkeypatch.setenv("PATH", str(tmp_path))  # neither Blender nor Docker
     res = doctor.run(providers.load_config())
     b = next(c for c in res["checks"] if c["name"] == "blender")
     assert b["ok"] is False and "ASSET_BLENDER_BIN" in b["detail"]
@@ -106,6 +108,11 @@ def test_cleanup_rejects_non_mesh_and_bad_size(asset, capsys):
 
 @needs_blender
 def test_cleanup_meets_budget_manifold_palette_scale_and_pivot(asset, capsys):
+    assert_cleanup_meets_the_profile(asset, capsys)
+
+
+def assert_cleanup_meets_the_profile(asset, capsys):
+    """Run the fixture cleanup with the configured runner and check the result (shared with the Docker test)."""
     assert run("cleanup", "blob", "--source", "r1_mock") == 0
     out = json.loads(capsys.readouterr().out)
     prof = yaml.safe_load((asset / "assets" / "style_bible" / "classes.yaml").read_text())["classes"]["creature"]

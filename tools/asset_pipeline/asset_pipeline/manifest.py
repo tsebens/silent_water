@@ -46,6 +46,8 @@ class LineageEntry:
     created: str = field(default_factory=now)
     writer: str = ""  # PromptWriter that composed the prompt, as name:model
     references: list[str] = field(default_factory=list)  # images passed to the provider
+    reference: dict[str, str] = field(default_factory=dict)  # concept variants made from a reference: {name, sha256}
+    mode: str = ""  # with a reference: paint-over or inspire
     task_id: str = ""  # provider job id for a mesh run (image-to-3D)
     views: list[str] = field(default_factory=list)  # mesh runs: lineage ids of the turnaround views sent, in order
     options: dict[str, Any] = field(default_factory=dict)  # mesh runs: the model options sent in the request body
@@ -78,7 +80,9 @@ class CleanupRecord:
     params: dict[str, Any] = field(default_factory=dict)  # budget, size, palette size, grid
     commit: str = ""  # git commit of the pipeline code that ran it
     script_sha256: str = ""  # digest of the Blender script, so a dirty checkout is still identifiable
-    blender: str = ""
+    blender: str = ""  # version string printed by the Blender that ran it
+    runner: str = ""  # "native" or "docker"
+    image: str = ""  # docker: image reference plus digest when the daemon reported it
     result: dict[str, Any] = field(default_factory=dict)  # measured triangles, non-manifold, colours, size
     at: str = field(default_factory=now)
 
