@@ -1,4 +1,4 @@
-# Sub interior program, draft 2 (the sub experiment, from a blank sheet).
+# Sub interior program, draft 3 (the sub experiment, from a blank sheet).
 # The layout is data: plan.py draws and checks it, and the blockout generator will build from it.
 # Concept art is painted over the blockout's renders. Tristan's vision: reference/exterior_vision_tristan.webp.
 # Units: metres. Frame: sub-local, bow toward -Z, +X starboard, Y up, origin at the hull's centre.
@@ -28,52 +28,55 @@ clearances:                  # from the player capsule (radius 0.3, height 1.75)
 compartments:
   - id: cockpit
     z: [-4.9, -3.0]
-    notes: Glass dome. Pilot and sonar side by side, as in the concept image, so sonar calls are short and quiet.
-  - id: forward
-    z: [-3.0, -1.2]
-    notes: Ballast manifold (port) and countermeasures (starboard), the forward rounds.
+    notes: Glass dome. Cramped but fits two operators, pilot and sonar, side by side as in the concept image.
   - id: midships
-    z: [-1.2, 1.6]
-    notes: The widest section and the crew's hub. The map table, then the lock-out trunk in the floor just aft of it, and the ladder up into the conning tower.
+    z: [-3.0, 1.2]
+    notes: >
+      The crowded catch-all and the crew's hub. Countermeasures stands beside the map table, so its
+      operator can watch the table to see what their decoys are doing. Then the lock-out trunk in the floor
+      just aft of the table, and the conning-tower ladder and lockers by the bulkhead.
   - id: bulkhead
-    z: [1.6, 1.8]
+    z: [1.2, 1.4]
     notes: Watertight hatch, which can isolate a flooding engineering space.
   - id: engineering
-    z: [1.8, 4.7]
-    notes: Machinery space, louder and lower, as the hull tapers. The aft rounds.
+    z: [1.4, 4.7]
+    notes: >
+      The mechanic's end of the boat, louder and lower as the hull tapers. Engine and power, life support,
+      ballast, the bilge well and the drop-weight release: every hands-on utility job.
 
 # kind: seat (sit to use), panel (stand at a wall), table (walk round), well (kneel), floor_hatch, ladder.
 # side: port (-X), starboard (+X) or centre; x overrides side when given. footprint: [along the hull, across the hull].
 stations:
   - {id: pilot,           compartment: cockpit,     kind: seat,  x: -0.5, z: -3.8, footprint: [0.9, 0.8]}
   - {id: sonar,           compartment: cockpit,     kind: seat,  x: 0.5,  z: -3.8, footprint: [0.9, 0.8]}
-  - {id: ballast,         compartment: forward,     kind: panel, side: port,      z: -2.1, footprint: [1.2, 0.4]}
-  - {id: countermeasures, compartment: forward,     kind: panel, side: starboard, z: -2.1, footprint: [1.0, 0.45]}
-  - {id: map_table,       compartment: midships,    kind: table, side: centre,    z: -0.35, footprint: [1.1, 1.1]}
-  - {id: engineering,     compartment: engineering, kind: panel, side: starboard, z: 2.45, footprint: [1.2, 0.45]}
-  - {id: life_support,    compartment: engineering, kind: panel, side: port,      z: 2.45, footprint: [1.0, 0.5]}
-  - {id: bilge,           compartment: engineering, kind: well,  side: centre,    z: 3.6, footprint: [0.7, 0.9]}
+  - {id: countermeasures, compartment: midships,    kind: panel, side: starboard, z: -1.85, footprint: [1.0, 0.45]}
+  - {id: map_table,       compartment: midships,    kind: table, side: centre,    z: -0.75, footprint: [1.1, 1.1]}
+  - {id: engineering,     compartment: engineering, kind: panel, side: starboard, z: 2.0, footprint: [1.2, 0.45]}
+  - {id: life_support,    compartment: engineering, kind: panel, side: port,      z: 2.0, footprint: [1.0, 0.5]}
+  - {id: ballast,         compartment: engineering, kind: panel, side: port,      z: 3.1, footprint: [1.0, 0.4]}
+  - {id: bilge,           compartment: engineering, kind: well,  side: centre,    z: 3.95, footprint: [0.7, 0.9]}
 
 features:
   - id: lock_out_trunk
     compartment: midships
     kind: floor_hatch
     side: centre
-    z: 0.7
+    z: 0.3
     footprint: [0.9, 0.9]
     notes: >
       Floor hatch into a one-person lock-out chamber below the deck. Climb down, seal the top hatch, flood,
       open the bottom hatch to the sea, and reverse to come back in. The pumps are loud, so going out is a
       decision. It isn't how real subs do it; it's placed for play, so you can read the map table and step
       straight out.
-  - {id: tower_ladder, compartment: midships, kind: ladder, side: port, z: 1.35, footprint: [0.4, 0.35],
+  - {id: tower_ladder, compartment: midships, kind: ladder, side: port, z: 0.95, footprint: [0.4, 0.35],
      notes: Up into the conning tower and its top hatch, for docking at the ship or a station. Kept for looks too.}
-  - {id: lockers, compartment: midships, kind: storage, side: starboard, z: 1.35, footprint: [0.4, 0.45],
+  - {id: lockers, compartment: midships, kind: storage, side: starboard, z: 0.95, footprint: [0.4, 0.45],
      notes: Patches, scrubber canisters, cargo.}
-  - {id: drop_weights, compartment: engineering, kind: release_lever, side: starboard, z: 3.6, footprint: [0.2, 0.15],
-     notes: One-time emergency release.}
+  - {id: drop_weights, compartment: engineering, kind: release_lever, side: starboard, z: 3.1, footprint: [0.2, 0.15],
+     notes: One-time emergency release, across the aisle from the ballast valves.}
 
 design_notes:
-  - Four stations sit forward of the exit (pilot, sonar, ballast, countermeasures) and three aft (engineering, life support, bilge), so the sub reads as two halves around the hub, not one long tube.
-  - Rounds go both ways from the hub. Ballast is forward; life support and bilge are aft, through the bulkhead.
+  - "Two halves around the hub. Forward: pilot and sonar in the dome, then countermeasures at the map table. Aft, through the bulkhead: engineering, life support, ballast and bilge, all the hands-on utility work."
+  - Rounds are an engineering job now. Whoever does them works mostly behind the bulkhead, away from the table's chatter, and crosses the hub to get there.
+  - Ballast and the drop-weight release face each other across the aft aisle; both are about staying afloat.
   - The pilot can look back from the dome and see the crew at the table.
