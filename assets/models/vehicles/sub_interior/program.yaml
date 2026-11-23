@@ -1,0 +1,58 @@
+# Sub interior program, draft 1 (the sub experiment, from a blank sheet).
+# The layout is data: the blockout generator reads this file, and concept art is painted over its renders.
+# Units: metres. Frame: sub-local, bow toward -Z, +X starboard, Y up, origin on the deck at the centreline.
+
+sub:
+  hull_length_m: 10.0          # outside, about 85% of a school bus
+  pressure_hull_diameter_m: 2.8
+  deck_height_m: 0.35          # deck above the hull's lowest point; bilge space below the deck plates
+  crew: 4
+
+clearances:                    # from the player capsule (radius 0.3, height 1.75)
+  aisle_min_m: 0.8             # one person passes; two must squeeze (deliberate)
+  aisle_pass_m: 1.2            # where two can pass comfortably
+  head_clear_m: 2.05           # clear height along the centreline
+  hatch_width_m: 0.75
+  hatch_height_m: 1.7          # duck slightly at the bulkhead
+
+# Compartments from bow to stern. z_from/z_to along the hull (bow negative).
+compartments:
+  - id: cockpit
+    z: [-4.6, -2.9]
+    notes: Glass dome over the pilot; the brightest view out. Pilot's heading-up hologram on the console.
+  - id: control
+    z: [-2.9, -0.9]
+    notes: Sonar and countermeasures face each other across the aisle, so they can talk without shouting.
+  - id: midships
+    z: [-0.9, 1.3]
+    notes: The map table is the social centre; the ballast manifold is on the wall beside it. The exit hatch is overhead.
+  - id: bulkhead
+    z: [1.3, 1.5]
+    notes: Watertight hatch, which can be shut to isolate a flooding aft compartment.
+  - id: engineering
+    z: [1.5, 4.6]
+    notes: Machinery space, louder and cramped. Engine and power panel, life support, and the bilge well at the lowest point.
+
+# Work points. side: port (-X), starboard (+X) or centre. facing: where the crew member faces while working.
+# kind: seat (sit to use), panel (stand at a wall), table (walk around), well (kneel or crouch).
+stations:
+  - {id: pilot,           compartment: cockpit,     kind: seat,  side: centre,    z: -3.9, footprint: [0.9, 1.1], facing: bow}
+  - {id: sonar,           compartment: control,     kind: seat,  side: port,      z: -1.9, footprint: [0.8, 0.9], facing: outboard}
+  - {id: countermeasures, compartment: control,     kind: panel, side: starboard, z: -1.9, footprint: [1.0, 0.45], facing: outboard}
+  - {id: map_table,       compartment: midships,    kind: table, side: centre,    z: 0.2,  footprint: [1.0, 1.0], facing: any}
+  - {id: ballast,         compartment: midships,    kind: panel, side: port,      z: 0.2,  footprint: [1.2, 0.4], facing: outboard}
+  - {id: engineering,     compartment: engineering, kind: panel, side: starboard, z: 2.4,  footprint: [1.2, 0.45], facing: outboard}
+  - {id: life_support,    compartment: engineering, kind: panel, side: port,      z: 2.4,  footprint: [1.0, 0.5], facing: outboard}
+  - {id: bilge,           compartment: engineering, kind: well,  side: centre,    z: 3.9,  footprint: [0.9, 0.7], facing: aft}
+
+features:
+  - {id: dome,          compartment: cockpit,  kind: glass_dome, notes: forward hemisphere of the pressure hull}
+  - {id: exit_hatch,    compartment: midships, kind: overhead_hatch, z: 0.9, ladder: true}
+  - {id: lockers,       compartment: midships, kind: storage, side: starboard, z: 0.9, footprint: [0.6, 0.4], notes: patches, canisters, cargo}
+  - {id: drop_weights,  compartment: engineering, kind: release_lever, side: starboard, z: 3.9, notes: one-time emergency release}
+
+# Walk times at 2.6 m/s, for judging how far the rounds stations are from each other.
+design_notes:
+  - The pilot rarely leaves the seat. Sonar is a seat a step behind them, so calls are short.
+  - The rounds stations (ballast, life support, bilge) are split between midships and aft, so whoever does rounds crosses the bulkhead, which is noisy and takes time.
+  - Engineering is aft behind the bulkhead. Shutting the hatch isolates a flood but cuts the crew in two.
