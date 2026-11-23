@@ -51,7 +51,11 @@ var _more_btn: Button
 var _lineage_title: Label
 var _tabs: TabContainer
 var _turn_title: Label
-var _turn_views: HBoxContainer
+var _turn_views: GridContainer
+var _turn_scroll: ScrollContainer
+var _turn_overlay: PopupPanel
+var _turn_cell: float = 160.0
+var _turn_asset: Dictionary = {}
 var _turn_provider: OptionButton
 var _turn_all_btn: Button
 var _brief_edit: TextEdit
@@ -534,9 +538,21 @@ func _build_turnaround_tab() -> void:
 	_turn_title = Label.new()
 	_turn_title.text = "Turnaround: no asset selected"
 	box.add_child(_turn_title)
-	_turn_views = HBoxContainer.new()
-	_turn_views.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	box.add_child(_turn_views)
+	_turn_scroll = ScrollContainer.new()
+	_turn_scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_turn_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	_turn_scroll.size_flags_stretch_ratio = 8.0
+	_turn_scroll.custom_minimum_size = Vector2(0, 240)
+	_turn_scroll.resized.connect(_fit_turnaround)
+	box.add_child(_turn_scroll)
+	_turn_views = GridContainer.new()
+	_turn_views.columns = AssetTurnaroundModel.GRID_SIZE.x
+	_turn_views.add_theme_constant_override("h_separation", 4)
+	_turn_views.add_theme_constant_override("v_separation", 4)
+	_turn_views.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	_turn_scroll.add_child(_turn_views)
+	_turn_overlay = PopupPanel.new()
+	add_child(_turn_overlay)
 	var bar: HBoxContainer = HBoxContainer.new()
 	box.add_child(bar)
 	var lbl: Label = Label.new()
@@ -551,7 +567,8 @@ func _build_turnaround_tab() -> void:
 	box.add_child(bl)
 	_brief_edit = TextEdit.new()
 	_brief_edit.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	_brief_edit.custom_minimum_size = Vector2(0, 160)
+	_brief_edit.size_flags_stretch_ratio = 1.0
+	_brief_edit.custom_minimum_size = Vector2(0, 80)
 	_brief_edit.text_changed.connect(_on_brief_changed)
 	box.add_child(_brief_edit)
 	var row: HBoxContainer = HBoxContainer.new()
@@ -838,6 +855,7 @@ func _read_json(rel: String) -> Dictionary:
 
 func _show_turnaround(asset: Dictionary) -> void:
 	for c: Node in _turn_views.get_children():
+		_turn_views.remove_child(c)
 		c.queue_free()
 	_turn_provider.clear()
 	if asset.is_empty():
@@ -847,11 +865,20 @@ func _show_turnaround(asset: Dictionary) -> void:
 		_update_brief_buttons()
 		return
 	var brief_rel: String = str((asset.get("brief", {}) as Dictionary).get("path", "")) if asset.get("brief") is Dictionary else ""
+	_turn_asset = asset
 	turnaround.load_asset(asset, _read_text(brief_rel))
-	_turn_title.text = "Turnaround: %s (%d of 4 views)" % [turnaround.slug, turnaround.present_count()]
+	_turn_title.text = "Turnaround: %s (%d of %d views)" % [turnaround.slug, turnaround.present_count(), turnaround.views.size()]
 	_fill_pick(_turn_provider, "turnaround_image", concept_image_providers(), str(_selected.get("image", "")))
-	for v: Dictionary in turnaround.views:
-		_turn_views.add_child(_view_card(v))
+	for row: int in AssetTurnaroundModel.GRID_SIZE.y:
+		for col: int in AssetTurnaroundModel.GRID_SIZE.x:
+			var name: String = turnaround.view_at(Vector2i(col, row))
+			if name == "":
+				var spacer: Control = Control.new()
+				spacer.name = "Corner_%d_%d" % [col, row]
+				_turn_views.add_child(spacer)
+			else:
+				_turn_views.add_child(_view_card(turnaround.view(name)))
+	_fit_turnaround.call_deferred()
 	_brief_edit.text = turnaround.brief_text
 	_update_brief_buttons()
 
@@ -863,13 +890,62 @@ func concept_image_providers() -> PackedStringArray:
 	return out
 
 
+## Square image size for the cross from the scroll area (the grid scrolls below a minimum).
+func _fit_turnaround() -> void:
+	if _turn_scroll == null:
+		return
+	_turn_cell = maxf(48.0, AssetTurnaroundModel.fit_cell_size(_turn_scroll.size - Vector2(8, 8)))
+	for card: Node in _turn_views.get_children():
+		var tex: Node = card.find_child("Image", true, false)
+		if tex is Control:
+			(tex as Control).custom_minimum_size = Vector2(_turn_cell, _turn_cell)
+
+
 func _view_card(v: Dictionary) -> Control:
 	var card: PanelContainer = PanelContainer.new()
-	card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	var name: String = str(v["view"])
+	card.name = "View_" + name
 	var box: VBoxContainer = VBoxContainer.new()
 	card.add_child(box)
 	var tex: TextureRect = TextureRect.new()
-	tex.custom_minimum_size = Vector2(160, 160)
+	tex.name = "Image"
+	tex.custom_minimum_size = Vector2(_turn_cell, _turn_cell)
+	tex.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	tex.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	box.add_child(tex)
+	var cap: Label = Label.new()
+	cap.text = str(v["caption"])
+	cap.clip_text = true
+	box.add_child(cap)
+	if bool(v["present"]):
+		tex.texture = _load_texture(str(v["path"]))
+		tex.mouse_filter = Control.MOUSE_FILTER_STOP
+		tex.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+		tex.gui_input.connect(func(ev: InputEvent) -> void:
+			if ev is InputEventMouseButton and (ev as InputEventMouseButton).pressed and (ev as InputEventMouseButton).button_index == MOUSE_BUTTON_LEFT:
+				show_view_overlay(name))
+		var btns: HBoxContainer = HBoxContainer.new()
+		box.add_child(btns)
+		_est_button(btns, "Regenerate", "view", func() -> void: _command(turnaround.regenerate_args(name, _picked(_turn_provider))))
+		var lin: Button = _button(btns, "Lineage", func() -> void: _show_view_lineage(name))
+		lin.name = "Lineage"
+	else:
+		_est_button(box, "Generate", "view", func() -> void: _command(turnaround.regenerate_args(name, _picked(_turn_provider))))
+	return card
+
+
+## Opens a view larger in a simple overlay.
+func show_view_overlay(name: String) -> void:
+	var v: Dictionary = turnaround.view(name)
+	if v.is_empty() or not bool(v["present"]):
+		return
+	for c: Node in _turn_overlay.get_children():
+		_turn_overlay.remove_child(c)
+		c.queue_free()
+	var box: VBoxContainer = VBoxContainer.new()
+	var tex: TextureRect = TextureRect.new()
+	var side: float = 512.0
+	tex.custom_minimum_size = Vector2(side, side)
 	tex.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	tex.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	tex.texture = _load_texture(str(v["path"]))
@@ -877,9 +953,22 @@ func _view_card(v: Dictionary) -> Control:
 	var cap: Label = Label.new()
 	cap.text = str(v["caption"])
 	box.add_child(cap)
-	var name: String = str(v["view"])
-	_est_button(box, "Regenerate", "view", func() -> void: _command(turnaround.regenerate_args(name, _picked(_turn_provider))))
-	return card
+	_turn_overlay.add_child(box)
+	if is_inside_tree() and not has_meta("fixture"):
+		_turn_overlay.popup_centered()
+
+
+func _show_view_lineage(name: String) -> void:
+	var v: Dictionary = turnaround.view(name)
+	_status.text = "%s: %s (parent %s)" % [name, v.get("id", ""), _lineage_parent(str(v.get("id", "")))]
+
+
+func _lineage_parent(id: String) -> String:
+	for e: Variant in _turn_asset.get("lineage", []):
+		var d: Dictionary = e
+		if str(d.get("id", "")) == id:
+			return str(d.get("parent", "-"))
+	return "-"
 
 
 func _on_brief_changed() -> void:

@@ -242,7 +242,7 @@ func _load_model() -> AssetModelModel:
 func test_turnaround_uses_latest_set_in_view_order() -> void:
 	var t: AssetTurnaroundModel = AssetTurnaroundModel.new()
 	t.load_asset(_model_asset(), _fixture("brief.md"))
-	expect_eq(t.views.size(), 4)
+	expect_eq(t.views.size(), 6)
 	expect_eq(t.views[0]["view"], "front")
 	expect_eq(t.views[3]["view"], "right")
 	expect_eq(t.view("front")["id"], "t2_front", "the newest set wins")
@@ -252,13 +252,53 @@ func test_turnaround_uses_latest_set_in_view_order() -> void:
 	expect_eq(t.present_count(), 3)
 
 
+func test_cross_layout_maps_views_to_cells() -> void:
+	var t: AssetTurnaroundModel = AssetTurnaroundModel.new()
+	t.load_asset(_model_asset(), "")
+	expect_eq(t.view("front")["cell"], Vector2i(1, 1), "front centre")
+	expect_eq(t.view("top")["cell"], Vector2i(1, 0), "top above")
+	expect_eq(t.view("left")["cell"], Vector2i(0, 1))
+	expect_eq(t.view("right")["cell"], Vector2i(2, 1))
+	expect_eq(t.view("back")["cell"], Vector2i(0, 2), "back bottom-left")
+	expect_eq(t.view("bottom")["cell"], Vector2i(1, 2), "bottom below front")
+	expect_eq(t.view_at(Vector2i(1, 1)), "front")
+	expect_eq(t.view_at(Vector2i(0, 0)), "", "corner has no view")
+	expect_eq(t.view_at(Vector2i(2, 2)), "")
+
+
+func test_missing_views_are_empty_slots() -> void:
+	var t: AssetTurnaroundModel = AssetTurnaroundModel.new()
+	t.load_asset(_model_asset(), "")
+	expect_eq(t.empty_views(), PackedStringArray(["right", "top", "bottom"]))
+	var asset: Dictionary = _model_asset().duplicate(true)
+	(asset["lineage"] as Array).append({"id": "t2_right", "kind": "turnaround", "path": "", "provider": "openai", "model": "gpt-image-1", "parent": "v1"})
+	t.load_asset(asset, "")
+	expect_eq(t.empty_views(), PackedStringArray(["top", "bottom"]), "a four-view asset has empty top and bottom")
+	expect(not t.view("top")["present"])
+	expect_eq(t.view("top")["caption"], "top · missing")
+	expect_eq(t.regenerate_args("top"), PackedStringArray(["turnaround", "angler2", "--view", "top"]), "the empty slot's Generate calls --view")
+
+
+func test_fit_cell_size_keeps_aspect_and_shrinks() -> void:
+	var big: float = AssetTurnaroundModel.fit_cell_size(Vector2(1200, 900))
+	var small: float = AssetTurnaroundModel.fit_cell_size(Vector2(600, 450))
+	expect(big > small and small > 0.0, "shrinks with the panel")
+	var wide: float = AssetTurnaroundModel.fit_cell_size(Vector2(3000, 600))
+	var narrow: float = AssetTurnaroundModel.fit_cell_size(Vector2(600, 600))
+	expect(wide > 0.0 and wide < 600.0, "height limits a wide panel")
+	expect_near(AssetTurnaroundModel.fit_cell_size(Vector2(3 * 200 + 8, 3 * (200 + AssetTurnaroundModel.CELL_CHROME) + 8)), 200.0, 0.001)
+	expect(narrow <= 600.0 / 3.0, "width limits a narrow panel")
+	expect_eq(AssetTurnaroundModel.fit_cell_size(Vector2(10, 10)), 0.0, "never negative")
+
+
 func test_turnaround_actions() -> void:
 	var t: AssetTurnaroundModel = AssetTurnaroundModel.new()
 	t.load_asset(_model_asset(), _fixture("brief.md"))
 	expect_eq(t.generate_args("fal"), PackedStringArray(["turnaround", "angler2", "--image-provider", "fal"]))
 	expect_eq(t.regenerate_args("back", "openai"), PackedStringArray(["turnaround", "angler2", "--view", "back", "--image-provider", "openai"]))
 	expect_eq(t.regenerate_args("left"), PackedStringArray(["turnaround", "angler2", "--view", "left"]))
-	expect(t.regenerate_args("top").is_empty(), "unknown view builds no command")
+	expect_eq(t.regenerate_args("top"), PackedStringArray(["turnaround", "angler2", "--view", "top"]))
+	expect(t.regenerate_args("up").is_empty(), "unknown view builds no command")
 	expect(t.draft_brief_args().is_empty(), "drafting needs all four views")
 	var bare: AssetTurnaroundModel = AssetTurnaroundModel.new()
 	bare.load_asset({"slug": "coral", "locked": null, "lineage": []})
@@ -419,6 +459,8 @@ func test_panel_shows_turnaround_and_model_tabs() -> void:
 	runner.add_child(panel)
 	panel.show_listing(_model_listing())
 	expect_eq(panel.turnaround.present_count(), 3)
+	expect_eq(panel._turn_views.get_child_count(), 9, "3x3 cross grid")
+	expect(panel._turn_views.find_child("View_top", true, false) != null)
 	expect_eq(panel.model.runs.size(), 3)
 	expect(panel._brief_edit.text.contains("size_m: 2.5"))
 	expect(panel._brief_save_btn.disabled)

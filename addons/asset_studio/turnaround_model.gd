@@ -3,7 +3,18 @@ extends RefCounted
 ## View model for the Turnaround and brief tab: the four orthographic views of the latest
 ## turnaround set, the editable brief.md, and the backend argument lists for each action.
 
-const VIEW_ORDER: PackedStringArray = ["front", "left", "back", "right"]
+## The four core views (all needed to draft a brief) then the optional top and bottom.
+const VIEW_ORDER: PackedStringArray = ["front", "left", "back", "right", "top", "bottom"]
+const CORE_VIEWS: int = 4
+## Cross layout as (column, row) in a 3x3 grid around the front view.
+const CROSS_CELLS: Dictionary = {
+	"top": Vector2i(1, 0),
+	"left": Vector2i(0, 1), "front": Vector2i(1, 1), "right": Vector2i(2, 1),
+	"back": Vector2i(0, 2), "bottom": Vector2i(1, 2),
+}
+const GRID_SIZE: Vector2i = Vector2i(3, 3)
+## Height of the caption and the button row under each cell's image, plus the card padding.
+const CELL_CHROME: float = 72.0
 
 var slug: String = ""
 var views: Array[Dictionary] = []
@@ -36,6 +47,7 @@ func load_asset(asset: Dictionary, brief_contents: String = "") -> void:
 			"model": str(d.get("model", "")),
 			"present": not d.is_empty(),
 			"caption": "%s · %s/%s" % [v, d.get("provider", "-"), d.get("model", "-")] if not d.is_empty() else "%s · missing" % v,
+			"cell": CROSS_CELLS[v],
 		})
 	var brief: Variant = asset.get("brief")
 	brief_path = str((brief as Dictionary).get("path", "")) if brief is Dictionary else ""
@@ -63,6 +75,31 @@ func view(name: String) -> Dictionary:
 		if v["view"] == name:
 			return v
 	return {}
+
+
+## Views with no image (top and bottom on a four-view asset): the empty slots.
+func empty_views() -> PackedStringArray:
+	var out: PackedStringArray = PackedStringArray()
+	for v: Dictionary in views:
+		if not v["present"]:
+			out.append(str(v["view"]))
+	return out
+
+
+## The view in a grid cell, or "" for a corner with no view.
+func view_at(cell: Vector2i) -> String:
+	for k: String in CROSS_CELLS:
+		if CROSS_CELLS[k] == cell:
+			return k
+	return ""
+
+
+## Largest square image size per cell such that the 3x3 cross (images plus each cell's
+## caption row, with `gap` between cells) fits `panel`. Square cells keep the aspect ratio.
+static func fit_cell_size(panel: Vector2, gap: float = 4.0) -> float:
+	var w: float = (panel.x - gap * (GRID_SIZE.x - 1)) / GRID_SIZE.x
+	var h: float = (panel.y - gap * (GRID_SIZE.y - 1)) / GRID_SIZE.y - CELL_CHROME
+	return maxf(0.0, minf(w, h))
 
 
 func present_count() -> int:
@@ -113,9 +150,12 @@ func regenerate_args(view_name: String, provider: String = "") -> PackedStringAr
 	return a
 
 
-## Redrafts brief.md from the locked concept and views. Needs all four views and no
+## Redrafts brief.md from the locked concept and views. Needs the four core views and no
 ## unsaved edits (the backend overwrites the file).
 func draft_brief_args() -> PackedStringArray:
-	if not has_locked_concept or present_count() < VIEW_ORDER.size() or dirty:
+	if not has_locked_concept or dirty:
 		return PackedStringArray()
+	for name: String in VIEW_ORDER.slice(0, CORE_VIEWS):
+		if not bool(view(name).get("present", false)):
+			return PackedStringArray()
 	return PackedStringArray(["brief", slug])
