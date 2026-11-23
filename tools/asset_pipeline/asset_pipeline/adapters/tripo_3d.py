@@ -42,7 +42,7 @@ class TripoThreeD(HostedThreeD):
             if not token:
                 raise ThreeDProviderError("tripo upload reply has no image_token")
             files.append({"type": v.suffix.lower().lstrip(".").replace("jpg", "jpeg"), "file_token": token})
-        payload = {"type": "multiview_to_model", "model_version": self.model, "files": files}
+        payload = {"type": "multiview_to_model", "model_version": self.model, "files": files, **self.options}
         reply = _net.post_json("tripo", f"{self.base_url}/task", self._auth(), payload, self.timeout)
         task = self._data(reply, "task").get("task_id")
         if not task:

@@ -39,7 +39,9 @@ class ThreeDProvider(ABC):
     model: str
     billing = "paid"  # "mock" and "subscription" are never priced from prices.yaml
     last_usage: dict[str, Any] | None = None  # usage of the latest call, as the provider reported it (cost.py)
-    views: tuple[str, ...] = ("front", "left", "back", "right")  # which turnaround views `to3d` sends, in order
+    views: tuple[str, ...] | None = None  # the provider entry's `views:`: the turnaround views `to3d` sends by default
+    max_views: int = 4  # how many views one job takes; a single-image provider has 1
+    options: dict[str, Any] = {}  # model options merged into the request body (entry `options:`, then `--option`)
 
     @abstractmethod
     def submit(self, views: list[Path]) -> str:
@@ -121,6 +123,7 @@ class MockImageProvider(ImageProvider):
 class MockThreeDProvider(ThreeDProvider):
     name = "mock"
     billing = "mock"
+    max_views = 8
 
     def __init__(self, model: str = "mock-3d-1") -> None:
         self.model = model
@@ -222,6 +225,14 @@ def build(kind: str, name: str, entry: Any) -> Any:
                 or any(v not in known for v in views)):
             raise ValueError(f"three_d provider {name!r}: views must be a non-empty list of distinct names from "
                              f"{', '.join(known)}")
+    max_views = opts.pop("max_views", None)
+    options = opts.pop("options", None)
+    if (max_views is not None or options is not None) and kind != "three_d":
+        raise ValueError(f"{kind} provider {name!r}: `max_views:` and `options:` apply to three_d providers only")
+    if max_views is not None and not (isinstance(max_views, int) and not isinstance(max_views, bool) and max_views >= 1):
+        raise ValueError(f"three_d provider {name!r}: max_views must be a positive integer")
+    if options is not None and not (isinstance(options, dict) and all(isinstance(k, str) for k in options)):
+        raise ValueError(f"three_d provider {name!r}: options must be a mapping of names to values")
     factory = REGISTRY[kind].get(adapter)
     if factory is None:
         raise ValueError(f"{kind} provider {name!r} has no adapter {adapter!r}")
@@ -229,4 +240,10 @@ def build(kind: str, name: str, entry: Any) -> Any:
     p.name = name
     if views is not None:
         p.views = tuple(views)
+    if max_views is not None:
+        p.max_views = max_views
+    if views is not None and len(views) > p.max_views:
+        raise ValueError(f"three_d provider {name!r}: views lists {len(views)} but it takes at most {p.max_views}")
+    if options is not None:
+        p.options = dict(options)
     return p

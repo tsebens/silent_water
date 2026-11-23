@@ -27,6 +27,7 @@ class FalTrellis(HostedThreeD):
         if input not in ("single", "multi"):
             raise ValueError(f"trellis: input must be 'single' or 'multi', not {input!r}")
         self.model, self.base_url, self.timeout, self.input = model, base_url.rstrip("/"), timeout, input
+        self.max_views = 1 if input == "single" else 8
 
     def _auth(self) -> dict[str, str]:
         return {"authorization": f"Key {self._key()}"}
@@ -52,6 +53,7 @@ class FalTrellis(HostedThreeD):
             payload: dict = {"image_url": _net.data_uri(views[0])}  # views arrive front, left, back, right
         else:
             payload = {"image_urls": [_net.data_uri(v) for v in views]}
+        payload = {**payload, **self.options}  # e.g. resolution, texture_size; multiimage_algo for the multi endpoint
         reply = _net.post_json("trellis", f"{self.base_url}/{self.model}", self._auth(), payload, self.timeout)
         rid = reply.get("request_id") if isinstance(reply, dict) else None
         if not rid:

@@ -102,7 +102,7 @@ def test_committed_providers_have_the_documented_views():
     assert providers.select("three_d", cfg, "trellis-multi").views == tuple(SIX)
     assert providers.select("three_d", cfg, "trellis").views == ("front",)
     for name in ("tripo", "meshy", "rodin", "mock"):
-        assert providers.select("three_d", cfg, name).views == tuple(FOUR)
+        assert providers.select("three_d", cfg, name).views is None  # default: the class's views, else the four
 
 
 def test_bad_views_are_rejected():

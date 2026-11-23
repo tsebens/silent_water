@@ -77,6 +77,23 @@ def compute(price: dict[str, Any] | None, units: dict[str, Any], reported_usd: f
     return None, "unknown", {}
 
 
+def apply_options(price: dict[str, Any] | None, options: dict[str, Any] | None) -> dict[str, Any] | None:
+    """Resolve a `by_option` price against the options actually sent. `by_option: <name>` with `usd: {value: price}`
+    becomes a flat `usd_per_generation` for that option value; an option not sent uses `option_default`; a value the table does not list leaves no flat price
+    (so the call is `unknown`, never priced at a guess)."""
+    if not price or "by_option" not in price:
+        return price
+    out = {k: v for k, v in price.items() if k not in ("by_option", "usd", "usd_per_generation", "option_default")}
+    name = str(price["by_option"])
+    table = price.get("usd") if isinstance(price.get("usd"), dict) else {}
+    value = (options or {}).get(name, price.get("option_default"))  # unsent: the endpoint's own default
+    hit = next((v for k, v in table.items() if str(k) == str(value)), None) if value is not None else None
+    if _num(hit):
+        out["usd_per_generation"] = hit
+        out["option"] = f"{name}={value}"
+    return out
+
+
 def entry_for(prov: Any, kind: str, prices: dict[str, Any], *, command: str, stage: str,
               lineage: str | None = None, error: str = "") -> CostEntry:
     """Build the ledger entry for one finished call from what `prov` recorded in `last_usage`."""
@@ -90,7 +107,8 @@ def entry_for(prov: Any, kind: str, prices: dict[str, Any], *, command: str, sta
     if billing == "subscription":
         return CostEntry(**base, usd=0.0, basis="subscription", units=usage,
                          api_equivalent_usd=round(float(api_eq), 6) if _num(api_eq) else None)
-    usd, basis, unit_price = compute(price_for(prices, kind, prov.name, prov.model), usage, reported)
+    usd, basis, unit_price = compute(apply_options(price_for(prices, kind, prov.name, prov.model), getattr(prov, "options", None)),
+                                 usage, reported)
     return CostEntry(**base, usd=usd, basis=basis, units=usage, unit_price=unit_price)
 
 
@@ -178,7 +196,7 @@ def unit_usd(prov: Any, kind: str, prices: dict[str, Any]) -> tuple[float | None
     billing = getattr(prov, "billing", "paid")
     if billing in ("mock", "subscription"):
         return 0.0, billing
-    price = price_for(prices, kind, prov.name, prov.model) or {}
+    price = apply_options(price_for(prices, kind, prov.name, prov.model), getattr(prov, "options", None)) or {}
     if _num(price.get("usd_per_image")) and kind == "image":
         return float(price["usd_per_image"]), "estimated"
     if _num(price.get("usd_per_generation")):

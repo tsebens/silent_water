@@ -74,3 +74,24 @@ def test_turnaround_views_are_validated(tmp_path):
     for bad in ([], "front", None, ["front", "up"], ["front", "front"], [3]):
         _set_views(root, bad)
         assert any("turnaround_views" in e for e in mod.validate()), bad
+
+
+def test_to3d_views_are_validated(tmp_path):
+    mod, root = load(tmp_path)
+    f = root / "classes.yaml"
+
+    def put(value):
+        data = yaml.safe_load(f.read_text())
+        data["classes"]["prop"]["to3d_views"] = value
+        f.write_text(yaml.safe_dump(data))
+
+    for ok in (["front"], ["left"], ["left", "front", "top"]):
+        put(ok)
+        assert mod.validate() == [], ok
+    for bad in ([], "left", None, ["front", "up"], ["front", "front"], [3]):
+        put(bad)
+        assert any("to3d_views" in e for e in mod.validate()), bad
+    data = yaml.safe_load(f.read_text())
+    data["classes"]["prop"].update(turnaround_views=["front", "left"], to3d_views=["top"])
+    f.write_text(yaml.safe_dump(data))
+    assert any("to3d_views" in e and "turnaround_views" in e for e in mod.validate())
