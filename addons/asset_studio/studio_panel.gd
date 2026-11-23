@@ -14,6 +14,7 @@ var concept: AssetConceptModel = AssetConceptModel.new()
 var turnaround: AssetTurnaroundModel = AssetTurnaroundModel.new()
 var model: AssetModelModel = AssetModelModel.new()
 var cost: AssetCostModel = AssetCostModel.new()
+var choice: AssetProviderChoice = AssetProviderChoice.new()
 ## Runs `--estimate` commands one at a time, apart from `runner` so it never blocks real work.
 var estimator: AssetBackendRunner
 
@@ -105,10 +106,14 @@ func _ready() -> void:
 	add_child(estimator)
 	estimator.finished.connect(_on_estimate_finished)
 	if Engine.is_editor_hint() and not has_meta("fixture"):
+		choice.load_saved()
 		refresh()
 
 
 func refresh() -> void:
+	if not has_meta("fixture"):
+		var env_path: String = ProjectSettings.globalize_path("res://tools/asset_pipeline/.env")
+		choice.keys_set = AssetProviderChoice.keys_from(FileAccess.get_file_as_string(env_path) if FileAccess.file_exists(env_path) else "")
 	runner.run(PackedStringArray(["list"]))
 
 
@@ -245,13 +250,13 @@ func _build() -> void:
 	lbl.text = "Image provider"
 	more.add_child(lbl)
 	_provider_pick = OptionButton.new()
-	_provider_pick.item_selected.connect(func(_i: int) -> void: request_estimates())
+	_provider_pick.item_selected.connect(func(_i: int) -> void: _remember("concept_image", _provider_pick))
 	more.add_child(_provider_pick)
 	var wl: Label = Label.new()
 	wl.text = "Prompt writer"
 	more.add_child(wl)
 	_writer_pick = OptionButton.new()
-	_writer_pick.item_selected.connect(func(_i: int) -> void: request_estimates())
+	_writer_pick.item_selected.connect(func(_i: int) -> void: _remember("concept_writer", _writer_pick))
 	more.add_child(_writer_pick)
 	_more_btn = _est_button(more, "Generate more", "more", _on_generate_more)
 	_more_hint = Label.new()
@@ -538,7 +543,7 @@ func _build_turnaround_tab() -> void:
 	lbl.text = "Image provider"
 	bar.add_child(lbl)
 	_turn_provider = OptionButton.new()
-	_turn_provider.item_selected.connect(func(_i: int) -> void: request_estimates())
+	_turn_provider.item_selected.connect(func(_i: int) -> void: _remember("turnaround_image", _turn_provider))
 	bar.add_child(_turn_provider)
 	_turn_all_btn = _est_button(bar, "Generate turnaround", "turnaround", func() -> void: _command(turnaround.generate_args(_picked(_turn_provider))))
 	var bl: Label = Label.new()
@@ -599,7 +604,7 @@ func _build_model_tab() -> void:
 	pl.text = "3D provider"
 	_model_actions.add_child(pl)
 	_model_provider = OptionButton.new()
-	_model_provider.item_selected.connect(func(_i: int) -> void: request_estimates())
+	_model_provider.item_selected.connect(func(_i: int) -> void: _remember("model_three_d", _model_provider))
 	_model_actions.add_child(_model_provider)
 	_est_button(_model_actions, "Send to provider", "send", func() -> void: _command(model.to3d_args(PackedStringArray([_picked(_model_provider)]) if _picked(_model_provider) != "" else PackedStringArray())))
 	_est_button(_model_actions, "Bake-off (all)", "bakeoff", func() -> void: _command(model.to3d_args(model.three_d_providers)))
@@ -683,14 +688,8 @@ func _show_asset(slug: String) -> void:
 	_update_description_controls()
 	var qrow: Dictionary = queue.find(slug)
 	_title.text = "Concept: %s (%s)  issue %s  cost %s" % [concept.slug, concept.asset_class, qrow.get("issue_text", "-"), qrow.get("cost_text", "-")]
-	for p: String in concept.image_providers:
-		_provider_pick.add_item(p)
-		if p == concept.default_provider:
-			_provider_pick.select(_provider_pick.item_count - 1)
-	for w: String in concept.prompt_writers:
-		_writer_pick.add_item(w)
-		if w == concept.default_writer:
-			_writer_pick.select(_writer_pick.item_count - 1)
+	_fill_pick(_provider_pick, "concept_image", concept.image_providers, concept.default_provider)
+	_fill_pick(_writer_pick, "concept_writer", concept.prompt_writers, concept.default_writer)
 	_fill_sections()
 	if not concept.variants.is_empty():
 		_show_lineage(str(concept.variants[-1]["id"]))
@@ -850,10 +849,7 @@ func _show_turnaround(asset: Dictionary) -> void:
 	var brief_rel: String = str((asset.get("brief", {}) as Dictionary).get("path", "")) if asset.get("brief") is Dictionary else ""
 	turnaround.load_asset(asset, _read_text(brief_rel))
 	_turn_title.text = "Turnaround: %s (%d of 4 views)" % [turnaround.slug, turnaround.present_count()]
-	for p: String in concept_image_providers():
-		_turn_provider.add_item(p)
-		if p == _selected.get("image", ""):
-			_turn_provider.select(_turn_provider.item_count - 1)
+	_fill_pick(_turn_provider, "turnaround_image", concept_image_providers(), str(_selected.get("image", "")))
 	for v: Dictionary in turnaround.views:
 		_turn_views.add_child(_view_card(v))
 	_brief_edit.text = turnaround.brief_text
@@ -943,10 +939,7 @@ func _show_model(asset: Dictionary) -> void:
 			reports[rel] = _read_json(rel)
 	model.load_asset(asset, _providers, _selected, reports)
 	_model_title.text = "Model: %s (%d runs)" % [model.slug, model.runs.size()]
-	for p: String in model.three_d_providers:
-		_model_provider.add_item(p)
-		if p == model.default_provider:
-			_model_provider.select(_model_provider.item_count - 1)
+	_fill_pick(_model_provider, "model_three_d", model.three_d_providers, model.default_provider)
 	for r: Dictionary in model.runs:
 		var cb: CheckBox = CheckBox.new()
 		cb.text = "%s  [%s]  %s  %s" % [r["caption"], model.gate_summary(str(r["id"])), model.triangle_text(str(r["id"])), "(exported)" if r["exported"] else ""]
@@ -1017,14 +1010,28 @@ func _load_texture(rel: String) -> Texture2D:
 	return textures.get_texture(_abs_image_path(rel)) if rel != "" else null
 
 
+## The provider name selected in a dropdown (item metadata: the text may carry a label).
 func _picked(opt: OptionButton) -> String:
-	return opt.get_item_text(opt.selected) if opt.item_count > 0 and opt.selected >= 0 else ""
+	return str(opt.get_item_metadata(opt.selected)) if opt.item_count > 0 and opt.selected >= 0 else ""
 
 
 func _picked_provider() -> String:
-	if _provider_pick.item_count == 0:
-		return ""
-	return _provider_pick.get_item_text(_provider_pick.selected)
+	return _picked(_provider_pick)
+
+
+## Fills a provider dropdown: remembered choice, else the effective selection, with the mock label.
+func _fill_pick(opt: OptionButton, id: String, options: PackedStringArray, effective: String) -> void:
+	var want: String = choice.resolve(id, options, effective)
+	for p: String in options:
+		opt.add_item(choice.label(p, options, effective))
+		opt.set_item_metadata(opt.item_count - 1, p)
+		if p == want:
+			opt.select(opt.item_count - 1)
+
+
+func _remember(id: String, opt: OptionButton) -> void:
+	choice.remember(id, _picked(opt))
+	request_estimates()
 
 
 func _on_generate_more() -> void:
