@@ -53,6 +53,21 @@ The sub is a different object from the stations. Per M7 it's a **modern, utilita
 - holographic map displays
 - a glass dome over the pilot
 
+**Modern, not antiquated.** The sub is reliable because it is overbuilt and well kept, not because it is old. Its
+look is today's heavy equipment and workboats: an excavator cab, a crane pendant, a research submersible, a modern
+wheelhouse. Concept art and models should avoid the WW2 submarine look that the genre drifts toward.
+
+| Use | Avoid |
+| --- | --- |
+| Welded and bolted steel and aluminium, powder-coated matte grey with safety-orange accents | Riveted plates, brass, bare rust |
+| Guarded toggles, rocker switches and rotary selectors in clean modern panel layouts, LED indicator lamps | Rows of antique dials in brass bezels, valve hand-wheels as decoration |
+| Engraved label plates (shapes only, no legible text) | Stencilled lettering |
+| Braided cable looms, modern connectors, hex bolts | Cloth-wrapped wiring, exposed bare pipework as the main texture |
+| Cove lighting, backlit modern gauge faces, LED work lights | Caged incandescent bulkhead lamps everywhere |
+
+Structure can still show (frames, ribs, conduit), but it is machined and welded, not riveted. Wear is scuffs, worn
+paint on edges and walkways, and scratched plastic, never corrosion.
+
 Its hull is built in Onshape (`assets/media/sub/`) and converted with `tools/convert_sub.py`, so the hull shape is set there, not here.
 
 The sub and the stations still share one feel: industrial, utilitarian, competent. The sub is the crew's well-kept working tool; the stations are the massive, aging network it serves. Brutalist massing belongs to the stations, not the sub.
