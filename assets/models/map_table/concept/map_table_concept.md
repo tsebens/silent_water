@@ -47,8 +47,9 @@ crew's planning view.
   rotation hand-wheel under the other, a short row of guarded toggles with LED lamps. The locked
   shot inherited round 4's composition and seats them at the aft end of the D; **build it at the
   middle**, as round 5's variant 15 shows.
-- **Observers stand** along the front edge either side of the operator, leaning in. Moulded
-  holders of small physical **marker pucks** are clipped to the front edge at their positions.
+- **Observers stand** along the front edge either side of the operator, leaning in. They place
+  markers by **clicking on the terrain**; the moulded **puck holders** on the front edge in the
+  art are set dressing that reads as "markers live here", not an interaction.
 - Above the table, wrapping round the bay like the inside of an excavator cab, is **one
   continuous curved instrument cowl** in powder-coated grey with an orange structural frame:
   flush screens in heavy bezels, rocker and toggle clusters, LED indicator rows, backlit modern
@@ -161,9 +162,7 @@ Links: [var13 context](https://github.com/tsebens/silent_water/blob/bc404ae23b9c
 
 ## Open questions
 
-- **Marker pucks.** The pucks are small physical tokens in holders on the table's front edge; an
-  observer sets one on the hologram to drop a pin. Whether they are real objects the player picks
-  up, or only the visual for a click, is a gameplay call.
+None at present.
 
 ## Decisions recorded on #329
 
@@ -171,3 +170,5 @@ Links: [var13 context](https://github.com/tsebens/silent_water/blob/bc404ae23b9c
 - The slab is **filled** with terrain to its faces; no isolated plug.
 - **Countermeasures** goes against the starboard wall immediately aft of the sonar station,
   across the aisle from the table.
+- **Markers are placed by clicking**, not by handling physical pucks. The puck holders in the art
+  stay as dressing only.
