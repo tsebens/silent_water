@@ -333,3 +333,36 @@ def test_doctor_command_prints_json_and_exits_nonzero_on_failure(root, clean_env
     assert cli.main(["doctor"]) == 1
     out = json.loads(capsys.readouterr().out)
     assert out["ok"] is False and out["checks"]
+
+
+# ---- concept --reference reaches each adapter's request ---------------------
+
+@pytest.mark.parametrize("make,fixture,key,env", [
+    (lambda url: OpenAIImage(base_url=url), "openai_images_response.json", "OPENAI_API_KEY", "/v1/images/edits"),
+    (lambda url: GoogleImage(base_url=url), "google_generate_response.json", "GEMINI_API_KEY", ":generateContent"),
+    (lambda url: FalImage(model="m/gen", edit_model="m/edit", base_url=url), "fal_response.json", "FAL_KEY", "/m/edit"),
+])
+def test_concept_paint_over_reference_reaches_the_request(server, tmp_path, monkeypatch, capsys, make, fixture, key, env):
+    import base64
+
+    from PIL import Image
+    root = tmp_path / "repo"
+    root.mkdir()
+    (root / "project.godot").write_text("")
+    monkeypatch.setenv("ASSET_PIPELINE_ROOT", str(root))
+    monkeypatch.setenv(key, "k")
+    Stub.fixture = fixture
+    ref = tmp_path / "blockout.jpg"
+    Image.new("RGB", (16, 16), (10, 200, 10)).save(ref, format="JPEG")
+    prov = make(server)
+    prov.name = "real"
+    real_select = providers.select
+    monkeypatch.setattr(providers, "select", lambda kind, cfg, override=None:
+                        prov if kind == "image" else real_select(kind, cfg, override))
+    assert cli.main(["new", "cabin", "--class", "prop"]) == 0
+    capsys.readouterr()
+    assert cli.main(["concept", "cabin", "--brief", "a cabin", "--n", "1", "--reference", str(ref)]) == 0
+    stored = next((root / ".asset_work" / "cabin" / "references").iterdir()).read_bytes()
+    r = Stub.seen[0]
+    assert env in r["path"]
+    assert stored in r["body"] or base64.b64encode(stored) in r["body"]  # the reference itself is in the request

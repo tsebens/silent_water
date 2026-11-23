@@ -46,6 +46,8 @@ class LineageEntry:
     created: str = field(default_factory=now)
     writer: str = ""  # PromptWriter that composed the prompt, as name:model
     references: list[str] = field(default_factory=list)  # images passed to the provider
+    reference: dict[str, str] = field(default_factory=dict)  # concept variants made from a reference: {name, sha256}
+    mode: str = ""  # with a reference: paint-over or inspire
     task_id: str = ""  # provider job id for a mesh run (image-to-3D)
     views: list[str] = field(default_factory=list)  # mesh runs: lineage ids of the turnaround views sent, in order
     options: dict[str, Any] = field(default_factory=dict)  # mesh runs: the model options sent in the request body

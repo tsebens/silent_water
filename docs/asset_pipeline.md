@@ -35,6 +35,8 @@ Rename and delete are refused while another backend command is running on the as
 
 ## CLI progress
 
+**Reference images.** `asset concept <slug> --reference <image> [--reference …] [--mode paint-over|inspire]` hands your own images (a blockout render, a sketch; PNG, JPEG or WebP) to the image model with the style anchors. Paint-over (the default) keeps the reference's composition, camera, proportions and major shapes and restyles it, using the provider's edit path; inspire treats it as a loose starting point. References are copied, converted to PNG and scaled to the provider's input limit under `.asset_work/<slug>/references/`. With several references, `--n` variants are made per reference. Each variant's lineage records `reference: {name, sha256}` (original file name and content hash, never a path) and `mode`; `refine` of a paint-over variant re-passes the same reference. `--estimate` and the cost ledger count one generation per variant.
+
 `concept`, `turnaround`, `brief`, `to3d`, `cleanup` and `godot-check` print short progress lines to **stderr** (`writing prompts (claude-cli)…`, `image 2/3 (google)…`). stdout stays one JSON object, so the plugin can parse it and show the latest stderr line in its status bar.
 
 ## Cost ledger

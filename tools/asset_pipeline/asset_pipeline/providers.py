@@ -24,6 +24,7 @@ class ImageProvider(ABC):
     model: str
     billing = "paid"  # "mock" and "subscription" are never priced from prices.yaml
     last_usage: dict[str, Any] | None = None  # usage of the latest call, as the provider reported it (cost.py)
+    max_input_px = 2048  # longest side of an input image; larger references are scaled down to this
 
     @abstractmethod
     def generate(self, prompt: str, references: list[Path], out: Path) -> Path:
@@ -67,8 +68,9 @@ class PromptWriter(ABC):
     last_usage: dict[str, Any] | None = None  # usage of the latest call, as the provider reported it (cost.py)
 
     @abstractmethod
-    def write_prompts(self, brief: str, style: str, notes: str, images: list[Path], n: int) -> list[str]:
-        """Compose `n` image prompts."""
+    def write_prompts(self, brief: str, style: str, notes: str, images: list[Path], n: int,
+                      mode: str | None = None) -> list[str]:
+        """Compose `n` image prompts. `mode` is set when `images[0]` is a reference: paint-over or inspire."""
 
     @abstractmethod
     def write_brief(self, context: str, images: list[Path]) -> str:
@@ -147,9 +149,11 @@ class MockPromptWriter(PromptWriter):
     def __init__(self, model: str = "mock-writer-1") -> None:
         self.model = model
 
-    def write_prompts(self, brief: str, style: str, notes: str, images: list[Path], n: int) -> list[str]:
-        tag = _digest(brief, style, notes).hex()[:8]
-        return [f"[mock {tag}] variant {i + 1}/{n}: {brief}" + (f" | refine: {notes}" if notes else "") for i in range(n)]
+    def write_prompts(self, brief: str, style: str, notes: str, images: list[Path], n: int,
+                      mode: str | None = None) -> list[str]:
+        tag = _digest(brief, style, notes, mode, images[0].name if mode and images else "").hex()[:8]
+        return [f"[mock {tag}] variant {i + 1}/{n}: {brief}" + (f" | refine: {notes}" if notes else "")
+                + (f" | {mode}" if mode else "") for i in range(n)]
 
     def write_brief(self, context: str, images: list[Path]) -> str:
         return f"# Brief (mock)\n\n{context}\n"
