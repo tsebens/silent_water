@@ -12,7 +12,8 @@ func _ready() -> void:
 	win.size = Vector2i(1500, 780)
 	var args: PackedStringArray = OS.get_cmdline_user_args()
 	var multi: bool = args.size() >= 3
-	var fixture: String = "list_model.json" if multi else "list.json"
+	var tree_shot: bool = args.size() == 1 and args[0].contains("tree")
+	var fixture: String = "list_model.json" if multi else ("list_tree.json" if tree_shot else "list.json")
 	if multi:
 		_make_views()
 	var panel: AssetStudioPanel = AssetStudioPanel.new()
@@ -20,7 +21,7 @@ func _ready() -> void:
 	panel.set_anchors_preset(Control.PRESET_FULL_RECT)
 	add_child(panel)
 	panel.show_listing(JSON.parse_string(FileAccess.get_file_as_string("res://tests/fixtures/asset_studio/" + fixture)) as Dictionary)
-	if not multi:
+	if not multi and not tree_shot:
 		panel.show_error("OPENAI_API_KEY is not set (put it in tools/asset_pipeline/.env)")
 	# Stubbed `--estimate` results, so the action buttons show their estimates.
 	panel.cost.set_estimate("more", {"estimate": {"usd": 0.36, "calls": [{"basis": "estimated"}], "unknown": []}})

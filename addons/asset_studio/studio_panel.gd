@@ -5,6 +5,7 @@ extends VBoxContainer
 ## the right. Thin UI over AssetQueueModel, AssetConceptModel and AssetBackendRunner; every
 ## action is a backend command, so this never talks to a service.
 
+const SETTINGS_PATH: String = "user://asset_studio.cfg"
 const THUMB: Vector2 = Vector2(220, 220)
 
 var runner: AssetBackendRunner
@@ -21,6 +22,15 @@ var _providers: Dictionary = {}
 var _selected: Dictionary = {}
 var _selected_slug: String = ""
 var _tree: Tree
+var _split: HSplitContainer
+var _folder_menu: PopupMenu
+var _folder_input: ConfirmationDialog
+var _folder_input_edit: LineEdit
+## What the folder-name dialog does on OK: "create" under, or "rename" of, `_menu_folder`.
+var _folder_input_mode: String = ""
+var _menu_folder: String = ""
+## Folder paths the user collapsed; kept across refreshes.
+var _collapsed: Dictionary = {}
 var _grid: GridContainer
 var _title: Label
 var _status: Label
@@ -84,6 +94,7 @@ func _ready() -> void:
 	add_child(runner)
 	runner.started.connect(_on_started)
 	runner.finished.connect(_on_finished)
+	runner.progress.connect(_on_progress)
 	estimator = AssetBackendRunner.new()
 	add_child(estimator)
 	estimator.finished.connect(_on_estimate_finished)
@@ -100,7 +111,7 @@ func show_listing(listing: Dictionary) -> void:
 	_assets = listing.get("assets", [])
 	_providers = listing.get("providers", {})
 	_selected = listing.get("selected", {})
-	queue.load_assets(_assets)
+	queue.load_assets(_assets, listing.get("folders", []))
 	_fill_queue()
 	if _selected_slug == "" and not queue.rows.is_empty():
 		_selected_slug = str(queue.rows[0]["slug"])
@@ -132,23 +143,29 @@ func _build() -> void:
 	bar.add_child(_progress)
 
 	var split: HSplitContainer = HSplitContainer.new()
+	_split = split
 	split.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	split.split_offset = _saved_split_offset()
+	split.dragged.connect(_on_split_dragged)
 	add_child(split)
 
 	_tree = Tree.new()
-	_tree.columns = 6
+	_tree.columns = 2
 	_tree.column_titles_visible = true
-	for i: int in 6:
-		_tree.set_column_title(i, ["Asset", "Class", "Stage", "Issue", "Cost", "Last result"][i])
-	_tree.set_column_expand(0, false)
-	_tree.set_column_custom_minimum_width(0, 120)
-	_tree.set_column_expand(4, false)
-	_tree.set_column_custom_minimum_width(4, 70)
-	_tree.set_column_expand(5, true)
-	_tree.custom_minimum_size = Vector2(440, 0)
+	_tree.set_column_title(0, "Asset")
+	_tree.set_column_title(1, "Stage")
+	_tree.set_column_expand(0, true)
+	_tree.set_column_expand(1, false)
+	_tree.set_column_custom_minimum_width(1, 80)
+	_tree.custom_minimum_size = Vector2(240, 0)
 	_tree.hide_root = true
+	_tree.select_mode = Tree.SELECT_SINGLE
 	_tree.item_selected.connect(_on_row_selected)
+	_tree.item_collapsed.connect(_on_item_collapsed)
+	_tree.item_mouse_selected.connect(_on_item_mouse_selected)
+	_tree.set_drag_forwarding(_drag_data, _can_drop, _drop)
 	split.add_child(_tree)
+	_build_folder_menu()
 
 	_tabs = TabContainer.new()
 	_tabs.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -251,7 +268,126 @@ func _build_new_dialog() -> void:
 	add_child(_new_dialog)
 
 
-func open_new_asset() -> void:
+func _build_folder_menu() -> void:
+	_folder_menu = PopupMenu.new()
+	_folder_menu.add_item("New asset here", 0)
+	_folder_menu.add_item("New folder", 1)
+	_folder_menu.add_item("Rename", 2)
+	_folder_menu.id_pressed.connect(_on_folder_menu)
+	add_child(_folder_menu)
+	_folder_input = ConfirmationDialog.new()
+	_folder_input_edit = LineEdit.new()
+	_folder_input.add_child(_folder_input_edit)
+	_folder_input.confirmed.connect(_on_folder_input_confirmed)
+	add_child(_folder_input)
+
+
+func _on_item_mouse_selected(_pos: Vector2, mouse_button: int) -> void:
+	if mouse_button != MOUSE_BUTTON_RIGHT:
+		return
+	var item: TreeItem = _tree.get_selected()
+	if item == null or not (item.get_metadata(0) is Dictionary):
+		return
+	var meta: Dictionary = item.get_metadata(0)
+	if meta["kind"] != "folder":
+		return
+	_menu_folder = str(meta["path"])
+	_folder_menu.set_item_disabled(2, _menu_folder == "")
+	_folder_menu.position = Vector2i(DisplayServer.mouse_get_position())
+	_folder_menu.popup()
+
+
+func _on_folder_menu(id: int) -> void:
+	match id:
+		0:
+			open_new_asset(_menu_folder)
+		1:
+			_folder_input_mode = "create"
+			_folder_input.title = "New folder"
+			_folder_input_edit.text = ""
+			_folder_input_edit.placeholder_text = "folder name"
+			_folder_input.popup_centered(Vector2i(320, 100))
+		2:
+			_folder_input_mode = "rename"
+			_folder_input.title = "Rename folder"
+			_folder_input_edit.text = _menu_folder.get_file()
+			_folder_input.popup_centered(Vector2i(320, 100))
+
+
+func _on_folder_input_confirmed() -> void:
+	var args: PackedStringArray
+	if _folder_input_mode == "create":
+		args = AssetQueueModel.create_folder_args(_menu_folder, _folder_input_edit.text)
+	else:
+		args = AssetQueueModel.rename_args(_menu_folder, _folder_input_edit.text)
+	if not args.is_empty():
+		_command(args)
+
+
+# --- drag and drop: every move is a backend command; the plugin never touches files --------
+
+func _drag_data(at: Vector2) -> Variant:
+	var item: TreeItem = _tree.get_item_at_position(at)
+	if item == null or not (item.get_metadata(0) is Dictionary):
+		return null
+	var meta: Dictionary = item.get_metadata(0)
+	if meta["kind"] == "folder" and meta["path"] == "":
+		return null
+	var preview: Label = Label.new()
+	preview.text = item.get_text(0)
+	_tree.set_drag_preview(preview)
+	return meta
+
+
+func _drop_target(at: Vector2) -> Dictionary:
+	var item: TreeItem = _tree.get_item_at_position(at)
+	if item == null:
+		# Empty space below the rows is the root folder.
+		return {"kind": "folder", "path": ""}
+	return item.get_metadata(0) as Dictionary
+
+
+func _can_drop(at: Vector2, data: Variant) -> bool:
+	_tree.drop_mode_flags = Tree.DROP_MODE_DISABLED
+	return data is Dictionary and queue.can_drop(data as Dictionary, _drop_target(at))
+
+
+func _drop(at: Vector2, data: Variant) -> void:
+	if data is Dictionary:
+		_command(queue.drop_args(data as Dictionary, _drop_target(at)))
+
+
+func _selection() -> Dictionary:
+	var item: TreeItem = _tree.get_selected() if _tree != null else null
+	if item != null and item.get_metadata(0) is Dictionary:
+		return item.get_metadata(0)
+	return {}
+
+
+func _saved_split_offset() -> int:
+	var cfg: ConfigFile = ConfigFile.new()
+	if not has_meta("fixture") and cfg.load(SETTINGS_PATH) == OK:
+		return int(cfg.get_value("queue", "split_offset", 0))
+	return 0
+
+
+func _on_split_dragged(offset: int) -> void:
+	var cfg: ConfigFile = ConfigFile.new()
+	cfg.load(SETTINGS_PATH)
+	cfg.set_value("queue", "split_offset", offset)
+	cfg.save(SETTINGS_PATH)
+
+
+func _on_item_collapsed(item: TreeItem) -> void:
+	var meta: Variant = item.get_metadata(0)
+	if meta is Dictionary and meta["kind"] == "folder":
+		if item.collapsed:
+			_collapsed[meta["path"]] = true
+		else:
+			_collapsed.erase(meta["path"])
+
+
+func open_new_asset(folder: Variant = null) -> void:
 	_new_slug.text = ""
 	_new_issue.text = ""
 	_new_desc.text = ""
@@ -260,6 +396,7 @@ func open_new_asset() -> void:
 	for r: Dictionary in queue.rows:
 		slugs.append(str(r["slug"]))
 	new_asset.load_existing(slugs)
+	new_asset.folder = queue.new_asset_folder(_selection()) if folder == null else str(folder)
 	_sync_new_dialog()
 	_new_dialog.popup_centered()
 
@@ -384,28 +521,43 @@ func _process(delta: float) -> void:
 
 func _fill_queue() -> void:
 	_tree.clear()
-	var root: TreeItem = _tree.create_item()
-	for r: Dictionary in queue.rows:
-		var item: TreeItem = _tree.create_item(root)
+	var top: TreeItem = _tree.create_item()
+	var root_item: TreeItem = _tree.create_item(top)
+	root_item.set_text(0, "assets/models")
+	root_item.set_metadata(0, {"kind": "folder", "path": ""})
+	_fill_folder(root_item, queue.root)
+	root_item.collapsed = false
+
+
+func _fill_folder(parent: TreeItem, node: Dictionary) -> void:
+	for f: Dictionary in node["folders"]:
+		var fi: TreeItem = _tree.create_item(parent)
+		fi.set_text(0, str(f["name"]))
+		fi.set_metadata(0, {"kind": "folder", "path": str(f["path"])})
+		fi.set_tooltip_text(0, str(f["path"]))
+		_fill_folder(fi, f)
+		fi.collapsed = _collapsed.has(f["path"])
+	for r: Dictionary in node["assets"]:
+		var item: TreeItem = _tree.create_item(parent)
 		item.set_text(0, str(r["slug"]))
-		item.set_text(1, str(r["class"]))
-		item.set_text(2, str(r["stage"]))
-		item.set_text(3, str(r["issue_text"]))
-		item.set_text(4, str(r["cost_text"]))
+		item.set_text(1, str(r["stage"]))
+		item.set_tooltip_text(0, AssetQueueModel.tooltip(r))
+		item.set_tooltip_text(1, AssetQueueModel.tooltip(r))
+		item.set_metadata(0, {"kind": "asset", "slug": str(r["slug"])})
 		if bool(r["over_budget"]):
-			item.set_custom_color(4, Color(1.0, 0.42, 0.42))
-			item.set_tooltip_text(4, "Over its soft budget")
-		item.set_text(5, str(r["last_result"]))
-		item.set_metadata(0, str(r["slug"]))
+			item.set_custom_color(0, Color(1.0, 0.42, 0.42))
 		if str(r["slug"]) == _selected_slug:
 			item.select(0)
 
 
 func _on_row_selected() -> void:
 	var item: TreeItem = _tree.get_selected()
-	if item == null:
+	if item == null or not (item.get_metadata(0) is Dictionary):
 		return
-	_selected_slug = str(item.get_metadata(0))
+	var meta: Dictionary = item.get_metadata(0)
+	if meta["kind"] != "asset":
+		return
+	_selected_slug = str(meta["slug"])
 	_show_asset(_selected_slug)
 
 
@@ -436,7 +588,8 @@ func _show_asset(slug: String) -> void:
 	concept.load_asset(asset, _providers, _selected)
 	_desc_edit.text = concept.description
 	_update_description_controls()
-	_title.text = "Concept: %s (%s)" % [concept.slug, concept.asset_class]
+	var qrow: Dictionary = queue.find(slug)
+	_title.text = "Concept: %s (%s)  issue %s  cost %s" % [concept.slug, concept.asset_class, qrow.get("issue_text", "-"), qrow.get("cost_text", "-")]
 	for p: String in concept.image_providers:
 		_provider_pick.add_item(p)
 		if p == concept.default_provider:
@@ -790,6 +943,11 @@ func _command(args: PackedStringArray) -> void:
 		return
 	if not runner.run(args):
 		show_error("A backend command is already running.")
+
+
+## The latest stderr line of the running command replaces the status text.
+func _on_progress(line: String) -> void:
+	_status.text = line
 
 
 func _on_started(args: PackedStringArray) -> void:

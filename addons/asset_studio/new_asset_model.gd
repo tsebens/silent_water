@@ -10,6 +10,8 @@ var slug: String = ""
 var asset_class: String = "creature"
 var issue_text: String = ""
 var description: String = ""
+## Folder under assets/models/ ("" for the root); set from the queue selection.
+var folder: String = ""
 var existing_slugs: PackedStringArray = PackedStringArray()
 
 
@@ -62,6 +64,8 @@ func new_args() -> PackedStringArray:
 	var t: String = issue_text.strip_edges().trim_prefix("#")
 	if t != "":
 		a.append_array(PackedStringArray(["--issue", str(t.to_int())]))
+	if folder != "":
+		a.append_array(PackedStringArray(["--folder", folder]))
 	a.append_array(PackedStringArray(["--description", description.strip_edges()]))
 	return a
 

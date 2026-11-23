@@ -1,0 +1,11 @@
+{
+  "providers": {},
+  "selected": {},
+  "folders": ["organic/flora", "props/empty_shelf"],
+  "assets": [
+    {"slug": "angler", "class": "creature", "stage": "locked", "issue": 12, "folder": "organic/fauna/apex", "costs": [{"stage": "concept", "provider": "openai", "usd": 0.12, "basis": "reported"}]},
+    {"slug": "eel", "class": "creature", "stage": "concept", "issue": null, "folder": "organic/fauna"},
+    {"slug": "bulkhead", "class": "architecture", "stage": "model", "issue": 7, "folder": "props"},
+    {"slug": "coral", "class": "terrain", "stage": "new", "issue": null}
+  ]
+}
