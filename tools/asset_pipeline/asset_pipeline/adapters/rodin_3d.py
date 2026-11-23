@@ -19,6 +19,7 @@ class RodinThreeD(HostedThreeD):
                  timeout: int = 300) -> None:
         super().__init__()
         self.model, self.base_url, self.timeout = model, base_url.rstrip("/"), timeout  # model is the tier
+        self.max_views = 5
 
     def _auth(self) -> dict[str, str]:
         return {"authorization": f"Bearer {self._key()}"}
@@ -33,6 +34,7 @@ class RodinThreeD(HostedThreeD):
     def submit(self, views: list[Path]) -> str:
         self._check_views(views)
         fields = {"tier": self.model, "geometry_file_format": "glb", "material": "PBR", "condition_mode": "concat"}
+        fields |= {k: (str(v).lower() if isinstance(v, bool) else str(v)) for k, v in self.options.items()}
         reply = _net.post_multipart("rodin", f"{self.base_url}/rodin", self._auth(), fields,
                                     [("images", v) for v in views], self.timeout)
         if not isinstance(reply, dict) or reply.get("error"):

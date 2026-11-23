@@ -4,6 +4,8 @@
 #   credits_per_generation (used with usd_per_credit when a response reports no credits),
 #   usd_per_image, usd_per_generation, usd_per_credit,
 #   usd_per_mtok_input, usd_per_mtok_output, usd_per_mtok_total (USD per million tokens).
+# A rate may instead be priced by an option value: `by_option: <name>` plus `usd: {<value>: <usd per generation>}` (and `option_default:` for an option not sent);
+# the ledger and --estimate use the option actually sent, and an unlisted value is `unknown`.
 # A model with no entry here is recorded as `unknown` (null usd), never as zero.
 # PLACEHOLDER VALUES: the figures below were not confirmed against the providers' pricing pages.
 # `checked: unverified` marks that; set it to the date you checked the source when you correct a price.
@@ -71,9 +73,12 @@ three_d:
       checked: unverified
   trellis:
     fal-ai/trellis-2:
-      usd_per_generation: 0.25
+      # Priced by the `resolution` option actually sent: $0.25 at 512, $0.30 at 1024, $0.35 at 1536.
+      by_option: resolution
+      option_default: 1024  # the endpoint's own default when no resolution is sent
+      usd: {512: 0.25, 1024: 0.30, 1536: 0.35}
       source: https://fal.ai/models/fal-ai/trellis-2
-      checked: unverified
+      checked: 2026-11-23
   trellis-multi:
     fal-ai/trellis/multi:
       # The model page says "$0.02 per unit" (unit undefined); fal-ai/trellis (same model, one image)

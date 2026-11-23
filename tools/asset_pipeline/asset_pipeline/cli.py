@@ -303,6 +303,49 @@ def _wait_for(prov: Any, job: str, interval: float, timeout: float) -> None:
         time.sleep(interval)
 
 
+def class_to3d_views(root: Path, asset_class: str) -> list[str] | None:
+    """The class's `to3d_views` in classes.yaml: which turnaround views `to3d` sends by default. None when unset."""
+    cf = style_dir(root) / "classes.yaml"
+    prof = ((yaml.safe_load(cf.read_text()) or {}).get("classes", {}).get(asset_class) or {}) if cf.is_file() else {}
+    want = prof.get("to3d_views")
+    if want is None:
+        return None
+    if (not isinstance(want, list) or not want or len(set(want)) != len(want)
+            or any(v not in ALL_VIEWS for v in want)):
+        raise ValueError(f"classes.yaml: {asset_class} to3d_views must be a non-empty list of distinct names from "
+                         f"{', '.join(ALL_VIEWS)}")
+    return list(want)
+
+
+def parse_options(pairs: list[str] | None) -> dict[str, Any]:
+    """`--option key=value` pairs; a value is read as YAML, so 1024 is a number and true a boolean."""
+    out: dict[str, Any] = {}
+    for pair in pairs or []:
+        key, sep, raw = pair.partition("=")
+        if not sep or not key.strip():
+            raise ValueError(f"--option expects key=value, got {pair!r}")
+        out[key.strip()] = yaml.safe_load(raw) if raw.strip() else ""
+    return out
+
+
+def resolve_views(prov: Any, flag: list[str] | None, class_views: list[str] | None, available: list[str]) -> list[str]:
+    """The turnaround views to send to `prov`, in order. `--views` wins and is exact: a view the asset lacks, or more
+    views than the provider takes, is an error. Otherwise the provider entry's `views:`, then the class's
+    `to3d_views`, then front, left, back, right; each truncated to the provider's `max_views`, skipping views the
+    asset does not have."""
+    limit = prov.max_views
+    if flag:
+        if len(flag) > limit:
+            raise ValueError(f"{prov.name} takes at most {limit} view{'s' if limit != 1 else ''} "
+                             f"({'a single-image provider' if limit == 1 else 'its limit'}), got {len(flag)}: {', '.join(flag)}")
+        missing = [v for v in flag if v not in available]
+        if missing:
+            raise ValueError(f"the turnaround has no {', '.join(missing)} view")
+        return list(flag)
+    chosen = list(prov.views) if prov.views else class_views or list(VIEWS)
+    return [v for v in chosen if v in available][:limit]
+
+
 def cmd_to3d(args: argparse.Namespace, root: Path) -> dict[str, Any]:
     """Send the latest turnaround to each named 3D provider (several is the bake-off) and record each run.
     A provider that fails is reported under `errors` and does not stop the others."""
@@ -312,10 +355,22 @@ def cmd_to3d(args: argparse.Namespace, root: Path) -> dict[str, Any]:
     by_view = {e.id[len(tid):]: e for e in m.lineage if e.kind == "turnaround" and e.id.startswith(tid)}
     if not by_view:
         raise ValueError("no turnaround: run `asset turnaround` first")
-    ordered = [by_view[v] for v in ALL_VIEWS if v in by_view]
+    flag_views = [v.strip() for v in args.views.split(",") if v.strip()] if getattr(args, "views", None) is not None else None
+    if flag_views is not None and (not flag_views or len(set(flag_views)) != len(flag_views)
+                                   or any(v not in ALL_VIEWS for v in flag_views)):
+        raise ValueError(f"--views must be distinct names from {', '.join(ALL_VIEWS)}")
+    flag_options = parse_options(getattr(args, "option", None))
+    class_default = class_to3d_views(root, m.asset_class)
     cfg = providers.load_config()
     names = list(dict.fromkeys(args.three_d_provider or [None]))
     built = [providers.select("three_d", cfg, n) for n in names]  # fail on a bad name before any spend
+    chosen: dict[str, list[str]] = {}
+    for prov in built:
+        prov.options = {**prov.options, **flag_options}  # the flag wins over the provider entry
+        chosen[prov.name] = resolve_views(prov, flag_views, class_default, list(by_view))
+        if not chosen[prov.name]:
+            raise ValueError(f"{prov.name} takes the {', '.join(prov.views or class_default or VIEWS)} view(s) "
+                             f"and the turnaround has none")
     out_dir = paths.work_dir(root, args.slug) / "to3d"
     prices = cost.load_prices()
     runs: list[dict[str, Any]] = []
@@ -325,9 +380,7 @@ def cmd_to3d(args: argparse.Namespace, root: Path) -> dict[str, Any]:
         job = ""
         try:
             progress(f"submitting to {prov.name}…")
-            sent = [by_view[v] for v in prov.views if v in by_view]  # each provider's own views, in its order
-            if not sent:
-                raise ValueError(f"{prov.name} takes the {', '.join(prov.views)} view(s) and the turnaround has none")
+            sent = [by_view[v] for v in chosen[prov.name]]
             job = prov.submit([abspath(root, e.path) for e in sent])
             progress(f"waiting for {prov.name} (job {job})…")
             _wait_for(prov, job, args.poll_interval, args.timeout)
@@ -346,7 +399,8 @@ def cmd_to3d(args: argparse.Namespace, root: Path) -> dict[str, Any]:
             continue
         m.costs.append(cost.entry_for(prov, "three_d", prices, command="to3d", stage="to3d", lineage=rid))
         m.add(LineageEntry(id=rid, kind="mesh", path=rel.as_posix(), provider=prov.name, model=prov.model,
-                           parent=sent[0].id, references=[e.path for e in sent], task_id=job))
+                           parent=sent[0].id, references=[e.path for e in sent], task_id=job,
+                           views=[e.id for e in sent], options=dict(prov.options)))
         m.save(mpath)  # per run, so a later provider's crash keeps this one
         runs.append({"id": rid, "provider": prov.name, "model": prov.model, "task_id": job, "path": rel.as_posix()})
     if runs and m.stage in ("new", "concept", "locked", "turnaround", "brief", "to3d"):
@@ -620,6 +674,9 @@ def cmd_estimate(args: argparse.Namespace, root: Path) -> dict[str, Any]:
     elif name == "to3d":
         names = list(dict.fromkeys(args.three_d_provider or [None]))
         reqs = [(providers.select("three_d", cfg, n), "three_d", 1) for n in names]
+        flag_options = parse_options(getattr(args, "option", None))
+        for prov, _, _ in reqs:
+            prov.options = {**prov.options, **flag_options}
     else:
         raise ValueError(f"{name} has no estimate")
     return {"slug": args.slug, "command": name, "estimate": cost.estimate(reqs, cost.load_prices())}
@@ -698,6 +755,11 @@ def build_parser() -> argparse.ArgumentParser:
     t3 = sub.add_parser("to3d", help="image-to-3D from the turnaround; several providers is a bake-off")
     t3.add_argument("slug")
     t3.add_argument("--3d-provider", dest="three_d_provider", nargs="+", default=None, metavar="P")
+    t3.add_argument("--views", default=None, metavar="A,B",
+                    help="send exactly these turnaround views, in this order (e.g. left or left,front,top); "
+                         "default: the provider's views, the class's to3d_views, then front,left,back,right")
+    t3.add_argument("--option", action="append", default=None, metavar="KEY=VALUE",
+                    help="a model option for this run, merged into the request body over providers.yaml (repeatable)")
     t3.add_argument("--poll-interval", type=float, default=5.0, help="seconds between polls")
     t3.add_argument("--timeout", type=float, default=1800.0, help="give up on a provider after this many seconds")
     t3.add_argument("--estimate", action="store_true", help=ESTIMATE)

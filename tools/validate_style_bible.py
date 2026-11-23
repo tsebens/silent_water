@@ -9,7 +9,7 @@ ROOT = Path(__file__).resolve().parent.parent / "assets" / "style_bible"
 CLASSES = ["creature", "prop", "terrain", "architecture"]
 ROUTES = {"image-to-3d", "scripted"}
 GATES = ["triangle_tolerance", "bbox_tolerance", "max_loose_parts", "max_non_manifold", "silhouette_iou_min"]
-OPTIONAL_FIELDS = ["budget_usd", "turnaround_views"]
+OPTIONAL_FIELDS = ["budget_usd", "turnaround_views", "to3d_views"]
 VIEWS = ["front", "left", "back", "right", "top", "bottom"]
 FIELDS = ["build_route", "triangle_budget", "scale_range_m", "snap_grid_m", "palette_size", "cleanup_recipe", "gates"]
 
@@ -72,6 +72,14 @@ def validate() -> list[str]:
                 errs.append(p + "turnaround_views must be a non-empty list")
             elif any(v not in VIEWS for v in tv) or len(set(map(str, tv))) != len(tv):
                 errs.append(p + f"turnaround_views must be distinct names from {VIEWS}")
+        if "to3d_views" in c:
+            tv = c["to3d_views"]
+            if not (isinstance(tv, list) and tv):
+                errs.append(p + "to3d_views must be a non-empty list")
+            elif any(v not in VIEWS for v in tv) or len(set(map(str, tv))) != len(tv):
+                errs.append(p + f"to3d_views must be distinct names from {VIEWS}")
+            elif "turnaround_views" in c and any(v not in c["turnaround_views"] for v in tv):
+                errs.append(p + "to3d_views must be among the class's turnaround_views")
         if c.get("build_route") not in ROUTES:
             errs.append(p + "build_route must be image-to-3d or scripted")
         if (name == "architecture") != (c.get("build_route") == "scripted"):

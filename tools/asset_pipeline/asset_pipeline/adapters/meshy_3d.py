@@ -19,6 +19,7 @@ class MeshyThreeD(HostedThreeD):
                  timeout: int = 300) -> None:
         super().__init__()
         self.model, self.base_url, self.timeout = model, base_url.rstrip("/"), timeout
+        self.max_views = 4
 
     def _auth(self) -> dict[str, str]:
         return {"authorization": f"Bearer {self._key()}"}
@@ -26,7 +27,8 @@ class MeshyThreeD(HostedThreeD):
     def submit(self, views: list[Path]) -> str:
         self._check_views(views)
         payload = {"image_urls": [_net.data_uri(v) for v in views[:4]], "ai_model": self.model,
-                   "should_texture": True}
+                   "should_texture": True,
+                   **self.options}
         reply = _net.post_json("meshy", f"{self.base_url}/multi-image-to-3d", self._auth(), payload, self.timeout)
         task = reply.get("result") if isinstance(reply, dict) else None
         if not task:
