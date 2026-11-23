@@ -14,6 +14,20 @@ Copies the cleaned GLB to `build/asset_check/<slug>/` (git-ignored), imports it 
 
 Needs a mesh that passed `asset check`. Writes to `assets/models/<slug>/`: `<slug>.glb`, `<slug>.glb.import`, `<slug>.tscn` (an instance of the GLB), `concept/` (locked concept as `locked.<ext>`, the turnaround views and `brief.md`, with a `.gdignore`; PNGs over 2048 px are shrunk, other formats over 2048 px are an error) and `asset.yaml`.
 
+## Folders and moves
+
+Assets can live in nested folders under `assets/models/`, e.g. `assets/models/organic/fauna/apex/asset.yaml`. An asset is found by searching `assets/models/**/<slug>/asset.yaml`, so flat `assets/models/<slug>/` assets keep working with no migration. Slugs are unique repo-wide (`asset new` refuses a slug that exists in any folder) and `.asset_work/<slug>/` stays flat. Folder segments use lowercase letters, digits, `_` and `-`. `asset list` reports each asset's `folder` and every `folders` entry, empty ones included. Git does not track an empty folder, so one made with `folder create` lasts only until the checkout is cleaned or recloned.
+
+- `asset new <slug> --class C --folder a/b`: create the asset in a folder (made if missing).
+- `asset move <slug> --to a/b`: move an asset (`--to ""` is the root).
+- `asset folder create <a/b>`, `asset folder move <a/b> --to c`, `asset folder rename <a/b> <name>`.
+
+A move rewrites every repo path recorded inside the moved assets: the manifest, the `checks/*.json` reports, and the `res://assets/models/...` references in the exported `.tscn` and `.glb.import`. Paths stay POSIX. Illegal requests are errors and change nothing: a destination that exists, is inside an asset, or is the folder itself or one of its descendants; creating a folder that already exists, hides an asset or nests inside one.
+
+## CLI progress
+
+`concept`, `turnaround`, `brief`, `to3d`, `cleanup` and `godot-check` print short progress lines to **stderr** (`writing prompts (claude-cli)…`, `image 2/3 (google)…`). stdout stays one JSON object, so the plugin can parse it and show the latest stderr line in its status bar.
+
 ## Cost ledger
 
 The manifest's append-only `costs` list records every paid backend call (units, USD, basis, the unit price used); prices live in `tools/asset_pipeline/prices.yaml`. Image, prompt-writer and 3D (`to3d`, one entry per bake-off provider) calls are all recorded. `asset cost <slug>` and `asset cost --all` summarise it, `--estimate` on a paid command prices it without calling anything, and an optional soft `budget_usd` (per class in `classes.yaml`, overridable in the manifest) makes `asset cost` warn without blocking. The Asset Studio plugin shows it: a Cost column in the Queue, a per-stage and per-provider cost panel (estimated figures marked "~", budget warning), and an estimate on each paid action button taken from `--estimate`. `list` carries each asset's effective `budget_usd` for this. See the backend README for the entry fields and bases.

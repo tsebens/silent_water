@@ -170,9 +170,10 @@ def pascal(slug: str) -> str:
     return "".join(p.capitalize() for p in slug.split("_") if p) or "Asset"
 
 
-def tscn(slug: str) -> str:
+def tscn(slug: str, res_dir: str | None = None) -> str:
+    res_dir = res_dir or f"res://assets/models/{slug}"
     return ('[gd_scene load_steps=2 format=3]\n\n'
-            f'[ext_resource type="PackedScene" path="res://assets/models/{slug}/{slug}.glb" id="1_model"]\n\n'
+            f'[ext_resource type="PackedScene" path="{res_dir}/{slug}.glb" id="1_model"]\n\n'
             f'[node name="{pascal(slug)}" type="Node3D"]\n\n'
             '[node name="Model" parent="." instance=ExtResource("1_model")]\n')
 

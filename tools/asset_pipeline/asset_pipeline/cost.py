@@ -10,6 +10,7 @@ from typing import Any, Callable
 
 import yaml
 
+from . import paths
 from .manifest import CostRecord as CostEntry
 from .manifest import Manifest
 
@@ -158,7 +159,7 @@ def summary(root: Path, m: Manifest) -> dict[str, Any]:
 
 
 def summary_all(root: Path) -> dict[str, Any]:
-    assets = [summary(root, Manifest.load(p)) for p in sorted((root / "assets" / "models").glob("*/asset.yaml"))]
+    assets = [summary(root, Manifest.load(p)) for p in paths.all_manifest_paths(root)]
     return {"assets": [{k: a[k] for k in ("slug", "total_usd", "reported_usd", "estimated_usd", "entries", "budget_usd")
                         } | ({"warning": a["warning"]} if "warning" in a else {}) | {"unknown": len(a["unknown"])}
                        for a in assets],
