@@ -32,8 +32,9 @@ var remembered: Dictionary = {}
 var keys_set: PackedStringArray = PackedStringArray()
 
 
-func remember(dropdown: String, value: String) -> void:
-	if value == "":
+## An empty value is ignored for a dropdown; `allow_empty` is for a choice that may be cleared.
+func remember(dropdown: String, value: String, allow_empty: bool = false) -> void:
+	if value == "" and not allow_empty:
 		return
 	remembered[dropdown] = value
 	_save()

@@ -632,7 +632,15 @@ def cmd_list(args: argparse.Namespace, root: Path) -> dict[str, Any]:
         assets.append(m.to_dict() | {"budget_usd": cost.budget_for(root, m), "folder": "" if folder == "." else folder})
     cfg = providers.load_config()
     names = {kind: sorted(cfg["providers"].get(kind) or {}) for kind in ("image", "three_d", "prompt_writer")}
+    from . import adapters, writers  # noqa: F401  register the real adapters
+    max_views: dict[str, int] = {}  # how many turnaround views each 3D provider takes, for the plugin's view picker
+    for n, entry in (cfg["providers"].get("three_d") or {}).items():
+        try:
+            max_views[n] = int(providers.build("three_d", n, entry).max_views)
+        except Exception:  # a broken entry is reported by the command that uses it, not by listing
+            pass
     return {"assets": assets, "folders": paths.all_folders(root), "providers": names, "selected": dict(cfg["selection"]),
+            "three_d_max_views": max_views,
             "selected_source": dict(cfg.get("selection_source", {}))}
 
 

@@ -420,6 +420,79 @@ func test_model_backend_arguments() -> void:
 	expect(m.export_args("r1_tripo").is_empty())
 
 
+func _picker_model() -> AssetModelModel:
+	var l: Dictionary = _model_listing()
+	var m: AssetModelModel = AssetModelModel.new()
+	m.load_asset(_model_asset(), l["providers"] as Dictionary, l["selected"] as Dictionary, _reports(), {"tripo": 4, "meshy": 4, "mock": 8, "single": 1})
+	return m
+
+
+func test_view_picker_lists_latest_turnaround_views() -> void:
+	var m: AssetModelModel = _picker_model()
+	expect(m.turnaround_views.size() >= 1)
+	expect_eq(m.turnaround_views[0]["view"], "front")
+	expect(m.is_single("single"))
+	expect(not m.is_single("tripo"))
+	expect(not m.is_single("unknown-provider"), "an unknown limit counts as multi-image")
+
+
+func test_view_picker_single_is_a_radio_choice() -> void:
+	var m: AssetModelModel = _picker_model()
+	expect(m.toggle_view("left", "single"))
+	expect(m.toggle_view("back", "single"))
+	expect_eq(m.picked_views, PackedStringArray(["back"]), "picking another view replaces the choice")
+	expect(m.toggle_view("back", "single"), "picking it again clears it")
+	expect(m.picked_views.is_empty())
+	expect(not m.toggle_view("nonexistent", "single"))
+
+
+func test_view_picker_multi_keeps_pick_order_and_limit() -> void:
+	var m: AssetModelModel = _picker_model()
+	m.toggle_view("back", "tripo")
+	m.toggle_view("front", "tripo")
+	m.toggle_view("left", "tripo")
+	expect_eq(m.picked_views, PackedStringArray(["back", "front", "left"]))
+	m.toggle_view("front", "tripo")
+	expect_eq(m.picked_views, PackedStringArray(["back", "left"]))
+	m.max_views = {"tripo": 2}
+	expect(not m.toggle_view("front", "tripo"), "a full multi-select refuses another view")
+	expect_eq(m.picked_views, PackedStringArray(["back", "left"]))
+
+
+func test_view_picker_remembered_per_asset() -> void:
+	var m: AssetModelModel = _picker_model()
+	m.toggle_view("left", "tripo")
+	m.toggle_view("back", "tripo")
+	expect_eq(m.picked_text(), "left,back")
+	var l: Dictionary = _model_listing()
+	m.load_asset({"slug": "other"}, l["providers"] as Dictionary)
+	expect(m.picked_views.is_empty(), "another asset has its own choice")
+	m.load_asset(_model_asset(), l["providers"] as Dictionary, l["selected"] as Dictionary, _reports(), {"tripo": 4})
+	expect_eq(m.picked_views, PackedStringArray(["left", "back"]), "back on the asset, its choice returns")
+	var fresh: AssetModelModel = AssetModelModel.new()
+	fresh.load_asset(_model_asset(), l["providers"] as Dictionary, l["selected"] as Dictionary, _reports(), {"tripo": 4})
+	fresh.restore_picks("back,bogus,back,front")
+	expect_eq(fresh.picked_views, PackedStringArray(["back", "front"]), "restore drops unknown and repeated views")
+
+
+func test_view_picker_backend_arguments() -> void:
+	var m: AssetModelModel = _picker_model()
+	expect_eq(m.to3d_args(PackedStringArray(["tripo"])), PackedStringArray(["to3d", "angler2", "--3d-provider", "tripo"]))
+	m.toggle_view("left", "tripo")
+	m.toggle_view("front", "tripo")
+	expect_eq(m.to3d_args(PackedStringArray(["tripo"])), PackedStringArray(["to3d", "angler2", "--3d-provider", "tripo", "--views", "left,front"]))
+	expect_eq(m.to3d_args(PackedStringArray(["tripo", "meshy"])), PackedStringArray(["to3d", "angler2", "--3d-provider", "tripo", "meshy", "--views", "left,front"]), "the bake-off uses the picked views")
+	expect_eq(m.to3d_args(PackedStringArray(["tripo", "single"])), PackedStringArray(["to3d", "angler2", "--3d-provider", "tripo", "single", "--views", "left"]), "cut to the smallest limit so the call is not refused")
+
+
+func test_bake_off_without_picks_uses_provider_defaults() -> void:
+	var m: AssetModelModel = _picker_model()
+	expect_eq(m.to3d_args(PackedStringArray(["tripo", "single"])), PackedStringArray(["to3d", "angler2", "--3d-provider", "tripo", "single"]))
+	m.toggle_view("left", "tripo")
+	m.toggle_view("left", "tripo")
+	expect_eq(m.to3d_args(PackedStringArray(["tripo", "meshy"])), PackedStringArray(["to3d", "angler2", "--3d-provider", "tripo", "meshy"]), "unpicking everything returns to defaults")
+
+
 func test_model_export_after_passing_gates() -> void:
 	var asset: Dictionary = _model_asset().duplicate(true)
 	var chk: Dictionary = (asset["checks"] as Array)[0]
