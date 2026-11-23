@@ -20,7 +20,10 @@ func _ready() -> void:
 	panel.set_meta("fixture", true)
 	panel.set_anchors_preset(Control.PRESET_FULL_RECT)
 	add_child(panel)
-	panel.show_listing(JSON.parse_string(FileAccess.get_file_as_string("res://tests/fixtures/asset_studio/" + fixture)) as Dictionary)
+	var listing: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://tests/fixtures/asset_studio/" + fixture)) as Dictionary
+	if not multi and not tree_shot:
+		_concept_images(listing)
+	panel.show_listing(listing)
 	if not multi and not tree_shot:
 		panel.show_error("OPENAI_API_KEY is not set (put it in tools/asset_pipeline/.env)")
 	# Stubbed `--estimate` results, so the action buttons show their estimates.
@@ -45,6 +48,35 @@ func _ready() -> void:
 		await _frames()
 		_save(args[2].replace(".png", "_red_wire.png"))
 	get_tree().quit()
+
+
+## Give the first asset's concepts stand-in images (one deliberately unreadable), an extra
+## approved variant and a rejected one, so every Concept section has content.
+func _concept_images(listing: Dictionary) -> void:
+	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(SHOT_DIR))
+	var asset: Dictionary = (listing["assets"] as Array)[0]
+	var lineage: Array = asset["lineage"]
+	lineage.append({"id": "v4", "kind": "concept", "path": "", "provider": "mock", "model": "mock-image-1", "prompt": "angler, wide jaw", "parent": "v1"})
+	var hues: Array[float] = [0.55, 0.08, 0.35, 0.75]
+	var i: int = 0
+	for e: Variant in lineage:
+		var d: Dictionary = e
+		var rel: String = "build/asset_studio_shot/concept_%s.png" % d["id"]
+		var abs_path: String = ProjectSettings.globalize_path("res://" + rel)
+		if d["id"] == "v2":
+			var f: FileAccess = FileAccess.open(abs_path, FileAccess.WRITE)
+			f.store_string("not a png")
+			f.close()
+		else:
+			var img: Image = Image.create(256, 192, false, Image.FORMAT_RGBA8)
+			img.fill(Color.from_hsv(hues[i % hues.size()], 0.5, 0.45))
+			img.save_png(abs_path)
+		d["path"] = rel
+		i += 1
+	asset["decisions"] = [
+		{"variant": "v1", "decision": "rejected", "notes": "too cute"},
+		{"variant": "v4", "decision": "approved", "notes": ""},
+	]
 
 
 func _frames() -> void:

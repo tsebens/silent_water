@@ -13,6 +13,12 @@ var default_provider: String = ""
 var prompt_writers: PackedStringArray = PackedStringArray()
 var default_writer: String = ""
 var _lineage: Array = []
+## Variant id -> "rejected" or "approved".
+var _decided: Dictionary = {}
+## Approved variant ids, oldest first; the last is the locked concept.
+var _approval_order: Array[String] = []
+## Images being generated right now (placeholders in Pending); set by the panel.
+var in_flight: int = 0
 
 
 func load_asset(asset: Dictionary, providers: Dictionary = {}, selected: Dictionary = {}) -> void:
@@ -24,22 +30,26 @@ func load_asset(asset: Dictionary, providers: Dictionary = {}, selected: Diction
 	var locked: Variant = asset.get("locked")
 	if locked is Dictionary:
 		locked_id = str((locked as Dictionary).get("variant", ""))
-	var rejected: Dictionary = {}
+	_decided.clear()
+	# Decisions are in order, so the last "approved" is the latest approval. The manifest's
+	# `locked` record is an approval too, and is the latest one by definition.
+	_approval_order.clear()
 	for d: Variant in asset.get("decisions", []):
 		var dd: Dictionary = d
-		if str(dd.get("decision", "")) == "rejected":
-			rejected[str(dd.get("variant", ""))] = str(dd.get("notes", ""))
+		var vid: String = str(dd.get("variant", ""))
+		var verdict: String = str(dd.get("decision", ""))
+		if verdict == "approved":
+			_approve(vid)
+		elif verdict == "rejected":
+			_decided[vid] = "rejected"
+	if locked_id != "":
+		_approve(locked_id)
 	variants.clear()
 	for e: Variant in _lineage:
 		var d: Dictionary = e
 		if str(d.get("kind", "")) != "concept":
 			continue
 		var id: String = str(d.get("id", ""))
-		var state: String = "pending"
-		if id == locked_id:
-			state = "locked"
-		elif rejected.has(id):
-			state = "rejected"
 		variants.append({
 			"id": id,
 			"path": str(d.get("path", "")),
@@ -47,9 +57,10 @@ func load_asset(asset: Dictionary, providers: Dictionary = {}, selected: Diction
 			"provider": str(d.get("provider", "")),
 			"model": str(d.get("model", "")),
 			"parent": d.get("parent"),
-			"state": state,
+			"state": "pending",
 			"caption": "%s · %s/%s" % [id, d.get("provider", ""), d.get("model", "")],
 		})
+	_refresh_states()
 	image_providers = PackedStringArray()
 	for n: Variant in providers.get("image", []):
 		image_providers.append(str(n))
@@ -58,6 +69,77 @@ func load_asset(asset: Dictionary, providers: Dictionary = {}, selected: Diction
 	for w: Variant in providers.get("prompt_writer", []):
 		prompt_writers.append(str(w))
 	default_writer = str(selected.get("prompt_writer", ""))
+
+
+func _approve(id: String) -> void:
+	_approval_order.erase(id)
+	_approval_order.append(id)
+	_decided[id] = "approved"
+
+
+## Recompute each variant's state: "locked" for the latest approval, "accepted" for earlier
+## approvals, "rejected", otherwise "pending".
+func _refresh_states() -> void:
+	var lid: String = locked_id()
+	for v: Dictionary in variants:
+		var id: String = str(v["id"])
+		var verdict: String = str(_decided.get(id, ""))
+		if verdict == "approved":
+			v["state"] = "locked" if id == lid else "accepted"
+		elif verdict == "rejected":
+			v["state"] = "rejected"
+		else:
+			v["state"] = "pending"
+
+
+## The most recently approved variant that still exists, or "".
+func locked_id() -> String:
+	for i: int in range(_approval_order.size() - 1, -1, -1):
+		if not variant(_approval_order[i]).is_empty():
+			return _approval_order[i]
+	return ""
+
+
+## Local decision, applied before the backend answers so the card moves at once. The next
+## `load_asset` from the backend's manifest is authoritative.
+func approve(id: String) -> void:
+	if variant(id).is_empty():
+		return
+	_approve(id)
+	_refresh_states()
+
+
+func reject(id: String) -> void:
+	if variant(id).is_empty():
+		return
+	_approval_order.erase(id)
+	_decided[id] = "rejected"
+	_refresh_states()
+
+
+## Variants for one section: "pending", "accepted" (including the locked one, latest approval
+## first) or "rejected".
+func group(section: String) -> Array[Dictionary]:
+	var out: Array[Dictionary] = []
+	for v: Dictionary in variants:
+		var st: String = str(v["state"])
+		if section == "accepted":
+			if st == "accepted" or st == "locked":
+				out.append(v)
+		elif st == section:
+			out.append(v)
+	if section == "accepted":
+		out.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
+			return _approval_order.find(str(a["id"])) > _approval_order.find(str(b["id"])))
+	return out
+
+
+## Section header text: "Pending (2)"; pending counts in-flight placeholders too.
+func section_title(section: String) -> String:
+	var n: int = group(section).size()
+	if section == "pending":
+		n += in_flight
+	return "%s (%d)" % [section.capitalize(), n]
 
 
 func variant(id: String) -> Dictionary:
