@@ -14,7 +14,7 @@ from typing import Any
 
 import yaml
 
-from . import check, cleanup, cost, doctor, godot_stage, paths, providers
+from . import check, cleanup, cost, doctor, folders, godot_stage, paths, providers
 from .manifest import (CLASSES, DECISIONS, BriefRecord, CheckRecord, CleanupRecord, ExportRecord, GodotCheckRecord,
                        LineageEntry, Manifest)
 from .writers import PromptWriterError
@@ -23,6 +23,11 @@ VIEWS = ("front", "left", "back", "right")
 TURNAROUND_PX = 2048
 MAX_ANCHORS = 4
 ANCHOR_SUFFIXES = (".png", ".jpg", ".jpeg", ".webp")
+
+
+def progress(msg: str) -> None:
+    """A short progress line on stderr. stdout stays the single JSON result."""
+    print(msg, file=sys.stderr, flush=True)
 
 
 def style_dir(root: Path) -> Path:
@@ -130,13 +135,15 @@ def cmd_concept(args: argparse.Namespace, root: Path) -> dict[str, Any]:
     out_dir = paths.work_dir(root, args.slug) / "concept"
     made = []
     with _ledger_guard(mpath, m):
+        progress(f"writing prompts ({writer.name})…")
         try:
             bodies = cost.paid_call(
                 m, writer, "prompt_writer", prices, command="concept", stage=stage,
                 fn=lambda: writer.write_prompts(m.description, style_block(root, m.asset_class), args.notes or "", refs, args.n))
         except PromptWriterError as e:
             raise ValueError(f"prompt writer failed: {e}") from e
-        for body in bodies:
+        for i, body in enumerate(bodies, 1):
+            progress(f"image {i}/{len(bodies)} ({img.name})…")
             vid = next_id(m, "v")
             prompt = full_prompt(root, m.asset_class, body)
             rel = (out_dir / f"{vid}.png").relative_to(root)
@@ -194,6 +201,8 @@ def cmd_turnaround(args: argparse.Namespace, root: Path) -> dict[str, Any]:
 
 
 def _turnaround_views(args, root, m, img, src, src_path, out_dir, n, only, prev, views, prices) -> None:
+    todo = 1 if only else len(VIEWS)
+    done = 0
     for view in VIEWS:
         if only and view != only:
             # carry the view over so the new set is complete: copy the file, keep prompt and provenance
@@ -206,6 +215,8 @@ def _turnaround_views(args, root, m, img, src, src_path, out_dir, n, only, prev,
                                references=list(old_e.references)))
             views.append({"id": eid, "view": view, "path": rel.as_posix(), "parent": old_e.parent, "carried_from": old_e.id})
             continue
+        done += 1
+        progress(f"{view} view {done}/{todo} ({img.name})…")
         body = (f"Orthographic {view} view of this exact asset, flat neutral lighting, no perspective, "
                 f"centred, on a transparent or plain removed background, {TURNAROUND_PX}x{TURNAROUND_PX} px. "
                 "Keep every proportion and detail of the source image unchanged.")
@@ -237,6 +248,7 @@ def cmd_brief(args: argparse.Namespace, root: Path) -> dict[str, Any]:
     images = [abspath(root, locked.path)] + [abspath(root, e.path) for e in views]
     writer = providers.select("prompt_writer", providers.load_config(), args.prompt_writer)
     with _ledger_guard(mpath, m):
+        progress(f"writing the brief ({writer.name})…")
         try:
             text = cost.paid_call(m, writer, "prompt_writer", cost.load_prices(), lambda: writer.write_brief(context, images),
                                   command="brief", stage="brief")
@@ -294,8 +306,11 @@ def cmd_to3d(args: argparse.Namespace, root: Path) -> dict[str, Any]:
         prov.last_usage = None
         job = ""
         try:
+            progress(f"submitting to {prov.name}…")
             job = prov.submit(views)
+            progress(f"waiting for {prov.name} (job {job})…")
             _wait_for(prov, job, args.poll_interval, args.timeout)
+            progress(f"downloading from {prov.name}…")
             k = 1
             while any(e.id == f"r{k}_{prov.name}" for e in m.lineage):
                 k += 1
@@ -348,6 +363,7 @@ def cmd_cleanup(args: argparse.Namespace, root: Path) -> dict[str, Any]:
               "palette_size": profile["palette_size"], "snap_grid_m": profile.get("snap_grid_m"),
               "max_loose_parts": profile["gates"]["max_loose_parts"]}
     (root / rel).parent.mkdir(parents=True, exist_ok=True)
+    progress(f"cleaning {src.id} in Blender…")
     result = cleanup.run_blender(params, root / rel.parent)
     m.add(LineageEntry(id=cid, kind="mesh", path=rel.as_posix(), provider="blender",
                        model=result.get("blender_version", ""), parent=src.id))
@@ -422,6 +438,7 @@ def cmd_godot_check(args: argparse.Namespace, root: Path) -> dict[str, Any]:
     m = Manifest.load(mpath)
     src = _pick_mesh(m, args.source)
     log_dir = Path(args.log_dir or os.environ.get("LOG_DIR") or root / "logs").resolve()
+    progress(f"importing {src.id} in Godot" + ("" if args.no_render else " and rendering") + "…")
     res = godot_stage.godot_check(root, m.slug, abspath(root, src.path), log_dir, render=not args.no_render)
     m.godot_checks.append(GodotCheckRecord(id=src.id, ok=res["ok"], material=res["material"],
                                            renders=res["renders"], error=res.get("render_error", "")))
@@ -450,10 +467,11 @@ def cmd_export(args: argparse.Namespace, root: Path) -> dict[str, Any]:
     shutil.copy(abspath(root, src.path), glb)
     put(glb)
     imp = out / f"{m.slug}.glb.import"
-    imp.write_text(godot_stage.import_stub(f"res://assets/models/{m.slug}", m.slug))
+    res_dir = f"res://{paths.posix_rel(root, out)}"
+    imp.write_text(godot_stage.import_stub(res_dir, m.slug))
     put(imp)
     scene = out / f"{m.slug}.tscn"
-    scene.write_text(godot_stage.tscn(m.slug))
+    scene.write_text(godot_stage.tscn(m.slug, res_dir))
     put(scene)
     concept = out / "concept"
     concept.mkdir(parents=True, exist_ok=True)
@@ -490,16 +508,21 @@ def _latest_turnaround(m: Manifest) -> str:
 
 
 def cmd_new(args: argparse.Namespace, root: Path) -> dict[str, Any]:
-    mpath = paths.manifest_path(root, args.slug)
-    if mpath.exists():
-        raise FileExistsError(f"asset {args.slug!r} already exists at {mpath}")
+    existing = paths.find_asset_dir(root, args.slug)
+    if existing is not None:
+        raise FileExistsError(f"asset {args.slug!r} already exists at {paths.posix_rel(root, existing)}")
+    folder = paths.check_folder(args.folder)
+    inside = paths.enclosing_asset(root, folder) if folder else None
+    if inside is not None:
+        raise ValueError(f"folder {folder!r} is inside the asset {inside.name!r}")
+    mpath = paths.folder_dir(root, folder) / args.slug / "asset.yaml"
     m = Manifest(slug=args.slug, asset_class=args.asset_class, issue=args.issue,
                  description=(args.description or "").strip())
     m.save(mpath)
     work = paths.work_dir(root, args.slug)
     work.mkdir(parents=True, exist_ok=True)
     return {"slug": m.slug, "class": m.asset_class, "issue": m.issue, "stage": m.stage, "description": m.description,
-            "manifest": paths.posix_rel(root, mpath), "asset_dir": paths.posix_rel(root, mpath.parent),
+            "folder": folder, "manifest": paths.posix_rel(root, mpath), "asset_dir": paths.posix_rel(root, mpath.parent),
             "work_dir": paths.posix_rel(root, work)}
 
 
@@ -527,14 +550,27 @@ def cmd_lock(args: argparse.Namespace, root: Path) -> dict[str, Any]:
 def cmd_list(args: argparse.Namespace, root: Path) -> dict[str, Any]:
     """Every manifest as JSON (the Godot plugin cannot read YAML), sorted by slug."""
     assets: list[dict[str, Any]] = []
-    for mpath in sorted((root / "assets" / "models").glob("*/asset.yaml")):
+    for mpath in paths.all_manifest_paths(root):
         m = Manifest.load(mpath)
         # The effective soft budget (the manifest's, else its class's) so the Godot plugin need not read classes.yaml.
-        assets.append(m.to_dict() | {"budget_usd": cost.budget_for(root, m)})
+        folder = mpath.parent.parent.relative_to(paths.models_dir(root)).as_posix()
+        assets.append(m.to_dict() | {"budget_usd": cost.budget_for(root, m), "folder": "" if folder == "." else folder})
     cfg = providers.load_config()
     names = {kind: sorted(cfg["providers"].get(kind) or {}) for kind in ("image", "three_d", "prompt_writer")}
-    return {"assets": assets, "providers": names, "selected": dict(cfg["selection"]),
+    return {"assets": assets, "folders": paths.all_folders(root), "providers": names, "selected": dict(cfg["selection"]),
             "selected_source": dict(cfg.get("selection_source", {}))}
+
+
+def cmd_move(args: argparse.Namespace, root: Path) -> dict[str, Any]:
+    return folders.move_asset(root, args.slug, args.to)
+
+
+def cmd_folder(args: argparse.Namespace, root: Path) -> dict[str, Any]:
+    if args.action == "create":
+        return folders.create_folder(root, args.path)
+    if args.action == "move":
+        return folders.move_folder(root, args.path, args.to)
+    return folders.rename_folder(root, args.path, args.name)
 
 
 def cmd_cost(args: argparse.Namespace, root: Path) -> dict[str, Any]:
@@ -586,7 +622,23 @@ def build_parser() -> argparse.ArgumentParser:
     n.add_argument("--class", dest="asset_class", required=True, choices=CLASSES)
     n.add_argument("--issue", type=int)
     n.add_argument("--description", default=None, metavar="TEXT", help="what the asset is; the concept brief (saved in the manifest)")
+    n.add_argument("--folder", default="", metavar="A/B", help="folder under assets/models/ to create the asset in")
     n.set_defaults(fn=cmd_new)
+    mv = sub.add_parser("move", help="move an asset to a folder under assets/models/, rewriting every path it records")
+    mv.add_argument("slug")
+    mv.add_argument("--to", required=True, metavar="A/B", help='destination folder ("" or "." is the root)')
+    mv.set_defaults(fn=cmd_move)
+    fo = sub.add_parser("folder", help="create, move or rename a folder under assets/models/")
+    fsub = fo.add_subparsers(dest="action", required=True)
+    fc = fsub.add_parser("create", help="create an (empty) folder")
+    fc.add_argument("path")
+    fm = fsub.add_parser("move", help="move a folder, with its assets, into another folder")
+    fm.add_argument("path")
+    fm.add_argument("--to", required=True, metavar="A/B")
+    fr = fsub.add_parser("rename", help="rename a folder in place")
+    fr.add_argument("path")
+    fr.add_argument("name")
+    fo.set_defaults(fn=cmd_folder)
     ds = sub.add_parser("describe", help="set or replace an asset's description (the concept brief)")
     ds.add_argument("slug")
     ds.add_argument("text")
