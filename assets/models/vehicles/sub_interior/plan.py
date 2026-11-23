@@ -24,7 +24,8 @@ def superellipse_half(extent: float, t: float, p: float) -> float:
 
 
 class Hull:
-    def __init__(self, h: dict) -> None:
+    def __init__(self, h: dict, compartments: list | None = None) -> None:
+        self.compartments = compartments or []
         self.L, self.W, self.H = h["length_m"], h["width_m"], h["height_m"]
         self.pp, self.ps = h["plan_exponent"], h["section_exponent"]
         self.pz = h.get("profile_exponent", self.pp)
@@ -46,11 +47,17 @@ class Hull:
             return 0.0
         return superellipse_half(hw, y / hh, self.ps)
 
-    def deck_y(self) -> float:
-        return -self.H / 2 + self.deck_up
+    def deck_y(self, z: float | None = None) -> float:
+        """Floor height at z: the main deck, plus the compartment's floor_offset_m (the sunken cockpit)."""
+        y = -self.H / 2 + self.deck_up
+        if z is not None:
+            for c in self.compartments:
+                if c["z"][0] <= z <= c["z"][1]:
+                    return y + c.get("floor_offset_m", 0.0)
+        return y
 
     def deck_half_width(self, z: float) -> float:
-        return self.section_half_width(z, self.deck_y())
+        return self.section_half_width(z, self.deck_y(z))
 
     def clear_height(self, z: float, x: float = 0.0) -> float:
         """Inner headroom above the deck at (x, z)."""
@@ -58,7 +65,7 @@ class Hull:
         if hw <= 0 or abs(x) >= hw:
             return 0.0
         top = superellipse_half(hh, x / hw, self.ps)
-        return max(0.0, top - self.deck_y())
+        return max(0.0, top - self.deck_y(z))
 
 
 def place(item: dict, hull: Hull) -> tuple[float, float, float, float]:
@@ -117,6 +124,11 @@ def clearance_report(spec: dict, hull: Hull) -> list[str]:
         else:
             ok = best >= c["aisle_min_m"]
             msg = f"widest free aisle {best:.2f} m (need {c['aisle_min_m']})"
+        # The item itself must fit on its floor: its footprint inside the deck's width at both ends.
+        fits = all(hull.deck_half_width(z) >= max(abs(x0), abs(x1)) - 1e-6 for z in (z0, z1))
+        if not fits:
+            ok = False
+            msg = f"does not fit: deck {2 * fw:.2f} m wide at its ends, needs |x| up to {max(abs(x0), abs(x1)):.2f} m; " + msg
         head = hull.clear_height(it["z"], 0.0)
         head_ok = head >= c["head_clear_m"] or it.get("kind") in ("well",)
         status = "ok  " if ok and head_ok else "FAIL"
@@ -167,6 +179,9 @@ def draw_top(spec: dict, hull: Hull, out: Path) -> None:
         else:
             d.rectangle(box, fill=COLOURS.get(it.get("kind"), (90, 90, 90)), outline=(235, 235, 235))
         d.text((zx(z0), xy(x1) + 2), it["id"], fill=TEXT, font=f)
+    for c in spec["compartments"]:
+        if c.get("floor_offset_m"):
+            d.text((zx(c["z"][0]) + 4, xy(hull.W / 2) + 4), f"floor {c['floor_offset_m']:+.2f} m", fill=(200, 170, 90), font=f)
     d.line([ox, H - 40, ox + S, H - 40], fill=TEXT, width=3)
     d.text((ox + S + 8, H - 48), "1 m", fill=TEXT, font=f)
     d.text((zx(-hull.L / 2) - 50, oy - 8), "BOW", fill=TEXT, font=font(14, True))
@@ -190,7 +205,10 @@ def draw_side(spec: dict, hull: Hull, out: Path) -> None:
     d.polygon(outer, outline=LINE)
     deck = hull.deck_y()
     zs = [z for z in steps if hull.deck_half_width(z) > 0.05]
-    d.line([zx(zs[0]), yy(deck), zx(zs[-1]), yy(deck)], fill=(200, 170, 90), width=3)
+    for c in spec["compartments"]:
+        a, b = max(c["z"][0], zs[0]), min(c["z"][1], zs[-1])
+        fy = hull.deck_y((a + b) / 2)
+        d.line([zx(a), yy(fy), zx(b), yy(fy)], fill=(200, 170, 90), width=3)
     head = spec["clearances"]["head_clear_m"]
     d.line([zx(zs[0]), yy(deck + head), zx(zs[-1]), yy(deck + head)], fill=(200, 80, 80), width=1)
     d.text((zx(zs[0]), yy(deck + head) - 16), f"{head} m headroom line", fill=(200, 80, 80), font=font(12))
@@ -204,10 +222,17 @@ def draw_side(spec: dict, hull: Hull, out: Path) -> None:
     k = trunk["z"]
     d.rectangle([zx(k - 0.45), yy(deck), zx(k + 0.45), yy(-hull.half_height_at(k) - 0.25)], outline=COLOURS["floor_hatch"], width=2)
     d.text((zx(k + 0.5), yy(-hull.half_height_at(k) - 0.1)), "lock-out chamber (bottom hatch to sea)", fill=COLOURS["floor_hatch"], font=font(12))
-    person = 1.75
+    person, seated_eye = 1.75, 1.2
     for it in spec["stations"]:
-        d.rectangle([zx(it["z"] - 0.15), yy(deck + person), zx(it["z"] + 0.15), yy(deck)], outline=(120, 170, 220))
-        d.text((zx(it["z"] - 0.3), yy(deck) + 6), it["id"], fill=TEXT, font=font(11))
+        fy = hull.deck_y(it["z"])
+        tall = seated_eye + 0.1 if it.get("kind") == "seat" else person
+        d.rectangle([zx(it["z"] - 0.15), yy(fy + tall), zx(it["z"] + 0.15), yy(fy)], outline=(120, 170, 220))
+        if it.get("kind") == "seat":
+            ey = fy + seated_eye
+            d.ellipse([zx(it["z"]) - 4, yy(ey) - 4, zx(it["z"]) + 4, yy(ey) + 4], fill=(120, 220, 255))
+        d.text((zx(it["z"] - 0.3), yy(fy) + 6), it["id"], fill=TEXT, font=font(11))
+    d.line([zx(-hull.L / 2), yy(0), zx(-hull.L / 2 + 1.6), yy(0)], fill=(120, 220, 255), width=1)
+    d.text((zx(-hull.L / 2), yy(0) - 16), "dome centre", fill=(120, 220, 255), font=font(11))
     d.text((ox, 16), "Side view: hull profile, deck (gold), 2 m headroom (red), 1.75 m crew figures (blue)", fill=TEXT, font=font(16, True))
     img.save(out)
 
@@ -242,7 +267,7 @@ def main() -> None:
     spec = yaml.safe_load((HERE / "program.yaml").read_text(encoding="utf-8"))
     out = Path(sys.argv[1]) if len(sys.argv) > 1 else HERE / "renders"
     out.mkdir(parents=True, exist_ok=True)
-    hull = Hull(spec["hull"])
+    hull = Hull(spec["hull"], spec["compartments"])
     draw_top(spec, hull, out / "plan_top.png")
     draw_side(spec, hull, out / "plan_side.png")
     draw_front(spec, hull, out / "plan_front.png")

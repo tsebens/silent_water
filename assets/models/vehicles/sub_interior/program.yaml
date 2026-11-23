@@ -1,4 +1,4 @@
-# Sub interior program, draft 3 (the sub experiment, from a blank sheet).
+# Sub interior program, draft 4 (the sub experiment, from a blank sheet).
 # The layout is data: plan.py draws and checks it, and the blockout generator will build from it.
 # Concept art is painted over the blockout's renders. Tristan's vision: reference/exterior_vision_tristan.webp.
 # Units: metres. Frame: sub-local, bow toward -Z, +X starboard, Y up, origin at the hull's centre.
@@ -11,7 +11,7 @@ hull:
   width_m: 3.8
   height_m: 3.0
   plan_exponent: 2.6         # top view
-  profile_exponent: 4.0      # side view: fuller than the plan, so the ends keep their height (blunt bow and stern)
+  profile_exponent: 5.0      # side view: fuller than the plan, so the ends keep their height (a big bubble bow, a blunt stern)
   section_exponent: 2.4      # front view
   wall_m: 0.12               # plating plus frames, inside the envelope
   deck_above_bottom_m: 0.55  # bilge, piping and the lock-out trunk's chamber sit below the deck plates
@@ -28,7 +28,11 @@ clearances:                  # from the player capsule (radius 0.3, height 1.75)
 compartments:
   - id: cockpit
     z: [-4.9, -3.0]
-    notes: Glass dome. Cramped but fits two operators, pilot and sonar, side by side as in the concept image.
+    floor_offset_m: -0.20   # one step down: seated eyes at y = +0.05, the dome's centre. Deeper leaves no floor for two seats.
+    notes: >
+      Glass dome, cramped but fits two: pilot and sonar side by side, sunk a step below the main deck.
+      Seated eyes sit at the dome's centre, so the view out is even all round. Standing crew in midships
+      look over both heads and out through the dome too. A short step or two leads down from midships.
   - id: midships
     z: [-3.0, 1.2]
     notes: >
@@ -47,10 +51,13 @@ compartments:
 # kind: seat (sit to use), panel (stand at a wall), table (walk round), well (kneel), floor_hatch, ladder.
 # side: port (-X), starboard (+X) or centre; x overrides side when given. footprint: [along the hull, across the hull].
 stations:
-  - {id: pilot,           compartment: cockpit,     kind: seat,  x: -0.5, z: -3.8, footprint: [0.9, 0.8]}
-  - {id: sonar,           compartment: cockpit,     kind: seat,  x: 0.5,  z: -3.8, footprint: [0.9, 0.8]}
+  - {id: pilot,           compartment: cockpit,     kind: seat,  x: -0.38, z: -3.4, footprint: [0.75, 0.7],
+     display: {size: small, placement: low on the console, out of the forward view, purpose: heading-up chart for navigation; most of the field of view stays on the dome}}
+  - {id: sonar,           compartment: cockpit,     kind: seat,  x: 0.38,  z: -3.4, footprint: [0.75, 0.7],
+     display: {size: large, placement: close in front of the seat, filling much of the view, purpose: sonar picture centred on the sub at short range, plus the full chart controls (zoom, pins, route waypoints) so this seat can switch between reconnaissance and navigation}}
   - {id: countermeasures, compartment: midships,    kind: panel, side: starboard, z: -1.85, footprint: [1.0, 0.45]}
-  - {id: map_table,       compartment: midships,    kind: table, side: centre,    z: -0.75, footprint: [1.1, 1.1]}
+  - {id: map_table,       compartment: midships,    kind: table, side: centre,    z: -0.75, footprint: [1.1, 1.1],
+     display: {size: table, placement: horizontal, walked round, purpose: the whole range of scales, from the entire site to zoomed in finer than sonar's view; planning, pins and routes for the whole crew}}
   - {id: engineering,     compartment: engineering, kind: panel, side: starboard, z: 2.0, footprint: [1.2, 0.45]}
   - {id: life_support,    compartment: engineering, kind: panel, side: port,      z: 2.0, footprint: [1.0, 0.5]}
   - {id: ballast,         compartment: engineering, kind: panel, side: port,      z: 3.1, footprint: [1.0, 0.4]}
@@ -75,8 +82,16 @@ features:
   - {id: drop_weights, compartment: engineering, kind: release_lever, side: starboard, z: 3.1, footprint: [0.2, 0.15],
      notes: One-time emergency release, across the aisle from the ballast valves.}
 
+displays:
+  # One shared chart, shown three times at different scales and sizes. Each view can pan, zoom, pin and
+  # set waypoints on the same chart, and every view sees the others' marks.
+  - The pilot needs only a small heading-up chart, low and out of the way, because the dome is their view.
+  - Sonar needs the sub-centred, short-range picture big and close, because it's their main input. Next to the pilot, sonar can swap between reconnaissance and navigation (route planning) without leaving the seat.
+  - The map table covers every scale, from the whole site to finer than sonar, for the crew to plan around.
+  - Showing the chart three times is fine; each copy serves a different scale and a different job.
+
 design_notes:
-  - "Two halves around the hub. Forward: pilot and sonar in the dome, then countermeasures at the map table. Aft, through the bulkhead: engineering, life support, ballast and bilge, all the hands-on utility work."
-  - Rounds are an engineering job now. Whoever does them works mostly behind the bulkhead, away from the table's chatter, and crosses the hub to get there.
+  - "Two halves around the hub. Forward: pilot and sonar sunk into the dome, then countermeasures at the map table. Aft, through the bulkhead: engineering, life support, ballast and bilge, all the hands-on utility work."
+  - The operational core (pilot, sonar, countermeasures and the table) shares one continuous volume. The sunken cockpit opens straight into midships, with no wall, so everyone running the boat is within a few steps and in sight of each other.
+  - Rounds are an engineering job. Whoever does them works mostly behind the bulkhead, away from the table's chatter, and crosses the hub to get there.
   - Ballast and the drop-weight release face each other across the aft aisle; both are about staying afloat.
-  - The pilot can look back from the dome and see the crew at the table.
