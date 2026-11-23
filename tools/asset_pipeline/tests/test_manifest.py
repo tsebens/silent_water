@@ -46,3 +46,7 @@ def test_lock_records_decision():
     assert m.locked is None and m.stage == "new" and m.decisions[0].decision == "rejected"
     m.lock("v1", reviewer="t")
     assert m.locked.variant == "v1" and m.locked.decision == "approved" and m.stage == "locked"
+    m.add(entry("v2"))
+    m.lock("v2", reviewer="t")
+    assert m.locked.variant == "v2"
+    assert [(d.variant, d.decision) for d in m.decisions] == [("v1", "rejected"), ("v1", "approved"), ("v2", "approved")]

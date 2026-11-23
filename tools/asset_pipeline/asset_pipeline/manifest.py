@@ -138,7 +138,7 @@ class Manifest:
     created: str = field(default_factory=now)
     lineage: list[LineageEntry] = field(default_factory=list)
     locked: Lock | None = None
-    # Decisions that did not lock (e.g. a rejection), newest last.
+    # Every decision, approvals and rejections, newest last. `locked` is the latest approval.
     decisions: list[Lock] = field(default_factory=list)
     brief: BriefRecord | None = None
     cleanups: list[CleanupRecord] = field(default_factory=list)
@@ -186,8 +186,7 @@ class Manifest:
         if decision == "approved":
             self.locked = rec
             self.stage = "locked"
-        else:
-            self.decisions.append(rec)
+        self.decisions.append(rec)
         return rec
 
     def to_dict(self) -> dict[str, Any]:
