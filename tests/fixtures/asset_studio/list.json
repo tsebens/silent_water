@@ -4,6 +4,8 @@
  "assets": [
   {"slug": "angler", "class": "creature", "issue": 12, "stage": "locked", "description": "A deep-sea angler.",
    "created": "2026-11-01T10:00:00Z",
+   "costs": [{"command": "concept", "stage": "concept", "provider": "openai", "model": "gpt-image-1", "usd": 0.12, "basis": "reported", "lineage": "v1", "units": {}, "unit_price": {}, "at": "2026-11-01T10:01:00Z"}, {"command": "concept", "stage": "concept", "provider": "claude-cli", "model": "sonnet", "usd": 0.0, "basis": "subscription", "lineage": null, "units": {}, "unit_price": {}, "at": "2026-11-01T10:00:30Z"}, {"command": "concept", "stage": "refine", "provider": "openai", "model": "gpt-image-1", "usd": 0.08, "basis": "estimated", "lineage": "v2", "units": {}, "unit_price": {}, "at": "2026-11-01T10:05:00Z"}, {"command": "to3d", "stage": "to3d", "provider": "tripo", "model": "v2.5", "usd": 0.4, "basis": "estimated", "lineage": "m1", "units": {}, "unit_price": {}, "at": "2026-11-01T13:00:00Z"}, {"command": "to3d", "stage": "to3d", "provider": "meshy", "model": "meshy-5", "usd": null, "basis": "unknown", "lineage": null, "units": {}, "unit_price": {}, "at": "2026-11-01T13:01:00Z"}],
+   "budget_usd": 0.5,
    "lineage": [
     {"id": "v1", "kind": "concept", "path": "", "provider": "mock", "model": "mock-image-1", "prompt": "angler, side view", "parent": null, "created": "2026-11-01T10:01:00Z"},
     {"id": "v2", "kind": "concept", "path": "", "provider": "openai", "model": "gpt-image-1", "prompt": "angler, bigger lure", "parent": "v1", "created": "2026-11-01T10:05:00Z"},
@@ -11,7 +13,8 @@
    "locked": {"variant": "v3", "decision": "approved", "reviewer": "tristan", "notes": "", "at": "2026-11-01T10:20:00Z"},
    "decisions": [{"variant": "v1", "decision": "rejected", "reviewer": "tristan", "notes": "too cute", "at": "2026-11-01T10:12:00Z"}]},
   {"slug": "bulkhead", "class": "architecture", "issue": null, "stage": "checked", "description": "",
-   "created": "2026-11-02T09:00:00Z",
+   "created": "2026-11-02T09:00:00Z", "budget_usd": null,
+   "costs": [{"command": "to3d", "stage": "to3d", "provider": "tripo", "model": "v2.5", "usd": 0.35, "basis": "reported", "lineage": "m1", "at": "2026-11-02T09:29:00Z"}],
    "lineage": [
     {"id": "m1", "kind": "mesh", "path": "", "provider": "blender", "model": "", "prompt": "", "parent": null, "created": "2026-11-02T09:30:00Z"}],
    "locked": null, "decisions": [],

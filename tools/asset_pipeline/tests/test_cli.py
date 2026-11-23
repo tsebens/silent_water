@@ -54,3 +54,9 @@ def test_list_dumps_every_manifest_as_json(root, capsys):
 def test_list_reports_configured_providers(root, capsys):
     code, out = run(capsys, "list")
     assert "mock" in out["providers"]["image"] and out["selected"]["image"]
+
+
+def test_list_carries_the_effective_soft_budget(root, capsys):
+    run(capsys, "new", "a_fish", "--class", "creature")
+    code, out = run(capsys, "list")
+    assert code == 0 and "budget_usd" in out["assets"][0]  # None when neither the manifest nor the class sets one

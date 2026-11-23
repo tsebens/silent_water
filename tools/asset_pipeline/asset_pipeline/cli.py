@@ -528,7 +528,9 @@ def cmd_list(args: argparse.Namespace, root: Path) -> dict[str, Any]:
     """Every manifest as JSON (the Godot plugin cannot read YAML), sorted by slug."""
     assets: list[dict[str, Any]] = []
     for mpath in sorted((root / "assets" / "models").glob("*/asset.yaml")):
-        assets.append(Manifest.load(mpath).to_dict())
+        m = Manifest.load(mpath)
+        # The effective soft budget (the manifest's, else its class's) so the Godot plugin need not read classes.yaml.
+        assets.append(m.to_dict() | {"budget_usd": cost.budget_for(root, m)})
     cfg = providers.load_config()
     names = {kind: sorted(cfg["providers"].get(kind) or {}) for kind in ("image", "three_d", "prompt_writer")}
     return {"assets": assets, "providers": names, "selected": dict(cfg["selection"]),
