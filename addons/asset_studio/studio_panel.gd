@@ -20,6 +20,7 @@ var estimator: AssetBackendRunner
 
 var _assets: Array = []
 var _providers: Dictionary = {}
+var _three_d_max_views: Dictionary = {}
 var _selected: Dictionary = {}
 var _selected_slug: String = ""
 var _tree: Tree
@@ -65,6 +66,7 @@ var _model_title: Label
 var _previews: HBoxContainer
 var _run_list: VBoxContainer
 var _model_provider: OptionButton
+var _model_views: HBoxContainer
 var _light_btn: Button
 var _wire_btn: Button
 var _turntable_btn: Button
@@ -125,6 +127,7 @@ func refresh() -> void:
 func show_listing(listing: Dictionary) -> void:
 	_assets = listing.get("assets", [])
 	_providers = listing.get("providers", {})
+	_three_d_max_views = listing.get("three_d_max_views", {})
 	_selected = listing.get("selected", {})
 	queue.load_assets(_assets, listing.get("folders", []))
 	_fill_queue()
@@ -621,8 +624,12 @@ func _build_model_tab() -> void:
 	pl.text = "3D provider"
 	_model_actions.add_child(pl)
 	_model_provider = OptionButton.new()
-	_model_provider.item_selected.connect(func(_i: int) -> void: _remember("model_three_d", _model_provider))
+	_model_provider.item_selected.connect(func(_i: int) -> void:
+		_remember("model_three_d", _model_provider)
+		_fill_view_picker())
 	_model_actions.add_child(_model_provider)
+	_model_views = HBoxContainer.new()
+	_model_actions.add_child(_model_views)
 	_est_button(_model_actions, "Send to provider", "send", func() -> void: _command(model.to3d_args(PackedStringArray([_picked(_model_provider)]) if _picked(_model_provider) != "" else PackedStringArray())))
 	_est_button(_model_actions, "Bake-off (all)", "bakeoff", func() -> void: _command(model.to3d_args(model.three_d_providers)))
 	_button(_model_actions, "Clean up", func() -> void: _command(model.cleanup_args(_shown_run)))
@@ -1009,12 +1016,50 @@ func save_brief() -> bool:
 
 # --- model -------------------------------------------------------------------------------
 
+func _views_key() -> String:
+	return "model_views:%s" % model.slug
+
+
+## Thumbnails of the turnaround views beside the provider dropdown: a radio choice for a
+## single-image provider, an ordered multi-select otherwise. None picked means defaults.
+func _fill_view_picker() -> void:
+	for c: Node in _model_views.get_children():
+		_model_views.remove_child(c)
+		c.queue_free()
+	var provider: String = _picked(_model_provider)
+	var lbl: Label = Label.new()
+	var single: bool = model.is_single(provider)
+	lbl.text = "View (one):" if single else "Views (up to %d, in order):" % model.limit_for(provider)
+	lbl.tooltip_text = "None picked: the provider's default views."
+	_model_views.add_child(lbl)
+	for v: Dictionary in model.turnaround_views:
+		var name: String = str(v["view"])
+		var order: int = model.picked_views.find(name)
+		var b: Button = Button.new()
+		b.toggle_mode = true
+		b.button_pressed = order >= 0
+		b.icon = _load_texture(str(v["path"]))
+		b.expand_icon = true
+		b.custom_minimum_size = Vector2(56, 56)
+		b.text = ("%d " % (order + 1) if order >= 0 and not single else "") + name
+		b.tooltip_text = name
+		b.pressed.connect(func() -> void:
+			model.toggle_view(name, _picked(_model_provider))
+			choice.remember(_views_key(), model.picked_text(), true)
+			_fill_view_picker()
+			request_estimates())
+		_model_views.add_child(b)
+
+
 func _show_model(asset: Dictionary) -> void:
 	for c: Node in _previews.get_children():
 		c.queue_free()
 	for c: Node in _run_list.get_children():
 		c.queue_free()
 	_model_provider.clear()
+	for c: Node in _model_views.get_children():
+		_model_views.remove_child(c)
+		c.queue_free()
 	_gate_text.clear()
 	_shown_run = ""
 	if asset.is_empty():
@@ -1026,9 +1071,11 @@ func _show_model(asset: Dictionary) -> void:
 		var rel: String = str((c as Dictionary).get("report", ""))
 		if rel != "" and not reports.has(rel):
 			reports[rel] = _read_json(rel)
-	model.load_asset(asset, _providers, _selected, reports)
+	model.load_asset(asset, _providers, _selected, reports, _three_d_max_views)
+	model.restore_picks(str(choice.remembered.get(_views_key(), "")))
 	_model_title.text = "Model: %s (%d runs)" % [model.slug, model.runs.size()]
 	_fill_pick(_model_provider, "model_three_d", model.three_d_providers, model.default_provider)
+	_fill_view_picker()
 	for r: Dictionary in model.runs:
 		var cb: CheckBox = CheckBox.new()
 		cb.text = "%s  [%s]  %s  %s" % [r["caption"], model.gate_summary(str(r["id"])), model.triangle_text(str(r["id"])), "(exported)" if r["exported"] else ""]

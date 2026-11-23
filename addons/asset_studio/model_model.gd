@@ -9,6 +9,7 @@ const LIGHT_RED: StringName = &"red"
 const TURNTABLE_DEG_PER_SEC: float = 24.0
 ## How many runs can be shown side by side.
 const MAX_COMPARE: int = 3
+const DEFAULT_MAX_VIEWS: int = 4
 
 var slug: String = ""
 var runs: Array[Dictionary] = []
@@ -19,12 +20,31 @@ var light: StringName = LIGHT_WHITE
 var wireframe: bool = false
 var turntable: bool = true
 var angle_deg: float = 0.0
+## The latest turnaround set's views the asset has: {view, path} in view order.
+var turnaround_views: Array[Dictionary] = []
+## Provider name -> how many views one job takes (`three_d_max_views` of `asset list`).
+var max_views: Dictionary = {}
+## The views picked for the 3D call, in pick order. Per asset: `load_asset` swaps in the asset's own.
+var picked_views: PackedStringArray = PackedStringArray()
+var _picks_by_slug: Dictionary = {}
 var _reports: Dictionary = {}
 
 
 ## `reports` maps a gate report's repo-relative path to its parsed JSON.
-func load_asset(asset: Dictionary, providers: Dictionary = {}, selected: Dictionary = {}, reports: Dictionary = {}) -> void:
+func load_asset(asset: Dictionary, providers: Dictionary = {}, selected: Dictionary = {}, reports: Dictionary = {}, limits: Dictionary = {}) -> void:
 	slug = str(asset.get("slug", ""))
+	max_views = limits
+	var tm: AssetTurnaroundModel = AssetTurnaroundModel.new()
+	tm.load_asset(asset)
+	turnaround_views.clear()
+	for v: Dictionary in tm.views:
+		if v["present"]:
+			turnaround_views.append({"view": v["view"], "path": v["path"]})
+	var mem: PackedStringArray = _picks_by_slug.get(slug, PackedStringArray())
+	picked_views = PackedStringArray()
+	for v: String in mem:
+		if _has_view(v):
+			picked_views.append(v)
 	_reports = reports
 	var cleaned: Dictionary = {}
 	for c: Variant in asset.get("cleanups", []):
@@ -183,13 +203,89 @@ static func count_triangles(mesh: Mesh) -> int:
 
 # --- backend arguments -------------------------------------------------------------------
 
-## Sends the turnaround to one or more providers: several is the bake-off.
+## Sends the turnaround to one or more providers: several is the bake-off. With views picked,
+## `--views` carries them; with none, each provider uses its own default views.
 func to3d_args(providers: PackedStringArray) -> PackedStringArray:
 	if providers.is_empty():
 		return PackedStringArray()
 	var a: PackedStringArray = PackedStringArray(["to3d", slug, "--3d-provider"])
 	a.append_array(providers)
+	var v: PackedStringArray = views_for(providers)
+	if not v.is_empty():
+		a.append_array(["--views", ",".join(v)])
 	return a
+
+
+# --- view picker -------------------------------------------------------------------------
+
+## How many views one job of `provider` takes. A provider whose limit is unknown counts as
+## multi-image (the backend rejects too many views by name).
+func limit_for(provider: String) -> int:
+	return int(max_views.get(provider, DEFAULT_MAX_VIEWS))
+
+
+## A single-image provider gets a radio choice of one view, others an ordered multi-select.
+func is_single(provider: String) -> bool:
+	return limit_for(provider) <= 1
+
+
+## The most views every one of `providers` can take (the whole bake-off shares one `--views`).
+func limit_for_all(providers: PackedStringArray) -> int:
+	var lim: int = 1000
+	for p: String in providers:
+		lim = mini(lim, limit_for(p))
+	return lim
+
+
+## Picks or unpicks a view for `provider`. A radio choice replaces the pick; a multi-select
+## appends (the order is the order sent) and refuses once the provider's limit is reached.
+## Returns false when nothing changed.
+func toggle_view(view: String, provider: String) -> bool:
+	if not _has_view(view):
+		return false
+	var idx: int = picked_views.find(view)
+	if idx >= 0:
+		picked_views.remove_at(idx)
+	elif is_single(provider):
+		picked_views = PackedStringArray([view])
+	elif picked_views.size() >= limit_for(provider):
+		return false
+	else:
+		picked_views.append(view)
+	_picks_by_slug[slug] = picked_views
+	return true
+
+
+## The picked views as the providers can take them: cut to the smallest limit among them.
+## Empty when nothing is picked (each provider then uses its default).
+func views_for(providers: PackedStringArray) -> PackedStringArray:
+	var out: PackedStringArray = PackedStringArray()
+	var lim: int = limit_for_all(providers)
+	for v: String in picked_views:
+		if out.size() < lim:
+			out.append(v)
+	return out
+
+
+## The pick as one string for the remembered choices, and back.
+func picked_text() -> String:
+	return ",".join(picked_views)
+
+
+func restore_picks(text: String) -> void:
+	var out: PackedStringArray = PackedStringArray()
+	for v: String in text.split(",", false):
+		if _has_view(v) and not out.has(v):
+			out.append(v)
+	picked_views = out
+	_picks_by_slug[slug] = out
+
+
+func _has_view(view: String) -> bool:
+	for v: Dictionary in turnaround_views:
+		if v["view"] == view:
+			return true
+	return false
 
 
 ## Cleanup works from a raw provider mesh only.
