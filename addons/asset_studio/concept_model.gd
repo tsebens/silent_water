@@ -19,6 +19,13 @@ var _decided: Dictionary = {}
 var _approval_order: Array[String] = []
 ## Images being generated right now (placeholders in Pending); set by the panel.
 var in_flight: int = 0
+## Reference images chosen for the next "Generate more" (absolute paths on disk), and how
+## the image model should use them: "paint-over" or "inspire".
+var references: PackedStringArray = PackedStringArray()
+var reference_mode: String = "paint-over"
+
+const REFERENCE_SUFFIXES: PackedStringArray = ["png", "jpg", "jpeg", "webp"]
+const REFERENCE_MODES: PackedStringArray = ["paint-over", "inspire"]
 
 
 func load_asset(asset: Dictionary, providers: Dictionary = {}, selected: Dictionary = {}) -> void:
@@ -57,6 +64,8 @@ func load_asset(asset: Dictionary, providers: Dictionary = {}, selected: Diction
 			"provider": str(d.get("provider", "")),
 			"model": str(d.get("model", "")),
 			"parent": d.get("parent"),
+			"reference": _reference_of(d),
+			"mode": str(d.get("mode", "")),
 			"state": "pending",
 			"caption": "%s · %s/%s" % [id, d.get("provider", ""), d.get("model", "")],
 		})
@@ -69,6 +78,50 @@ func load_asset(asset: Dictionary, providers: Dictionary = {}, selected: Diction
 	for w: Variant in providers.get("prompt_writer", []):
 		prompt_writers.append(str(w))
 	default_writer = str(selected.get("prompt_writer", ""))
+
+
+## The reference a variant was made from, as {name, sha256, path}, or {}. `path` is the
+## repo-relative stored PNG the backend keeps under `.asset_work/<slug>/references/`.
+func _reference_of(entry: Dictionary) -> Dictionary:
+	var r: Variant = entry.get("reference")
+	if not (r is Dictionary) or (r as Dictionary).is_empty():
+		return {}
+	var sha: String = str((r as Dictionary).get("sha256", ""))
+	return {
+		"name": str((r as Dictionary).get("name", "")),
+		"sha256": sha,
+		"path": ".asset_work/%s/references/%s.png" % [slug, sha.substr(0, 12)] if sha != "" else "",
+	}
+
+
+## Reference picker state. Returns false (and changes nothing) for an unsupported type,
+## an empty path or one already chosen.
+func add_reference(path: String) -> bool:
+	if path == "" or references.has(path) or not REFERENCE_SUFFIXES.has(path.get_extension().to_lower()):
+		return false
+	references.append(path)
+	return true
+
+
+func remove_reference(index: int) -> void:
+	if index >= 0 and index < references.size():
+		references.remove_at(index)
+
+
+func set_reference_mode(mode: String) -> void:
+	if REFERENCE_MODES.has(mode):
+		reference_mode = mode
+
+
+## `--reference` per chosen image, then `--mode`; empty when none are chosen.
+func reference_args() -> PackedStringArray:
+	var a: PackedStringArray = PackedStringArray()
+	if references.is_empty():
+		return a
+	for r: String in references:
+		a.append_array(PackedStringArray(["--reference", r]))
+	a.append_array(PackedStringArray(["--mode", reference_mode]))
+	return a
 
 
 func _approve(id: String) -> void:
@@ -170,6 +223,8 @@ func lineage_of(id: String) -> Array[Dictionary]:
 			"model": str(found.get("model", "")),
 			"parent": found.get("parent"),
 			"prompt": str(found.get("prompt", "")),
+			"reference": _reference_of(found),
+			"mode": str(found.get("mode", "")),
 		})
 		cur = found.get("parent")
 	return out
@@ -199,11 +254,14 @@ func refine_args(variant_id: String, notes: String, provider: String = "", write
 	return _with_writer(a, writer)
 
 
-func generate_more_args(n: int, provider: String = "", writer: String = "") -> PackedStringArray:
+func generate_more_args(n: int, provider: String = "", writer: String = "", with_references: bool = true) -> PackedStringArray:
 	var a: PackedStringArray = PackedStringArray(["concept", slug, "--n", str(maxi(n, 1))])
 	if provider != "":
 		a.append_array(PackedStringArray(["--image-provider", provider]))
-	return _with_writer(a, writer)
+	a = _with_writer(a, writer)
+	if with_references:
+		a.append_array(reference_args())
+	return a
 
 
 ## Redraft the brief with the chosen writer. The panel gates it on the turnaround model.

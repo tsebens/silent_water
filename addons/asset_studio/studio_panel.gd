@@ -46,6 +46,10 @@ var _collapsed: Dictionary = {}
 var _sections: Dictionary = {}
 var _section_boxes: Dictionary = {}
 var _desc_toggle: Button
+const REFERENCE_MODE_ORDER: Array[String] = ["paint-over", "inspire"]
+var _ref_dialog: FileDialog
+var _ref_row: HBoxContainer
+var _ref_mode: OptionButton
 var _lineage_toggle: Button
 var _desc_body: Control
 var _lineage_body: Control
@@ -60,6 +64,7 @@ var _lineage: RichTextLabel
 var _refresh_btn: Button
 var _more_btn: Button
 var _lineage_title: Label
+var _lineage_ref: TextureRect
 var _tabs: TabContainer
 var _turn_title: Label
 var _turn_views: GridContainer
@@ -242,6 +247,13 @@ func _build() -> void:
 	_lineage.bbcode_enabled = false
 	_lineage.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	lin_box.add_child(_lineage)
+	_lineage_ref = TextureRect.new()
+	_lineage_ref.name = "LineageReference"
+	_lineage_ref.custom_minimum_size = Vector2(0, 96)
+	_lineage_ref.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	_lineage_ref.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	_lineage_ref.visible = false
+	lin_box.add_child(_lineage_ref)
 
 	# Right column (~2/3): one image per row in Pending / Accepted / Rejected.
 	var side: VBoxContainer = VBoxContainer.new()
@@ -261,6 +273,7 @@ func _build() -> void:
 		_sections[sec] = _toggle_header(secs, sec.capitalize(), body, sec != "rejected")
 		secs.add_child(body)
 
+	_build_reference_picker(side)
 	var more: HBoxContainer = HBoxContainer.new()
 	side.add_child(more)
 	var lbl: Label = Label.new()
@@ -292,6 +305,65 @@ func _build() -> void:
 	_error.selection_enabled = true
 	_error.visible = false
 	add_child(_error)
+
+
+## The reference picker above "Generate more": Add reference…, thumbnails with remove
+## buttons, and the Paint-over / Inspire toggle.
+func _build_reference_picker(parent: Control) -> void:
+	var row: HBoxContainer = HBoxContainer.new()
+	parent.add_child(row)
+	var add: Button = _button(row, "Add reference…", func() -> void: _ref_dialog.popup_centered_ratio(0.6))
+	add.name = "AddReference"
+	_ref_mode = OptionButton.new()
+	_ref_mode.name = "ReferenceMode"
+	_ref_mode.add_item("Paint-over (keep composition)")
+	_ref_mode.set_item_metadata(0, "paint-over")
+	_ref_mode.add_item("Inspire (loose start)")
+	_ref_mode.set_item_metadata(1, "inspire")
+	_ref_mode.item_selected.connect(func(i: int) -> void:
+		concept.set_reference_mode(str(_ref_mode.get_item_metadata(i)))
+		request_estimates())
+	row.add_child(_ref_mode)
+	_ref_row = HBoxContainer.new()
+	_ref_row.name = "ReferenceThumbs"
+	parent.add_child(_ref_row)
+	_ref_dialog = FileDialog.new()
+	_ref_dialog.file_mode = FileDialog.FILE_MODE_OPEN_FILES
+	_ref_dialog.access = FileDialog.ACCESS_FILESYSTEM
+	_ref_dialog.title = "Reference images"
+	_ref_dialog.filters = PackedStringArray(["*.png, *.jpg, *.jpeg, *.webp ; Images"])
+	_ref_dialog.files_selected.connect(func(paths: PackedStringArray) -> void:
+		for p: String in paths:
+			concept.add_reference(p)
+		_fill_references())
+	add_child(_ref_dialog)
+	_fill_references()
+
+
+func _fill_references() -> void:
+	for c: Node in _ref_row.get_children():
+		_ref_row.remove_child(c)
+		c.queue_free()
+	_ref_mode.visible = not concept.references.is_empty()
+	_ref_mode.select(maxi(REFERENCE_MODE_ORDER.find(concept.reference_mode), 0))
+	for i: int in concept.references.size():
+		var path: String = concept.references[i]
+		var cell: VBoxContainer = VBoxContainer.new()
+		var t: TextureRect = TextureRect.new()
+		t.custom_minimum_size = Vector2(64, 64)
+		t.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		t.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		t.tooltip_text = path.get_file()
+		t.texture = textures.get_texture(path)
+		cell.add_child(t)
+		var idx: int = i
+		_button(cell, "Remove", func() -> void:
+			concept.remove_reference(idx)
+			_fill_references()
+			request_estimates())
+		_ref_row.add_child(cell)
+	if is_node_ready():
+		request_estimates()
 
 
 ## A flat button that shows or hides `body`. Its label is `title`, with a triangle.
@@ -765,6 +837,9 @@ func _on_row_selected() -> void:
 	var meta: Dictionary = item.get_metadata(0)
 	if meta["kind"] != "asset":
 		return
+	if str(meta["slug"]) != _selected_slug:
+		concept.references = PackedStringArray()
+		_fill_references()
 	_selected_slug = str(meta["slug"])
 	_show_asset(_selected_slug)
 
@@ -824,6 +899,16 @@ func _variant_card(v: Dictionary) -> Control:
 		bad.text = "unreadable image: %s" % why
 		bad.add_theme_color_override("font_color", Color("#ff6b6b"))
 		box.add_child(bad)
+	var ref: Dictionary = v.get("reference", {})
+	if not ref.is_empty():
+		var rt: TextureRect = TextureRect.new()
+		rt.name = "ReferenceThumb"
+		rt.custom_minimum_size = Vector2(48, 48)
+		rt.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		rt.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		rt.tooltip_text = "Reference (%s): %s" % [v.get("mode", ""), ref.get("name", "")]
+		rt.texture = _load_texture(str(ref.get("path", "")))
+		box.add_child(rt)
 	var cap: Label = Label.new()
 	var mark: String = " [Locked]" if v["state"] == "locked" else ""
 	cap.text = "%s%s" % [v["caption"], mark]
@@ -871,7 +956,8 @@ func estimate_commands() -> Dictionary:
 		"view": turnaround.regenerate_args("front", _picked(_turn_provider)),
 		"bakeoff": model.to3d_args(model.three_d_providers),
 	}
-	out["refine"] = out["more"]
+	# A refine re-passes its variant's own reference, so the picker does not apply to it.
+	out["refine"] = concept.generate_more_args(3, img, _picked(_writer_pick), false)
 	var pick: String = _picked(_model_provider)
 	out["send"] = model.to3d_args(PackedStringArray([pick]) if pick != "" else PackedStringArray())
 	return out
@@ -1222,6 +1308,17 @@ func _show_lineage(id: String) -> void:
 			r["id"], r["kind"], r["provider"], r["model"], str(r["parent"]) if r["parent"] != null else "none", r["prompt"]
 		])
 	_lineage.text = "\n".join(lines)
+	_lineage_ref.texture = null
+	_lineage_ref.visible = false
+	for r: Dictionary in concept.lineage_of(id):
+		var ref: Dictionary = r.get("reference", {})
+		if not ref.is_empty():
+			_lineage_ref.texture = _load_texture(str(ref.get("path", "")))
+			_lineage_ref.tooltip_text = "Reference (%s): %s" % [r.get("mode", ""), ref.get("name", "")]
+			_lineage_ref.visible = true
+			lines.append("reference: %s (%s)" % [ref.get("name", ""), r.get("mode", "")])
+			_lineage.text = "\n".join(lines)
+			break
 
 
 func _abs_image_path(rel: String) -> String:
@@ -1283,6 +1380,7 @@ func _on_started(args: PackedStringArray) -> void:
 		var at: int = args.find("--n")
 		if at >= 0 and at + 1 < args.size():
 			n = maxi(int(args[at + 1]), 1)
+		n *= maxi(args.count("--reference"), 1)  # --n variants per reference
 		concept.in_flight = n
 		_fill_sections()
 
