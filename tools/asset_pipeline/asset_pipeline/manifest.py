@@ -131,6 +131,14 @@ class CostRecord:
 
 
 @dataclass
+class RenameRecord:
+    """One `asset rename`: the slug before and after, and when. Lineage ids are never rewritten."""
+    old: str
+    new: str
+    at: str = field(default_factory=now)
+
+
+@dataclass
 class Manifest:
     slug: str
     asset_class: str
@@ -151,6 +159,7 @@ class Manifest:
     costs: list[CostRecord] = field(default_factory=list)
     # Soft budget in USD for this asset; overrides the class's `budget_usd` in classes.yaml. Warns, never blocks.
     budget_usd: float | None = None
+    renames: list[RenameRecord] = field(default_factory=list)
 
     def entry(self, entry_id: str) -> LineageEntry:
         for e in self.lineage:
@@ -217,6 +226,7 @@ class Manifest:
             exports=[ExportRecord(**x) for x in d.get("exports") or []],
             costs=[CostRecord(**x) for x in d.get("costs") or []],
             budget_usd=d.get("budget_usd"),
+            renames=[RenameRecord(**x) for x in d.get("renames") or []],
         )
 
     def save(self, path: Path) -> None:
