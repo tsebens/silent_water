@@ -6,12 +6,13 @@ from pathlib import Path
 import yaml
 
 ROOT = Path(__file__).resolve().parent.parent / "assets" / "style_bible"
-CLASSES = ["creature", "prop", "terrain", "architecture", "interior"]
-ROUTES = {"image-to-3d", "scripted"}
+CLASSES = ["creature", "prop", "terrain", "architecture", "interior", "kit"]
+ROUTES = {"image-to-3d", "scripted", "cad"}
 GATES = ["triangle_tolerance", "bbox_tolerance", "max_loose_parts", "max_non_manifold", "silhouette_iou_min"]
 OPTIONAL_FIELDS = ["budget_usd", "turnaround_views", "to3d_views", "concept_presentation"]
 PRESENTATIONS = ("subject", "scene")
 SCRIPTED = {"architecture", "interior"}
+CAD = {"kit"}
 VIEWS = ["front", "left", "back", "right", "top", "bottom"]
 FIELDS = ["build_route", "triangle_budget", "scale_range_m", "snap_grid_m", "palette_size", "cleanup_recipe", "gates"]
 
@@ -89,9 +90,11 @@ def validate() -> list[str]:
         if "concept_presentation" in c and c["concept_presentation"] not in PRESENTATIONS:
             errs.append(p + f"concept_presentation must be one of {list(PRESENTATIONS)}")
         if c.get("build_route") not in ROUTES:
-            errs.append(p + "build_route must be image-to-3d or scripted")
+            errs.append(p + "build_route must be image-to-3d, scripted or cad")
         if (name in SCRIPTED) != (c.get("build_route") == "scripted"):
             errs.append(p + "only architecture and interior use the scripted route")
+        if (name in CAD) != (c.get("build_route") == "cad"):
+            errs.append(p + "only kit uses the cad route")
         tb = c.get("triangle_budget")
         if not (isinstance(tb, int) and tb > 0):
             errs.append(p + "triangle_budget must be a positive int")

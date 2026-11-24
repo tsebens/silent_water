@@ -1,0 +1,8 @@
+# Kit palette: the colours a kit part may use, named by role. `asset import` snaps every material of an Onshape export
+# (named by its RGB value, e.g. 0.647059_0.647059_0.647059_0.000000_0.000000) to the nearest entry here, by Euclidean
+# distance in RGB, and names the material by the role. Values are 0..1 per channel.
+colours:
+  powder_grey: [0.65, 0.65, 0.65]
+  safety_orange: [1.0, 0.40, 0.0]
+  black: [0.04, 0.04, 0.04]
+  led: [0.2, 0.7, 1.0]

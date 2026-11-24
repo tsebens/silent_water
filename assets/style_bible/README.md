@@ -16,11 +16,11 @@ Input to the asset pipeline (concept #222). Seeded from `docs/art_direction.md`,
 
 ## `classes.yaml` format
 
-Top-level key `classes`, with one entry each for `creature`, `prop`, `terrain`, `architecture`, `interior`. Fields:
+Top-level key `classes`, with one entry each for `creature`, `prop`, `terrain`, `architecture`, `interior`, `kit`. Fields:
 
 | Field | Meaning |
 | --- | --- |
-| `build_route` | `image-to-3d` or `scripted` |
+| `build_route` | `image-to-3d`, `scripted` or `cad`. `cad` (the `kit` class) is modelled in Onshape and brought in with `asset import`; it has no concept, turnaround or to3d stage |
 | `triangle_budget` | Maximum triangles after cleanup |
 | `scale_range_m` | `[min, max]` largest dimension in metres |
 | `snap_grid_m` | Snap grid in metres, or `null` when the class has none |
