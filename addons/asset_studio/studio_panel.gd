@@ -41,6 +41,11 @@ var _rename_edit: LineEdit
 var _rename_hint: Label
 var _delete_dialog: ConfirmationDialog
 var rename: AssetRenameModel = AssetRenameModel.new()
+var import_cad: AssetImportModel = AssetImportModel.new()
+var _import_row: HBoxContainer
+var _import_dialog: FileDialog
+var _import_pivot: LineEdit
+var _import_hint: Label
 ## Folder paths the user collapsed; kept across refreshes.
 var _collapsed: Dictionary = {}
 var _sections: Dictionary = {}
@@ -705,12 +710,25 @@ func _on_save_description() -> void:
 
 ## Hide the Turnaround and 3D model tabs for classes that are not built from a turnaround.
 func _sync_build_tabs() -> void:
-	var hide_tabs: bool = concept.hides_build_tabs()
-	for tab_name: String in ["Turnaround", "Model"]:
+	var cad: bool = concept.hides_concept_and_to3d()
+	var hide_tabs: bool = concept.hides_build_tabs() and not cad
+	if _import_row != null:
+		_import_row.visible = cad
+	if _model_actions != null:
+		_model_actions.visible = not cad
+	var concept_tab: Control = _tabs.get_node_or_null("Concept") as Control
+	if concept_tab != null:
+		_tabs.set_tab_hidden(_tabs.get_tab_idx_from_control(concept_tab), cad)
+	var turn_tab: Control = _tabs.get_node_or_null("Turnaround") as Control
+	if turn_tab != null:
+		_tabs.set_tab_hidden(_tabs.get_tab_idx_from_control(turn_tab), hide_tabs or cad)
+	for tab_name: String in ["Model"]:
 		var tab: Control = _tabs.get_node_or_null(tab_name) as Control
 		if tab != null:
 			_tabs.set_tab_hidden(_tabs.get_tab_idx_from_control(tab), hide_tabs)
-	if hide_tabs:
+	if cad:
+		_tabs.current_tab = _tabs.get_tab_idx_from_control(_tabs.get_node("Model"))
+	elif hide_tabs:
 		_tabs.current_tab = 0
 
 
@@ -798,6 +816,26 @@ func _build_model_tab() -> void:
 	_gate_text.bbcode_enabled = true
 	_gate_text.selection_enabled = true
 	box.add_child(_gate_text)
+	_import_row = HBoxContainer.new()
+	_import_row.visible = false
+	box.add_child(_import_row)
+	var pv: Label = Label.new()
+	pv.text = "Pivot part"
+	_import_row.add_child(pv)
+	_import_pivot = LineEdit.new()
+	_import_pivot.placeholder_text = "part name (optional)"
+	_import_pivot.custom_minimum_size = Vector2(160, 0)
+	_import_row.add_child(_import_pivot)
+	_button(_import_row, "Import CAD…", _on_import_cad)
+	_import_hint = Label.new()
+	_import_row.add_child(_import_hint)
+	_import_dialog = FileDialog.new()
+	_import_dialog.file_mode = FileDialog.FILE_MODE_OPEN_FILE
+	_import_dialog.access = FileDialog.ACCESS_FILESYSTEM
+	_import_dialog.title = "Import CAD export (glTF)"
+	_import_dialog.filters = PackedStringArray(["*.gltf, *.glb ; glTF export"])
+	_import_dialog.file_selected.connect(_on_import_file_selected)
+	add_child(_import_dialog)
 	_model_actions = HBoxContainer.new()
 	box.add_child(_model_actions)
 	var pl: Label = Label.new()
@@ -815,6 +853,23 @@ func _build_model_tab() -> void:
 	_button(_model_actions, "Clean up", func() -> void: _command(model.cleanup_args(_shown_run)))
 	_button(_model_actions, "Check", func() -> void: _command(model.check_args(_shown_run)))
 	_export_btn = _button(_model_actions, "Export", func() -> void: _command(model.export_args(_shown_run)))
+
+
+func _on_import_cad() -> void:
+	import_cad.open(_selected_slug)
+	import_cad.pivot = _import_pivot.text
+	_import_hint.text = ""
+	_import_dialog.popup_centered_ratio(0.6)
+
+
+func _on_import_file_selected(path: String) -> void:
+	import_cad.export_path = path
+	import_cad.pivot = _import_pivot.text
+	var args: PackedStringArray = import_cad.import_args()
+	if args.is_empty():
+		_import_hint.text = import_cad.error()
+		return
+	_command(args)
 
 
 func _process(delta: float) -> void:
