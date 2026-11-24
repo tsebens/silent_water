@@ -1,0 +1,10 @@
+[project]
+name = "cad-spike"
+version = "0.1.0"
+description = "Spike: AI-authored parametric CAD (build123d) for kit parts, exported as an Onshape-shaped glTF for `asset import`."
+requires-python = ">=3.13"
+dependencies = [
+    "build123d==0.13.0",
+    "numpy>=2.0",
+    "trimesh>=4.0",
+]
