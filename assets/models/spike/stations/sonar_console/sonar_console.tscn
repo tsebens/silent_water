@@ -1,0 +1,109 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://src/sonar/sonar_station.gd" id="1"]
+[ext_resource type="PackedScene" path="res://assets/models/spike/stations/sonar_console/sonar_console_body.glb" id="2"]
+[ext_resource type="Script" path="res://src/map/flat_chart.gd" id="3"]
+[ext_resource type="Script" path="res://src/interact/gauge.gd" id="4"]
+[ext_resource type="PackedScene" path="res://src/noise/noise_gauge.tscn" id="5"]
+[ext_resource type="PackedScene" path="res://assets/models/spike/kit/guarded_toggle/guarded_toggle.tscn" id="6"]
+[ext_resource type="PackedScene" path="res://assets/models/spike/kit/trackball/trackball.tscn" id="7"]
+[ext_resource type="PackedScene" path="res://assets/models/spike/kit/map_keypad/map_keypad.tscn" id="8"]
+[ext_resource type="Script" path="res://src/sonar/sonar_seat.gd" id="9"]
+[ext_resource type="PackedScene" path="res://assets/models/spike/furniture/operator_seat/operator_seat.tscn" id="10"]
+[ext_resource type="PackedScene" path="res://src/sonar/headset.tscn" id="11"]
+
+[sub_resource type="BoxShape3D" id="lower"]
+size = Vector3(0.82, 0.74, 0.3)
+
+[sub_resource type="BoxShape3D" id="upper"]
+size = Vector3(0.82, 0.78, 0.4)
+
+[node name="SonarConsole" type="Node3D" node_paths=PackedStringArray("headset", "wheel")]
+script = ExtResource("1")
+headset = NodePath("Headset")
+wheel = NodePath("Controls/Trackball")
+
+[node name="Body" parent="." instance=ExtResource("2")]
+
+[node name="Collision" type="StaticBody3D" parent="."]
+
+[node name="Lower" type="CollisionShape3D" parent="Collision"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.37, 0.15)
+shape = SubResource("lower")
+
+[node name="Upper" type="CollisionShape3D" parent="Collision"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.13, 0.2)
+shape = SubResource("upper")
+
+[node name="ScreenMount" type="Node3D" parent="."]
+transform = Transform3D(-1, 0, 0, 0, 0.982805, -0.184648, 0, -0.184648, -0.982805, 0, 1.26191, 0.345856)
+
+[node name="Chart" type="MeshInstance3D" parent="ScreenMount"]
+script = ExtResource("3")
+screen_size = 0.36
+
+[node name="Gauges" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 0.982805, 0.184648, 0, -0.184648, 0.982805, 0, 1.00376, 0.434041)
+
+[node name="SignalGauge" type="Node3D" parent="Gauges"]
+script = ExtResource("4")
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.255, 0, 0.012)
+source_group = &"sonar_readouts"
+readout = &"signal"
+title = "SIGNAL"
+radius = 0.04
+min_value = 40
+max_value = 110
+
+[node name="BearingGauge" type="Node3D" parent="Gauges"]
+script = ExtResource("4")
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.09, 0, 0.012)
+source_group = &"sonar_readouts"
+readout = &"bearing"
+title = "BEARING"
+radius = 0.055
+max_value = 360
+wraps = true
+wrap_labels = PackedStringArray("FWD", "STBD", "AFT", "PORT")
+
+[node name="NoiseGauge" parent="Gauges" instance=ExtResource("5")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.09, 0, 0.012)
+radius = 0.055
+
+[node name="BearingRateGauge" type="Node3D" parent="Gauges"]
+script = ExtResource("4")
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.255, 0, 0.012)
+source_group = &"sonar_readouts"
+readout = &"bearing_rate"
+title = "BRG RATE"
+radius = 0.04
+min_value = -120
+max_value = 120
+sweep_deg = 180
+
+[node name="Controls" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 0.478852, 0.877896, 0, -0.877896, 0.478852, 0, 0.803512, 0.511915)
+
+[node name="ActiveSonar" parent="Controls" instance=ExtResource("6")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.23, 0, 0)
+label = "active sonar"
+
+[node name="Trackball" parent="Controls" instance=ExtResource("7")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0)
+label = "hydrophone trackball"
+
+[node name="MapKeys" parent="Controls" instance=ExtResource("8")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.23, 0, 0)
+
+[node name="Seat" type="Node3D" parent="." node_paths=PackedStringArray("headset", "sit_point")]
+script = ExtResource("9")
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0.98)
+headset = NodePath("../Headset")
+sit_point = NodePath("Model/SitPoint")
+eye_height = 1.2
+label = "sonar seat"
+
+[node name="Model" parent="Seat" instance=ExtResource("10")]
+
+[node name="Headset" parent="." instance=ExtResource("11")]
+transform = Transform3D(0, 0, 1, 0, 1, 0, -1, 0, 0, 0.525, 1.15, 0.2)

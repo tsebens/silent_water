@@ -1,0 +1,25 @@
+slug: trackball
+kind: control
+summary: Desk trackball in a black ring; rolling it sideways trains the hydrophone bearing.
+tags:
+- trackball
+- pointing
+- hydrophone
+- bearing
+- sonar
+scene: res://assets/models/spike/kit/trackball/trackball.tscn
+behaviour:
+  script: Trackball (extends HydrophoneWheel)
+  values: bearing, unbounded, deg
+  signal: value_changed
+  wire: SonarStation.wheel
+base: 2x2
+footprint_mm:
+- 116.0
+- 116.0
+stand_out_mm: 63.26782687642637
+mount: back on Z=0, centred; front +Z
+set_on_instance:
+  label: name at the aiming point
+triangles: 386
+built_by: tools/cad_spike/components/trackball.py

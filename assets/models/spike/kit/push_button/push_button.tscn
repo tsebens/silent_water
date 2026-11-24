@@ -1,0 +1,36 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://src/interact/push_button.gd" id="1"]
+[ext_resource type="Script" path="res://src/interact/noise_profile.gd" id="2"]
+[ext_resource type="PackedScene" path="res://assets/models/spike/kit/push_button/push_button_body.glb" id="3"]
+[ext_resource type="PackedScene" path="res://assets/models/spike/kit/push_button/push_button_cap.glb" id="4"]
+
+[sub_resource type="Resource" id="noise"]
+script = ExtResource("2")
+idle_intensity = 0
+max_intensity = 0.01
+clank_rate = 0.5
+exponent = 2
+
+[sub_resource type="BoxShape3D" id="grab"]
+size = Vector3(0.026, 0.026, 0.014)
+
+[node name="PushButton" type="Node3D" node_paths=PackedStringArray("plunger")]
+script = ExtResource("1")
+travel = 0.004
+noise_profile = SubResource("noise")
+plunger = NodePath("Plunger")
+
+[node name="Body" parent="." instance=ExtResource("3")]
+
+[node name="Plunger" type="Node3D" parent="."]
+
+[node name="Cap" parent="Plunger" instance=ExtResource("4")]
+
+[node name="Grab" type="StaticBody3D" parent="."]
+collision_layer = 2
+collision_mask = 0
+
+[node name="Shape" type="CollisionShape3D" parent="Grab"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0.007)
+shape = SubResource("grab")

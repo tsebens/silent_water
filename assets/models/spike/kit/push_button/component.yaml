@@ -1,0 +1,22 @@
+slug: push_button
+kind: element
+summary: 'Momentary push button: black bezel ring, grey cap, 4 mm travel. Mounts on a plate, no base.'
+tags:
+- button
+- push
+- momentary
+- key
+scene: res://assets/models/spike/kit/push_button/push_button.tscn
+behaviour:
+  script: PushButton
+  values: 0 released, 1 held
+  signal: value_changed
+footprint_mm:
+- 24.0
+- 24.0
+stand_out_mm: 10.0
+mount: back on Z=0 (put it on a plate front), centred; presses along -Z
+set_on_instance:
+  label: name at the aiming point
+triangles: 108
+built_by: tools/cad_spike/components/push_button.py
