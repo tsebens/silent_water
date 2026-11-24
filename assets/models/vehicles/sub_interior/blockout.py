@@ -224,8 +224,9 @@ def build_item(it: dict, layout: dict) -> None:
             box(f"{iid}_cowl", wall, wall + inboard * 0.28, top_y + 0.75, top_y + 1.25, z0, z1, "cowl")
             holo = box(f"{iid}_hologram", tx0, tx1, top_y, top_y + it.get("hologram_height_m", 0.7), z0, z1, "holo", "hologram")
             wireframe(holo, 0.01)
-            # observers standing along the front edge either side of the operator
+            # the operator stands at the middle of the front edge, observers either side
             edge = tx1 if inboard > 0 else tx0
+            standing(f"{iid}_operator", edge + inboard * 0.35, fy, (z0 + z1) / 2)
             standing(f"{iid}_obs_fwd", edge + inboard * 0.75, fy, z0 + 0.3)
             standing(f"{iid}_obs_aft", edge + inboard * 0.75, fy, z1 - 0.3)
     elif kind == "chair":

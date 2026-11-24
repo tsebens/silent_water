@@ -41,12 +41,15 @@ crew's planning view.
 - A **D-shaped top**, about 2.2 m long and 0.9 m deep at the centre, its back edge following the
   curve of the hull and its front edge bowing gently out toward the aisle. A grey powder-coated
   plate with a **safety-orange edge rail**, on a single plinth, braced off the hull frames.
-- **Desk height**, about 0.75 m, because the operator sits.
-- The **operator sits at the middle of the front edge**, on a modern operator's seat, at the
-  console built into the edge: a large trackball under one hand, a chunky zoom lever and a
+- **Desk height**, about 0.75 m, so the slab fits under the overhead.
+- The **operator stands at the middle of the front edge**, at the console built into the edge: a large trackball under one hand, a chunky zoom lever and a
   rotation hand-wheel under the other, a short row of guarded toggles with LED lamps. The locked
   shot inherited round 4's composition and seats them at the aft end of the D; **build it at the
   middle**, as round 5's variant 15 shows.
+- **Changed after the greybox blockout:** the shots draw a seated operator, but build them standing. A
+  seated eye (about 1.2 m) sits inside the 0.75 to 1.45 m slab, while a standing eye (1.65 m) looks
+  down on it. With everyone standing, operator and observers share one perspective, so the hologram
+  is tuned for one eye height. There is no seat at the table.
 - **Observers stand** along the front edge either side of the operator, leaning in. They place
   markers by **clicking on the terrain**; the moulded **puck holders** on the front edge in the
   art are set dressing that reads as "markers live here", not an interaction.
@@ -71,12 +74,12 @@ crew's planning view.
 - The slab is **filled**: terrain fills the volume out to its faces, and a pit is a hole in the
   surrounding plateau, as in the earlier locked shot. It never draws an isolated plug of terrain
   floating in empty light.
-- The seated operator and the desk-height top give the slab its height under the 2.3 m overhead;
-  the standing-height table had about 4.5 ft to play with and this has more.
+- The desk-height top gives the slab its height under the 2.3 m overhead; the standing-height
+  table had about 4.5 ft to play with and this has more.
 
 ![Operator's eye level reference](map_table_operator_reference.png)
 
-The operator reference shows the console and the cowl from the seat. Its slab drifted to a
+The operator reference shows the console and the cowl from a seated eye; the operator now stands. Its slab drifted to a
 rounded rectangle; the curved slab of the primary is the one to build.
 
 ## What was explored
