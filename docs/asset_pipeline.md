@@ -69,3 +69,6 @@ Enabled in `project.godot`; adds an **Asset Studio** tab next to 2D / 3D / Scrip
 ![Model view](images/asset_studio_model.png)
 
 Playtest-only: whether the preview lighting matches in-game feel.
+
+
+Cleanup runs Blender natively or in Docker, chosen by `ASSET_BLENDER_RUNNER=native|docker|auto` (default `auto`: a local Blender wins, else Docker). The image `silent-water/blender-cleanup:<version>` (override with `ASSET_BLENDER_IMAGE`; about 1 GB) is built with `uv run asset blender-image build`. Details are in `tools/asset_pipeline/README.md`. CI covers both runners: the `check` job runs the native one, the `docker-cleanup` job the Docker one.
