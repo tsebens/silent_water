@@ -25,3 +25,23 @@ uv run asset check ai_toggle_switch && uv run asset export ai_toggle_switch
 
 Pinned to build123d 0.13.0: the API moves between minor versions (`add()` → `insert()` in 0.13) and a model's
 training data is older than the installed library. `uv.lock` is committed.
+
+## Scene assembly (#345)
+
+`build.py` builds a tree of Godot scenes under `assets/models/spike/` from one script per scene in `components/`:
+CAD solids, checks against the brief, GLBs, the `.tscn` and a catalogue entry (`component.yaml`). The build is all or
+nothing. Findings: [`docs/research/scene_assembly_spike.md`](../../docs/research/scene_assembly_spike.md); draft
+rules: [`docs/research/scene_assembly_policy.md`](../../docs/research/scene_assembly_policy.md).
+
+```
+uv run python build.py                # every scene, in dependency order (a few seconds)
+uv run python catalogue.py            # what the breakdown step reads
+cd ../.. && godot --headless --path . --import
+xvfb-run -a godot --path . --rendering-driver vulkan res://tests/scene_shot.tscn -- \
+    res://assets/models/spike/stations/sonar_console/sonar_console.tscn <out_dir> \
+    assets/models/spike/stations/sonar_console/review/cameras.json
+cd tools/cad_spike && uv run python review_sheet.py <out_dir> <sheets_dir>     # renders beside the concept
+```
+
+- `spike.py`: frames, the 60 mm panel module, catalogue entries. `tscn.py`: a small `.tscn` writer.
+- `components/gauge.py` makes the solids of the game's shared `Gauge` (`src/interact/gauge.gd` preloads them).

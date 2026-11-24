@@ -23,7 +23,8 @@ brought it close to the concept art.
 | `trackball` | control | base 2x2 | `Trackball` (new) | 386 + base |
 | `map_keypad` | control group | base 2x2, 4 × `push_button` | none of its own | 480 |
 | `operator_seat` | furniture | — | bound by the parent | 376 |
-| `sonar_console` | station | all of the above, plus the game's `Gauge`, noise repeater, `FlatChart` and headset | `SonarStation`, `SonarSeat` | 1,762 in all (budget 12,000) |
+| `gauge` (added by the follow-up) | display solids | — | `Gauge` (existing) | 320 |
+| `sonar_console` | station | all of the above, plus the game's noise repeater, `FlatChart` and headset | `SonarStation`, `SonarSeat` | 3,042 in all (budget 12,000) |
 
 Everything is under `assets/models/spike/`, built by `tools/cad_spike/build.py` from one script per scene in
 `tools/cad_spike/components/`. The station's brief, breakdown and review are beside its scene:
@@ -93,7 +94,52 @@ Godot picks up the change with no other rebuild. But it propagates the **geometr
 the base's bolts 14 mm further in put a bolt through the toggle's lamp, and a base-only rebuild wrote that without
 complaint. The fix is cheap: `build.py` now runs every scene's checks before writing any file, and refused that
 change with nothing written. A full rebuild of all seven scenes takes under 4 seconds and unchanged scenes come out
-byte-identical, so the rule is simply "rebuild the whole tree".
+byte-identical, so the rule is simply "rebuild the whole tree". (The gauge follow-up below found a hole in this and
+closed it.)
+
+## Follow-up: restyling the shared gauge (#346)
+
+A test of how an update to one asset reaches every scene that uses it, on the dial instrument: 19 gauges in the
+sub interior and 4 on the generated console, 23 in all.
+
+**What changed.** The gauge's shape moved from primitives built in `gauge.gd` to generated solids
+(`tools/cad_spike/components/gauge.py`: bezel, backing, hub, title plate, and the needle as its own GLB), which the
+script instances and scales to each gauge's radius. The look follows Tristan's reference: chunky dark bezel, dark
+face, light needle and tick marks, title on a plate. The rim keeps the old outer radius and the mount keeps the old
+depth, so nothing placed had to move.
+
+![Before and after, same cameras](images/gauge_before_after.png)
+
+**What propagated, and how.**
+
+| Change | Files touched | Scenes that picked it up | Consumer scene files edited |
+| --- | --- | --- | --- |
+| The restyle (solids plus `gauge.gd`) | 2 GLBs, 1 script | all 23 gauges | none: `interior.tscn`, `noise_gauge.tscn` and `sonar_console.tscn` are byte-identical |
+| Geometry only: bezel 14 → 22 mm deep | 1 GLB | all 23 gauges | none |
+| A change that breaks a user: title plate moved down, off the console's bezel band | none (refused) | none | none |
+
+![A GLB-only change reaching two scenes](images/gauge_bezel_depth_experiment.png)
+
+A unit test pins the mechanism: every gauge in both scenes holds the **same mesh resource**.
+
+**What it found.**
+
+- **The first all-or-nothing build wasn't.** The console checks the gauge's envelope from the gauge's catalogue entry
+  on disk, which was still the old one while checks ran, so a broken gauge was written before the console refused
+  it. The build now snapshots the output tree and restores it on any failure.
+- **The old second needle vanished under red light** (a blue that reflects no red). The new one is a lighter blue that
+  shows at about half the first needle's brightness. The old dial as a whole was close to unreadable in red.
+- **Labels were one size for every radius**, so small dials were buried under their own text. They now scale with the
+  dial, and a long title shrinks to fit its plate.
+- The console's triangle count had left its gauges out. With them it is 3,042 (budget 12,000).
+
+**Details that vary per gauge** are instance settings, not geometry: the same solids with eight different settings.
+Where the scale starts and stops is `sweep_deg` plus the new `sweep_center_deg`.
+
+![One shape, eight instance settings](images/gauge_variations.png)
+
+The general rule is the three tiers in the policy draft. Not done: the reference image's green indicator lamps under
+each gauge. A lamp implies a function, so it belongs to a brief, as a `lamp` element from the catalogue.
 
 ## Cost
 

@@ -111,14 +111,15 @@ def _check(body: bd.Part, frames: list[bd.Part]) -> None:
         expect(f.bounding_box().min.Y > -0.01, "side frames do not go below the floor")
     expect(BEZEL_S - BEZEL_H / 2 > 0 and BEZEL_S + BEZEL_H / 2 <= FACE_LEN, "bezel on the screen face")
     expect(OPEN_S + OPEN_H / 2 <= BEZEL_S + BEZEL_H / 2 - 40, "a bezel border above the screen")
+    ext = entry("kit", "gauge")["extent_radii"]             # the gauge's own envelope, from its catalogue entry
     for name, (x, r, _) in DIALS.items():
-        rim, title = 1.12 * r * 1000, 1.35 * r * 1000 + 12
+        rim, title = ext["bezel"] * r * 1000, ext["plate_bottom"] * r * 1000
         expect(DIAL_S + rim <= OPEN_S - OPEN_H / 2 - 5, f"{name} below the screen opening")
         expect(DIAL_S - title >= BEZEL_S - BEZEL_H / 2 + 5, f"{name}'s title inside the bezel band")
         expect(abs(x) + rim <= BEZEL_W / 2 - 10, f"{name} inside the bezel's width")
     xs = sorted((x, r) for x, r, _ in DIALS.values())
     for (xa, ra), (xb, rb) in zip(xs, xs[1:]):
-        expect(xb - xa >= 1.12 * (ra + rb) * 1000 + 30, f"dials at {xa} and {xb} do not overlap")
+        expect(xb - xa >= ext["bezel"] * (ra + rb) * 1000 + 30, f"dials at {xa} and {xb} do not overlap")
     eye_y = EYE_H
     expect(abs(face_point(OPEN_S)[1] - eye_y) <= 120, f"screen centre near seated eye height ({face_point(OPEN_S)[1]:.0f} mm)")
     expect(OPEN_W >= 540, "screen opening about 55 cm wide (brief)")
@@ -197,6 +198,7 @@ def build() -> dict:
     s.write(d / f"{SLUG}.tscn")
     _cameras(d)
     parts = {n: entry("kit", sl)["triangles"] for n, (sl, *_r) in STRIP_LAYOUT.items()}
+    parts["gauges"] = len(DIALS) * entry("kit", "gauge")["triangles"]
     tris = rep["triangles"] + sum(parts.values()) + entry("furniture", "operator_seat")["triangles"]
     expect(tris <= 12000, f"station within the interior budget ({tris} triangles)")
     write_entry(GROUP, SLUG, {

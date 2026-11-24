@@ -1,19 +1,10 @@
 # Catalogue entries for scenes and behaviours the game already has, written by hand for the spike (#345). Generated
 # scenes carry their own component.yaml next to their .tscn. The breakdown reads both.
 scenes:
-  - slug: gauge
-    kind: display
-    scene: null                       # a script on a plain Node3D; it builds its own meshes
-    script: res://src/interact/gauge.gd
-    summary: Round dial with a needle reading a readout group; title plate below; optional second needle.
-    tags: [gauge, dial, needle, readout]
-    size: radius export (m); title plate sits 1.35 radii below the centre
-    mount: dial face toward +Z
-    notes: brass-coloured metallic rim (art direction rejects antique dials in brass bezels)
   - slug: noise_gauge
     kind: display
     scene: res://src/noise/noise_gauge.tscn
-    summary: The noise repeater (sub vs ocean needles). Every station gets one.
+    summary: The noise repeater (sub vs ocean needles), a configured `gauge`. Every station gets one.
     tags: [gauge, noise, repeater]
     size: radius 0.13 m (override per instance)
     mount: dial face toward +Z

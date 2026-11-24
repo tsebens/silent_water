@@ -1,17 +1,23 @@
 """Build spike scenes: uv run python build.py [slug ...]  (default: all).
 
-Two phases. First every scene's checks run (each module's `solids()`, which raises on a failed `expect`); only if all
-pass does anything get written. A change to a shared part (the control base) is therefore checked against every scene
-that uses it before Godot can see it: Godot propagates geometry through instancing instantly, but not the checks.
+All or nothing. First every scene's own checks run (each module's `solids()`, which raises on a failed `expect`).
+Then the scenes are built in dependency order; a scene's checks against the scenes it uses read their catalogue
+entries as just rebuilt. If anything fails at either stage, the output tree is put back exactly as it was. A change
+to a shared part (the control base, the gauge) therefore reaches Godot only if every scene that uses it still passes:
+Godot propagates geometry through instancing instantly, but not the checks.
 Building everything takes a few seconds and unchanged scenes come out byte-identical, so the default is the whole tree.
 """
 import importlib
 import json
+import shutil
 import sys
+import tempfile
+from pathlib import Path
 
 from kitcad import GeometryError
+from spike import OUT
 
-ORDER = ["control_base", "push_button", "guarded_toggle", "trackball", "map_keypad", "operator_seat", "sonar_console"]
+ORDER = ["control_base", "gauge", "push_button", "guarded_toggle", "trackball", "map_keypad", "operator_seat", "sonar_console"]
 
 
 def _check(mod) -> None:
@@ -36,5 +42,18 @@ if __name__ == "__main__":
             failed.append(f"{m.SLUG}: {e}")
     if failed:
         sys.exit("checks failed, nothing written:\n  " + "\n  ".join(failed))
-    for m in mods:
-        print(json.dumps(m.build()))
+    with tempfile.TemporaryDirectory() as tmp:
+        snapshot = Path(tmp) / "tree"
+        if OUT.exists():
+            shutil.copytree(OUT, snapshot)
+        done = []
+        try:
+            for m in mods:
+                done.append(json.dumps(m.build()))
+        except GeometryError as e:
+            if OUT.exists():
+                shutil.rmtree(OUT)
+            if snapshot.exists():
+                shutil.copytree(snapshot, OUT)
+            sys.exit(f"checks failed, nothing written (tree restored):\n  {m.SLUG}: {e}")
+        print("\n".join(done))

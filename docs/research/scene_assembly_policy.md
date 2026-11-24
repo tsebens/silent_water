@@ -39,6 +39,29 @@ Refinements:
   ring rather than sinking into a panel hole). When that is impossible, the component declares the cutout in its
   catalogue entry and the parent's build reads it.
 
+## When a part needs to differ: three tiers
+
+A request like "the same gauge, but its scale starts lower down" is answered at the cheapest tier that can express it.
+
+| Tier | What changes | Where | Cost | Example |
+| --- | --- | --- | --- | --- |
+| 1. **Instance setting** | A detail the scene's script already exposes | An export set on the instance, in the parent's build script | None: no CAD, no rebuild | A gauge's range, sweep, where its scale starts and stops, title, radius, colours, tick count |
+| 2. **Build parameter** | The shape, for every user or for a named size | The part's build script; a named variant if both shapes must exist | A rebuild of the tree (seconds); every user is rechecked | A deeper bezel on every gauge; the control base in 1x1, 1x2, 2x2 |
+| 3. **New scene** | The footprint, the mount or the behaviour | A new slug, usually sharing solids or helpers with the old one | A new build script and catalogue entry | A square gauge; a linear bar meter |
+
+Rules that follow:
+
+- **If tier 1 can't express it but should, extend the script, don't fork the shape.** Adding an export is a small
+  development change that every user can then reach (`sweep_center_deg` was added this way). Its default must leave
+  existing instances exactly as they were.
+- **Anything that varies per instance must not be baked into shared geometry.** The gauge's tick marks depend on its
+  sweep, so the script draws them; the bezel doesn't, so it is CAD. The face and needle colours are per instance,
+  so they are materials set by the script, not palette vertex colours.
+- **A shared part keeps its mount and footprint when it is restyled.** The new gauge keeps the old rim's outer radius
+  and the old depth behind its origin, so no placed gauge had to move. A restyle that can't keep them is tier 3.
+- **The catalogue entry lists the instance settings** (`set_on_instance`), so the breakdown can tell a tier-1 request
+  from a tier-2 one without reading the script.
+
 ## What the asset agent may not do
 
 - **Add behaviour.** A control that needs a script the catalogue lacks is blocked by a development arc for that script.
@@ -63,7 +86,8 @@ Refinements:
 6. **Render** from the brief's concept viewpoints and the operator's eye, under white and red light.
 7. **Review** against the concept (stations and anything with concept art): at most two rounds, then route the rest.
 8. **Rebuild the whole tree** after any change to a shared part. It takes seconds, and unchanged scenes come out
-   byte-identical.
+   byte-identical. The build is all or nothing: if any scene's check fails, the output tree is restored, so a
+   shared part that breaks one of its users never reaches Godot.
 
 ## The station brief
 
@@ -89,7 +113,8 @@ them. Fields the spike needed:
 | `behaviour`: script, values, signal, wiring | Whether it fits a function, and how the parent connects it |
 | `base`, `footprint_mm`, `stand_out_mm` | Layout and clearance checks in the parent |
 | `mount` | The frame convention, in words |
-| `set_on_instance` | Exports the parent sets (label, radius...) |
+| `set_on_instance` | Exports the parent sets (label, radius, range, sweep...): the tier-1 variations |
+| `extent_radii`, `depth_mm` | For parts sized per instance: the envelope as multiples of the size |
 | `uses` | What to recheck when a shared part changes |
 | `keep_clear_mm`, `panel_cutout` | What a parent must avoid or provide |
 | `triangles` | The parent's budget check |

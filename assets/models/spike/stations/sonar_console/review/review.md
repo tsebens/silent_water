@@ -37,3 +37,15 @@ Findings 1 to 4 resolved. Remaining differences, accepted or routed:
 | 6 | Antique-looking dials | `gauge` | Routed (discovered work) |
 | 7 | The bezel is black; the concept's is mid grey with a black screen | `sonar_console` | Accepted: the palette has no second grey (depends on 5) |
 | 8 | The chart is square in a 16:10 opening | `flat_chart` | Routed (discovered work, from the breakdown) |
+
+## After the gauge restyle (#346)
+
+Not a review round: nothing in the console changed. The shared gauge was restyled, and the console picked it up
+through the gauge script, with its scene file byte-identical.
+
+![Console view against the concept](round3/concept_console_view_vs_concept.png)
+
+![Other views](round3/views.png)
+
+Finding 6 is resolved at its owner. The dials now read as part of the bezel band, which suits the concept's plain
+bezel better than the cream dials did.

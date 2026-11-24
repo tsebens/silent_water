@@ -26,10 +26,11 @@ uses:
 - noise_gauge
 - flat_chart
 - headset
-triangles: 1762
+triangles: 3042
 triangles_by_part:
   body: 252
   ActiveSonar: 268
   Trackball: 386
   MapKeys: 480
+  gauges: 1280
 built_by: tools/cad_spike/components/sonar_console.py
