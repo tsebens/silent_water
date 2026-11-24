@@ -971,3 +971,29 @@ func test_interior_hides_build_tabs_and_architecture_does_not() -> void:
 	expect(not c.hides_build_tabs(), "architecture is unchanged")
 	c.load_asset({"slug": "eel", "class": "creature"})
 	expect(not c.hides_build_tabs())
+
+
+func test_import_model_builds_args() -> void:
+	var m: AssetImportModel = AssetImportModel.new()
+	m.open("toggle")
+	expect(m.import_args().is_empty(), "no export chosen")
+	m.export_path = "/tmp/toggle.gltf"
+	expect_eq(m.import_args(), PackedStringArray(["import", "toggle", "/tmp/toggle.gltf"]))
+	m.pivot = " Lever "
+	expect_eq(m.import_args(), PackedStringArray(["import", "toggle", "/tmp/toggle.gltf", "--pivot", "Lever"]))
+	m.export_path = "/tmp/toggle.step"
+	expect(m.import_args().is_empty(), "not a glTF")
+	m.open("")
+	m.export_path = "/tmp/a.glb"
+	expect(m.import_args().is_empty(), "no asset selected")
+
+
+func test_kit_hides_concept_turnaround_and_to3d() -> void:
+	var c: AssetConceptModel = AssetConceptModel.new()
+	c.load_asset({"slug": "toggle", "class": "kit"})
+	expect(c.hides_build_tabs(), "turnaround and model build tabs")
+	expect(c.hides_concept_and_to3d(), "concept tab and 3D controls")
+	c.load_asset({"slug": "cab", "class": "interior"})
+	expect(not c.hides_concept_and_to3d(), "interior keeps the concept tab")
+	c.load_asset({"slug": "eel", "class": "creature"})
+	expect(not c.hides_concept_and_to3d())

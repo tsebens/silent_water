@@ -32,7 +32,10 @@ const REFERENCE_MODES: PackedStringArray = ["paint-over", "inspire"]
 const PRESENTATIONS: PackedStringArray = ["subject", "scene"]
 ## Classes that are never built as a single mesh from a turnaround, so the Turnaround and
 ## 3D model tabs are hidden for them.
-const NO_BUILD_TABS_CLASSES: PackedStringArray = ["interior"]
+const NO_BUILD_TABS_CLASSES: PackedStringArray = ["interior", "kit"]
+## Classes imported from CAD rather than generated: the Concept tab and the 3D-provider
+## controls are hidden too; the Model tab keeps its Import CAD… button.
+const CAD_CLASSES: PackedStringArray = ["kit"]
 
 
 func load_asset(asset: Dictionary, providers: Dictionary = {}, selected: Dictionary = {}) -> void:
@@ -130,6 +133,11 @@ func set_presentation(value: String) -> void:
 ## True for classes (interior) whose Turnaround and 3D model tabs are hidden.
 func hides_build_tabs() -> bool:
 	return NO_BUILD_TABS_CLASSES.has(asset_class)
+
+
+## True for classes imported from CAD (kit): no Concept tab, no 3D-provider controls.
+func hides_concept_and_to3d() -> bool:
+	return CAD_CLASSES.has(asset_class)
 
 
 ## `--presentation <subject|scene>`. Only for new concepts: a refine keeps its variant's.
