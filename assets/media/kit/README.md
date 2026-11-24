@@ -46,4 +46,4 @@ grab box on collision layer 2.
 
 | Part | Moving part | Limits | Triangles (in → out) |
 | --- | --- | --- | --- |
-| `toggle_switch` | `Switch` (bat), revolute about X | ±40° from upright (`swing_deg` 80) | 5,476 → 4,606 |
+| `toggle_switch` | `Switch` (bat), revolute about X | ±40° from upright (`swing_deg` 80) | 4,060 → 3,190 (knurls removed; grip texture later) |
