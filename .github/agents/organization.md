@@ -28,6 +28,20 @@ Each arc gets:
 
 Also note design-doc sections the arcs would change, and any open question the concept raises that should be a `Decision:` issue instead of being settled silently.
 
+## Asset concepts
+
+A concept is an **asset concept** if its body is a station brief (a `functions` list and `concept` images), or if it asks for a generated scene under `assets/models/` to be made or changed. `docs/asset_process.md` is the spec for these; read it in full first, then:
+
+1. **Scan the library now.** Run `cadkit catalogue` (and `cadkit catalogue --json` for the entries you are weighing). Never rely on what an issue, a comment or an earlier breakdown says exists: the library changes with every merge.
+2. **Look at the concept art.** Open every image the brief lists (the `Read` tool shows images). It tells you arrangement, proportion and massing. It does not tell you which controls exist: `functions` does.
+3. **Break the whole thing down at once, every level** (section 6.1): for each function and for the structure, decide reuse, variant, new scene, new behaviour or local solid, by the rule in section 3. A new scene that itself needs a new scene gets both, chained.
+4. **Shape the arcs** as section 6.1's table says: one arc per new or changed scene, one ordinary development arc per new behaviour (blocking the scenes that need it), and for a station one assembly arc blocked by every scene it instances. An asset arc never adds or changes a control script.
+5. **`Touches:`** for a scene arc is the scene's folder plus **files**: `assets/models/<group>/<slug>`, `tools/cadkit/scenes/<slug>.py`, `tests/unit/test_<name>.gd`. Never the bare `tools/cadkit` or `tools/cadkit/scenes` folder: that would make every asset arc overlap.
+6. **Milestone.** Arcs for a concept that carries a brief go under the open content milestone named in section 8 of the spec. Do not escalate for want of a milestone on an asset concept unless that milestone is closed or missing.
+7. **Acceptance** for a scene arc always includes: `cadkit build` passes; the build script has an `expect` for each geometric constraint you list; a named Godot test passes; `review/views.png` is committed. For a station, add the brief's constraints (reach, sight lines, triangle budget) as checklist items. How it looks is judged in review, not in the checklist.
+
+In the output, put a `### Breakdown` section between the opening paragraph and `### Arc 1`: a table of function or structure → part → catalogue match → decision (reuse / variant / new scene / new behaviour / local solid). List local solids under it in one line. Conflicts between the concept art and `functions`, and functions the game has no code for, go under `### Open questions`.
+
 ## Output
 
 One comment on the concept issue in this exact shape, so the plan-review agent can parse it:
@@ -36,6 +50,9 @@ One comment on the concept issue in this exact shape, so the plan-review agent c
 ## Proposed breakdown
 
 <one paragraph: how you read the concept and why this split>
+
+### Breakdown
+<asset concepts only: the table described under "Asset concepts">
 
 ### Arc 1: M<n>.? · <name>
 Scope: …

@@ -24,16 +24,18 @@ Create issues and sub-issues with the regular GitHub MCP tools (`issue_write` wi
 
 The same server carries the `labels` toolset (`list_label`, `get_label`, `label_write`) for creating and editing repository labels. The pipeline's label set is defined in `docs/process.md`; pipeline agents apply labels but never create them.
 
-## Roles
+## Assets
 
-Agents with a specific role follow their role doc in addition to this file:
-
-- **Graphic designer and 3D asset modeler:** [`docs/roles/graphic_designer.md`](docs/roles/graphic_designer.md)
+- **Mechanical and industrial assets** (controls, displays, panels, furniture, stations) are generated: parametric CAD scripts make the solids, Godot scenes assemble them, and the pipeline builds a station from a brief and concept art. The spec is [`docs/asset_process.md`](docs/asset_process.md). Read it before touching `assets/models/kit`, `furniture`, `stations` or `tools/cadkit/`.
+- **Never hand-edit a generated file** (anything listed under `files` in a scene folder's `component.yaml`). Change its build script in `tools/cadkit/scenes/` and run `cadkit build`.
+- **Scan the asset library before designing or reusing anything:** `cadkit catalogue`. It changes with every merge.
+- Organic assets (creatures, terrain) use the image-to-3D route in Asset Studio ([`docs/asset_pipeline.md`](docs/asset_pipeline.md)). The hull is modelled in Onshape.
 
 ## Tech
 
 - **Engine:** Godot 4.7.2. The cloud environment's setup script installs it as `godot` on `PATH`. Run headless with `godot --headless`.
-- **Language:** typed GDScript everywhere, with type hints on every variable, parameter and return. The one exception is tooling under `tools/` (the asset pipeline backend in `tools/asset_pipeline/`, run with `uv`), which may be Python; game code and the Godot editor plugin stay GDScript (#220).
+- **Language:** typed GDScript everywhere, with type hints on every variable, parameter and return. The one exception is tooling under `tools/` (the asset pipeline backend in `tools/asset_pipeline/` and cadkit in `tools/cadkit/`, both run with `uv`), which may be Python; game code and the Godot editor plugin stay GDScript (#220).
+- **cadkit (generated assets):** `uv run --project tools/cadkit cadkit <catalogue|check|build|verify|render|sheet>` (tests: `uv run pytest` in `tools/cadkit/`). build123d is pinned; no Blender needed. Rendering needs a display or `xvfb-run`, and a Vulkan driver.
 - **Asset pipeline:** `uv run asset <command>` in `tools/asset_pipeline/` (tests: `uv run pytest`). Keys live in the git-ignored `tools/asset_pipeline/.env`; scratch meshes and rejected variants in the git-ignored `.asset_work/`.
 - **Blender (asset cleanup):** 4.5 LTS, native or in Docker (`ASSET_BLENDER_RUNNER=native|docker|auto`; `uv run asset blender-image build` makes the image). Version pin in `tools/asset_pipeline/versions.yaml`.
 - **Networking:** listen server, host-authoritative. ENet locally now, GodotSteam later. Create the peer in exactly one function.

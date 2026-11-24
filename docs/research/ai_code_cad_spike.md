@@ -1,5 +1,10 @@
 # Spike: an AI writes the CAD for a kit part
 
+> **Superseded in part.** This first spike exported an Onshape-shaped glTF through `asset import`. The follow-up
+> ([`scene_assembly_spike.md`](scene_assembly_spike.md)) dropped that for CAD solids assembled by Godot scenes, and
+> the process is now [`../asset_process.md`](../asset_process.md). `tools/cad_spike/` and the `ai_toggle_switch` asset
+> described below no longer exist; `guarded_toggle` in `tools/cadkit/scenes/` replaced them.
+
 Issue #343. The question: can the hand-off line in the kit route move upstream, from "Tristan models the part in
 Onshape and exports glTF" to "an agent writes a parametric CAD script and the pipeline takes it from there"? The
 survey of what the field knows is in [`ai_code_cad_survey.md`](ai_code_cad_survey.md). This note records what was

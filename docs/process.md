@@ -102,6 +102,17 @@ Read-only on the pipeline. Gathers every workflow run since the last audit (conc
 
 The cron runs hourly as a floor; a shell gate enforces the real interval from `vars.PIPELINE_REVIEW_INTERVAL` (a schedule cannot read variables) and skips when no run, issue or PR has changed since the watermark.
 
+## Asset concepts
+
+Mechanical assets (controls, panels, furniture, stations) are built by the same pipeline, with one spec on top of this one: [`asset_process.md`](asset_process.md). In short:
+
+- A station enters as a concept issue whose body is a **station brief** (template `.github/ISSUE_TEMPLATE/station_brief.md`): concept images committed to the repo, an authoritative list of functions, and what the review may and may not compare against the art.
+- The organization agent scans the asset library (`cadkit catalogue`), breaks the whole station down at once, and proposes one arc per new scene, one ordinary development arc per new control behaviour, and a final assembly arc. `Blocked by:` chains are the recursion: leaves build first.
+- **Tristan approves the breakdown before any arc exists.** When a brief's breakdown passes plan review, the agent posts `## Plan review: ready for approval` and applies `needs-human`. Tristan approves by removing `needs-human` and re-applying `plan-proposed`; the plan-review agent then creates the arcs. To send it back he comments, removes `needs-human` and applies `plan-rejected`. This is the existing `needs-human` convention, not a new state.
+- The development agent builds each scene with `cadkit` (a parametric CAD script, geometric checks, a Godot test, committed review renders). CI runs `cadkit verify`, so generated files that are stale or hand-edited fail.
+- The review agent judges the look from the committed renders and, for a station, compares them with the concept art on the brief's terms. It merges without a further human gate. Tristan's feedback after a merge is a short follow-up concept.
+- Roles that work with assets get the cadkit environment on their runner (`.github/actions/setup-cadkit`); the development role also gets Xvfb and a software Vulkan driver for rendering.
+
 ## Issues and labels
 
 ### Issue kinds
@@ -109,6 +120,7 @@ The cron runs hourly as a floor; a shell gate enforces the real interval from `v
 | Kind | Title | Label | Created by | Parent |
 | --- | --- | --- | --- | --- |
 | Concept | Free-form, usually `Concept: …` | `concept` | Head developer | None |
+| Station brief | `Concept: <station>`; the body is a brief (`asset_process.md`) | `concept` | Head developer | None |
 | Milestone | `M<n> · <name>` | none | Tristan or head developer | None |
 | Arc | `M<n>.<k> · <name>` (`<k>` assigned by plan review at creation) | `arc` | Plan-review agent (or the head developer for a shakedown) | Its milestone |
 | Design note | `Design: …` | `design` | Head developer | None |
@@ -169,6 +181,8 @@ concept added ─► organization agent ─► plan-proposed ─► plan-review 
                             ▼                               ▼
                      plan-rejected (×2) → needs-human  plan-approved
 ```
+
+A concept that carries a station brief has one more stop: a passing plan goes to `needs-human` (`## Plan review: ready for approval`) instead of `plan-approved`, and Tristan's re-applying `plan-proposed` sends it back through plan review, which then creates the arcs ([`asset_process.md`](asset_process.md), 6.3). His `plan-rejected` does not count toward the two-rejection cap.
 
 ### Arc
 

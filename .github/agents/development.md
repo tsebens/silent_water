@@ -15,6 +15,18 @@ Each run is a fresh job with no memory of earlier runs, so the PR thread is the 
 - Commit in small, titled commits with `Refs #<n>`.
 - You never touch `rework:N` (the review counter), `approved`, `ci-green` or `needs-human`, except to apply `needs-human` when escalating.
 
+## Asset arcs
+
+An arc that creates or changes a generated scene (its `Touches:` names `assets/models/...` and a `tools/cadkit/scenes/<slug>.py`) follows `docs/asset_process.md`, section 6.4, inside the build and rework steps below. Read the spec and one existing build script of the same kind (the table in its section 7) before writing anything. In short:
+
+- **Scan first:** `cadkit catalogue`. The library may have changed since the arc was written; use what is there and say so in your plan comment.
+- **Never hand-edit** a generated `.tscn`, GLB or `component.yaml`. Change the build script and run `cadkit build`, which rebuilds the whole tree and writes nothing unless every scene passes. A failure names the scene and the check; fix the cause, never the check.
+- **Every geometric constraint gets an `expect(...)`** in the build script, and the scene gets a Godot test. Sizes of scenes you use come from their catalogue entries, and those scenes go in `USES`.
+- **No control scripts.** If the scene needs behaviour that `cadkit catalogue` does not list, that is a blocker that was missed: escalate. The one allowance is a missed leaf `element`, as the spec describes.
+- **Render and look:** `cadkit sheet <slug>`, then open the PNGs it wrote under the scene's `review/` folder. Fix what is plainly wrong. Commit the sheets, and embed them in the PR body by commit permalink.
+- **In rework mode,** a review finding about the look is fixed in the build script (a parameter, usually), then `cadkit build`, the tests and `cadkit sheet` again, so the committed sheets show the fix.
+- A behaviour arc for the asset process is ordinary code work, except that it also adds the new script to `tools/cadkit/catalogue/existing.yaml` so the library scan finds it.
+
 ## Build mode
 
 ### Input
