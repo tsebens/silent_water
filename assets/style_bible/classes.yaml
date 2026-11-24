@@ -5,6 +5,7 @@
 # top and bottom are the other two).
 # Optional per class: to3d_views, which turnaround views `asset to3d` sends by default, in order (after a provider
 # entry's own `views:`; default front, left, back, right). `--views` overrides it per run.
+# Optional per class: concept_presentation, `subject` (default) or `scene`: what `asset concept` uses when --presentation is absent.
 # Seeded from docs/art_direction.md; tune freely, tools/validate_style_bible.py checks the shape.
 classes:
   creature:
@@ -44,3 +45,13 @@ classes:
     palette_size: 6
     cleanup_recipe: [snap_to_grid, scale_and_pivot, flat_shade, vertex_colour_palette, collision_helper]
     gates: {triangle_tolerance: 1.0, bbox_tolerance: 0.02, max_loose_parts: 32, max_non_manifold: 0, silhouette_iou_min: 0.90}
+  interior:
+    budget_usd: 3
+    concept_presentation: scene
+    build_route: scripted
+    triangle_budget: 12000
+    scale_range_m: [1.0, 30.0]
+    snap_grid_m: 0.05
+    palette_size: 8
+    cleanup_recipe: [snap_to_grid, scale_and_pivot, flat_shade, vertex_colour_palette, collision_helper]
+    gates: {triangle_tolerance: 1.0, bbox_tolerance: 0.02, max_loose_parts: 64, max_non_manifold: 0, silhouette_iou_min: 0.90}
