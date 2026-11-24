@@ -1,7 +1,9 @@
 """Convert an Onshape glTF export of a kit part into a game-ready GLB (run inside Blender 4.5, headless).
 
     blender -b --factory-startup --python-exit-code 1 -P tools/kit/onshape_import_bpy.py -- \
-        <in.gltf> <out.glb> <pivot_part> [--flip-up] [--dissolve-deg 2.0]
+        <in.gltf> <out.glb> <pivot_part> [--flip-up] [--dissolve-deg 2.0] \
+        [--materials "Housing=fitting_dark_grey;Switch=fitting_grey;Indicator Light=led_cyan"] \
+        [--palette assets/style_bible/palette.json]
 
 Conventions (the kit spec):
 - Origin at the mount point: the centre of the part's back face, where it sits on a panel.
@@ -15,27 +17,54 @@ Model in Onshape with the part's back on the Top plane, its front standing out a
 Onshape +Y. Blender's glTF importer then gives front = -Y and up = +Z, which the exporter turns into Godot's +Z front
 and +Y up, so no rotation is needed. --flip-up turns the part 180 degrees about its front axis if it comes out upside
 down.
+--materials replaces each named part's Onshape appearance with a palette role from assets/style_bible/palette.json
+(sRGB in the file, converted to the linear factors glTF stores). Parts not named keep their Onshape colour.
 Prints KIT_IMPORT_RESULT <json> on success.
 """
 from __future__ import annotations
 
+import argparse
 import json
 import math
 import sys
+from pathlib import Path
 
 import bmesh
 import bpy
 from mathutils import Matrix, Vector
 
 
-def args() -> tuple[str, str, str, bool, float]:
-    a = sys.argv[sys.argv.index("--") + 1:]
-    flip = "--flip-up" in a
-    deg = 2.0
-    if "--dissolve-deg" in a:
-        deg = float(a[a.index("--dissolve-deg") + 1])
-    pos = [x for i, x in enumerate(a) if not x.startswith("--") and (i == 0 or a[i - 1] != "--dissolve-deg")]
-    return pos[0], pos[1], pos[2], flip, deg
+def args() -> argparse.Namespace:
+    ap = argparse.ArgumentParser(prog="onshape_import_bpy.py")
+    ap.add_argument("src")
+    ap.add_argument("dst")
+    ap.add_argument("pivot_part")
+    ap.add_argument("--flip-up", action="store_true")
+    ap.add_argument("--dissolve-deg", type=float, default=2.0)
+    ap.add_argument("--materials", default="", help="'Part Name=role;Other Part=role'")
+    ap.add_argument("--palette", default="assets/style_bible/palette.json")
+    return ap.parse_args(sys.argv[sys.argv.index("--") + 1:])
+
+
+def srgb_to_linear(c: float) -> float:
+    return c / 12.92 if c <= 0.04045 else ((c + 0.055) / 1.055) ** 2.4
+
+
+def palette_material(role: str, spec: dict) -> bpy.types.Material:
+    """A material named after its palette role; the glTF exporter writes base colour, metallic, roughness and
+    emission from the Principled BSDF."""
+    m = bpy.data.materials.get(role) or bpy.data.materials.new(role)
+    m.use_nodes = True
+    bsdf = m.node_tree.nodes["Principled BSDF"]
+    lin = [srgb_to_linear(c) for c in spec["albedo"]]
+    bsdf.inputs["Base Color"].default_value = (*lin, 1.0)
+    bsdf.inputs["Metallic"].default_value = spec.get("metallic", 0.0)
+    bsdf.inputs["Roughness"].default_value = spec.get("roughness", 0.85)
+    if "emission" in spec:
+        bsdf.inputs["Emission Color"].default_value = (*[srgb_to_linear(c) for c in spec["emission"]], 1.0)
+        bsdf.inputs["Emission Strength"].default_value = spec.get("emission_energy", 1.0)
+    m.diffuse_color = (*lin, 1.0)
+    return m
 
 
 def tri_count(obj: bpy.types.Object) -> int:
@@ -43,7 +72,10 @@ def tri_count(obj: bpy.types.Object) -> int:
 
 
 def main() -> None:
-    src, dst, pivot_part, flip, dissolve_deg = args()
+    a = args()
+    src, dst, pivot_part, flip, dissolve_deg = a.src, a.dst, a.pivot_part, a.flip_up, a.dissolve_deg
+    palette = json.loads(Path(a.palette).read_text(encoding="utf-8"))["roles"]
+    assign = dict(pair.split("=", 1) for pair in a.materials.split(";") if pair.strip())
     bpy.ops.wm.read_factory_settings(use_empty=True)
     bpy.ops.import_scene.gltf(filepath=src)
     meshes = [o for o in bpy.data.objects if o.type == "MESH"]
@@ -86,6 +118,13 @@ def main() -> None:
     moving.parent = pivot
 
     # CAD cleanup: weld the per-face vertex splits, dissolve coplanar faces, flat shade.
+    for o in meshes:
+        if o.name in assign:
+            role = assign.pop(o.name)
+            o.data.materials.clear()
+            o.data.materials.append(palette_material(role, palette[role]))
+    if assign:
+        raise SystemExit(f"--materials names parts that are not in the export: {sorted(assign)}")
     for o in meshes:
         bm = bmesh.new()
         bm.from_mesh(o.data)

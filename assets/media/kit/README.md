@@ -16,7 +16,9 @@ are built from. The game-ready models live in `assets/models/kit/<part>/`. Godot
   of the plate.
 - **Edges.** Use chamfers rather than fillets, and keep fine texture (knurling, grip ridges) shallow and sparse:
   each ridge costs triangles.
-- **Colours.** Use part appearances. They come through as materials named by their RGB values.
+- **Colours.** Onshape appearances are only for your own view. The importer replaces each part's colour with a role
+  from the sub's palette, `assets/style_bible/palette.json`, which gathers the colours the game already uses. Name
+  each part's role when importing (`--materials`).
 
 ## Exporting
 
@@ -29,7 +31,8 @@ The importer is `tools/kit/onshape_import_bpy.py`, run in headless Blender:
 
 ```
 blender -b --factory-startup --python-exit-code 1 -P tools/kit/onshape_import_bpy.py -- \
-    assets/media/kit/<part>/<part>.gltf assets/models/kit/<part>/<part>.glb <moving part name>
+    assets/media/kit/<part>/<part>.gltf assets/models/kit/<part>/<part>.glb <moving part name> \
+    --materials "<Part>=<role>;<Part>=<role>"
 ```
 
 It does the following:
@@ -44,6 +47,6 @@ grab box on collision layer 2.
 
 ## Parts
 
-| Part | Moving part | Limits | Triangles (in → out) |
-| --- | --- | --- | --- |
-| `toggle_switch` | `Switch` (bat), revolute about X | ±40° from upright (`swing_deg` 80) | 4,060 → 3,190 (knurls removed; grip texture later) |
+| Part | Moving part | Limits | Materials | Triangles (in → out) |
+| --- | --- | --- | --- | --- |
+| `toggle_switch` | `Switch` (bat), revolute about X | ±40° from upright (`swing_deg` 80) | Housing `fitting_dark_grey`, Switch `fitting_grey`, Indicator Light `led_cyan` | 4,060 → 3,190 (knurls removed; grip texture later) |
