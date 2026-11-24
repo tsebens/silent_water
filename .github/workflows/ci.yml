@@ -19,6 +19,8 @@ jobs:
       IS_LOCAL_PR: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2   # the PR merge commit and its parents, to see which files the PR changed
 
       # The review role fires when ci-green is ADDED (docs/process.md, "Triggers"). Drop it on
       # every PR run so the label only ever describes the current head; add it back on success.
@@ -36,6 +38,30 @@ jobs:
       - name: Asset pipeline tests
         working-directory: tools/asset_pipeline
         run: uv run pytest -q
+
+      # Generated assets (docs/asset_process.md): the GLBs, scenes and catalogue entries under assets/models/ must be
+      # exactly what their build scripts make. Runs only when a PR touches the scripts, the generated tree or the
+      # palette; always on a push. It is part of this job so that ci-green cannot be applied without it.
+      - name: Did generated assets or their scripts change?
+        id: cad
+        run: |
+          if [ "${{ github.event_name }}" != "pull_request" ]; then echo "run=true" >> "$GITHUB_OUTPUT"; exit 0; fi
+          changed=$(git diff --name-only HEAD^1 HEAD)
+          if echo "$changed" | grep -qE '^(tools/cadkit/|assets/models/|assets/style_bible/kit_palette\.yaml$|\.github/actions/setup-cadkit/)'; then
+            echo "run=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "run=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: ./.github/actions/setup-cadkit
+        if: steps.cad.outputs.run == 'true'
+
+      - name: cadkit tests and generated-asset sync
+        if: steps.cad.outputs.run == 'true'
+        working-directory: tools/cadkit
+        run: |
+          uv run pytest -q
+          uv run cadkit verify
 
       - uses: ./.github/actions/setup-godot
 

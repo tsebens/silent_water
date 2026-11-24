@@ -1,0 +1,111 @@
+extends Node3D
+## Renders a scene from several cameras to PNGs, for asset review (needs a display server):
+##   xvfb-run -a godot --path . --rendering-driver vulkan res://tests/scene_shot.tscn -- <scene.tscn> <out_dir> [cameras.json]
+## Without cameras.json the scene is framed automatically: a three-quarter view, front, right side and top.
+## cameras.json is a list of {name, pos: [x,y,z], look_at: [x,y,z], fov (deg) or ortho (m), light: "white"|"red"},
+## in the scene's own frame (metres). Lighting is neutral and dim, close to the sub's interior; red is the sub's red light.
+
+var _env: WorldEnvironment
+var _key: DirectionalLight3D
+var _fill: OmniLight3D
+
+
+func _ready() -> void:
+	var args: PackedStringArray = OS.get_cmdline_user_args()
+	if args.size() < 2:
+		push_error("usage: -- <scene.tscn> <out_dir> [cameras.json]")
+		get_tree().quit(2)
+		return
+	get_window().size = Vector2i(1280, 800)
+	var scene: Node3D = (load(args[0]) as PackedScene).instantiate() as Node3D
+	add_child(scene)
+	_lights()
+	var cams: Array = _auto_cameras(scene) if args.size() < 3 else JSON.parse_string(FileAccess.get_file_as_string(args[2])) as Array
+	DirAccess.make_dir_recursive_absolute(args[1])
+	var cam: Camera3D = Camera3D.new()
+	add_child(cam)
+	cam.current = true
+	for spec: Dictionary in cams:
+		_set_light(String(spec.get("light", "white")))
+		var p: Array = spec["pos"]
+		var t: Array = spec["look_at"]
+		cam.position = Vector3(p[0], p[1], p[2])
+		var target: Vector3 = Vector3(t[0], t[1], t[2])
+		var up: Vector3 = Vector3.FORWARD if absf((target - cam.position).normalized().y) > 0.99 else Vector3.UP
+		cam.look_at(target, up)
+		if spec.has("ortho"):
+			cam.projection = Camera3D.PROJECTION_ORTHOGONAL
+			cam.size = float(spec["ortho"])
+		else:
+			cam.projection = Camera3D.PROJECTION_PERSPECTIVE
+			cam.fov = float(spec.get("fov", 50.0))
+		cam.near = 0.01
+		for i: int in range(4):
+			await RenderingServer.frame_post_draw
+		var img: Image = get_viewport().get_texture().get_image()
+		img.save_png(args[1].path_join(String(spec["name"]) + ".png"))
+		print("SHOT ", spec["name"])
+	get_tree().quit(0)
+
+
+func _lights() -> void:
+	var env: Environment = Environment.new()
+	env.background_mode = Environment.BG_COLOR
+	env.background_color = Color(0.02, 0.05, 0.06)
+	env.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
+	env.ambient_light_color = Color(0.55, 0.6, 0.62)
+	env.ambient_light_energy = 0.45
+	env.tonemap_mode = Environment.TONE_MAPPER_FILMIC
+	_env = WorldEnvironment.new()
+	_env.environment = env
+	add_child(_env)
+	_key = DirectionalLight3D.new()
+	_key.rotation_degrees = Vector3(-50, -35, 0)
+	_key.shadow_enabled = true
+	add_child(_key)
+	_fill = OmniLight3D.new()
+	_fill.position = Vector3(1.5, 2.2, 2.5)
+	_fill.omni_range = 8.0
+	add_child(_fill)
+
+
+func _set_light(kind: String) -> void:
+	var red: bool = kind == "red"
+	var c: Color = Color(1.0, 0.12, 0.08) if red else Color(1.0, 0.97, 0.92)
+	_key.light_color = c
+	_key.light_energy = 0.9 if red else 1.1
+	_fill.light_color = c
+	_fill.light_energy = 0.8 if red else 0.6
+	_env.environment.ambient_light_color = Color(0.35, 0.05, 0.04) if red else Color(0.55, 0.6, 0.62)
+
+
+func _auto_cameras(scene: Node3D) -> Array:
+	var box: AABB = _aabb(scene)
+	var c: Vector3 = box.get_center()
+	var r: float = maxf(box.size.length() * 0.5, 0.02)
+	var d: float = r / sin(deg_to_rad(25.0)) * 1.05
+	return [
+		{"name": "three_quarter", "pos": _arr(c + Vector3(0.6, 0.45, 1.0).normalized() * d), "look_at": _arr(c), "fov": 50.0},
+		{"name": "front", "pos": _arr(c + Vector3(0, 0, d)), "look_at": _arr(c), "ortho": r * 2.2},
+		{"name": "right", "pos": _arr(c + Vector3(d, 0, 0)), "look_at": _arr(c), "ortho": r * 2.2},
+		{"name": "three_quarter_red", "pos": _arr(c + Vector3(0.6, 0.45, 1.0).normalized() * d), "look_at": _arr(c), "fov": 50.0, "light": "red"},
+	]
+
+
+func _aabb(node: Node) -> AABB:
+	var out: AABB = AABB()
+	var first: bool = true
+	var stack: Array[Node] = [node]
+	while not stack.is_empty():
+		var n: Node = stack.pop_back()
+		var vi: VisualInstance3D = n as VisualInstance3D
+		if vi != null and not (n is Label3D):
+			var b: AABB = vi.global_transform * vi.get_aabb()
+			out = b if first else out.merge(b)
+			first = false
+		stack.append_array(n.get_children())
+	return out
+
+
+static func _arr(v: Vector3) -> Array:
+	return [v.x, v.y, v.z]

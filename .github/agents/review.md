@@ -27,6 +27,8 @@ Work through these and note each finding with file and line.
 7. **Docs.** `docs/*.md` and the design doc updated where behaviour they describe changed.
 8. **Pipeline files.** Changes under `.github/` or to `docs/process.md` are judged against the spec as it stands on `dev`. They may change the spec, but anything that weakens a guardrail (permissions, allowed tools, label gates, timeouts, what the reviewer may merge) needs an explicit reason in the PR body.
 
+9. **Generated assets.** If the diff touches `assets/models/` or `tools/cadkit/`, apply `docs/asset_process.md`, section 6.5: generated files match their scripts (CI ran `cadkit verify`; run it yourself if in doubt) and none was edited by hand; each constraint has an `expect` or a test; no control script was added in an asset arc and no shared part was bent for one parent; the catalogue entry lets a parent place the scene without opening it. Then **open the committed `review/` sheets** and judge the look. For a station, compare each `*_vs_concept.png` on the brief's `compare_on` list only; differences on its `ignore` list are not findings. Route each finding by its owner (the spec's table): this PR's scene is changes requested; another scene, the palette or game code is a new issue and does not block; the brief or the concept art is a comment on the concept issue.
+
 Proportion matters: a one-line docs PR needs items 2, 7 and 8 and a glance at the rest, not a full audit.
 
 ## Verdict
@@ -40,7 +42,8 @@ All checks pass, or only have nits you would not block on (state them anyway).
 1. Post the review (`gh pr review N --comment`) with a body starting `## Review: accepted`, naming the head SHA you reviewed, and saying what the change does, what you verified, and any nits (including a stale-base note from check 6, if any).
 2. Labels: add `approved`; remove `changes-requested` if a previous round left it on.
 3. **Merge**: `gh pr merge N --squash --delete-branch`, subject = the PR title, body = the PR body's summary (for an arc, including `Closes #<n>`).
-4. For an arc PR: confirm the arc issue is closed (close it if the merge did not). If every arc of its concept is now closed, close the concept too (the dispatcher backstops this step on its next run, but do not rely on it). Leave the milestone alone: the dispatcher closes it once every sub-issue has been closed for a day.
+4. For a station's assembly arc: comment on the concept issue with the review sheets (by commit permalink) and the findings you routed elsewhere, so Tristan sees the result in one place.
+5. For an arc PR: confirm the arc issue is closed (close it if the merge did not). If every arc of its concept is now closed, close the concept too (the dispatcher backstops this step on its next run, but do not rely on it). Leave the milestone alone: the dispatcher closes it once every sub-issue has been closed for a day.
 
 End.
 

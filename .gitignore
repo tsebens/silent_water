@@ -14,3 +14,9 @@ __pycache__/
 /assets/media/sub/assembly/Assembly 1 - Front Window.gltf
 /assets/media/sub/assembly/Assembly 1 - Shell.gltf
 /tools/asset_pipeline/providers.local.yaml
+
+# cadkit: its environment and caches
+/tools/cadkit/.venv/
+
+# Scratch checkouts made by agent sessions
+/.claude/worktrees/

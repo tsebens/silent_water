@@ -1,0 +1,32 @@
+slug: guarded_toggle
+group: kit
+kind: control
+summary: 'Guarded two-position toggle; bat swings +/-40 deg and snaps to on or off. Its lamp is a static coloured
+  solid: it does not light.'
+tags:
+- toggle
+- switch
+- guarded
+- on-off
+- lamp
+- safety
+scene: res://assets/models/kit/guarded_toggle/guarded_toggle.tscn
+behaviour:
+  script: SwitchLever
+  values: 0 off (bat down), 1 on (bat up)
+  signal: value_changed
+base: 1x2
+footprint_mm:
+- 56.0
+- 116.0
+stand_out_mm: 56.0
+mount: back on Z=0, centred; front +Z; on is toward +Y
+set_on_instance:
+  label: name at the aiming point
+triangles: 268
+built_by: tools/cadkit/scenes/guarded_toggle.py
+files:
+- component.yaml
+- guarded_toggle.tscn
+- guarded_toggle_bat.glb
+- guarded_toggle_body.glb

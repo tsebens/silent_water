@@ -83,3 +83,4 @@ jobs:
           github-token: ${{ secrets.GH_MCP_PAT }}
           oauth-token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           godot: "true"
+          cadkit: "render"

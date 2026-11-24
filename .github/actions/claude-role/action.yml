@@ -26,6 +26,12 @@ inputs:
     description: Install Godot so the role can run tools/check.sh
     required: false
     default: "false"
+  cadkit:
+    description: >
+      "true" installs the cadkit environment (asset catalogue, build, verify); "render" also installs what
+      `cadkit render` needs. See docs/asset_process.md.
+    required: false
+    default: "false"
   claude-code-version:
     description: npm version of @anthropic-ai/claude-code to install
     required: false
@@ -57,6 +63,12 @@ runs:
     - name: Set up Godot
       if: inputs.godot == 'true'
       uses: ./.github/actions/setup-godot
+
+    - name: Set up cadkit
+      if: inputs.cadkit != 'false'
+      uses: ./.github/actions/setup-cadkit
+      with:
+        render: ${{ inputs.cadkit == 'render' && 'true' || 'false' }}
 
     - name: Install Claude Code
       shell: bash

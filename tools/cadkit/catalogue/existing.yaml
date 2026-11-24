@@ -1,0 +1,50 @@
+# Hand-built scenes and control behaviours the game already has. Generated scenes carry their own component.yaml
+# beside their .tscn. `cadkit catalogue` shows both. Add an entry here when a hand-built scene or a new behaviour
+# lands that an asset could use; a behaviour not listed here is a development arc, not asset work.
+scenes:
+  - slug: noise_gauge
+    kind: display
+    scene: res://src/noise/noise_gauge.tscn
+    script: Gauge
+    summary: The noise repeater (sub vs ocean needles), a configured `gauge`. Every station gets one.
+    tags: [gauge, noise, repeater, dial]
+    size: radius 0.13 m by default; set `radius` on the instance. Envelope, depth and triangles are the generated `gauge` entry's
+    mount: dial face toward +Z, as `gauge`
+  - slug: flat_chart
+    kind: display
+    scene: null
+    script: res://src/map/flat_chart.gd
+    summary: The sonar bearing chart drawn to a square quad; heading-up, sub at centre.
+    tags: [screen, chart, display, sonar, map]
+    size: square only, screen_size edge (m)
+    mount: faces the parent's -Z (it turns itself 180 degrees in _ready)
+  - slug: headset
+    kind: wearable
+    scene: res://src/sonar/headset.tscn
+    summary: Sonar headset (Wearable); sitting at the sonar seat puts it on.
+    tags: [headset, wearable, sonar]
+    size: about 0.2 m across
+  - slug: hydrophone_wheel
+    kind: control
+    scene: res://src/sonar/hydrophone_wheel.tscn
+    summary: Handwheel that trains the hydrophone (primitive meshes).
+    tags: [wheel, handwheel, hydrophone, bearing]
+    notes: valve-style handwheel; the cockpit concept replaces it with a trackball
+  - slug: toggle_switch
+    kind: control
+    scene: res://assets/models/kit/toggle_switch/toggle_switch.tscn
+    summary: Onshape-modelled guarded toggle (4,606 triangles, over the kit budget).
+    tags: [toggle, switch, guarded]
+behaviours:                           # scripts a generated scene may use, controls and displays alike; a new one is a development arc
+  - {script: Gauge, file: res://src/interact/gauge.gd, does: "dial display; reads a readout from a source group (see the generated `gauge` entry)"}
+  - {script: FlatChart, file: res://src/map/flat_chart.gd, does: "square chart screen; draws the sonar bearing chart"}
+  - {script: Lever, file: res://src/interact/lever.gd, does: pivots about local X by mouse drag}
+  - {script: SwitchLever, file: res://src/interact/switch_lever.gd, does: Lever that snaps to its two ends}
+  - {script: Valve, file: res://src/interact/valve.gd, does: handwheel turned by circling the mouse}
+  - {script: HydrophoneWheel, file: res://src/sonar/hydrophone_wheel.gd, does: Valve that trains the hydrophone}
+  - {script: SpringAxis, file: res://src/interact/spring_axis.gd, does: key-driven -1..1 axis that springs back}
+  - {script: StationSeat, file: res://src/interact/station_seat.gd, does: "E to sit; holds the player at sit_point"}
+  - {script: SonarSeat, file: res://src/sonar/sonar_seat.gd, does: StationSeat that puts the headset on}
+  - {script: Wearable, file: res://src/interact/wearable.gd, does: picked up and worn}
+  - {script: PushButton, file: res://src/interact/push_button.gd, does: "momentary press; springs back (#345)"}
+  - {script: Trackball, file: res://src/sonar/trackball.gd, does: "drag sideways trains the hydrophone (#345)"}

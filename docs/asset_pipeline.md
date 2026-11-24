@@ -1,5 +1,7 @@
 # Asset pipeline: Godot side
 
+This covers Asset Studio: the image-to-3D route for organic assets, and the Onshape import for hand-modelled kit parts. Generated mechanical assets (controls, panels, stations) are built with cadkit instead: see [`asset_process.md`](asset_process.md).
+
 Backend usage is in [`tools/asset_pipeline/README.md`](../tools/asset_pipeline/README.md). This covers what Godot and the repo checks do with an asset.
 
 ## Vertex colours
