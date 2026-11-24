@@ -86,6 +86,14 @@ def place(item: dict, hull: Hull) -> tuple[float, float, float, float]:
         return x - across / 2, x + across / 2, z0, z1
     side = item.get("side", "centre")
     fw = min(hull.deck_half_width(z0), hull.deck_half_width(z1))
+    if item.get("_host") is not None and "aft_of" in item:  # a forward-facing seat behind its desk
+        host = item["_host"]
+        hz1 = host["z"] + host["footprint"][0] / 2
+        hww = wall_half_width(host, hull, host["z"] - host["footprint"][0] / 2, hz1)
+        sgn = -1 if host.get("side") == "port" else 1
+        cx = sgn * (hww - host["footprint"][1] / 2)
+        cx = max(min(cx, hull.deck_half_width(hz1) - across / 2), -hull.deck_half_width(hz1) + across / 2)
+        return cx - across / 2, cx + across / 2, hz1, hz1 + along
     if item.get("_host") is not None:  # a chair in front of a wall desk or table
         hx0, hx1, _, _ = place(item["_host"], hull)
         return (hx1, hx1 + across, z0, z1) if side == "port" else (hx0 - across, hx0, z0, z1)
@@ -102,8 +110,8 @@ def link_hosts(spec: dict) -> None:
     """Resolve each chair's `inboard_of` to the desk or table it sits at."""
     by_id = {i["id"]: i for i in spec["stations"] + spec["features"]}
     for it in spec["stations"] + spec["features"]:
-        if "inboard_of" in it:
-            it["_host"] = by_id[it["inboard_of"]]
+        if "inboard_of" in it or "aft_of" in it:
+            it["_host"] = by_id[it.get("inboard_of") or it.get("aft_of")]
 
 
 def clearance_report(spec: dict, hull: Hull) -> list[str]:
@@ -112,6 +120,7 @@ def clearance_report(spec: dict, hull: Hull) -> list[str]:
     lines, fails = [], 0
     for it in items:
         x0, x1, z0, z1 = place(it, hull)
+        it["z"] = (z0 + z1) / 2
         # Narrowest deck width across the item's length, and what other items occupy at the same z.
         fw = min(hull.deck_half_width(z) for z in (z0, it["z"], z1))
         occupied = [(x0, x1)]
@@ -320,6 +329,65 @@ def draw_front(spec: dict, hull: Hull, out: Path) -> None:
     img.save(out)
 
 
+def export_layout(spec: dict, hull: Hull, out: Path) -> None:
+    """Write layout.json: everything the Blender blockout needs, resolved, so the geometry has one source.
+
+    The hull is sampled as rings of its inner surface (the cabin wall) from bow to stern; floors as their
+    outline at each station; items as the floor box place() gives them, plus the wall-height box for
+    desks and tables set into the curve of the hull."""
+    import json
+    import math
+    rings = []
+    n_rings, n_pts = 120, 72
+    for i in range(n_rings + 1):
+        z = -hull.L / 2 + 0.02 + (hull.L - 0.04) * i / n_rings
+        hw, hh = hull.half_width_at(z) - hull.wall, hull.half_height_at(z) - hull.wall
+        if hw <= 0.02 or hh <= 0.02:
+            continue
+        pts = []
+        for k in range(n_pts):
+            a = 2 * math.pi * k / n_pts
+            c, sn = math.cos(a), math.sin(a)
+            # superellipse in the section: |x/hw|^p + |y/hh|^p = 1
+            r = (abs(c) ** hull.ps + abs(sn) ** hull.ps) ** (-1.0 / hull.ps)
+            pts.append([round(hw * r * c, 4), round(hh * r * sn, 4)])
+        rings.append({"z": round(z, 4), "points": pts})
+    floors = []
+    for c in spec["compartments"]:
+        a, b = c["z"]
+        zs = [a + (b - a) * j / 24 for j in range(25)]
+        floors.append({"id": c["id"], "y": hull.deck_y((a + b) / 2),
+                       "outline": [[round(z, 4), round(hull.deck_half_width(z), 4)] for z in zs]})
+    items = []
+    for it in spec["stations"] + spec["features"]:
+        x0, x1, z0, z1 = place(it, hull)
+        rec = {k: v for k, v in it.items() if not k.startswith("_")}
+        rec.update({"floor_box": [round(x0, 4), round(x1, 4), round(z0, 4), round(z1, 4)],
+                    "floor_y": round(hull.deck_y(it["z"]), 4)})
+        if "mount_height_m" in it and it.get("side") in ("port", "starboard"):
+            ww = wall_half_width(it, hull, z0, z1)
+            sgn = -1 if it["side"] == "port" else 1
+            outer, inner = sgn * ww, sgn * (ww - it["footprint"][1])
+            rec["top_box"] = [round(min(outer, inner), 4), round(max(outer, inner), 4), round(z0, 4), round(z1, 4)]
+        items.append(rec)
+    cams = []
+    by_id = {i["id"]: i for i in spec["stations"] + spec["features"]}
+    for cam in spec.get("cameras", []):
+        cam = dict(cam)
+        if "seat" in cam:  # seated eye over the seat's centre, looking along look_dir (sub-local)
+            x0, x1, z0, z1 = place(by_id[cam["seat"]], hull)
+            cx, cz = (x0 + x1) / 2, (z0 + z1) / 2
+            eye = hull.deck_y(cz) + 1.2
+            dx, dy, dz = cam["look_dir"]
+            cam["pos"] = [round(cx, 3), round(eye, 3), round(cz, 3)]
+            cam["look"] = [round(cx + dx, 3), round(eye + dy, 3), round(cz + dz, 3)]
+        cams.append(cam)
+    data = {"hull": {"length_m": hull.L, "width_m": hull.W, "height_m": hull.H, "rings": rings},
+            "main_deck_y": hull.deck_y(), "floors": floors, "items": items,
+            "compartments": spec["compartments"], "cameras": cams}
+    out.write_text(json.dumps(data, indent=1), encoding="utf-8")
+
+
 def main() -> None:
     spec = yaml.safe_load((HERE / "program.yaml").read_text(encoding="utf-8"))
     out = Path(sys.argv[1]) if len(sys.argv) > 1 else HERE / "renders"
@@ -331,6 +399,7 @@ def main() -> None:
     draw_front(spec, hull, out / "plan_front.png")
     report = clearance_report(spec, hull)
     (out / "clearance.txt").write_text("\n".join(report) + "\n", encoding="utf-8")
+    export_layout(spec, hull, HERE / "layout.json")
     print("\n".join(report))
 
 
