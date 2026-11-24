@@ -150,8 +150,8 @@ def test_progress_on_stderr_and_stdout_is_one_json_object(root, capsys, monkeypa
     sb.mkdir(parents=True)
     shutil.copy(REPO / "assets" / "style_bible" / "classes.yaml", sb / "classes.yaml")
     (sb / "style.md").write_text("STYLE")
-    monkeypatch.setattr(cleanup, "find_blender", lambda: "blender")
-    monkeypatch.setattr(cleanup, "run_blender", lambda params, workdir: {"blender_version": "stub"})
+    monkeypatch.setattr(cleanup, "resolve_runner", lambda: cleanup.Runner("native", "blender"))
+    monkeypatch.setattr(cleanup, "run_blender", lambda params, workdir, runner=None, root=None: {"blender_version": "stub"})
     monkeypatch.setattr(godot_stage, "godot_check",
                         lambda *a, **k: {"ok": True, "material": {}, "renders": []})
     assert run(capsys, "new", "eel", "--class", "creature", "--folder", "deep")[0] == 0

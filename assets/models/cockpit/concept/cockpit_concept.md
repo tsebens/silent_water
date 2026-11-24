@@ -171,6 +171,8 @@ reference.
   experiment branch) still has two seats in the cockpit and an "old" sub. Both need revising to
   this concept when that branch lands: sonar becomes a midships station just aft of the dome,
   starboard, and the brief's materials list follows the art direction doc.
-- **The map table concept** carries the same WW2 drift and wants a modern pass before it is built.
+- **The map table concept** was reworked after this session's lock, in #329 (hull-side cab cowl, modern
+  finish); its concept doc in `assets/models/map_table/concept/` is the current lock, and the round-1
+  shots linked above show the earlier circular table that the pilot's hologram style was taken from.
 - **Crew standing behind** now look over one head, not two; worth checking in the blockout.
 - **A red-light variant** has not been drawn for any shot yet.

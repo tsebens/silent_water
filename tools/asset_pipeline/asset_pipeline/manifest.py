@@ -80,7 +80,9 @@ class CleanupRecord:
     params: dict[str, Any] = field(default_factory=dict)  # budget, size, palette size, grid
     commit: str = ""  # git commit of the pipeline code that ran it
     script_sha256: str = ""  # digest of the Blender script, so a dirty checkout is still identifiable
-    blender: str = ""
+    blender: str = ""  # version string printed by the Blender that ran it
+    runner: str = ""  # "native" or "docker"
+    image: str = ""  # docker: image reference plus digest when the daemon reported it
     result: dict[str, Any] = field(default_factory=dict)  # measured triangles, non-manifold, colours, size
     at: str = field(default_factory=now)
 

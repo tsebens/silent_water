@@ -1,8 +1,10 @@
 # Map table: concept
 
-Concept record for the midships map table. Tracked in #319. The locked primary concept art is
-`map_table_primary.png` in this folder; `map_table_height_reference.png` is the companion shot that
-sets the hologram's height. Everything else explored on the way is linked below by commit permalink.
+Concept record for the map table. Tracked in #319 (the free-standing circular table, rounds 1 to 3)
+and #329 (the table moved to the hull side, rounds 4 and 5). The locked primary concept art is
+`map_table_primary.png` in this folder; `map_table_operator_reference.png` is the companion shot
+from the seated operator's eye level. Everything else explored on the way is linked below by commit
+permalink.
 
 ## What the table is for
 
@@ -10,129 +12,163 @@ The map table gives crew who are not operating a station a sense of spatial coor
 outside, where the sub is going and how to get there. It shows a **subset of the whole chart**.
 
 - **One operator** controls the rendering camera: zoom, pan, rotate. The camera is theirs alone.
-- **Up to three observers** stand round the rest of the table. They can place markers and lines
-  (a line is a sequence of waypoint markers) but cannot move the camera.
-- Thematically it is the most advanced kit on the sub. The rest of the boat is deliberately
-  low-tech because older tech is more reliable; the table's surface is a 3D hologram.
+- **Up to three observers** stand along the table. They can place markers and lines (a line is a
+  sequence of waypoint markers) but cannot move the camera.
+- Thematically it is the most advanced kit on the sub. The table's surface is a 3D hologram.
 
 The cockpit concept brief (`assets/models/vehicles/sub_interior/brief_cockpit_concept.md` on the
-sub experiment branch) imagined one shared chart at three stations. This table is designed on its
-own; that combined scheme is not considered workable in practice.
+sub experiment branch) imagined one shared chart at three stations. The cockpit concept (#328) settled
+that: the pilot has a small locked hologram, the sonar operator a 2D screen, and the map table is the
+crew's planning view.
 
 ## Locked concept
 
-![Primary: circular table, deep-pit terrain, high angle](map_table_primary.png)
+![Primary: the table in a bay in the port hull wall, cab cowl above](map_table_primary.png)
+
+**Where it lives**
+- Built into a **bay in the port side wall** of midships, between two hull frames, running
+  fore-and-aft along the hull. One aisle in front of it; nobody stands behind it. The sonar
+  operator sits on the starboard side just aft of the pilot, so the table takes port.
+- The sub is small and the interior must feel cramped and packed. The earlier free-standing
+  circular table with a walkway each side needed about 3.1 m of a 2.8 m compartment; the bay
+  table leaves the whole aisle free.
+- **Countermeasures** stands against the **starboard** wall, immediately aft of the sonar
+  station, across the aisle from the table. Its operator glances across the aisle at the
+  hologram to see their decoys work. (The interior program's earlier placement, starboard and
+  forward of a central table, is superseded.)
 
 **The table**
-- Circular top, **about 1.5 m across** (the map must stay within roughly 4 to 6 ft, 1.2 to 1.8 m).
-- A single massive flanged column bolted to the deck, with a ring footrail round it.
-- The operator's console is a **sloped wedge built into the rim** on the aft side: a large
-  trackball under one hand, a chunky zoom lever and a rotation hand-wheel under the other, and a
-  row of guarded toggle switches. The operator stands there facing forward toward the cockpit.
-- Observers stand round the rest of the rim. A cup of small physical **marker pucks** is clamped
-  to the rim at each observer position; setting a puck on the map drops a pin.
-- Heavy, worn, bolted steel in the sub's orange-and-grey palette. Industrial, utilitarian,
-  competent. No chrome, no white plastic, no LED strips.
+- A **D-shaped top**, about 2.2 m long and 0.9 m deep at the centre, its back edge following the
+  curve of the hull and its front edge bowing gently out toward the aisle. A grey powder-coated
+  plate with a **safety-orange edge rail**, on a single plinth, braced off the hull frames.
+- **Desk height**, about 0.75 m, because the operator sits.
+- The **operator sits at the middle of the front edge**, on a modern operator's seat, at the
+  console built into the edge: a large trackball under one hand, a chunky zoom lever and a
+  rotation hand-wheel under the other, a short row of guarded toggles with LED lamps. The locked
+  shot inherited round 4's composition and seats them at the aft end of the D; **build it at the
+  middle**, as round 5's variant 15 shows.
+- **Observers stand** along the front edge either side of the operator, leaning in. They place
+  markers by **clicking on the terrain**; the moulded **puck holders** on the front edge in the
+  art are set dressing that reads as "markers live here", not an interaction.
+- Above the table, wrapping round the bay like the inside of an excavator cab, is **one
+  continuous curved instrument cowl** in powder-coated grey with an orange structural frame:
+  flush screens in heavy bezels, rocker and toggle clusters, LED indicator rows, backlit modern
+  gauge faces, and a white cove light along its top edge.
+- **Modern, not antiquated** (`docs/art_direction.md`): welded and bolted steel and aluminium,
+  matte grey with safety-orange accents, braided looms, engraved blank label plates, cove
+  lighting and LED work lights. No rivets, brass, rust, valve wheels, antique dials, stencils or
+  caged bulkhead lamps.
 
 **The hologram**
-- A **cylinder of light** standing on the table top, the same diameter as the top. Its curved side
-  is a crisp, clearly defined, faintly glowing translucent face that drops straight to the table,
-  so the volume's outline is easy to keep track of from anywhere in the compartment.
+- A **curved slab of light** standing on the table top with the same footprint as the top: its
+  back face follows the curve of the hull, its front face is gently bowed toward the aisle, about
+  0.7 m tall. Its faces are crisp, clearly defined, faintly glowing and translucent, dropping
+  straight to the table, so the volume's outline is easy to keep track of from the aisle.
 - It is **open to the air**: no glass, no cage, no posts, no frame, no lid.
-- Terrain is drawn as glowing soft neon teal-cyan topographic contour lines on a dark base, after
-  the contour reference image. Nothing else: no floating panels, no text, no icons.
+- Terrain is drawn as glowing soft neon teal-cyan topographic contour lines on a dark base.
+  Nothing else: no floating panels, no text, no icons.
 - Pins are small glowing markers standing on the terrain. Routes are thin lines between pins.
-- **Height:** tall. `map_table_height_reference.png` shows the preferred height, with the top of
-  the cylinder just under the overhead pipes. See the open questions on headroom.
+- The slab is **filled**: terrain fills the volume out to its faces, and a pit is a hole in the
+  surrounding plateau, as in the earlier locked shot. It never draws an isolated plug of terrain
+  floating in empty light.
+- The seated operator and the desk-height top give the slab its height under the 2.3 m overhead;
+  the standing-height table had about 4.5 ft to play with and this has more.
 
-![Height reference: context shot, tall cylinder](map_table_height_reference.png)
+![Operator's eye level reference](map_table_operator_reference.png)
 
-**Terrain with extreme depth change** (what the locked shot shows): a deep ocean pit. Its steep
-walls read as tightly stacked contour bands; the walls are broken by shelves at several depths,
-each shelf carrying a marker; a small flat floor at the bottom; the surrounding seafloor as a
-plateau near the top of the cylinder.
+The operator reference shows the console and the cowl from the seat. Its slab drifted to a
+rounded rectangle; the curved slab of the primary is the one to build.
 
 ## What was explored
 
-Three rounds of generated concept art, all on #319. Model: the asset pipeline's `google-pro`
-image provider (Gemini). References on every call: the contour-line image Tristan supplied and
-`exterior_vision_tristan.webp`; later rounds also passed the liked shots from the round before.
+Five rounds of generated concept art. Model: the asset pipeline's `google-pro` image provider
+(Gemini). Rounds 1 to 3 are on #319, rounds 4 and 5 on #329.
 
-### Round 1: physical structure and crew positioning (commit `a7c641e`)
+### Rounds 1 to 3: the free-standing circular table (#319)
 
-| Variant | Idea | Outcome |
+Round 1 explored physical structure and crew positioning (operator's helm, plotting pedestal,
+navigator's chart table, overhead projector); round 2 the plan shape (square, round, D, long
+rectangle); round 3 terrain with extreme depth change on the chosen round table. The result was
+locked as a circular 1.5 m table on a flanged column with a tall open cylinder of light, then
+superseded by round 4. The full record of those rounds, with permalinks to every image, is the
+earlier version of this file: [`map_table_concept.md` at `7f9a0c4`](https://github.com/tsebens/silent_water/blob/7f9a0c44b0a5c126209adaec0dceb4394257035f/assets/models/map_table/concept/map_table_concept.md), with its locked
+[primary](https://github.com/tsebens/silent_water/blob/7f9a0c44b0a5c126209adaec0dceb4394257035f/assets/models/map_table/concept/map_table_primary.png?raw=true) and
+[height reference](https://github.com/tsebens/silent_water/blob/7f9a0c44b0a5c126209adaec0dceb4394257035f/assets/models/map_table/concept/map_table_height_reference.png?raw=true).
+
+What carried forward from those rounds: the open crisp-edged volume of light, the contour-only
+terrain, operator controls built into the table, puck holders for observers, no enclosure.
+
+### Round 4: the table moved to the hull side (commit `f4d1105`)
+
+Feedback on the circular table: too big for midships. Push it to one side, let it elongate, give
+it one open edge with a seated operator in the middle and up to three standing observers, and put
+instruments on the curving wall above it. Three variants, two shots each (context from the aisle,
+operator's eye level).
+
+| Variant | Form | Outcome |
 | --- | --- | --- |
-| 1 Operator's helm | Square table, console strip on the aft edge, leaning rails and puck racks for observers | **Liked:** the detail shot's terrain slab with sharp vertical edges down to the table, and the controls built into the table. **Rejected:** the map was too small |
-| 2 Plotting pedestal | Octagonal drum, two-handed periscope-style yoke, tethered styluses on fold-out ledges | Not chosen |
-| 3 Navigator's chart table | Seated operator at a built-in console, corner-post cage framing the hologram, drawers of pucks and beads | **Rejected:** the cage; the map must not be enclosed |
-| 4 Overhead projector | Bare plate, projector head on the pipework, crane-style pendant control | **Liked:** the size of the table. Projector and pendant not chosen |
+| 10 Chart bench | Long rectangle, flat row of panels above, coaming at the back | Not chosen; shallow slab read as a glass block |
+| 11 Alcove bay | D-shaped top in a bay between two frames, half-cylinder of light, instruments wrapped round as a cowl | **Chosen** as the layout to follow |
+| 12 Cantilever shelf | Pill-shaped top on angled brackets, open deck beneath, taller slab, boxed modules with orange cove light | Not chosen; kept the crisp slab edges best |
 
-Links: [var1 context](https://github.com/tsebens/silent_water/blob/a7c641eeee289be654917fb2b60dfac39d71baaf/concepts/map_table/map_table_var1_img1.png?raw=true), [var1 controls](https://github.com/tsebens/silent_water/blob/a7c641eeee289be654917fb2b60dfac39d71baaf/concepts/map_table/map_table_var1_img2.png?raw=true), [var2 context](https://github.com/tsebens/silent_water/blob/a7c641eeee289be654917fb2b60dfac39d71baaf/concepts/map_table/map_table_var2_img1.png?raw=true), [var2 controls](https://github.com/tsebens/silent_water/blob/a7c641eeee289be654917fb2b60dfac39d71baaf/concepts/map_table/map_table_var2_img2.png?raw=true), [var3 context](https://github.com/tsebens/silent_water/blob/a7c641eeee289be654917fb2b60dfac39d71baaf/concepts/map_table/map_table_var3_img1.png?raw=true), [var3 controls](https://github.com/tsebens/silent_water/blob/a7c641eeee289be654917fb2b60dfac39d71baaf/concepts/map_table/map_table_var3_img2.png?raw=true), [var4 context](https://github.com/tsebens/silent_water/blob/a7c641eeee289be654917fb2b60dfac39d71baaf/concepts/map_table/map_table_var4_img1.png?raw=true), [var4 controls](https://github.com/tsebens/silent_water/blob/a7c641eeee289be654917fb2b60dfac39d71baaf/concepts/map_table/map_table_var4_img2.png?raw=true).
+Links: [var10 context](https://github.com/tsebens/silent_water/blob/f4d1105fca9a32527cb793a4bf28b2ab9d9025e5/concepts/map_table/map_table_var10_img1.png?raw=true), [var10 operator](https://github.com/tsebens/silent_water/blob/f4d1105fca9a32527cb793a4bf28b2ab9d9025e5/concepts/map_table/map_table_var10_img2.png?raw=true), [var11 context](https://github.com/tsebens/silent_water/blob/f4d1105fca9a32527cb793a4bf28b2ab9d9025e5/concepts/map_table/map_table_var11_img1.png?raw=true), [var11 operator](https://github.com/tsebens/silent_water/blob/f4d1105fca9a32527cb793a4bf28b2ab9d9025e5/concepts/map_table/map_table_var11_img2.png?raw=true), [var12 context](https://github.com/tsebens/silent_water/blob/f4d1105fca9a32527cb793a4bf28b2ab9d9025e5/concepts/map_table/map_table_var12_img1.png?raw=true), [var12 operator](https://github.com/tsebens/silent_water/blob/f4d1105fca9a32527cb793a4bf28b2ab9d9025e5/concepts/map_table/map_table_var12_img2.png?raw=true).
 
-### Round 2: table shape (commit `965172a`)
+Decisions from the round: the operator sits (which sets the desk-height top and buys slab height);
+port side; a curved slab that follows the hull. The round also leaned into a WW2 submarine look,
+which prompted the "Modern, not antiquated" section of the art direction doc.
 
-Blend of the liked parts: large table, crisp-edged open slab filling the top, console in the rim,
-puck cups. No enclosure anywhere.
+### Round 5: the alcove bay, modern (commit `bc404ae`)
 
-| Variant | Shape | Outcome |
+Variant 11's context shot painted over in the modern art direction, with the locked cockpit
+primary and sonar console shots as style references. Three variants, two shots each.
+
+| Variant | Instruments above the table | Outcome |
 | --- | --- | --- |
-| 5 | Square plate, console along the aft edge | Close second; **kept as the practical fallback** |
-| 6 | Round disc on a flanged column, console wedge in the rim | **Chosen** |
-| 7 | D-shape, console on the straight edge | Not chosen |
-| 8 | Long rectangle fore-and-aft, console at the aft end | Close second with 5; narrowest aisles |
+| 13 Cab cowl | One continuous curved cowl with an orange frame, cove light along its top | **Locked** |
+| 14 Modular panels | Boxed modules on a curved orange rail, work lights on arms, orange hull frames | Not chosen; some rust crept onto the frames |
+| 15 Liner desk | Smooth liner panels, cantilevered desk, one slim instrument strip, cove light under the desk | Not chosen; the only shot with the operator at the middle of the front edge |
 
-Links: [var5 context](https://github.com/tsebens/silent_water/blob/965172ad8a5611108710b3295a28d38e93ff9823/concepts/map_table/map_table_var5_img1.png?raw=true), [var5 high](https://github.com/tsebens/silent_water/blob/965172ad8a5611108710b3295a28d38e93ff9823/concepts/map_table/map_table_var5_img2.png?raw=true), [var6 context](https://github.com/tsebens/silent_water/blob/965172ad8a5611108710b3295a28d38e93ff9823/concepts/map_table/map_table_var6_img1.png?raw=true), [var6 high](https://github.com/tsebens/silent_water/blob/965172ad8a5611108710b3295a28d38e93ff9823/concepts/map_table/map_table_var6_img2.png?raw=true), [var7 context](https://github.com/tsebens/silent_water/blob/965172ad8a5611108710b3295a28d38e93ff9823/concepts/map_table/map_table_var7_img1.png?raw=true), [var7 high](https://github.com/tsebens/silent_water/blob/965172ad8a5611108710b3295a28d38e93ff9823/concepts/map_table/map_table_var7_img2.png?raw=true), [var8 context](https://github.com/tsebens/silent_water/blob/965172ad8a5611108710b3295a28d38e93ff9823/concepts/map_table/map_table_var8_img1.png?raw=true), [var8 high](https://github.com/tsebens/silent_water/blob/965172ad8a5611108710b3295a28d38e93ff9823/concepts/map_table/map_table_var8_img2.png?raw=true).
-
-### Round 3: terrain with extreme depth change (commit `e7b98fa`)
-
-The circular table with a tall hologram showing the deep pit. Four shots:
-[context](https://github.com/tsebens/silent_water/blob/e7b98fa6e923bde23975cfbf8c74d5fc3643e7f5/concepts/map_table/map_table_var9_img1.png?raw=true) (now `map_table_height_reference.png`),
-[high angle](https://github.com/tsebens/silent_water/blob/e7b98fa6e923bde23975cfbf8c74d5fc3643e7f5/concepts/map_table/map_table_var9_img2.png?raw=true) (now `map_table_primary.png`),
-[operator's eye level](https://github.com/tsebens/silent_water/blob/e7b98fa6e923bde23975cfbf8c74d5fc3643e7f5/concepts/map_table/map_table_var9_img3.png?raw=true),
-[low angle with a crouching observer](https://github.com/tsebens/silent_water/blob/e7b98fa6e923bde23975cfbf8c74d5fc3643e7f5/concepts/map_table/map_table_var9_img4.png?raw=true).
-The context and operator shots are second takes; the first takes are listed under rejected.
+Links: [var13 context](https://github.com/tsebens/silent_water/blob/bc404ae23b9c13b85d7d200b5ded13a54a560106/concepts/map_table/map_table_var13_img1.png?raw=true) (now `map_table_primary.png`), [var13 operator](https://github.com/tsebens/silent_water/blob/bc404ae23b9c13b85d7d200b5ded13a54a560106/concepts/map_table/map_table_var13_img2.png?raw=true) (now `map_table_operator_reference.png`), [var14 context](https://github.com/tsebens/silent_water/blob/bc404ae23b9c13b85d7d200b5ded13a54a560106/concepts/map_table/map_table_var14_img1.png?raw=true), [var14 operator](https://github.com/tsebens/silent_water/blob/bc404ae23b9c13b85d7d200b5ded13a54a560106/concepts/map_table/map_table_var14_img2.png?raw=true), [var15 context](https://github.com/tsebens/silent_water/blob/bc404ae23b9c13b85d7d200b5ded13a54a560106/concepts/map_table/map_table_var15_img1.png?raw=true), [var15 operator](https://github.com/tsebens/silent_water/blob/bc404ae23b9c13b85d7d200b5ded13a54a560106/concepts/map_table/map_table_var15_img2.png?raw=true).
 
 ## Liked
 
-- The hologram as a slab or cylinder of light with **sharp, defined edges** running from the
-  terrain surface straight down to the table, so the shape is easy to track.
-- **Operator controls built into the table** rather than a separate console or hand-held device.
-- A **large map**, filling the table top.
-- The **circular** table on a single column. Surprising, but it felt best.
-- A **tall** hologram for deep terrain, as in the height reference.
+- The hologram as a slab of light with **sharp, defined edges** running from the terrain surface
+  straight down to the table, so the shape is easy to track.
+- A **curved slab** that follows the hull.
+- **Operator controls built into the table**, and a **seated operator** on a modern seat.
+- The table **in a bay in the hull wall**, with the instruments above it wrapping round as a cab
+  cowl.
+- The **modern** finish: powder-coated grey, orange structure and rails, cove lighting.
 
 ## Actively rejected
 
-- **Any enclosure** around the hologram: glass box, corner-post cage, posts, rails, frame. First
-  seen in round 1's variant 3, ruled out in round 2.
-- **A lid, cap or metal ring** at the top or base of the cylinder, which turns it into a tank or
-  specimen jar. The first take of round 3's context shot did this and was discarded.
-- **A small map** sitting in the middle of a larger table (round 1, variant 1).
-- **Inverted terrain:** the pit drawn as a column standing up instead of a hole going down. The
-  first take of round 3's operator shot did this and was discarded.
-- Generation slips, to be avoided in later passes: detailed faces on figures, legible stencil
-  text, dimension lines drawn on the table.
+- **Any enclosure** around the hologram: glass box, corner-post cage, posts, rails, frame
+  (round 1), and a **lid, cap, dome or metal ring** on the volume (rounds 3 and 4).
+- **A free-standing table with a walkway each side.** Too big for the compartment (round 4).
+- **The antiquated WW2 look:** rivets, brass, rust, valve wheels, antique dials, stencils, caged
+  bulkhead lamps (rounds 1 to 4; see `docs/art_direction.md`).
+- **A small map** sitting in the middle of a larger table (round 1).
+- **Inverted terrain:** a pit drawn as a standing column (round 3).
+- Generation slips, to be avoided in later passes: detailed faces on figures, legible text,
+  dimension lines, corrosion on painted frames.
 
 ## Not chosen (not rejected)
 
-- The two-handed yoke and tethered styluses (round 1, variant 2).
-- The overhead projector and crane-style pendant (round 1, variant 4).
-- A seated operator (round 1, variant 3).
-- D-shape and long-rectangle tops (round 2). The **square** top remains the fallback if the
-  circular table proves impractical to build or to fit.
+- The circular table on a single column (rounds 2 and 3). It felt best as an object; it did not
+  fit the boat.
+- The long bench and the cantilever shelf (round 4), and the modular panels and liner desk
+  (round 5).
+- The two-handed yoke, tethered styluses, overhead projector and pendant (round 1).
 
 ## Open questions
 
-- **Rendering a subset.** Round 3 produced two readings. In the locked shot the surrounding
-  plateau fills the cylinder and the pit is a hole in it, so the whole volume is terrain. In the
-  context and operator shots only the pit is drawn, as an isolated plug of terrain floating in the
-  light with nothing round it, which makes the shelves easier to see from the side where
-  observers stand. Decide which the game renders, or whether the operator can switch.
-- **Headroom.** A waist-high table plus a 4 to 6 ft hologram reaches 2.1 to 2.7 m, and midships
-  has 2.3 m. About 4.5 ft of hologram fits over a waist-high top; anything taller needs a lower
-  table or a cap on the vertical scale.
-- **Display technology.** The cockpit brief left this open (hologram, phosphor CRT, or a
-  mechanical pin-table). For the map table the hologram is now the answer. The pilot's and
-  sonar's displays are still open.
-- **Marker pucks.** The pucks are a strong physical read for "observers place markers". Whether
-  they are real objects the player picks up, or only the visual for a click, is a gameplay call.
+None at present.
+
+## Decisions recorded on #329
+
+- The operator sits at the **middle** of the front edge, not the aft end of the D.
+- The slab is **filled** with terrain to its faces; no isolated plug.
+- **Countermeasures** goes against the starboard wall immediately aft of the sonar station,
+  across the aisle from the table.
+- **Markers are placed by clicking**, not by handling physical pucks. The puck holders in the art
+  stay as dressing only.
