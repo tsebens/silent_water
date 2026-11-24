@@ -388,7 +388,8 @@ The game's tests need only Godot: the GLBs are committed.
 - Changes to this process, to cadkit or to the role prompts: **M11 · CAD asset process**.
 - Stations and other content built with the process: the open content milestone, **M12 · Sub interior stations**.
   The organization agent uses it for **every** arc of a concept that carries a brief, the behaviour arcs included,
-  and does not escalate for want of a milestone.
+  and does not escalate for want of a milestone. The dispatcher closes a milestone once all its sub-issues are
+  closed, so M12 may be closed between stations; plan review reopens it when it files the next station's arcs.
 
 ## 9. Known limits of the alpha
 

@@ -11,9 +11,10 @@ All work is tracked on the GitHub Project board **"silent_water"** (user project
 - **Every unit of work has an issue** in `tsebens/silent_water` and is on the board, before work starts.
 - **Milestones are parent issues** titled `M<n> · <name>`. Units of work are **sub-issues** titled `M<n>.<k> · <name>`. Break a milestone into sub-issues when it moves to Ready.
 - **Status column:** Backlog → Ready → In progress → In review → Done.
+  - **Ready holds arcs only.** It is the dispatcher's queue. Work that needs a person (a playtest, files only Tristan has, a decision) stays in **Backlog** with that person assigned; it never sits in Ready.
   - Move an item to **In progress** when you start it, and **In review** when its PR is open.
   - Move it to **Done** when it is merged or the decision is recorded, then close the issue.
-  - A parent milestone is Done when all its sub-issues are.
+  - A parent milestone is Done when all its sub-issues are: the dispatcher closes it (after a quiet period). Reopen it if new work is filed under it.
 - **Open design decisions** get an issue titled `Decision: …`. Record the outcome in the issue and in the design doc.
 - **Discovered work** (bugs, follow-ups, scope found mid-task) gets a new issue on the board, never a silent TODO.
 - Reference the issue in commits and PRs (e.g. `Refs #12`, `Closes #12`).

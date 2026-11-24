@@ -43,7 +43,7 @@ All checks pass, or only have nits you would not block on (state them anyway).
 2. Labels: add `approved`; remove `changes-requested` if a previous round left it on.
 3. **Merge**: `gh pr merge N --squash --delete-branch`, subject = the PR title, body = the PR body's summary (for an arc, including `Closes #<n>`).
 4. For a station's assembly arc: comment on the concept issue with the review sheets (by commit permalink) and the findings you routed elsewhere, so Tristan sees the result in one place.
-5. For an arc PR: confirm the arc issue is closed (close it if the merge did not). If every arc of its concept is now closed, close the concept too (the dispatcher backstops this step on its next run, but do not rely on it). If every sub-issue of the milestone is closed, comment on the milestone saying so (Tristan closes milestones).
+5. For an arc PR: confirm the arc issue is closed (close it if the merge did not). If every arc of its concept is now closed, close the concept too (the dispatcher backstops this step on its next run, but do not rely on it). Leave the milestone alone: the dispatcher closes it once every sub-issue has been closed for a day.
 
 End.
 
