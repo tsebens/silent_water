@@ -42,6 +42,36 @@ def read_block(root: Path, name: str) -> str:
     return f.read_text().strip() if f.is_file() else ""
 
 
+SCENE_HEADING = "## presentation_scene"
+PRESENTATIONS = ("subject", "scene")
+DEFAULT_PRESENTATION = "subject"
+
+
+def split_scene(text: str) -> tuple[str, str]:
+    """Split a style-bible file into (the shared text, the `## presentation_scene` section), both stripped.
+    Without the section the second part is empty and the first is the whole file."""
+    head: list[str] = []
+    scene: list[str] = []
+    cur = head
+    for line in text.splitlines():
+        if line.startswith("## "):
+            cur = scene if line.strip().lower() == SCENE_HEADING else head
+            if cur is scene:
+                continue
+        cur.append(line)
+    return "\n".join(head).strip(), "\n".join(scene).strip()
+
+
+def class_presentation(root: Path, asset_class: str) -> str:
+    """The class's `concept_presentation` in classes.yaml, or `subject`."""
+    cf = style_dir(root) / "classes.yaml"
+    prof = ((yaml.safe_load(cf.read_text()) or {}).get("classes", {}).get(asset_class) or {}) if cf.is_file() else {}
+    val = prof.get("concept_presentation", DEFAULT_PRESENTATION)
+    if val not in PRESENTATIONS:
+        raise ValueError(f"classes.yaml: {asset_class} concept_presentation must be one of {list(PRESENTATIONS)}, got {val!r}")
+    return val
+
+
 def anchors_for(root: Path, asset_class: str) -> list[Path]:
     """Two to four approved anchor images for the class, passed as references on every concept call."""
     d = style_dir(root) / "anchors" / asset_class
@@ -75,20 +105,35 @@ def class_section(root: Path, asset_class: str, heading: str) -> str:
     return "\n".join(out).strip()
 
 
-def style_block(root: Path, asset_class: str) -> str:
+def shared_style(root: Path, presentation: str) -> str:
+    """style.md. For `scene`, its Presentation paragraph is replaced by the `presentation_scene` section."""
+    main, scene = split_scene(read_block(root, "style.md"))
+    if presentation != "scene" or not scene:
+        return main
+    paras = [p for p in main.split("\n\n") if not p.startswith("Presentation:")]
+    return "\n\n".join(paras + [scene])
+
+
+def shared_negative(root: Path, presentation: str) -> str:
+    """negative.md. For `scene`, the `presentation_scene` section replaces the whole shared list."""
+    main, scene = split_scene(read_block(root, "negative.md"))
+    return scene if presentation == "scene" and scene else main
+
+
+def style_block(root: Path, asset_class: str, presentation: str = DEFAULT_PRESENTATION) -> str:
     """Shared style, then the class style."""
-    return "\n\n".join(x for x in (read_block(root, "style.md"), class_section(root, asset_class, "Style")) if x)
+    return "\n\n".join(x for x in (shared_style(root, presentation), class_section(root, asset_class, "Style")) if x)
 
 
-def negative_block(root: Path, asset_class: str) -> str:
+def negative_block(root: Path, asset_class: str, presentation: str = DEFAULT_PRESENTATION) -> str:
     """Shared negative list, then the class's Avoid list."""
-    return "\n".join(x for x in (read_block(root, "negative.md"), class_section(root, asset_class, "Avoid")) if x)
+    return "\n".join(x for x in (shared_negative(root, presentation), class_section(root, asset_class, "Avoid")) if x)
 
 
-def full_prompt(root: Path, asset_class: str, body: str) -> str:
+def full_prompt(root: Path, asset_class: str, body: str, presentation: str = DEFAULT_PRESENTATION) -> str:
     """Shared style, class style, the writer's prompt, shared negative, class negative."""
-    neg = negative_block(root, asset_class)
-    parts = [style_block(root, asset_class), body]
+    neg = negative_block(root, asset_class, presentation)
+    parts = [style_block(root, asset_class, presentation), body]
     if neg:
         parts.append("Avoid:\n" + neg)
     return "\n\n".join(x for x in parts if x)
@@ -131,6 +176,7 @@ def cmd_concept(args: argparse.Namespace, root: Path) -> dict[str, Any]:
     mode = args.mode or (references.DEFAULT_MODE if args.reference else None)
     if args.mode and not args.reference:
         raise ValueError("--mode needs --reference")
+    presentation = args.presentation or class_presentation(root, m.asset_class)
     if args.refine and args.reference:
         raise ValueError("--reference does not combine with --refine: a refine keeps its variant's reference")
     refs_in: list[references.Reference] = []
@@ -139,6 +185,8 @@ def cmd_concept(args: argparse.Namespace, root: Path) -> dict[str, Any]:
         if parent.kind != "concept":
             raise ValueError(f"{args.refine!r} is a {parent.kind}, only concept variants can be refined")
         base.append(abspath(root, parent.path))
+        if not args.presentation:  # a refine keeps its variant's presentation
+            presentation = parent.presentation or DEFAULT_PRESENTATION  # older variants were subject shots
         if parent.reference and parent.mode == "paint-over":  # keep the geometry the parent was painted over
             mode = parent.mode
             refs_in = [references.load_stored(root, args.slug, parent.reference)]
@@ -156,14 +204,14 @@ def cmd_concept(args: argparse.Namespace, root: Path) -> dict[str, Any]:
             try:
                 bodies = cost.paid_call(
                     m, writer, "prompt_writer", prices, command="concept", stage=stage,
-                    fn=lambda: writer.write_prompts(m.description, style_block(root, m.asset_class), args.notes or "",
+                    fn=lambda: writer.write_prompts(m.description, style_block(root, m.asset_class, presentation), args.notes or "",
                                                     writer_images, args.n, mode=mode if ref else None))
             except PromptWriterError as e:
                 raise ValueError(f"prompt writer failed: {e}") from e
             for i, body in enumerate(bodies, 1):
                 progress(f"image {i}/{len(bodies)} ({img.name})…")
                 vid = next_id(m, "v")
-                prompt = full_prompt(root, m.asset_class, body)
+                prompt = full_prompt(root, m.asset_class, body, presentation)
                 rel = (out_dir / f"{vid}.png").relative_to(root)
                 if ref and mode == "paint-over":
                     sent = [ref.path, *base]
@@ -175,8 +223,9 @@ def cmd_concept(args: argparse.Namespace, root: Path) -> dict[str, Any]:
                 m.add(LineageEntry(id=vid, kind="concept", path=rel.as_posix(), provider=img.name, model=img.model,
                                    prompt=prompt, parent=parent.id if parent else None,
                                    writer=f"{writer.name}:{writer.model}", references=[_rel(root, r) for r in sent],
-                                   reference=ref.record() if ref else {}, mode=mode if ref else ""))
+                                   reference=ref.record() if ref else {}, mode=mode if ref else "", presentation=presentation))
                 made.append({"id": vid, "path": rel.as_posix(), "parent": parent.id if parent else None,
+                             "presentation": presentation,
                              **({"reference": ref.record(), "mode": mode} if ref else {})})
     if m.stage in ("new", "concept"):
         m.stage = "concept"
@@ -835,6 +884,9 @@ def build_parser() -> argparse.ArgumentParser:
                    help="an image (PNG, JPEG or WebP) to work from; repeat for several. --n variants are made per reference")
     c.add_argument("--mode", choices=references.MODES, default=None,
                    help="with --reference: paint-over (default; keep composition, camera, proportions) or inspire (loose starting point)")
+    c.add_argument("--presentation", choices=PRESENTATIONS, default=None,
+                   help="subject (one isolated subject on a plain background) or scene (keep the reference's camera, "
+                        "full environment in frame, people allowed); default: the class's concept_presentation, else subject")
     c.add_argument("--estimate", action="store_true", help="print what this would cost from prices.yaml and the request, and call nothing")
     c.set_defaults(fn=cmd_concept)
     ESTIMATE = "print what this would cost from prices.yaml and the request, and call nothing"

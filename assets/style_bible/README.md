@@ -16,7 +16,7 @@ Input to the asset pipeline (concept #222). Seeded from `docs/art_direction.md`,
 
 ## `classes.yaml` format
 
-Top-level key `classes`, with one entry each for `creature`, `prop`, `terrain`, `architecture`. Fields:
+Top-level key `classes`, with one entry each for `creature`, `prop`, `terrain`, `architecture`, `interior`. Fields:
 
 | Field | Meaning |
 | --- | --- |
@@ -29,6 +29,7 @@ Top-level key `classes`, with one entry each for `creature`, `prop`, `terrain`, 
 | `to3d_views` | Optional. Turnaround views `asset to3d` sends by default, in order (a provider entry's own `views:` comes first, `--views` overrides): a non-empty list of distinct names from `turnaround_views` (or from the six views when that is absent). Default: front, left, back, right |
 | `turnaround_views` | Optional. Views `asset turnaround` generates: a non-empty list of distinct names from front, left, back, right, top, bottom. Default: front, left, back, right. `check` adds `silhouette_top` / `silhouette_bottom` when those views exist |
 | `gates` | Thresholds: `triangle_tolerance` (multiplier on budget), `bbox_tolerance` (fraction), `max_loose_parts`, `max_non_manifold`, `silhouette_iou_min` (0 to 1) |
+| `concept_presentation` | Optional. `subject` (default) or `scene`: what `asset concept` uses when `--presentation` is absent. `scene` swaps in the `## presentation_scene` sections of `style.md` and `negative.md` |
 | `budget_usd` | Optional. Soft spend limit in USD per asset of this class (a number, 0 or more). `asset cost` warns past it; nothing is blocked. An asset's manifest `budget_usd` overrides it |
 
 `tools/validate_style_bible.py` checks this shape and runs from `tools/check.sh`.

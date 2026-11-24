@@ -6,10 +6,12 @@ from pathlib import Path
 import yaml
 
 ROOT = Path(__file__).resolve().parent.parent / "assets" / "style_bible"
-CLASSES = ["creature", "prop", "terrain", "architecture"]
+CLASSES = ["creature", "prop", "terrain", "architecture", "interior"]
 ROUTES = {"image-to-3d", "scripted"}
 GATES = ["triangle_tolerance", "bbox_tolerance", "max_loose_parts", "max_non_manifold", "silhouette_iou_min"]
-OPTIONAL_FIELDS = ["budget_usd", "turnaround_views", "to3d_views"]
+OPTIONAL_FIELDS = ["budget_usd", "turnaround_views", "to3d_views", "concept_presentation"]
+PRESENTATIONS = ("subject", "scene")
+SCRIPTED = {"architecture", "interior"}
 VIEWS = ["front", "left", "back", "right", "top", "bottom"]
 FIELDS = ["build_route", "triangle_budget", "scale_range_m", "snap_grid_m", "palette_size", "cleanup_recipe", "gates"]
 
@@ -40,6 +42,10 @@ def validate() -> list[str]:
         p = ROOT / f
         if not p.is_file() or not p.read_text().strip():
             errs.append(f"{f} missing or empty")
+        elif f != "classes.yaml" and "## presentation_scene" in p.read_text():
+            body = p.read_text().split("## presentation_scene", 1)[1]
+            if not body.split("\n## ", 1)[0].strip():
+                errs.append(f"{f}: ## presentation_scene section is empty")
     for c in CLASSES:
         if not (ROOT / "anchors" / c).is_dir():
             errs.append(f"anchors/{c}/ missing")
@@ -80,10 +86,12 @@ def validate() -> list[str]:
                 errs.append(p + f"to3d_views must be distinct names from {VIEWS}")
             elif "turnaround_views" in c and any(v not in c["turnaround_views"] for v in tv):
                 errs.append(p + "to3d_views must be among the class's turnaround_views")
+        if "concept_presentation" in c and c["concept_presentation"] not in PRESENTATIONS:
+            errs.append(p + f"concept_presentation must be one of {list(PRESENTATIONS)}")
         if c.get("build_route") not in ROUTES:
             errs.append(p + "build_route must be image-to-3d or scripted")
-        if (name == "architecture") != (c.get("build_route") == "scripted"):
-            errs.append(p + "only architecture uses the scripted route")
+        if (name in SCRIPTED) != (c.get("build_route") == "scripted"):
+            errs.append(p + "only architecture and interior use the scripted route")
         tb = c.get("triangle_budget")
         if not (isinstance(tb, int) and tb > 0):
             errs.append(p + "triangle_budget must be a positive int")
@@ -93,8 +101,8 @@ def validate() -> list[str]:
         sg = c.get("snap_grid_m")
         if sg is not None and not (num(sg) and sg > 0):
             errs.append(p + "snap_grid_m must be null or positive")
-        if name == "architecture" and sg is None:
-            errs.append(p + "architecture needs a snap grid")
+        if name in SCRIPTED and sg is None:
+            errs.append(p + f"{name} needs a snap grid")
         ps = c.get("palette_size")
         if not (isinstance(ps, int) and ps > 0):
             errs.append(p + "palette_size must be a positive int")

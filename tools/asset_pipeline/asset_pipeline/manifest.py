@@ -8,7 +8,7 @@ from typing import Any
 
 import yaml
 
-CLASSES = ("creature", "prop", "architecture", "terrain")
+CLASSES = ("creature", "prop", "architecture", "terrain", "interior")
 STAGES = ("new", "concept", "locked", "turnaround", "brief", "to3d", "cleanup", "checked", "exported")
 KINDS = ("concept", "turnaround", "mesh")
 DECISIONS = ("approved", "rejected")
@@ -48,6 +48,7 @@ class LineageEntry:
     references: list[str] = field(default_factory=list)  # images passed to the provider
     reference: dict[str, str] = field(default_factory=dict)  # concept variants made from a reference: {name, sha256}
     mode: str = ""  # with a reference: paint-over or inspire
+    presentation: str = ""  # concept variants: subject or scene (empty on manifests written before it existed)
     task_id: str = ""  # provider job id for a mesh run (image-to-3D)
     views: list[str] = field(default_factory=list)  # mesh runs: lineage ids of the turnaround views sent, in order
     options: dict[str, Any] = field(default_factory=dict)  # mesh runs: the model options sent in the request body

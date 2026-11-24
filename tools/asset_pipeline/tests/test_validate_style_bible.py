@@ -95,3 +95,26 @@ def test_to3d_views_are_validated(tmp_path):
     data["classes"]["prop"].update(turnaround_views=["front", "left"], to3d_views=["top"])
     f.write_text(yaml.safe_dump(data))
     assert any("to3d_views" in e and "turnaround_views" in e for e in mod.validate())
+
+
+def test_concept_presentation_validated(tmp_path):
+    mod, root = load(tmp_path)
+    f = root / "classes.yaml"
+    data = yaml.safe_load(f.read_text())
+    assert data["classes"]["interior"]["concept_presentation"] == "scene"
+    assert data["classes"]["interior"]["build_route"] == "scripted"
+    data["classes"]["prop"]["concept_presentation"] = "scene"
+    f.write_text(yaml.safe_dump(data))
+    assert mod.validate() == []
+    data["classes"]["prop"]["concept_presentation"] = "wide"
+    f.write_text(yaml.safe_dump(data))
+    assert any("prop" in e and "concept_presentation" in e for e in mod.validate())
+
+
+def test_interior_must_be_scripted(tmp_path):
+    mod, root = load(tmp_path)
+    f = root / "classes.yaml"
+    data = yaml.safe_load(f.read_text())
+    data["classes"]["interior"]["build_route"] = "image-to-3d"
+    f.write_text(yaml.safe_dump(data))
+    assert any("interior" in e and "scripted" in e for e in mod.validate())
