@@ -104,6 +104,66 @@ check "close failure: logged" $'  closing concept #10: all arcs closed\n    clos
 check "close failure: returns 0" 0 $rc
 rm -f "$CALLS"
 
+# closable_milestones: title `M<n> · …`, all sub-issues closed, past the quiet period. The sub-issue lookup is stubbed.
+NOW=$(date -u -d 2026-01-10T00:00:00Z +%s)
+MILESTONES_FIX='[{"number":50,"title":"M1 · done long ago","labels":[],"sub_issues_summary":{"total":3,"completed":3}},
+  {"number":51,"title":"M2 · one still open","labels":[],"sub_issues_summary":{"total":3,"completed":2}},
+  {"number":52,"title":"M3 · no sub-issues yet","labels":[],"sub_issues_summary":{"total":0,"completed":0}},
+  {"number":53,"title":"M4 · finished an hour ago","labels":[],"sub_issues_summary":{"total":1,"completed":1}},
+  {"number":54,"title":"M5 · needs a human","labels":["needs-human"],"sub_issues_summary":{"total":1,"completed":1}},
+  {"number":55,"title":"M6.1 · an arc, not a milestone","labels":["arc"],"sub_issues_summary":{"total":1,"completed":1}},
+  {"number":56,"title":"Concept: not a milestone","labels":["concept"],"sub_issues_summary":{"total":2,"completed":2}},
+  {"number":57,"title":"M7 · summary missing","labels":[]}]'
+gh() {
+  case "$*" in
+    *issues/50/sub_issues*) printf '2026-01-01T00:00:00Z\n2025-12-30T00:00:00Z\n' ;;
+    *issues/53/sub_issues*) echo 2026-01-09T23:00:00Z ;;
+    *) echo "gh must not be called here: gh $*" >&2; return 1 ;;
+  esac
+}
+check "milestones: only finished, quiet, unlabelled parents close" "50" "$(closable_milestones "$MILESTONES_FIX" "$NOW" 2>/dev/null)"
+check "milestones: a young finish is logged (stderr), not closed" "  milestone #53 finished 1h ago; closing after 24h" "$(closable_milestones "$MILESTONES_FIX" "$NOW" 2>&1 >/dev/null)"
+MILESTONE_QUIET_HOURS=0
+check "milestones: quiet period 0 closes the young one too" $'50\n53' "$(closable_milestones "$MILESTONES_FIX" "$NOW" 2>/dev/null)"
+MILESTONE_QUIET_HOURS=24
+is_milestone_title "M10 · Asset Studio"; check "milestone title: M<n> · name" 0 $?
+is_milestone_title "M10.3 · Arc"; check "milestone title: arc is not one" 1 $?
+
+# The pass: closes with reason completed; dry run logs; already closed and failures are logged and swallowed.
+CALLS=$(mktemp)
+gh() {
+  case "$*" in
+    *issues/50/sub_issues*) echo 2026-01-01T00:00:00Z ;;
+    *issues/53/sub_issues*) echo 2026-01-09T23:00:00Z ;;
+    *"issues/50 --jq .state") echo open ;;
+    *) echo "gh $*" >>"$CALLS" ;;
+  esac
+}
+out=$(close_finished_milestones "$MILESTONES_FIX" "$NOW" 2>/dev/null)
+check "milestone pass: closes only #50 with reason completed" "gh issue close 50 -R $REPO --reason completed" "$(cat "$CALLS")"
+check "milestone pass: log line" 1 "$(grep -c '^  closing milestone #50: all sub-issues closed$' <<<"$out")"
+: >"$CALLS"
+DRY_RUN=true
+out=$(close_finished_milestones "$MILESTONES_FIX" "$NOW" 2>/dev/null)
+check "milestone dry run: nothing closed" "" "$(cat "$CALLS")"
+check "milestone dry run: would-close logged" 1 "$(grep -c "(dry) gh issue close 50 -R $REPO --reason completed" <<<"$out")"
+DRY_RUN=false
+: >"$CALLS"
+gh() { case "$*" in *issues/50/sub_issues*) echo 2026-01-01T00:00:00Z ;; *sub_issues*) echo 2026-01-09T23:00:00Z ;; *"issues/50 --jq .state") echo closed ;; *) echo "gh $*" >>"$CALLS" ;; esac; }
+out=$(close_finished_milestones "$MILESTONES_FIX" "$NOW" 2>/dev/null); rc=$?
+check "milestone already closed: no close call" "" "$(cat "$CALLS")"
+check "milestone already closed: logged" 1 "$(grep -c '^  milestone #50 already closed$' <<<"$out")"
+check "milestone already closed: returns 0" 0 $rc
+gh() { case "$*" in *issues/50/sub_issues*) echo 2026-01-01T00:00:00Z ;; *sub_issues*) echo 2026-01-09T23:00:00Z ;; *"issues/50 --jq .state") echo open ;; *) return 1 ;; esac; }
+out=$(close_finished_milestones "$MILESTONES_FIX" "$NOW" 2>/dev/null); rc=$?
+check "milestone close failure: logged" 1 "$(grep -c '^    closing milestone #50 failed; continuing$' <<<"$out")"
+check "milestone close failure: returns 0" 0 $rc
+# A sub-issue lookup that fails (or finds nothing closed) never closes.
+gh() { case "$*" in *sub_issues*) return 1 ;; *) echo "gh $*" >>"$CALLS" ;; esac; }
+: >"$CALLS"
+check "milestones: failed sub-issue lookup closes nothing" "" "$(closable_milestones "$MILESTONES_FIX" "$NOW")"
+rm -f "$CALLS"
+
 # Stray ready: an arc with ready + claimed (or in-review) loses ready and is not claimed again.
 ARCS='[{"number":30,"created_at":"2026-01-01T00:00:00Z","body":"","labels":["arc","ready","claimed"]},
   {"number":31,"created_at":"2026-01-01T00:00:00Z","body":"","labels":["arc","ready","in-review"]},
