@@ -50,6 +50,7 @@ const REFERENCE_MODE_ORDER: Array[String] = ["paint-over", "inspire"]
 var _ref_dialog: FileDialog
 var _ref_row: HBoxContainer
 var _ref_mode: OptionButton
+var _presentation_pick: OptionButton
 var _lineage_toggle: Button
 var _desc_body: Control
 var _lineage_body: Control
@@ -324,6 +325,16 @@ func _build_reference_picker(parent: Control) -> void:
 		concept.set_reference_mode(str(_ref_mode.get_item_metadata(i)))
 		request_estimates())
 	row.add_child(_ref_mode)
+	_presentation_pick = OptionButton.new()
+	_presentation_pick.name = "Presentation"
+	_presentation_pick.add_item("Subject (one object)")
+	_presentation_pick.set_item_metadata(0, "subject")
+	_presentation_pick.add_item("Scene (full environment)")
+	_presentation_pick.set_item_metadata(1, "scene")
+	_presentation_pick.item_selected.connect(func(i: int) -> void:
+		concept.set_presentation(str(_presentation_pick.get_item_metadata(i)))
+		request_estimates())
+	row.add_child(_presentation_pick)
 	_ref_row = HBoxContainer.new()
 	_ref_row.name = "ReferenceThumbs"
 	parent.add_child(_ref_row)
@@ -692,6 +703,17 @@ func _on_save_description() -> void:
 	_command(concept.describe_args(_desc_edit.text))
 
 
+## Hide the Turnaround and 3D model tabs for classes that are not built from a turnaround.
+func _sync_build_tabs() -> void:
+	var hide_tabs: bool = concept.hides_build_tabs()
+	for tab_name: String in ["Turnaround", "Model"]:
+		var tab: Control = _tabs.get_node_or_null(tab_name) as Control
+		if tab != null:
+			_tabs.set_tab_hidden(_tabs.get_tab_idx_from_control(tab), hide_tabs)
+	if hide_tabs:
+		_tabs.current_tab = 0
+
+
 func _build_turnaround_tab() -> void:
 	var box: VBoxContainer = VBoxContainer.new()
 	box.name = "Turnaround"
@@ -861,6 +883,7 @@ func _show_asset(slug: String) -> void:
 		_update_description_controls()
 		_show_turnaround({})
 		_show_model({})
+		_sync_build_tabs()
 		cost.load_asset({})
 		_show_cost()
 		return
@@ -871,6 +894,8 @@ func _show_asset(slug: String) -> void:
 	concept.load_asset(asset, _providers, _selected)
 	_desc_edit.text = concept.description
 	_update_description_controls()
+	_presentation_pick.select(maxi(AssetConceptModel.PRESENTATIONS.find(concept.presentation), 0))
+	_sync_build_tabs()
 	var qrow: Dictionary = queue.find(slug)
 	_title.text = "Concept: %s (%s)  issue %s  cost %s" % [concept.slug, concept.asset_class, qrow.get("issue_text", "-"), qrow.get("cost_text", "-")]
 	_fill_pick(_provider_pick, "concept_image", concept.image_providers, concept.default_provider)
@@ -957,7 +982,7 @@ func estimate_commands() -> Dictionary:
 		"bakeoff": model.to3d_args(model.three_d_providers),
 	}
 	# A refine re-passes its variant's own reference, so the picker does not apply to it.
-	out["refine"] = concept.generate_more_args(3, img, _picked(_writer_pick), false)
+	out["refine"] = concept.generate_more_args(3, img, _picked(_writer_pick), false, false)
 	var pick: String = _picked(_model_provider)
 	out["send"] = model.to3d_args(PackedStringArray([pick]) if pick != "" else PackedStringArray())
 	return out
