@@ -701,7 +701,8 @@ def cmd_list(args: argparse.Namespace, root: Path) -> dict[str, Any]:
         m = Manifest.load(mpath)
         # The effective soft budget (the manifest's, else its class's) so the Godot plugin need not read classes.yaml.
         folder = mpath.parent.parent.relative_to(paths.models_dir(root)).as_posix()
-        assets.append(m.to_dict() | {"budget_usd": cost.budget_for(root, m), "folder": "" if folder == "." else folder})
+        assets.append(m.to_dict() | {"budget_usd": cost.budget_for(root, m), "folder": "" if folder == "." else folder,
+                                           "concept_presentation": class_presentation(root, m.asset_class)})
     cfg = providers.load_config()
     names = {kind: sorted(cfg["providers"].get(kind) or {}) for kind in ("image", "three_d", "prompt_writer")}
     from . import adapters, writers  # noqa: F401  register the real adapters
