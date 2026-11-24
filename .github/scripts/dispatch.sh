@@ -10,6 +10,8 @@
 #   3. claim: drop a stray `ready` from arcs already claimed/in-review; while in-flight arcs < WORKER_CAP, claim the oldest `ready` arc whose
 #      Touches: do not overlap an in-flight arc, and start a development run
 #   3b. close approved concepts whose arcs are all closed (backstop for the review agent)
+#   3c. close milestones (`M<n> · …`) whose sub-issues are all closed, once the last one has been closed for
+#      MILESTONE_QUIET_HOURS (a milestone still receiving arcs is not closed between two of them)
 #   4. project labels onto the board (agents touch labels only; this is the one writer of Status)
 #   5. log anomalies (stale changes-requested PRs)
 #
@@ -17,7 +19,7 @@
 #
 # Env:  GH_TOKEN (PAT with repo + project scope), WORKER_CAP (default 2), PIPELINE_PAUSED,
 #       PROJECT_NUMBER (default 1), STALE_MINUTES (default 30), ORPHAN_GRACE_MINUTES (default 15),
-#       DEVELOPMENT_WORKFLOW (default role-development.yml),
+#       DEVELOPMENT_WORKFLOW (default role-development.yml), MILESTONE_QUIET_HOURS (default 24),
 #       DRY_RUN=true to log mutations instead of doing them.
 set -euo pipefail
 
@@ -28,6 +30,7 @@ WORKER_CAP="${WORKER_CAP:-2}"
 STALE_MINUTES="${STALE_MINUTES:-30}"
 ORPHAN_GRACE_MINUTES="${ORPHAN_GRACE_MINUTES:-15}"
 DEVELOPMENT_WORKFLOW="${DEVELOPMENT_WORKFLOW:-role-development.yml}"
+MILESTONE_QUIET_HOURS="${MILESTONE_QUIET_HOURS:-24}"
 DRY_RUN="${DRY_RUN:-false}"
 
 # Shared-but-safe prefixes. Arcs routinely add a new test file or docs page, so naming the whole directory in
@@ -279,6 +282,45 @@ close_finished_concepts() { # same arguments as closable_concepts
   done
 }
 
+# Milestones are the `M<n> · …` parent issues (no label). One closes itself once all its sub-issues are closed.
+is_milestone_title() { grep -qE '^M[0-9]+ · ' <<<"$1"; }
+
+# When the milestone's last sub-issue was closed (ISO), or nothing if none is closed or the lookup fails.
+milestone_last_closed() { # number
+  gh api --paginate "repos/$REPO/issues/$1/sub_issues?per_page=100" --jq '.[] | .closed_at | select(. != null)' 2>/dev/null \
+    | sort | tail -1
+}
+
+# Open milestones to close: not needs-human, at least one sub-issue, every sub-issue closed, and the last one
+# closed at least MILESTONE_QUIET_HOURS ago. A milestone that is still receiving arcs is left open between them;
+# one that gets new work after closing is reopened by whoever files the work.
+# $1 = JSON [{number, title, labels, sub_issues_summary: {total, completed}}] of open issues, $2 = now (epoch s).
+closable_milestones() {
+  local n last age
+  for n in $(echo "$1" | jq -r '.[] | select(.title | test("^M[0-9]+ · "))
+      | select(.labels | index("needs-human") | not)
+      | select((.sub_issues_summary.total // 0) > 0 and .sub_issues_summary.completed == .sub_issues_summary.total)
+      | .number'); do
+    last=$(milestone_last_closed "$n")
+    [ -z "$last" ] && continue
+    age=$(( $2 - $(date -u -d "$last" +%s) ))
+    if [ "$age" -lt $((MILESTONE_QUIET_HOURS * 3600)) ]; then
+      log "  milestone #$n finished $((age / 3600))h ago; closing after ${MILESTONE_QUIET_HOURS}h" >&2  # stdout is the number list
+      continue
+    fi
+    echo "$n"
+  done
+}
+
+close_finished_milestones() { # same arguments as closable_milestones
+  local n
+  for n in $(closable_milestones "$1" "$2"); do
+    if issue_is_closed "$n"; then log "  milestone #$n already closed"; continue; fi
+    log "  closing milestone #$n: all sub-issues closed"
+    act gh issue close "$n" -R "$REPO" --reason completed || log "    closing milestone #$n failed; continuing"
+  done
+}
+
 # ---------------------------------------------------------------------------
 # Run.
 # ---------------------------------------------------------------------------
@@ -380,6 +422,11 @@ ALL_ARCS=$(gh api --paginate "repos/$REPO/issues?state=all&labels=arc&per_page=1
   --jq '[.[] | select(.pull_request == null) | {number, state, body: (.body // "")}]' | jq -s 'add // []')
 close_finished_concepts "$OPEN_CONCEPTS" "$ALL_ARCS"
 
+log "3c. Close milestones whose sub-issues are all closed"
+OPEN_ISSUES=$(gh api --paginate "repos/$REPO/issues?state=open&per_page=100" \
+  --jq '[.[] | select(.pull_request == null) | {number, title, labels: [.labels[].name], sub_issues_summary}]' | jq -s 'add // []')
+close_finished_milestones "$OPEN_ISSUES" "$(date -u +%s)"
+
 log "4. Project labels onto the board"
 load_arcs
 load_board
@@ -428,10 +475,10 @@ CONCEPTS=$({ for l in concept design; do
 for n in $(echo "$CONCEPTS" | jq -r '.[].number'); do
   project "$n" "$(concept_status "$(echo "$CONCEPTS" | jq -r --argjson n "$n" '.[] | select(.number == $n) | .labels[]')")"
 done
-# Recently closed arcs and concepts are Done, and a closed arc carries no state label.
+# Recently closed arcs, concepts and milestones are Done, and a closed arc carries no state label.
 since=$(date -u -d '3 days ago' +%Y-%m-%dT%H:%M:%SZ)
 CLOSED=$(gh api --paginate "repos/$REPO/issues?state=closed&since=$since&per_page=100" \
-  --jq '[.[] | select(.pull_request == null) | select([.labels[].name] | (index("arc") != null or index("concept") != null)) | {number, labels: [.labels[].name]}]' \
+  --jq '[.[] | select(.pull_request == null) | select(([.labels[].name] | (index("arc") != null or index("concept") != null)) or (.title | test("^M[0-9]+ · "))) | {number, labels: [.labels[].name]}]' \
   | jq -s 'add // []')
 for n in $(echo "$CLOSED" | jq -r '.[].number'); do
   project "$n" "Done"
