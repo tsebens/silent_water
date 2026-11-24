@@ -6,12 +6,12 @@ glTF that the existing kit route (`asset import` → `check` → `export`) accep
 
 ```
 cd tools/cad_spike
-uv run python toggle_switch.py ai_toggle_switch.gltf           # geometry + self-checks + glTF
+uv run python toggle_switch.py ai_toggle_switch.glb            # geometry + self-checks + GLB
 cd ../asset_pipeline
-uv run asset import ai_toggle_switch ../cad_spike/ai_toggle_switch.gltf --pivot Switch --limits -40 40
+uv run asset import ai_toggle_switch ../cad_spike/ai_toggle_switch.glb --pivot Switch --limits -40 40
 uv run asset check ai_toggle_switch && uv run asset export ai_toggle_switch
 /opt/blender/blender -b --factory-startup -P ../cad_spike/render_views.py -- \
-    ../../.asset_work/ai_toggle_switch/import/i2.glb renders 384       # six views + contact sheet for critique
+    ../../.asset_work/ai_toggle_switch/import/i4.glb renders 384       # six views + contact sheet for critique
 ```
 
 - `kitcad.py`: the kit frame and conventions (X right, Y up, Z out of the panel, back face on Z=0; a moving part is

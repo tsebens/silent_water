@@ -1,4 +1,4 @@
-"""Minimal 'kit CAD' helpers for the spike: build123d parts -> Onshape-shaped glTF the kit importer accepts.
+"""Minimal 'kit CAD' helpers for the spike: build123d parts -> Onshape-shaped glTF (write a .glb: one file) the kit importer accepts.
 
 Frame (glTF, metres): X right, Y up, Z out of the panel (front). The back face sits on Z=0, centred on the origin.
 A moving part is modelled with its hinge on the local X axis through its origin, standing out along +Z (upright),

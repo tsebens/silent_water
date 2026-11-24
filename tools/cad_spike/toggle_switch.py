@@ -82,5 +82,5 @@ expect_bbox(parts[1], (-PLATE_W / 2, -PLATE_H / 2, PLATE_T), (PLATE_W / 2, PLATE
 expect_bbox(parts[2], (-GUARD_GAP - GUARD_T, -GUARD_H / 2, PLATE_T), (GUARD_GAP + GUARD_T, GUARD_H / 2, PLATE_T + GUARD_DEPTH))
 expect_bbox(parts[3], (-KNOB_R - 1, -KNOB_R - 1, -BAT_R - 2), (KNOB_R + 1, KNOB_R + 1, BAT_LEN + KNOB_H))
 expect_bbox(parts[4], (-LAMP_R, LAMP_Y - LAMP_R, PLATE_T), (LAMP_R, LAMP_Y + LAMP_R, PLATE_T + 2 + LAMP_H))
-out = sys.argv[1] if len(sys.argv) > 1 else "toggle_switch.gltf"
+out = sys.argv[1] if len(sys.argv) > 1 else "toggle_switch.glb"
 print(json.dumps(export_kit_gltf(parts, out), indent=1))

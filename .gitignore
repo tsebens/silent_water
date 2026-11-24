@@ -17,5 +17,6 @@ __pycache__/
 
 # CAD spike scratch output
 tools/cad_spike/*.gltf
+tools/cad_spike/*.glb
 tools/cad_spike/*.bin
 tools/cad_spike/renders/
