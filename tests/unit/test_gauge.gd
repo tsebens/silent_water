@@ -4,7 +4,7 @@ extends TestCase
 ## gauge is an export.
 
 const INTERIOR: String = "res://src/sub/interior.tscn"
-const CONSOLE: String = "res://assets/models/spike/stations/sonar_console/sonar_console.tscn"
+const CONSOLE: String = "res://assets/models/stations/sonar_console/sonar_console.tscn"
 
 
 func _gauge(configure: Callable = Callable()) -> Gauge:

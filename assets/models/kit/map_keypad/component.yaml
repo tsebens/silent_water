@@ -1,0 +1,36 @@
+slug: map_keypad
+group: kit
+kind: control_group
+summary: 'Four map keys on a 2x2 base: zoom in, zoom out, rotate left, rotate right.'
+tags:
+- keypad
+- keys
+- buttons
+- map
+- chart
+- zoom
+- rotate
+scene: res://assets/models/kit/map_keypad/map_keypad.tscn
+behaviour:
+  script: null
+  children:
+    ZoomIn: PushButton
+    ZoomOut: PushButton
+    RotateLeft: PushButton
+    RotateRight: PushButton
+  signal: <key>.value_changed
+base: 2x2
+footprint_mm:
+- 116.0
+- 116.0
+stand_out_mm: 16.0
+mount: back on Z=0, centred; front +Z; zoom keys left, rotate keys right
+uses:
+- push_button
+- control_base
+triangles: 480
+built_by: tools/cadkit/scenes/map_keypad.py
+files:
+- component.yaml
+- map_keypad.tscn
+- map_keypad_plates.glb

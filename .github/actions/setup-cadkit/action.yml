@@ -1,0 +1,36 @@
+name: Set up cadkit
+description: >
+  Install uv and the cadkit environment (tools/cadkit: build123d and the OCCT kernel, cached), so a job can run
+  `cadkit catalogue|check|build|verify`. With render=true, also install Xvfb and the software Vulkan driver that
+  `cadkit render` and `cadkit sheet` need (Godot itself comes from setup-godot).
+
+inputs:
+  render:
+    description: Also install what rendering needs (xvfb, mesa-vulkan-drivers)
+    required: false
+    default: "false"
+
+runs:
+  using: composite
+  steps:
+    - uses: astral-sh/setup-uv@v5
+      with:
+        enable-cache: true
+        cache-dependency-glob: tools/cadkit/uv.lock
+
+    - name: Install the cadkit environment
+      shell: bash
+      working-directory: tools/cadkit
+      run: uv sync --locked
+
+    - name: Put cadkit on PATH
+      shell: bash
+      run: echo "$GITHUB_WORKSPACE/tools/cadkit/.venv/bin" >> "$GITHUB_PATH"
+
+    - name: Rendering packages
+      if: inputs.render == 'true'
+      shell: bash
+      run: |
+        sudo apt-get update -qq
+        sudo apt-get install -y -qq xvfb mesa-vulkan-drivers
+        ls /usr/share/vulkan/icd.d/lvp_icd.json

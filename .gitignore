@@ -15,8 +15,5 @@ __pycache__/
 /assets/media/sub/assembly/Assembly 1 - Shell.gltf
 /tools/asset_pipeline/providers.local.yaml
 
-# CAD spike scratch output
-tools/cad_spike/*.gltf
-tools/cad_spike/*.glb
-tools/cad_spike/*.bin
-tools/cad_spike/renders/
+# cadkit: its environment and caches
+/tools/cadkit/.venv/
