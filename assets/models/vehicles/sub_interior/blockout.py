@@ -87,6 +87,52 @@ def cylinder(name: str, x: float, y0: float, y1: float, z: float, r: float, mat:
     return mesh_object(name, bm, mat, group)
 
 
+def prism(name: str, pts_xz: list[tuple[float, float]], y0: float, y1: float, mat: str, group: str = "items") -> bpy.types.Object:
+    """A vertical prism from a floor polygon (sub-local x, z), y0 to y1."""
+    bm = bmesh.new()
+    lo = [bm.verts.new(to_blender(x, y0, z)) for x, z in pts_xz]
+    hi = [bm.verts.new(to_blender(x, y1, z)) for x, z in pts_xz]
+    bm.faces.new(lo)
+    bm.faces.new(hi)
+    m = len(pts_xz)
+    for k in range(m):
+        bm.faces.new((lo[k], lo[(k + 1) % m], hi[(k + 1) % m], hi[k]))
+    bmesh.ops.recalc_face_normals(bm, faces=bm.faces)
+    return mesh_object(name, bm, mat, group)
+
+
+def d_shape(wall: float, edge: float, z0: float, z1: float, pull: float = 0.25, steps: int = 16) -> list[tuple[float, float]]:
+    """A D-shaped outline: straight along the wall, the front edge bowing out to `edge` at the middle and pulled
+    back by `pull` at the ends."""
+    out = 1.0 if edge > wall else -1.0
+    front = []
+    for k in range(steps + 1):
+        s = -1.0 + 2.0 * k / steps
+        z = (z0 + z1) / 2 + s * (z1 - z0) / 2
+        front.append((edge - out * pull * s * s, z))
+    return [(wall, z0)] + front + [(wall, z1)]
+
+
+def outline(name: str, pts_xz: list[tuple[float, float]], y0: float, y1: float, mat: str, group: str,
+            radius: float = 0.007) -> bpy.types.Object:
+    """The edges of a vertical prism only: its top and bottom outlines and a post at each corner of the wall side
+    and at the middle of the front, so a slab of light reads as a volume without a cage of lines."""
+    bm = bmesh.new()
+    lo = [bm.verts.new(to_blender(x, y0, z)) for x, z in pts_xz]
+    hi = [bm.verts.new(to_blender(x, y1, z)) for x, z in pts_xz]
+    m = len(pts_xz)
+    for ring in (lo, hi):
+        for k in range(m):
+            bm.edges.new((ring[k], ring[(k + 1) % m]))
+    for k in sorted({0, 1, m // 2, m - 2, m - 1}):
+        bm.edges.new((lo[k], hi[k]))
+    obj = mesh_object(name, bm, mat, group)
+    obj.modifiers.new("skin", "SKIN")
+    for v in obj.data.skin_vertices[0].data:
+        v.radius = (radius, radius)
+    return obj
+
+
 def wireframe(obj: bpy.types.Object, thickness: float = 0.012) -> None:
     mod = obj.modifiers.new("wire", "WIREFRAME")
     mod.thickness = thickness
@@ -116,6 +162,14 @@ def build_hull(layout: dict, cockpit_end: float) -> None:
             else:
                 key = f"shell_{'high' if cy > split_y else 'low'}_{side}"
             faces.setdefault(key, []).append(quad)
+    # cap both ends: the rings stop short of the tips, so the open ends would read as windows in the renders
+    for ring, key, mat, group in ((rings[0], "dome_cap", "glass", "dome"), (rings[-1], "stern_cap", "shell", "shell")):
+        bm = bmesh.new()
+        bm.faces.new([bm.verts.new(to_blender(x, y, ring["z"])) for x, y in ring["points"]])
+        cap = mesh_object(key, bm, mat, group)
+        cap["groups"] = [group]
+        if mat == "glass":
+            wireframe(cap, 0.008)
     for key, quads in faces.items():
         bm = bmesh.new()
         cache: dict = {}
@@ -211,8 +265,14 @@ def build_item(it: dict, layout: dict) -> None:
         tx0, tx1, _, _ = it.get("top_box", it["floor_box"])
         mat = "table" if kind == "table" else "desk"
         # plinth under the top, the top itself, then the instruments on the wall above it
-        box(f"{iid}_plinth", x0 + 0.1 * inboard if False else x0, x1, fy, top_y - 0.05, z0 + 0.15, z1 - 0.15, mat)
-        box(f"{iid}_top", tx0, tx1, top_y - 0.05, top_y, z0, z1, mat)
+        px0, px1 = (x0, x1 - 0.3) if (kind == "table" and inboard > 0) else ((x0 + 0.3, x1) if kind == "table" else (x0, x1))
+        box(f"{iid}_plinth", px0, px1, fy, top_y - 0.05, z0 + 0.3, z1 - 0.3, mat)
+        if kind == "table":  # D-shaped: straight along the wall, the front edge bowing out (map table concept)
+            wall_x, edge_x = (tx0, tx1) if inboard > 0 else (tx1, tx0)
+            top_shape = d_shape(wall_x, edge_x, z0, z1)
+            prism(f"{iid}_top", top_shape, top_y - 0.05, top_y, mat)
+        else:
+            box(f"{iid}_top", tx0, tx1, top_y - 0.05, top_y, z0, z1, mat)
         wall = tx0 if inboard > 0 else tx1
         if kind == "desk" and it.get("faces") == "aft":
             # the screen stands at the desk's forward end facing aft, raked, as in the sonar console reference;
@@ -222,8 +282,8 @@ def build_item(it: dict, layout: dict) -> None:
             box(f"{iid}_screen", wall, wall + inboard * 0.18, top_y, top_y + 0.55, z0 + 0.15, z1 - 0.15, "screen")
         else:
             box(f"{iid}_cowl", wall, wall + inboard * 0.28, top_y + 0.75, top_y + 1.25, z0, z1, "cowl")
-            holo = box(f"{iid}_hologram", tx0, tx1, top_y, top_y + it.get("hologram_height_m", 0.7), z0, z1, "holo", "hologram")
-            wireframe(holo, 0.01)
+            outline(f"{iid}_hologram", d_shape(wall_x, edge_x - inboard * 0.05, z0 + 0.05, z1 - 0.05), top_y,
+                    top_y + it.get("hologram_height_m", 0.7), "holo", "hologram")
             # the operator stands at the middle of the front edge, observers either side
             edge = tx1 if inboard > 0 else tx0
             standing(f"{iid}_operator", edge + inboard * 0.35, fy, (z0 + z1) / 2)
