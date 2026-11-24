@@ -17,3 +17,6 @@ __pycache__/
 
 # cadkit: its environment and caches
 /tools/cadkit/.venv/
+
+# Scratch checkouts made by agent sessions
+/.claude/worktrees/
