@@ -73,11 +73,11 @@ def _fit(path: Path):
 
 
 def sheet(slug: str, renders: Path | None = None) -> list[Path]:
-    """Write the scene's review sheets into `<scene>/review/`: each concept image beside the render from its camera
+    """Render the scene and write its review sheets into `<scene>/review/`: each concept image beside the render from its camera
     (pairs come from `brief.yaml`: a concept image with a `camera:`), and `views.png` with the other renders."""
     from PIL import Image
-    renders = renders or library.REPO / "build" / "renders" / slug
-    if not renders.is_dir() or not list(renders.glob("*.png")):
+    if renders is None:                      # always render afresh: a sheet must show the scene as it is now
+        renders = library.REPO / "build" / "renders" / slug
         render(slug, renders)
     folder = scene_dir(slug)
     review = folder / "review"

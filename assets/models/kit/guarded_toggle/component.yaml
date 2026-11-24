@@ -1,7 +1,8 @@
 slug: guarded_toggle
 group: kit
 kind: control
-summary: Guarded two-position toggle with an indicator lamp; bat swings +/-40 deg and snaps to on or off.
+summary: 'Guarded two-position toggle; bat swings +/-40 deg and snaps to on or off. Its lamp is a static coloured
+  solid: it does not light.'
 tags:
 - toggle
 - switch

@@ -2,11 +2,12 @@
 
 Every generated scene has a folder `assets/models/<group>/<slug>/` holding its GLBs, its `.tscn` and its catalogue
 entry `component.yaml`, all written by one build script, `tools/cadkit/scenes/<slug>.py`. Groups: `kit` (controls,
-displays and their shared parts), `furniture`, `stations`.
+displays and their shared parts), `furniture`, `panels` (boards of controls that mount on something) and `stations`
+(floor-standing, with an operator's position).
 
 Frames (metres in Godot, millimetres in CAD): X right, Y up, Z out of the mount face. A panel part's back sits on
-Z=0, centred on the origin. Furniture and stations stand on the floor at Y=0; a station's back is on Z=0 and its
-front, where the operator is, is +Z; a seated occupant faces -Z.
+Z=0, centred on the origin; a panel is one big panel part. Furniture and stations stand on the floor at Y=0; a
+station's back is on Z=0 and its front, where the operator is, is +Z; a seated occupant faces -Z.
 
 A build never writes into the repository directly: it stages the whole tree under a temporary root (`set_root`) and
 the files are promoted only if every scene passes (cadkit/build.py). This module imports nothing heavy, so reading
@@ -22,11 +23,12 @@ REPO = Path(__file__).resolve().parents[3]
 MODELS = REPO / "assets" / "models"
 MODELS_RES = "res://assets/models"
 PALETTE_FILE = REPO / "assets" / "style_bible" / "kit_palette.yaml"
-GROUPS = ("kit", "furniture", "stations")
+GROUPS = ("kit", "furniture", "panels", "stations")
 
 MODULE_MM = 60.0          # the control-panel module: bases come in whole modules
 BASE_GAP_MM = 4.0         # a base is a module minus this, so neighbouring bases never touch
 PLATE_T_MM = 6.0          # base plate thickness: controls mount their parts at Z = PLATE_T_MM
+TRIANGLE_BUDGET = {"kit": 1500, "furniture": 3000, "panels": 4000, "stations": 12000}   # per scene, by group
 
 _root: Path = MODELS
 _written: list[Path] = []

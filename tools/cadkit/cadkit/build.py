@@ -95,9 +95,21 @@ def stage(staging: Path, scenes_dir: Path = SCENES_DIR) -> dict:
             except FileNotFoundError as e:
                 raise BuildFailed(slug, str(e)) from e
             built[slug] = {"result": result, "files": library.take_written(), "group": modules[slug].GROUP}
+            _check_budget(slug, modules[slug].GROUP)
     finally:
         library.set_root(library.MODELS)
     return built
+
+
+def _check_budget(slug: str, group: str) -> None:
+    """A scene's triangles, everything it instances included, against its group's budget (library.TRIANGLE_BUDGET)."""
+    entry = library.entry(slug)
+    counts = [entry["triangles"]] if "triangles" in entry else [s["triangles"] for s in entry.get("sizes", {}).values()]
+    if not counts:
+        raise BuildFailed(slug, "its catalogue entry has no `triangles`")
+    budget = library.TRIANGLE_BUDGET[group]
+    if max(counts) > budget:
+        raise BuildFailed(slug, f"{max(counts)} triangles; the budget for {group} is {budget}")
 
 
 def _rel(built: dict, staging: Path) -> dict[str, list[str]]:

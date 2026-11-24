@@ -5,7 +5,7 @@
     cadkit build                           the same, then write the result if every scene passed (all or nothing)
     cadkit verify                          the same, then report generated files that are stale or hand-edited
     cadkit render <slug> [--out DIR] [--cameras FILE]    PNGs of a scene (default out: build/renders/<slug>/)
-    cadkit sheet <slug>                    review sheets in <scene>/review/ (renders first if needed)
+    cadkit sheet <slug>                    render afresh, then write review sheets in <scene>/review/
 
 The process these serve is docs/asset_process.md.
 """

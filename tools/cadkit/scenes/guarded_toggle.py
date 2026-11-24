@@ -70,7 +70,8 @@ def build() -> dict:
     tris = rb["triangles"] + rt["triangles"]
     write_entry(GROUP, SLUG, {
         "kind": "control",
-        "summary": "Guarded two-position toggle with an indicator lamp; bat swings +/-40 deg and snaps to on or off.",
+        "summary": "Guarded two-position toggle; bat swings +/-40 deg and snaps to on or off. Its lamp is a static "
+                   "coloured solid: it does not light.",
         "tags": ["toggle", "switch", "guarded", "on-off", "lamp", "safety"],
         "scene": res(d / f"{SLUG}.tscn"),
         "behaviour": {"script": "SwitchLever", "values": "0 off (bat down), 1 on (bat up)", "signal": "value_changed"},

@@ -6,6 +6,8 @@ First-person co-op submarine stealth game for a crew of four (three viable). The
 
 All work is tracked on the GitHub Project board **"silent_water"** (user project #1, owner `tsebens`). This applies to agents and to Tristan alike. Be diligent:
 
+**Pipeline roles are the exception for board moves.** An agent running as a GitHub Actions role (`.github/agents/`) changes labels only and never touches the board; the dispatcher projects labels onto it (`docs/process.md`). The Status rules below are for interactive sessions and for Tristan.
+
 - **Every unit of work has an issue** in `tsebens/silent_water` and is on the board, before work starts.
 - **Milestones are parent issues** titled `M<n> · <name>`. Units of work are **sub-issues** titled `M<n>.<k> · <name>`. Break a milestone into sub-issues when it moves to Ready.
 - **Status column:** Backlog → Ready → In progress → In review → Done.

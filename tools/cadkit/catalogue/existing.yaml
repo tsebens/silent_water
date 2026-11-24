@@ -5,10 +5,11 @@ scenes:
   - slug: noise_gauge
     kind: display
     scene: res://src/noise/noise_gauge.tscn
+    script: Gauge
     summary: The noise repeater (sub vs ocean needles), a configured `gauge`. Every station gets one.
-    tags: [gauge, noise, repeater]
-    size: radius 0.13 m (override per instance)
-    mount: dial face toward +Z
+    tags: [gauge, noise, repeater, dial]
+    size: radius 0.13 m by default; set `radius` on the instance. Envelope, depth and triangles are the generated `gauge` entry's
+    mount: dial face toward +Z, as `gauge`
   - slug: flat_chart
     kind: display
     scene: null
@@ -34,7 +35,9 @@ scenes:
     scene: res://assets/models/kit/toggle_switch/toggle_switch.tscn
     summary: Onshape-modelled guarded toggle (4,606 triangles, over the kit budget).
     tags: [toggle, switch, guarded]
-behaviours:                           # control scripts an asset may use; a new one is a development arc
+behaviours:                           # scripts a generated scene may use, controls and displays alike; a new one is a development arc
+  - {script: Gauge, file: res://src/interact/gauge.gd, does: "dial display; reads a readout from a source group (see the generated `gauge` entry)"}
+  - {script: FlatChart, file: res://src/map/flat_chart.gd, does: "square chart screen; draws the sonar bearing chart"}
   - {script: Lever, file: res://src/interact/lever.gd, does: pivots about local X by mouse drag}
   - {script: SwitchLever, file: res://src/interact/switch_lever.gd, does: Lever that snaps to its two ends}
   - {script: Valve, file: res://src/interact/valve.gd, does: handwheel turned by circling the mouse}

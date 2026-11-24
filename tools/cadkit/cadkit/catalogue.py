@@ -18,23 +18,31 @@ def load(models: Path = library.MODELS) -> dict:
     return {"generated": generated, "existing": existing["scenes"], "behaviours": existing["behaviours"]}
 
 
+def _mentions(text: str, words: list[str]) -> bool:
+    return all(w.lower() in text.lower() for w in words)
+
+
 def search(cat: dict, words: list[str]) -> dict:
-    """Entries whose slug, kind, summary or tags mention every word."""
+    """Entries and behaviours that mention every word (slug, kind, summary and tags; a behaviour's name and what it does)."""
     def hit(e: dict) -> bool:
-        text = " ".join([str(e.get("slug", "")), str(e.get("kind", "")), str(e.get("summary", "")), " ".join(e.get("tags", []))]).lower()
-        return all(w.lower() in text for w in words)
-    return {**cat, "generated": [e for e in cat["generated"] if hit(e)], "existing": [e for e in cat["existing"] if hit(e)]}
+        return _mentions(" ".join([str(e.get("slug", "")), str(e.get("kind", "")), str(e.get("summary", "")),
+                                   " ".join(e.get("tags", []))]), words)
+    return {"generated": [e for e in cat["generated"] if hit(e)], "existing": [e for e in cat["existing"] if hit(e)],
+            "behaviours": [b for b in cat["behaviours"] if _mentions(f"{b['script']} {b['does']}", words)]}
 
 
 def table(cat: dict) -> str:
     lines = []
     for group in ("generated", "existing"):
-        lines.append(f"## {group}")
+        if not cat[group]:
+            continue
+        lines.append(f"## {group} scenes: slug | kind | script | footprint (mm) or size | summary")
         for e in cat[group]:
             beh = e.get("behaviour") or {}
             script = beh.get("script") or e.get("script") or "-"
             size = e.get("footprint_mm") or e.get("size") or "-"
             lines.append(f"- {e['slug']} | {e['kind']} | {script} | {size} | {e['summary']}")
-    lines.append("## behaviours")
-    lines += [f"- {b['script']} | {b['does']}" for b in cat["behaviours"]]
-    return "\n".join(lines)
+    if cat["behaviours"]:
+        lines.append("## behaviours (scripts a scene may use; one not listed here is a development arc): script | does")
+        lines += [f"- {b['script']} | {b['does']}" for b in cat["behaviours"]]
+    return "\n".join(lines) if lines else "nothing matches"

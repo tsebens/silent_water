@@ -104,7 +104,10 @@ def box(w: float, h: float, d: float, chamfer_mm: float = 0.0, base_z: bool = Tr
 
 
 def prism(sides: int, radius: float, height: float, chamfer_top: float = 0.0, rotation_deg: float | None = None) -> bd.Part:
-    """A polygonal cylinder along +Z from Z=0 with an explicit side count (low-poly by construction)."""
+    """A polygonal cylinder along +Z from Z=0 with an explicit side count (low-poly by construction).
+
+    `radius` is to the corners. By default a flat faces +X and +Y, so the bounding box is narrower than 2 * radius
+    (0.924 of it for 8 sides); a part's footprint is the corner-to-corner figure, 2 * radius."""
     p = ngon_prism(sides, radius, height, rotation_deg if rotation_deg is not None else 180.0 / sides)
     if chamfer_top > 0:
         p = bd.chamfer(p.faces().sort_by(bd.Axis.Z)[-1].edges(), chamfer_top)

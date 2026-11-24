@@ -23,8 +23,8 @@ Each arc gets:
 - **Scope:** two to five sentences on what changes, in player-facing terms first and then the systems involved.
 - **Acceptance criteria:** a checklist a development agent can verify headless (unit tests under `tests/unit/`, `tools/check.sh`, or a scripted autotest). If a criterion can only be judged in a playtest, say so and keep it out of the checklist.
 - **Touches:** the paths the arc will change: **folders** under `src/` (and `tools/`, `.github/`), but **files** for `tests/` and `docs/` (e.g. `tests/unit/test_noise.gd`, `docs/process.md`), never the bare `tests/unit` or `docs` folder. List the design doc only when the arc actually edits a section of it. The dispatcher compares `tests/`, `docs/` and the design doc by exact path, so arcs touching different files there run together. This is its blast radius; the dispatcher uses it to keep overlapping arcs from running at once, so be honest and specific.
-- **Blocked by:** arcs this one depends on, from this concept or already on the board, by issue number or, for arcs in this proposal, by proposed title. Two arcs whose `Touches:` overlap must be chained even when they are logically independent.
-- **Size:** XS, S, M or L. An L is a sign to split.
+- **Blocked by:** arcs this one depends on, from this concept or already on the board, by issue number or, for arcs in this proposal, as `Arc N`. Two arcs whose `Touches:` overlap must be chained even when they are logically independent.
+- **Size:** XS (under half an hour of a development job), S (under an hour), M (one to two hours) or L (more). An L is a sign to split.
 
 Also note design-doc sections the arcs would change, and any open question the concept raises that should be a `Decision:` issue instead of being settled silently.
 
@@ -33,14 +33,15 @@ Also note design-doc sections the arcs would change, and any open question the c
 A concept is an **asset concept** if its body is a station brief (a `functions` list and `concept` images), or if it asks for a generated scene under `assets/models/` to be made or changed. `docs/asset_process.md` is the spec for these; read it in full first, then:
 
 1. **Scan the library now.** Run `cadkit catalogue` (and `cadkit catalogue --json` for the entries you are weighing). Never rely on what an issue, a comment or an earlier breakdown says exists: the library changes with every merge.
-2. **Look at the concept art.** Open every image the brief lists (the `Read` tool shows images). It tells you arrangement, proportion and massing. It does not tell you which controls exist: `functions` does.
-3. **Break the whole thing down at once, every level** (section 6.1): for each function and for the structure, decide reuse, variant, new scene, new behaviour or local solid, by the rule in section 3. A new scene that itself needs a new scene gets both, chained.
-4. **Shape the arcs** as section 6.1's table says: one arc per new or changed scene, one ordinary development arc per new behaviour (blocking the scenes that need it), and for a station one assembly arc blocked by every scene it instances. An asset arc never adds or changes a control script.
-5. **`Touches:`** for a scene arc is the scene's folder plus **files**: `assets/models/<group>/<slug>`, `tools/cadkit/scenes/<slug>.py`, `tests/unit/test_<name>.gd`. Never the bare `tools/cadkit` or `tools/cadkit/scenes` folder: that would make every asset arc overlap.
-6. **Milestone.** Arcs for a concept that carries a brief go under the open content milestone named in section 8 of the spec. Do not escalate for want of a milestone on an asset concept unless that milestone is closed or missing.
-7. **Acceptance** for a scene arc always includes: `cadkit build` passes; the build script has an `expect` for each geometric constraint you list; a named Godot test passes; `review/views.png` is committed. For a station, add the brief's constraints (reach, sight lines, triangle budget) as checklist items. How it looks is judged in review, not in the checklist.
+2. **Check the brief against the code.** Every `status:` and `binds:` is a claim; read the code it names and report what is wrong as an open question. Check too that reach and sight lines have a reference (a seat, or `operator_eye_m`) and that `compare_on` names only things the asset contains.
+3. **Look at the concept art.** Open every image the brief lists (the `Read` tool shows images). It tells you arrangement, proportion and massing. It does not tell you which controls exist: `functions` does.
+4. **Break the whole thing down at once, every level** (section 6.1): for each function and for the structure, decide reuse, variant, new scene, new behaviour or local solid, by the rule in section 3. A new scene that itself needs a new scene gets both, chained. From the entries' footprints, check that the parts can fit the brief's size limit before you propose.
+5. **Shape the arcs** as section 6.1's table says: one arc per new or changed scene, one ordinary development arc per new behaviour (blocking the scenes that need it), and one assembly arc (group `stations` or `panels`, by the brief's kind) blocked by every scene it instances. An asset arc never adds or changes a script. Behaviours that would be chained anyway may share one arc if they fit one job.
+6. **`Touches:`** for a scene arc is the scene's folder plus **files**: `assets/models/<group>/<slug>`, `tools/cadkit/scenes/<slug>.py`, its own test file (`tests/unit/test_kit_<slug>.gd`, `test_panel_<slug>.gd` or `test_station_<slug>.gd`). Never the bare `tools/cadkit` or `tools/cadkit/scenes` folder: that would make every asset arc overlap.
+7. **Milestone.** Every arc of a concept that carries a brief, behaviour arcs included, goes under the open content milestone named in section 8 of the spec. Do not escalate for want of a milestone on an asset concept unless that milestone is closed or missing.
+8. **Acceptance** for a scene arc always includes: `cadkit build` passes; the build script has an `expect` for each geometric constraint you list; a named Godot test passes; `review/views.png` is committed. For a station, add the brief's constraints (reach, sight lines, triangle budget) as checklist items. How it looks is judged in review, not in the checklist.
 
-In the output, put a `### Breakdown` section between the opening paragraph and `### Arc 1`: a table of function or structure → part → catalogue match → decision (reuse / variant / new scene / new behaviour / local solid). List local solids under it in one line. Conflicts between the concept art and `functions`, and functions the game has no code for, go under `### Open questions`.
+In the output, put a `### Breakdown` section between the opening paragraph and `### Arc 1`: a table of function or structure → part → catalogue match → decision (reuse / variant / new scene / new behaviour / local solid). List local solids under it in one line. Under `### Open questions`, mark each item **(approval)**, something Tristan can answer in a line when he approves (an art-against-functions conflict, a wrong `status:`, a missing input a check needs), or **(decision)**, a design question that needs a `Decision:` issue. An arc that depends on an (approval) answer says so in its acceptance list. You create no issues, so problems you find in other code or other scenes go under a `### Discovered work` section, one line each, for plan review to file.
 
 ## Output
 
@@ -61,6 +62,7 @@ Acceptance:
 Touches: src/…, src/…
 Blocked by: none | #NN | Arc 2
 Size: S
+Playtest: <optional: what can only be judged by playing or looking, kept out of the checklist>
 
 ### Arc 2: …
 
@@ -68,7 +70,10 @@ Size: S
 <sections to update, or "none">
 
 ### Open questions
-<things that need a Decision: issue, or "none">
+<things that need a Decision: issue, or "none"; in an asset proposal each is marked (approval) or (decision)>
+
+### Discovered work
+<asset proposals only: one line per problem found in other code or scenes; omit if none>
 ```
 
 Then one label change: `gh issue edit N --add-label plan-proposed --remove-label plan-rejected` (the removal is a no-op on a first round). Adding `plan-proposed` starts the plan-review job. End.

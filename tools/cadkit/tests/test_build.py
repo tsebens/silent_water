@@ -19,7 +19,8 @@ def build() -> dict:
     limit = min([entry(u)["width"] for u in USES], default=1000)
     expect(WIDTH <= limit, f"{{SLUG}} ({{WIDTH}} mm) fits what it uses ({{limit}} mm)")
     rep = export_solids_glb([Solid(box(WIDTH, 10, 10), "black")], out_dir(GROUP, SLUG) / "{glb}.glb", "N")
-    write_entry(GROUP, SLUG, {{"kind": "element", "summary": "test", "tags": [], "width": WIDTH}})
+    write_entry(GROUP, SLUG, {{"kind": "element", "summary": "test", "tags": [], "width": WIDTH,
+                                "triangles": rep["triangles"]}})
     return {{"slug": SLUG, "triangles": rep["triangles"]}}
 '''
 
@@ -109,6 +110,14 @@ def test_verify_reports_stale_and_hand_edited_files(tree):
     assert not out["ok"]
     assert any("kit/knob/component.yaml" in p and "by hand" in p for p in out["problems"])
     assert any("kit/plate/plate.glb" in p for p in out["problems"])
+
+
+def test_a_scene_over_its_groups_triangle_budget_fails(tree, monkeypatch):
+    scenes, models = tree
+    monkeypatch.setitem(build.library.TRIANGLE_BUDGET, "kit", 10)
+    out = build.run("build", scenes, models)
+    assert not out["ok"] and "12 triangles; the budget for kit is 10" in out["error"]
+    assert snapshot(models) == {}
 
 
 def test_verify_reports_a_scene_folder_with_no_build_script(tree):

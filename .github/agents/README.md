@@ -67,6 +67,7 @@ gh issue edit N --add-label ready --remove-label blocked
 gh issue edit N --add-label needs-human --add-assignee tsebens
 
 # Comments, reviews, merge
+gh issue comment N --body-file comment.md
 gh pr comment N --body-file comment.md
 gh pr review N --comment --body-file review.md          # a review that neither approves nor blocks
 gh pr review N --request-changes --body-file review.md
