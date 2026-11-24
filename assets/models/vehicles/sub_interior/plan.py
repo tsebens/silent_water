@@ -68,8 +68,17 @@ class Hull:
         return max(0.0, top - self.deck_y(z))
 
 
+def wall_half_width(item: dict, hull: Hull, z0: float, z1: float) -> float:
+    """Half-width of the hull wall the item backs onto: at the floor, or at mount_height_m above it for
+    a desk or table set into the curve of the hull (the wall bows outward above the deck)."""
+    h = item.get("mount_height_m", 0.0)
+    return min(hull.section_half_width(z, hull.deck_y(z) + h) for z in (z0, z1))
+
+
 def place(item: dict, hull: Hull) -> tuple[float, float, float, float]:
-    """(x0, x1, z0, z1) of an item on the deck."""
+    """(x0, x1, z0, z1): the floor the item takes. A wall-mounted desk or table at mount_height_m has its
+    depth measured from the wall at that height, so only the part that reaches past the floor's edge
+    blocks the floor."""
     along, across = item["footprint"]
     z0, z1 = item["z"] - along / 2, item["z"] + along / 2
     if "x" in item:
@@ -77,11 +86,24 @@ def place(item: dict, hull: Hull) -> tuple[float, float, float, float]:
         return x - across / 2, x + across / 2, z0, z1
     side = item.get("side", "centre")
     fw = min(hull.deck_half_width(z0), hull.deck_half_width(z1))
+    if item.get("_host") is not None:  # a chair in front of a wall desk or table
+        hx0, hx1, _, _ = place(item["_host"], hull)
+        return (hx1, hx1 + across, z0, z1) if side == "port" else (hx0 - across, hx0, z0, z1)
+    ww = wall_half_width(item, hull, z0, z1)
+    reach = max(across - (ww - fw), 0.0)  # how far it reaches in past the floor's edge
     if side == "port":
-        return -fw, -fw + across, z0, z1
+        return -fw, -fw + reach, z0, z1
     if side == "starboard":
-        return fw - across, fw, z0, z1
+        return fw - reach, fw, z0, z1
     return -across / 2, across / 2, z0, z1
+
+
+def link_hosts(spec: dict) -> None:
+    """Resolve each chair's `inboard_of` to the desk or table it sits at."""
+    by_id = {i["id"]: i for i in spec["stations"] + spec["features"]}
+    for it in spec["stations"] + spec["features"]:
+        if "inboard_of" in it:
+            it["_host"] = by_id[it["inboard_of"]]
 
 
 def clearance_report(spec: dict, hull: Hull) -> list[str]:
@@ -94,10 +116,12 @@ def clearance_report(spec: dict, hull: Hull) -> list[str]:
         fw = min(hull.deck_half_width(z) for z in (z0, it["z"], z1))
         occupied = [(x0, x1)]
         for other in items:
-            if other is it:
+            if other is it or other is it.get("_host") or other.get("_host") is it:
+                if other is not it:
+                    occupied.append(place(other, hull)[:2])
                 continue
             ox0, ox1, oz0, oz1 = place(other, hull)
-            if oz0 < z1 and oz1 > z0:
+            if oz0 < z1 - 1e-6 and oz1 > z0 + 1e-6:  # touching end to end is not overlapping
                 occupied.append((ox0, ox1))
         occupied.sort()
         gaps, cursor = [], -fw
@@ -112,7 +136,7 @@ def clearance_report(spec: dict, hull: Hull) -> list[str]:
         # nobody walks past the pilot's seat or the bilge well at the stern.
         toward_bow = it["z"] < 0
         beyond = [o for o in items if o is not it and ((o["z"] < z0) if toward_bow else (o["z"] > z1))]
-        need_both = it.get("kind") == "table"
+        need_both = it.get("kind") == "table" and it.get("side", "centre") == "centre"  # only a freestanding table is walked round
         if need_both:
             left = x0 - max([b for a, b in occupied if b <= x0 + 1e-6] + [-fw])
             right = min([a for a, b in occupied if a >= x1 - 1e-6] + [fw]) - x1
@@ -125,12 +149,22 @@ def clearance_report(spec: dict, hull: Hull) -> list[str]:
             ok = best >= c["aisle_min_m"]
             msg = f"widest free aisle {best:.2f} m (need {c['aisle_min_m']})"
         # The item itself must fit on its floor: its footprint inside the deck's width at both ends.
-        fits = all(hull.deck_half_width(z) >= max(abs(x0), abs(x1)) - 1e-6 for z in (z0, z1))
+        if "mount_height_m" in it:
+            fits = wall_half_width(it, hull, z0, z1) >= it["footprint"][1]
+        else:
+            fits = all(hull.deck_half_width(z) >= max(abs(x0), abs(x1)) - 1e-6 for z in (z0, z1))
         if not fits:
             ok = False
             msg = f"does not fit: deck {2 * fw:.2f} m wide at its ends, needs |x| up to {max(abs(x0), abs(x1)):.2f} m; " + msg
         head = hull.clear_height(it["z"], 0.0)
         head_ok = head >= c["head_clear_m"] or it.get("kind") in ("well",)
+        if "hologram_height_m" in it:
+            # The slab stands on the table top; keep it under the overhead with the configured margin.
+            x_mid = (x0 + x1) / 2
+            room = hull.clear_height(it["z"], x_mid) - it.get("mount_height_m", 0.0) - c.get("overhead_margin_m", 0.15)
+            holo_ok = it["hologram_height_m"] <= room
+            msg += f"; hologram {it['hologram_height_m']:.2f} m of {room:.2f} m available" + ("" if holo_ok else " (TOO TALL)")
+            ok = ok and holo_ok
         status = "ok  " if ok and head_ok else "FAIL"
         fails += status == "FAIL"
         lines.append(f"{status} {it['id']:<16} z={it['z']:+.2f}  deck {2 * fw:.2f} m  {msg}  headroom {head:.2f} m")
@@ -146,6 +180,7 @@ def font(size: int, bold: bool = False) -> ImageFont.ImageFont:
 
 
 COLOURS = {"seat": (90, 160, 220), "panel": (230, 150, 60), "table": (90, 200, 130), "well": (200, 90, 90),
+           "desk": (230, 150, 60), "chair": (90, 160, 220),
            "floor_hatch": (240, 220, 90), "ladder": (180, 180, 200), "storage": (120, 120, 130),
            "release_lever": (220, 200, 60)}
 ROOMS = {"cockpit": (40, 70, 95), "forward": (45, 60, 55), "midships": (62, 56, 44), "bulkhead": (95, 95, 95),
@@ -155,10 +190,10 @@ BG, LINE, TEXT = (22, 28, 34), (130, 150, 160), (225, 230, 232)
 
 def draw_top(spec: dict, hull: Hull, out: Path) -> None:
     S = 105
-    W, H = int(hull.L * S + 260), int(hull.W * S + 220)
+    W, H = int(hull.L * S + 260), int(hull.W * S + 240)
     img = Image.new("RGB", (W, H), BG)
     d = ImageDraw.Draw(img)
-    ox, oy = 130, 130 + hull.W * S / 2
+    ox, oy = 130, 150 + hull.W * S / 2
     zx = lambda z: ox + (z + hull.L / 2) * S  # noqa: E731
     xy = lambda x: oy + x * S  # noqa: E731
     steps = [(-hull.L / 2 + hull.L * i / 200) for i in range(201)]
@@ -174,6 +209,15 @@ def draw_top(spec: dict, hull: Hull, out: Path) -> None:
     for it in spec["stations"] + spec["features"]:
         x0, x1, z0, z1 = place(it, hull)
         box = [zx(z0), xy(x0), zx(z1), xy(x1)]
+        if "mount_height_m" in it and it.get("side") in ("port", "starboard"):
+            ww = wall_half_width(it, hull, z0, z1)
+            sgn = -1 if it["side"] == "port" else 1
+            outer, inner = sgn * ww, sgn * (ww - it["footprint"][1])
+            d.rectangle([zx(z0), xy(min(outer, inner)), zx(z1), xy(max(outer, inner))],
+                        outline=COLOURS.get(it.get("kind"), (200, 200, 200)), width=2)
+            if it.get("hologram_height_m"):
+                d.text((zx(z0) + 4, xy((outer + inner) / 2) - 7), f"hologram {it['hologram_height_m']} m",
+                       fill=(120, 230, 230), font=font(12))
         if it.get("kind") == "floor_hatch":
             d.ellipse(box, outline=COLOURS["floor_hatch"], width=3)
         else:
@@ -187,7 +231,9 @@ def draw_top(spec: dict, hull: Hull, out: Path) -> None:
     d.text((zx(-hull.L / 2) - 50, oy - 8), "BOW", fill=TEXT, font=font(14, True))
     d.text((zx(hull.L / 2) + 8, oy - 8), "STERN", fill=TEXT, font=font(14, True))
     d.text((ox, 16), f"Top view at deck level: hull {hull.L} x {hull.W} x {hull.H} m; port is up", fill=TEXT, font=font(16, True))
-    d.text((ox, 40), "blue seat  orange panel  green table  red bilge well  yellow ring = lock-out trunk  grey = ladder/lockers",
+    d.text((ox, 40), "blue seat/chair  orange panel/desk  green table  red bilge well  yellow ring = lock-out trunk  grey = ladder/lockers",
+           fill=(170, 180, 185), font=f)
+    d.text((ox, 58), "outline = a desk-height top reaching back into the curved hull wall; filled = the floor it takes",
            fill=(170, 180, 185), font=f)
     img.save(out)
 
@@ -225,12 +271,23 @@ def draw_side(spec: dict, hull: Hull, out: Path) -> None:
     person, seated_eye = 1.75, 1.2
     for it in spec["stations"]:
         fy = hull.deck_y(it["z"])
-        tall = seated_eye + 0.1 if it.get("kind") == "seat" else person
+        tall = seated_eye + 0.1 if it.get("kind") in ("seat", "chair") else person
+        if it.get("kind") == "desk":
+            continue  # its chair is drawn instead
         d.rectangle([zx(it["z"] - 0.15), yy(fy + tall), zx(it["z"] + 0.15), yy(fy)], outline=(120, 170, 220))
-        if it.get("kind") == "seat":
+        if it.get("kind") in ("seat", "chair"):
             ey = fy + seated_eye
             d.ellipse([zx(it["z"]) - 4, yy(ey) - 4, zx(it["z"]) + 4, yy(ey) + 4], fill=(120, 220, 255))
         d.text((zx(it["z"] - 0.3), yy(fy) + 6), it["id"], fill=TEXT, font=font(11))
+    for it in spec["stations"]:
+        if it.get("hologram_height_m"):
+            fy = hull.deck_y(it["z"])
+            a, b = it["z"] - it["footprint"][0] / 2, it["z"] + it["footprint"][0] / 2
+            top = fy + it.get("mount_height_m", 0.0)
+            d.rectangle([zx(a), yy(top), zx(b), yy(fy)], outline=COLOURS["table"], width=2)
+            d.rectangle([zx(a), yy(top + it["hologram_height_m"]), zx(b), yy(top)], outline=(120, 230, 230), width=2)
+            d.text((zx(a), yy(top + it["hologram_height_m"]) - 16), f"{it['id']}: {it['hologram_height_m']} m hologram",
+                   fill=(120, 230, 230), font=font(12))
     d.line([zx(-hull.L / 2), yy(0), zx(-hull.L / 2 + 1.6), yy(0)], fill=(120, 220, 255), width=1)
     d.text((zx(-hull.L / 2), yy(0) - 16), "dome centre", fill=(120, 220, 255), font=font(11))
     d.text((ox, 16), "Side view: hull profile, deck (gold), 2 m headroom (red), 1.75 m crew figures (blue)", fill=TEXT, font=font(16, True))
@@ -268,6 +325,7 @@ def main() -> None:
     out = Path(sys.argv[1]) if len(sys.argv) > 1 else HERE / "renders"
     out.mkdir(parents=True, exist_ok=True)
     hull = Hull(spec["hull"], spec["compartments"])
+    link_hosts(spec)
     draw_top(spec, hull, out / "plan_top.png")
     draw_side(spec, hull, out / "plan_side.png")
     draw_front(spec, hull, out / "plan_front.png")

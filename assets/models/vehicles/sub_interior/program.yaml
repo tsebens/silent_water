@@ -1,4 +1,6 @@
-# Sub interior program, draft 4 (the sub experiment, from a blank sheet).
+# Sub interior program, draft 5 (the sub experiment, from a blank sheet).
+# Draft 5 takes the locked concepts: the cockpit (assets/models/cockpit/concept/, #328) and the map table
+# (assets/models/map_table/concept/, #319, #329). The hull is unchanged; the map table's hologram is capped.
 # The layout is data: plan.py draws and checks it, and the blockout generator will build from it.
 # Concept art is painted over the blockout's renders. Tristan's vision: reference/exterior_vision_tristan.webp.
 # Units: metres. Frame: sub-local, bow toward -Z, +X starboard, Y up, origin at the hull's centre.
@@ -23,75 +25,79 @@ clearances:                  # from the player capsule (radius 0.3, height 1.75)
   head_clear_m: 2.0          # clear height needed above the deck along the walkway
   hatch_width_m: 0.75
   hatch_height_m: 1.7
+  overhead_margin_m: 0.15    # kept clear under the overhead (pipes, cove lights) when sizing the hologram
 
 # Bow to stern. z: [from, to].
 compartments:
   - id: cockpit
-    z: [-4.9, -3.0]
-    floor_offset_m: -0.20   # one step down: seated eyes at y = +0.05, the dome's centre. Deeper leaves no floor for two seats.
+    z: [-4.9, -3.35]
+    floor_offset_m: -0.20   # one step down, glass underfoot: the seated pilot's eyes sit near the dome's centre
     notes: >
-      Glass dome, cramped but fits two: pilot and sonar side by side, sunk a step below the main deck.
-      Seated eyes sit at the dome's centre, so the view out is even all round. Standing crew in midships
-      look over both heads and out through the dome too. A short step or two leads down from midships.
+      The pilot's bubble: one unbroken acrylic hemisphere about 2.2 m across with a heavy steel ring at its rim,
+      the pilot alone on the centreline with glass all round and below, a hand's width from armrest to glass.
   - id: midships
-    z: [-3.0, 1.2]
+    z: [-3.35, 1.5]
     notes: >
-      The crowded catch-all and the crew's hub. Countermeasures stands beside the map table, so its
-      operator can watch the table to see what their decoys are doing. Then the lock-out trunk in the floor
-      just aft of the table, and the conning-tower ladder and lockers by the bulkhead.
+      The crowded catch-all and the crew's hub. Starboard: the sonar desk just aft of the dome ring, then
+      countermeasures. Port: the map table in a bay in the hull wall, its operator seated in the aisle at its centre,
+      observers standing along it. Then the lock-out trunk in the floor, and the conning-tower ladder and lockers by
+      the bulkhead. Countermeasures and the map table face each other across the aisle.
   - id: bulkhead
-    z: [1.2, 1.4]
+    z: [1.5, 1.7]
     notes: Watertight hatch, which can isolate a flooding engineering space.
   - id: engineering
-    z: [1.4, 4.7]
+    z: [1.7, 4.7]
     notes: >
       The mechanic's end of the boat, louder and lower as the hull tapers. Engine and power, life support,
-      ballast, the bilge well and the drop-weight release: every hands-on utility job.
+      ballast, the bilge well and the drop-weight release: every hands-on utility job, tightly packed.
 
-# kind: seat (sit to use), panel (stand at a wall), table (walk round), well (kneel), floor_hatch, ladder.
+# kind: seat (sit to use), chair (a free seat in the aisle), desk (a seated wall console), panel (stand at a wall),
+# table, well (kneel), floor_hatch, ladder, storage, release_lever.
 # side: port (-X), starboard (+X) or centre; x overrides side when given. footprint: [along the hull, across the hull].
+# mount_height_m: a desk or table set into the curve of the hull; its depth is measured from the wall at that height.
 stations:
-  - {id: pilot,           compartment: cockpit,     kind: seat,  x: -0.38, z: -3.4, footprint: [0.75, 0.7],
-     display: {size: small, placement: low on the console, out of the forward view, purpose: heading-up chart for navigation; most of the field of view stays on the dome}}
-  - {id: sonar,           compartment: cockpit,     kind: seat,  x: 0.38,  z: -3.4, footprint: [0.75, 0.7],
-     display: {size: large, placement: close in front of the seat, filling much of the view, purpose: sonar picture centred on the sub at short range, plus the full chart controls (zoom, pins, route waypoints) so this seat can switch between reconnaissance and navigation}}
+  - {id: pilot,           compartment: cockpit,     kind: seat,  x: 0.0,  z: -3.8, footprint: [0.8, 0.7],
+     display: {size: small, placement: a crisp 20 cm cylinder of light low on the forward end of the elbow rail, purpose: chart locked centred on the sub; maybe a little zoom, never pan or rotate}}
+  - {id: sonar,           compartment: midships,    kind: desk,  side: starboard, z: -2.85, footprint: [0.9, 0.65], mount_height_m: 0.75,
+     display: {size: large, placement: a 55 cm screen in a deep bezel on a steeply raked desk, purpose: the operator's own sub-centred view with zoom, pan and rotate; points the passive array; active sonar on and off}}
+  - {id: sonar_seat,      compartment: midships,    kind: chair, side: starboard, z: -2.85, footprint: [0.6, 0.6], inboard_of: sonar}
   - {id: countermeasures, compartment: midships,    kind: panel, side: starboard, z: -1.85, footprint: [1.0, 0.45]}
-  - {id: map_table,       compartment: midships,    kind: table, side: centre,    z: -0.75, footprint: [1.1, 1.1],
-     display: {size: table, placement: horizontal, walked round, purpose: the whole range of scales, from the entire site to zoomed in finer than sonar's view; planning, pins and routes for the whole crew}}
-  - {id: engineering,     compartment: engineering, kind: panel, side: starboard, z: 2.0, footprint: [1.2, 0.45]}
-  - {id: life_support,    compartment: engineering, kind: panel, side: port,      z: 2.0, footprint: [1.0, 0.5]}
-  - {id: ballast,         compartment: engineering, kind: panel, side: port,      z: 3.1, footprint: [1.0, 0.4]}
-  - {id: bilge,           compartment: engineering, kind: well,  side: centre,    z: 3.95, footprint: [0.7, 0.9]}
+  - {id: map_table,       compartment: midships,    kind: table, side: port,      z: -1.25, footprint: [2.2, 0.9], mount_height_m: 0.75,
+     hologram_height_m: 0.7,
+     display: {size: table, placement: a curved slab of light filling the D-shaped top, capped at 0.7 m tall, purpose: every scale for the crew; one seated operator moves the camera, standing observers place pins}}
+  - {id: map_operator,    compartment: midships,    kind: chair, side: port,      z: -1.25, footprint: [0.6, 0.6], inboard_of: map_table}
+  - {id: engineering,     compartment: engineering, kind: panel, side: starboard, z: 2.3, footprint: [1.2, 0.45]}
+  - {id: life_support,    compartment: engineering, kind: panel, side: port,      z: 2.3, footprint: [1.0, 0.5]}
+  - {id: ballast,         compartment: engineering, kind: panel, side: port,      z: 3.25, footprint: [1.0, 0.4]}
+  - {id: bilge,           compartment: engineering, kind: well,  side: centre,    z: 4.1, footprint: [0.7, 0.9]}
 
 features:
   - id: lock_out_trunk
     compartment: midships
     kind: floor_hatch
     side: centre
-    z: 0.3
+    z: 0.5
     footprint: [0.9, 0.9]
     notes: >
-      Floor hatch into a one-person lock-out chamber below the deck. Climb down, seal the top hatch, flood,
-      open the bottom hatch to the sea, and reverse to come back in. The pumps are loud, so going out is a
-      decision. It isn't how real subs do it; it's placed for play, so you can read the map table and step
-      straight out.
-  - {id: tower_ladder, compartment: midships, kind: ladder, side: port, z: 0.95, footprint: [0.4, 0.35],
-     notes: Up into the conning tower and its top hatch, for docking at the ship or a station. Kept for looks too.}
-  - {id: lockers, compartment: midships, kind: storage, side: starboard, z: 0.95, footprint: [0.4, 0.45],
+      Floor hatch into a one-person lock-out chamber below the deck, just aft of the map table, so the crew can
+      read the table and step straight out. Climb down, seal the top hatch, flood, open the bottom hatch to the
+      sea; the pumps are loud. Placed for play, not engineering realism.
+  - {id: tower_ladder, compartment: midships, kind: ladder, side: port, z: 1.2, footprint: [0.4, 0.35],
+     notes: Up into the conning tower and its top hatch, for docking at the ship or a station.}
+  - {id: lockers, compartment: midships, kind: storage, side: starboard, z: 1.2, footprint: [0.4, 0.45],
      notes: Patches, scrubber canisters, cargo.}
-  - {id: drop_weights, compartment: engineering, kind: release_lever, side: starboard, z: 3.1, footprint: [0.2, 0.15],
+  - {id: drop_weights, compartment: engineering, kind: release_lever, side: starboard, z: 3.25, footprint: [0.2, 0.15],
      notes: One-time emergency release, across the aisle from the ballast valves.}
 
 displays:
-  # One shared chart, shown three times at different scales and sizes. Each view can pan, zoom, pin and
-  # set waypoints on the same chart, and every view sees the others' marks.
-  - The pilot needs only a small heading-up chart, low and out of the way, because the dome is their view.
-  - Sonar needs the sub-centred, short-range picture big and close, because it's their main input. Next to the pilot, sonar can swap between reconnaissance and navigation (route planning) without leaving the seat.
-  - The map table covers every scale, from the whole site to finer than sonar, for the crew to plan around.
-  - Showing the chart three times is fine; each copy serves a different scale and a different job.
+  # Two charts, not one shared view: the pilot's small locked hologram and sonar's own screen, plus the map table.
+  - The pilot has a 20 cm hologram locked centred on the sub, low and out of the dome view.
+  - Sonar has its own 2D screen, sub-centred by default but free to zoom, pan and rotate; it is not shared with the pilot.
+  - The map table covers every scale for the crew to plan around; its hologram is capped at 0.7 m to fit the headroom.
 
 design_notes:
-  - "Two halves around the hub. Forward: pilot and sonar sunk into the dome, then countermeasures at the map table. Aft, through the bulkhead: engineering, life support, ballast and bilge, all the hands-on utility work."
-  - The operational core (pilot, sonar, countermeasures and the table) shares one continuous volume. The sunken cockpit opens straight into midships, with no wall, so everyone running the boat is within a few steps and in sight of each other.
-  - Rounds are an engineering job. Whoever does them works mostly behind the bulkhead, away from the table's chatter, and crosses the hub to get there.
+  - "The operational core shares one volume: the pilot in the dome, sonar a metre behind their right shoulder, countermeasures beside sonar, and the map table across the aisle. Nobody is more than a few steps from anyone else."
+  - Crew standing behind the pilot look over one head, out through the dome and down to the sea floor.
+  - Countermeasures faces the map table across the aisle, so its operator watches their decoys on the hologram.
+  - Rounds are an engineering job, behind the bulkhead, away from the table's chatter.
   - Ballast and the drop-weight release face each other across the aft aisle; both are about staying afloat.
