@@ -8,7 +8,7 @@ from typing import Any
 
 import yaml
 
-CLASSES = ("creature", "prop", "architecture", "terrain", "interior")
+CLASSES = ("creature", "prop", "architecture", "terrain", "interior", "kit")
 STAGES = ("new", "concept", "locked", "turnaround", "brief", "to3d", "cleanup", "checked", "exported")
 KINDS = ("concept", "turnaround", "mesh")
 DECISIONS = ("approved", "rejected")
@@ -18,7 +18,7 @@ def now() -> str:
     return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
-_PATH_KEYS = frozenset({"path", "report"})
+_PATH_KEYS = frozenset({"path", "report", "source"})
 _PATH_LIST_KEYS = frozenset({"references", "images", "renders", "files"})
 
 
@@ -52,6 +52,7 @@ class LineageEntry:
     task_id: str = ""  # provider job id for a mesh run (image-to-3D)
     views: list[str] = field(default_factory=list)  # mesh runs: lineage ids of the turnaround views sent, in order
     options: dict[str, Any] = field(default_factory=dict)  # mesh runs: the model options sent in the request body
+    source: dict[str, str] = field(default_factory=dict)  # imported meshes: {path, sha256} of the CAD export they came from
 
 
 @dataclass
@@ -86,6 +87,34 @@ class CleanupRecord:
     image: str = ""  # docker: image reference plus digest when the daemon reported it
     result: dict[str, Any] = field(default_factory=dict)  # measured triangles, non-manifold, colours, size
     at: str = field(default_factory=now)
+
+
+@dataclass
+class ImportRecord:
+    """One `asset import`: the CAD export (repo-relative path and hash), the mesh it became and what was measured."""
+    id: str  # the imported mesh's lineage id
+    source: str  # repo-relative POSIX path of the copied export
+    sha256: str
+    parts: list[str] = field(default_factory=list)  # every part (mesh node) in the export, which a pivot may name
+    pivot: str = ""  # the moving part's name; empty for a fixed part
+    size_m: float = 0.0  # largest dimension of the converted mesh
+    triangles: int = 0
+    materials: dict[str, str] = field(default_factory=dict)  # material name in the export -> palette role
+    commit: str = ""
+    script_sha256: str = ""
+    blender: str = ""
+    runner: str = ""
+    image: str = ""
+    at: str = field(default_factory=now)
+
+
+@dataclass
+class PivotRecord:
+    """A moving part of a kit asset: which part, its hinge axis and its limits in degrees from the rest pose."""
+    part: str
+    axis: str = "x"
+    limits_deg: list[float] = field(default_factory=lambda: [-40.0, 40.0])
+    control: str = "switch_lever"  # which control script `export` puts on the scene
 
 
 @dataclass
@@ -160,6 +189,8 @@ class Manifest:
     checks: list[CheckRecord] = field(default_factory=list)
     godot_checks: list[GodotCheckRecord] = field(default_factory=list)
     exports: list[ExportRecord] = field(default_factory=list)
+    imports: list[ImportRecord] = field(default_factory=list)  # kit (cad route): one per `asset import`
+    pivots: list[PivotRecord] = field(default_factory=list)  # kit: the moving parts, from the latest import
     # The cost ledger (see cost.py): append-only, so reject, delete and regenerate never remove entries.
     costs: list[CostRecord] = field(default_factory=list)
     # Soft budget in USD for this asset; overrides the class's `budget_usd` in classes.yaml. Warns, never blocks.
@@ -181,6 +212,14 @@ class Manifest:
             self.entry(entry.parent)  # must already exist, so lineage is acyclic
         self.lineage.append(entry)
         return entry
+
+    def set_pivots(self, pivots: list[PivotRecord], parts: list[str] | None = None) -> None:
+        """Record the moving parts. Each must name a part of the latest import (or of `parts`, when given)."""
+        known = parts if parts is not None else (self.imports[-1].parts if self.imports else [])
+        for p in pivots:
+            if p.part not in known:
+                raise ValueError(f"no part named {p.part!r} in the import; the parts are: {', '.join(known) or '(none)'}")
+        self.pivots = list(pivots)
 
     def ancestry(self, entry_id: str) -> list[str]:
         """Ids from `entry_id` back to its root, nearest first."""
@@ -229,6 +268,8 @@ class Manifest:
             checks=[CheckRecord(**x) for x in d.get("checks") or []],
             godot_checks=[GodotCheckRecord(**x) for x in d.get("godot_checks") or []],
             exports=[ExportRecord(**x) for x in d.get("exports") or []],
+            imports=[ImportRecord(**x) for x in d.get("imports") or []],
+            pivots=[PivotRecord(**x) for x in d.get("pivots") or []],
             costs=[CostRecord(**x) for x in d.get("costs") or []],
             budget_usd=d.get("budget_usd"),
             renames=[RenameRecord(**x) for x in d.get("renames") or []],

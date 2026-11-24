@@ -118,3 +118,34 @@ def test_interior_must_be_scripted(tmp_path):
     data["classes"]["interior"]["build_route"] = "image-to-3d"
     f.write_text(yaml.safe_dump(data))
     assert any("interior" in e and "scripted" in e for e in mod.validate())
+
+
+def _kit(root, **change):
+    f = root / "classes.yaml"
+    data = yaml.safe_load(f.read_text())
+    data["classes"]["kit"].update(change)
+    f.write_text(yaml.safe_dump(data))
+
+
+def test_kit_is_a_cad_class(tmp_path):
+    mod, root = load(tmp_path)
+    kit = yaml.safe_load((root / "classes.yaml").read_text())["classes"]["kit"]
+    assert kit["build_route"] == "cad" and kit["triangle_budget"] == 1500 and kit["scale_range_m"] == [0.01, 0.3]
+    assert mod.validate() == []
+
+
+def test_malformed_kit_is_rejected(tmp_path):
+    mod, root = load(tmp_path)
+    _kit(root, build_route="image-to-3d")
+    assert any("only kit uses the cad route" in e for e in mod.validate())
+    _kit(root, build_route="cad", triangle_budget=0, scale_range_m=[0.3, 0.01])
+    errs = mod.validate()
+    assert any("triangle_budget" in e for e in errs) and any("scale_range_m" in e for e in errs)
+    mod, root = load(tmp_path / "b")
+    f = root / "classes.yaml"
+    data = yaml.safe_load(f.read_text())
+    data["classes"]["prop"]["build_route"] = "cad"
+    f.write_text(yaml.safe_dump(data))
+    assert any("prop" in e and "only kit uses the cad route" in e for e in mod.validate())
+    (root / "classes" / "kit.md").unlink()
+    assert any("classes/kit.md missing" in e for e in mod.validate())

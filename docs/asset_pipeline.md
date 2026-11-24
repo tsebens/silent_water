@@ -14,6 +14,20 @@ Copies the cleaned GLB to `build/asset_check/<slug>/` (git-ignored), imports it 
 
 Needs a mesh that passed `asset check`. Writes to `assets/models/<slug>/`: `<slug>.glb`, `<slug>.glb.import`, `<slug>.tscn` (an instance of the GLB), `concept/` (locked concept as `locked.<ext>`, the turnaround views and `brief.md`, with a `.gdignore`; PNGs over 2048 px are shrunk, other formats over 2048 px are an error) and `asset.yaml`.
 
+## Kit parts: `asset import <slug> <export.gltf>`
+
+The `kit` class (build route `cad`) is for the sub's controls, which Tristan models in Onshape instead of generating (conventions: `assets/media/kit/README.md`). It has no concept, turnaround or to3d stage: those commands refuse a kit asset. The class profile has a triangle budget of about 1,500, a scale range of 0.01–0.3 m and no silhouette gate.
+
+`asset import <slug> <export.gltf> [--pivot <part name>] [--axis x|y|z] [--limits MIN MAX] [--control switch_lever|none] [--folder A/B]`:
+
+- creates the asset (class `kit`, folder `kit`) when the slug is new;
+- copies the export to `assets/media/kit/<slug>/<slug>.gltf` and runs the converter, `tools/asset_pipeline/asset_pipeline/blender/onshape_import_bpy.py`, in headless Blender (native or Docker, the same runner as `cleanup`). The origin goes to the centre of the back face, and the moving part goes under a `Pivot` node on its hinge with identity rotation;
+- snaps each material to the nearest entry of `assets/style_bible/kit_palette.yaml` (powder grey, safety orange, black, LED), by the RGB value in the Onshape material name, and renames it by role; materials that snap to one role merge;
+- records a `mesh` lineage entry (`i1`, `i2`, …, provider `onshape`) whose `source` holds the export's path and SHA-256, plus an `imports` record (parts, triangles, size, materials, how Blender ran). A re-import adds a new entry;
+- records the moving part in the manifest's `pivots`: part name, axis, limits in degrees (default -40 40) and control. A `--pivot` that names no part of the export is an error that lists the parts.
+
+`check` and `godot-check` then work on the latest import, and `check` reads the size from the import and skips the silhouette gates. The first toggle has 4,606 triangles against the 1,500 budget, so `check` fails its `triangles` gate until the part is simplified or checked with `--triangle-budget`. `export` writes `assets/models/<folder>/<slug>/<slug>.glb`, its `.glb.import` (kept if present) and `<slug>.tscn`: the model, a `SwitchLever` with `swing_deg` (the span of the limits) and `pivot` set from the manifest, and a grab box on collision layer 2 sized to the part. Other control scripts are separate work. The Studio's Import CAD… button is a separate arc.
+
 ## Folders and moves
 
 Assets can live in nested folders under `assets/models/`, e.g. `assets/models/organic/fauna/apex/asset.yaml`. An asset is found by searching `assets/models/**/<slug>/asset.yaml`, so flat `assets/models/<slug>/` assets keep working with no migration. Slugs are unique repo-wide (`asset new` refuses a slug that exists in any folder) and `.asset_work/<slug>/` stays flat. Folder segments use lowercase letters, digits, `_` and `-`. `asset list` reports each asset's `folder` and every `folders` entry, empty ones included. Git does not track an empty folder, so one made with `folder create` lasts only until the checkout is cleaned or recloned.

@@ -269,7 +269,7 @@ def gate(name: str, ok: bool, value: Any, limit: Any, detail: str) -> dict[str, 
 
 
 def run_gates(mesh: dict[str, Any], profile: dict[str, Any], size_m: float, size_from: str, budget: int,
-              views: dict[str, Path]) -> list[dict[str, Any]]:
+              views: dict[str, Path], silhouettes: bool = True) -> list[dict[str, Any]]:
     """Every gate, in a fixed order. Thresholds come from the class profile's `gates` block. Nothing is skipped:
     a gate that cannot be evaluated (a missing view) fails with the reason."""
     g = profile["gates"]
@@ -292,7 +292,7 @@ def run_gates(mesh: dict[str, Any], profile: dict[str, Any], size_m: float, size
                     g["max_non_manifold"], f"{topo['non_manifold_edges']} edges not shared by exactly two faces "
                     f"(holes and overlaps), at most {g['max_non_manifold']} allowed"))
     need = g["silhouette_iou_min"]
-    for view in ALL_VIEWS:
+    for view in ALL_VIEWS if silhouettes else ():  # a cad part has no turnaround to compare against
         name = f"silhouette_{view}"
         if view not in views and view not in VIEWS:
             continue  # top and bottom are checked only when the turnaround has them

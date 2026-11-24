@@ -6,6 +6,8 @@
 # Optional per class: to3d_views, which turnaround views `asset to3d` sends by default, in order (after a provider
 # entry's own `views:`; default front, left, back, right). `--views` overrides it per run.
 # Optional per class: concept_presentation, `subject` (default) or `scene`: what `asset concept` uses when --presentation is absent.
+# A `cad` class (kit) is modelled in Onshape and brought in with `asset import`: it has no concept, turnaround or to3d
+# stage, `cleanup_recipe` names the import steps, and `silhouette_iou_min` is unused (there are no views to compare).
 # Seeded from docs/art_direction.md; tune freely, tools/validate_style_bible.py checks the shape.
 classes:
   creature:
@@ -55,3 +57,12 @@ classes:
     palette_size: 8
     cleanup_recipe: [snap_to_grid, scale_and_pivot, flat_shade, vertex_colour_palette, collision_helper]
     gates: {triangle_tolerance: 1.0, bbox_tolerance: 0.02, max_loose_parts: 64, max_non_manifold: 0, silhouette_iou_min: 0.90}
+  kit:
+    budget_usd: 0
+    build_route: cad
+    triangle_budget: 1500
+    scale_range_m: [0.01, 0.3]
+    snap_grid_m: null
+    palette_size: 4
+    cleanup_recipe: [import_gltf, scale_and_pivot, weld, dissolve_coplanar, flat_shade, snap_materials_to_palette]
+    gates: {triangle_tolerance: 1.0, bbox_tolerance: 0.02, max_loose_parts: 16, max_non_manifold: 0, silhouette_iou_min: 0.0}

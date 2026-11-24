@@ -1,0 +1,31 @@
+[gd_scene load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://src/interact/switch_lever.gd" id="1"]
+[ext_resource type="PackedScene" path="res://assets/models/kit/toggle_switch/toggle_switch.glb" id="2"]
+[ext_resource type="Script" path="res://src/interact/noise_profile.gd" id="3"]
+
+[sub_resource type="Resource" id="noise"]
+script = ExtResource("3")
+idle_intensity = 0.0
+max_intensity = 0.15
+clank_rate = 2.0
+exponent = 2.0
+
+[sub_resource type="BoxShape3D" id="grab"]
+size = Vector3(0.07, 0.1, 0.085)
+
+[node name="ToggleSwitch" type="Node3D" node_paths=PackedStringArray("pivot")]
+script = ExtResource("1")
+swing_deg = 80.0
+noise_profile = SubResource("noise")
+pivot = NodePath("Model/Pivot")
+
+[node name="Model" parent="." instance=ExtResource("2")]
+
+[node name="Grab" type="StaticBody3D" parent="."]
+collision_layer = 2
+collision_mask = 0
+
+[node name="Shape" type="CollisionShape3D" parent="Grab"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0.0425)
+shape = SubResource("grab")
