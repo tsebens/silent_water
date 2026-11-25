@@ -15,13 +15,15 @@ from cadkit.tscn import NodePath, SName, Scene, Xform
 
 SLUG, GROUP = "sonar_console", "stations"
 USES: list[str] = ["gauge", "guarded_toggle", "trackball", "map_keypad", "operator_seat"]
-W = 820.0                                     # console width (X), mm
+W = 600.0                                     # console body width (X), mm
+MAX_W = 650.0                                 # the program's sonar desk is 0.65 m across (brief constraint)
+FRAME_PROUD, HOOK_OUT = 5.0, 40.0             # the frame stands this far proud of the body side; the hook this far out of the frame
 # Side profile (y up, z out from the hull), mm, anticlockwise from the back foot.
 STRIP_FRONT, STRIP_BACK = (740.0, 620.0), (860.0, 400.0)
 FACE_TOP = (1520.0, 276.0)
 PROFILE = [(0.0, 0.0), (0.0, 300.0), (620.0, 300.0), (700.0, 600.0), STRIP_FRONT, STRIP_BACK, FACE_TOP, (FACE_TOP[0], 0.0)]
-BEZEL_W, BEZEL_H, BEZEL_D, BEZEL_S = 700.0, 625.0, 60.0, 332.5     # BEZEL_S: centre, mm up the screen face
-OPEN_W, OPEN_H, GLASS_T = 580.0, 370.0, 20.0
+BEZEL_W, BEZEL_H, BEZEL_D, BEZEL_S = 600.0, 625.0, 60.0, 332.5     # BEZEL_S: centre, mm up the screen face
+OPEN_W, OPEN_H, GLASS_T = 550.0, 370.0, 20.0
 DIAL_BAND = 200.0                             # the bezel's bottom border, which carries the dials (round 1 review)
 OPEN_S = BEZEL_S - BEZEL_H / 2 + DIAL_BAND + OPEN_H / 2     # centre of the screen opening, mm up the face
 DIAL_S = BEZEL_S - BEZEL_H / 2 + 115.0
@@ -32,16 +34,16 @@ SEAT_Z = 980.0
 EYE_H = 1200.0
 
 # Layout on the control strip: x (mm, right of centre) and s (mm up the slope from the strip's middle).
-STRIP_LAYOUT = {"ActiveSonar": ("guarded_toggle", -230.0, 0.0, "active sonar"),
+STRIP_LAYOUT = {"ActiveSonar": ("guarded_toggle", -190.0, 0.0, "active sonar"),
                 "Trackball": ("trackball", 0.0, 0.0, "hydrophone trackball"),
-                "MapKeys": ("map_keypad", 230.0, 0.0, None)}
+                "MapKeys": ("map_keypad", 190.0, 0.0, None)}
 # Dials on the header: x (mm), radius (m), and the Gauge settings (from the game's sonar station).
 DIALS = {
-    "SignalGauge": (-255.0, 0.04, {"readout": "signal", "title": "SIGNAL", "min_value": 40.0, "max_value": 110.0}),
-    "BearingGauge": (-90.0, 0.055, {"readout": "bearing", "title": "BEARING", "max_value": 360.0, "wraps": True,
+    "SignalGauge": (-235.0, 0.04, {"readout": "signal", "title": "SIGNAL", "min_value": 40.0, "max_value": 110.0}),
+    "BearingGauge": (-85.0, 0.055, {"readout": "bearing", "title": "BEARING", "max_value": 360.0, "wraps": True,
                                    "wrap_labels": ["FWD", "STBD", "AFT", "PORT"]}),
-    "NoiseGauge": (90.0, 0.055, None),
-    "BearingRateGauge": (255.0, 0.04, {"readout": "bearing_rate", "title": "BRG RATE", "min_value": -120.0,
+    "NoiseGauge": (85.0, 0.055, None),
+    "BearingRateGauge": (235.0, 0.04, {"readout": "bearing_rate", "title": "BRG RATE", "min_value": -120.0,
                                         "max_value": 120.0, "sweep_deg": 180.0}),
 }
 
@@ -92,24 +94,29 @@ def solids() -> list[Solid]:
     # Keep the front edge and the top: a structural member, not an outline (round 1 review).
     ring = ring - bd.Box(FRAME_T * 4, FACE_TOP[0] - 120 + 100, 300, align=(bd.Align.CENTER, bd.Align.MIN, bd.Align.CENTER)).moved(
         bd.Location((0, -100, 50)))
-    inset = on_strip(box(W - 80, STRIP_LEN - 30, STRIP_INSET_T))
-    frames = [at(ring, x=W / 2), at(ring, x=-W / 2 - FRAME_T)]
+    inset = on_strip(box(W - 60, STRIP_LEN - 30, STRIP_INSET_T))
+    # Set into the body's width: each band overlaps the body side and stands FRAME_PROUD proud of it.
+    frames = [at(ring, x=W / 2 + FRAME_PROUD), at(ring, x=-W / 2 - FRAME_PROUD + FRAME_T)]
     kick = at(box(W, 80, 8), y=40, z=300)
-    hook_x = W / 2 + FRAME_T
-    hook = at(bd.Box(70, 20, 20, align=(bd.Align.MIN, bd.Align.CENTER, bd.Align.CENTER)), hook_x, 1250, 200)
-    hook_lip = at(bd.Box(20, 40, 20, align=(bd.Align.MIN, bd.Align.MIN, bd.Align.CENTER)), hook_x + 50, 1250, 200)
+    hook_x = W / 2 + FRAME_PROUD
+    hook = at(bd.Box(HOOK_OUT, 20, 20, align=(bd.Align.MIN, bd.Align.CENTER, bd.Align.CENTER)), hook_x, 1250, 200)
+    hook_lip = at(bd.Box(20, 40, 20, align=(bd.Align.MIN, bd.Align.MIN, bd.Align.CENTER)), hook_x + HOOK_OUT - 20, 1250, 200)
     out = ([Solid(body, "interior_panel"), Solid(on_face(bezel, BEZEL_S), "trim_black"), Solid(on_face(glass, OPEN_S), "screen_off"),
             Solid(inset, "interior_dark"), Solid(kick, "trim_black"), Solid(hook + hook_lip, "trim_black")]
            + [Solid(f, "control_interface") for f in frames])
-    _check(body, frames)
+    _check(body, frames, hook + hook_lip)
     return out
 
 
-def _check(body: bd.Part, frames: list[bd.Part]) -> None:
+def _check(body: bd.Part, frames: list[bd.Part], hook: bd.Part) -> None:
     """Checks against the brief and the catalogue entries of everything placed on the console."""
     expect(abs(body.bounding_box().min.Y) < 0.01, "console stands on the floor")
     for f in frames:
         expect(f.bounding_box().min.Y > -0.01, "side frames do not go below the floor")
+    parts = [body, hook, *frames]
+    lo, hi = min(p.bounding_box().min.X for p in parts), max(p.bounding_box().max.X for p in parts)
+    expect(hi - lo <= MAX_W + 0.01, f"console overall width at most {MAX_W:.0f} mm (program's sonar desk), body, frame and hook ({hi - lo:.1f})")
+    expect(BEZEL_W <= W, "bezel within the body's width")
     expect(BEZEL_S - BEZEL_H / 2 > 0 and BEZEL_S + BEZEL_H / 2 <= FACE_LEN, "bezel on the screen face")
     expect(OPEN_S + OPEN_H / 2 <= BEZEL_S + BEZEL_H / 2 - 40, "a bezel border above the screen")
     ext = entry("gauge")["extent_radii"]             # the gauge's own envelope, from its catalogue entry
@@ -193,7 +200,7 @@ def build() -> dict:
            props={"transform": Xform(origin=(0, 0, SEAT_Z / 1000)), "headset": NodePath("../Headset"),
                   "sit_point": NodePath("Model/SitPoint"), "eye_height": EYE_H / 1000, "label": "sonar seat"})
     s.node("Model", parent="Seat", instance=scene_path("operator_seat"))
-    hook_tip = np.array([W / 2 + FRAME_T + 55, 1250 - 20, 200]) / 1000
+    hook_tip = np.array([W / 2 + FRAME_PROUD + HOOK_OUT - 5, 1250 - 20, 200]) / 1000
     s.node("Headset", instance="res://src/sonar/headset.tscn",
            props={"transform": Xform.frame((0, 0, -1), (0, 1, 0), (1, 0, 0), tuple(hook_tip - np.array([0, 0.08, 0])))})
     s.write(d / f"{SLUG}.tscn")
@@ -208,7 +215,7 @@ def build() -> dict:
         "tags": ["station", "sonar", "console", "desk"],
         "scene": res(d / f"{SLUG}.tscn"),
         "behaviour": {"script": "SonarStation", "wire": {"wheel": "Controls/Trackball", "headset": "Headset"}},
-        "footprint_mm": [W + 2 * FRAME_T, SEAT_Z + 300],
+        "footprint_mm": [W + 2 * FRAME_PROUD + HOOK_OUT, SEAT_Z + 300],
         "mount": "floor at Y=0, back against the hull on Z=0, operator at +Z facing -Z",
         "uses": [v[0] for v in STRIP_LAYOUT.values()] + ["operator_seat", "gauge", "noise_gauge", "flat_chart", "headset"],
         "triangles": tris,
