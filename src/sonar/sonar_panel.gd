@@ -1,42 +1,33 @@
 class_name SonarPanel
 extends Node3D
-## Fits out the sonar panel on the sub model's bezels: the bearing chart
-## ([FlatChart]) becomes the screen on the large bezel, and the SIGNAL and
-## BRG RATE dials sit in the two small ones. Which mesh part is which is a
-## property of the model (see [SubModel.part]); everything is mounted facing
-## the seat (-Z in the sub frame).
+## Fits out the sonar panel: the bearing chart ([FlatChart]) becomes the screen, and the SIGNAL and BRG RATE dials
+## sit either side of the hydrophone wheel. The hull no longer carries panel furniture, so each piece is placed at a
+## fixed spot in the sub model's frame and faces the seat (-Z in the sub frame).
 
-@export var screen_part: StringName = &"Bezel"
-@export var signal_part: StringName = &"Bezel2"
-@export var rate_part: StringName = &"Bezel3"
+## Sub-model-frame positions of the screen and the two dials.
+@export var screen_pos: Vector3 = Vector3(1.38, 0.925, 1.502)
+@export var signal_pos: Vector3 = Vector3(1.075, 1.096, 1.585)
+@export var rate_pos: Vector3 = Vector3(0.897, 1.096, 1.585)
 @export var model: SubModel
 @export var screen: FlatChart
 @export var signal_gauge: Gauge
 @export var rate_gauge: Gauge
-## How far in front of the bezel's face centre-plane the dials and screen sit
-## (m, local -Z is the front).
-@export var screen_z: float = -0.063
-@export var gauge_z: float = -0.026
 
 
 func _ready() -> void:
-	# The parent is still adding its children; mount once that is done.
+	# The parent is still adding its children; place them once that is done.
 	_mount_all.call_deferred()
 
 
 func _mount_all() -> void:
-	_mount(screen, screen_part, Vector3(0, 0, screen_z), 0.0)
-	_mount(signal_gauge, signal_part, Vector3(0, 0, gauge_z), PI)
-	_mount(rate_gauge, rate_part, Vector3(0, 0, gauge_z), PI)
+	_mount(screen, screen_pos, PI)
+	_mount(signal_gauge, signal_pos, PI)
+	_mount(rate_gauge, rate_pos, PI)
 
 
-func _mount(node: Node3D, part_name: StringName, local_pos: Vector3, yaw: float) -> void:
-	var part: MeshInstance3D = model.part(String(part_name)) if model != null else null
-	if node == null or part == null:
-		push_warning("SonarPanel: cannot mount onto '%s'" % part_name)
+## Place `node` at `pos` in the model's frame, turned `yaw` about up. The node stays where it is in the tree.
+func _mount(node: Node3D, pos: Vector3, yaw: float) -> void:
+	if node == null or model == null:
+		push_warning("SonarPanel: cannot mount '%s'" % [node.name if node != null else "null"])
 		return
-	node.get_parent().remove_child(node)
-	part.add_child(node)
-	node.position = local_pos
-	if node is Gauge:
-		node.rotation = Vector3(0, yaw, 0)
+	node.global_transform = model.global_transform * Transform3D(Basis(Vector3.UP, yaw), pos)

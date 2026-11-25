@@ -50,7 +50,7 @@ func test_metal_follows_the_palette() -> void:
 	var saved: Dictionary = _swatches()
 	var m: SubModel = (preload("res://src/sub/sub_model.tscn")).instantiate() as SubModel
 	runner.add_child(m)
-	var sm: ShaderMaterial = m.part("Shell").material_override as ShaderMaterial
+	var sm: ShaderMaterial = m.part("hull_shell").material_override as ShaderMaterial
 	var c: Color = Color(0.9, 0.5, 0.1)
 	Palette.main().set_color(&"infra_metal", c)
 	expect((sm.get_shader_parameter("base_tone") as Color).is_equal_approx(c), "hull tone follows infra_metal")

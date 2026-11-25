@@ -138,8 +138,7 @@ func test_expired_marks_are_pruned_and_host_add_replicates_via_set() -> void:
 
 func test_bearing_display_is_heading_up_and_uses_shared_cone_constant() -> void:
 	await _frames(2)
-	var large: MeshInstance3D = (game.get_node("Interior/Model") as SubModel).part("Bezel")
-	var bezel: FlatChart = large.get_node_or_null("BearingScreen") as FlatChart
+	var bezel: FlatChart = game.get_node_or_null("Interior/Stations/Sonar/BearingScreen") as FlatChart
 	expect(bezel != null, "bezel display exists")
 	controller.enabled = false
 	for deg: float in [0.0, 37.0, 150.0, 271.0]:

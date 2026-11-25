@@ -4,8 +4,7 @@
 
 ## How it works
 
-- The redesigned sub's hull is generated from `assets/models/vehicles/sub_interior/program.yaml` by a parametric script (decision #395; hull arc under #396). The Onshape pipeline below is **legacy** and stays until that hull replaces it.
-- The legacy geometry comes from the Onshape concept: `tools/convert_sub.py` turns `assets/media/sub/Assembly 1.gltf` into `assets/sub/sub_model.glb` (Godot axes, origin on the main cabin floor at the centreline, bow toward -Z, simplified meshes, named parts). `SubModel` gives the parts their materials and collision. The hull is about 10 m × 4 m; the pilot well is 0.6 m below the cabin floor.
+- The redesigned sub's hull is generated from `assets/models/vehicles/sub_interior/program.yaml` by a parametric script (decision #395; hull arc under #396). `SubModel` loads it (#401); the old Onshape model and `tools/convert_sub.py` are gone. The hull is about 10 m × 4 m; the pilot floor is 0.2 m below the main deck.
 - `Game/Interior` sits at the origin with an identity transform, permanently. Players, controls, interior lights, and the sub's exterior lights (the headlight) live here. Everything inside the sub is in **sub-local space**.
 - `Game/World` holds everything outside the sub: terrain, creatures, objectives. Its children use **world space** as their local space.
 - `SubFrame` owns the sub's pose in the world (`sub_transform`, host-authoritative, replicated). Each frame it sets `World.transform = sub_transform.affine_inverse()`. In render space the sub is always at the origin, and the world moves past it.
@@ -64,7 +63,7 @@ So the main deck is y = 0, the sunken cockpit floor (`floor_offset_m: -0.20`) is
 
 ## The generated hull (`assets/sub/sub_hull.glb`)
 
-`tools/build_sub_hull.py` builds the redesigned hull from `layout.json` (which `plan.py` generates from `program.yaml`). It needs only numpy: `python3 tools/build_sub_hull.py` rewrites `assets/sub/sub_hull.glb`, in the interior frame. Change the program, run `plan.py`, then the hull script, and commit all three outputs. It is not wired into `SubModel` yet (the old `sub_model.glb` is still what the game loads). Surfaces are named after palette roles. Nodes ending `-col` get trimesh collision (a `StaticBody3D`) on import.
+`tools/build_sub_hull.py` builds the redesigned hull from `layout.json` (which `plan.py` generates from `program.yaml`). It needs only numpy: `python3 tools/build_sub_hull.py` rewrites `assets/sub/sub_hull.glb`, in the interior frame. Change the program, run `plan.py`, then the hull script, and commit all three outputs. `SubModel` loads it, gives each part its worn-metal, trim or glass look, and adds no collision of its own. Surfaces are named after palette roles. Nodes ending `-col` get trimesh collision (a `StaticBody3D`) on import.
 
 | Part | What it is | Role |
 | --- | --- | --- |

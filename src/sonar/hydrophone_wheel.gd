@@ -20,10 +20,10 @@ func _init() -> void:
 
 func _ready() -> void:
 	super._ready()
-	# When driving a mesh from the sub model, hide this scene's own wheel.
+	# When driving a mesh outside this scene, hide this scene's own wheel.
 	for n: String in ["Wheel", "Stem"]:
 		var own: Node3D = get_node_or_null(n) as Node3D
-		if own != null and own != wheel:
+		if own != null and wheel != null and not is_ancestor_of(wheel) and own != wheel:
 			own.visible = false
 
 
