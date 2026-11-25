@@ -102,6 +102,17 @@ func _recolor() -> void:
 
 
 func _build() -> void:
+	# A scene may supply its own modelled track and bar (kit/linear_gauge): a "Bar" node standing on the track
+	# bottom with the bar mesh beneath it. Then only the bar's material is ours.
+	var supplied: Node3D = get_node_or_null("Bar") as Node3D
+	if supplied != null:
+		_bar = supplied
+		_bar_material = StandardMaterial3D.new()
+		_bar_material.emission_enabled = true
+		_bar_material.emission_energy_multiplier = 1.5
+		for m: Node in supplied.find_children("*", "MeshInstance3D", true, false):
+			(m as MeshInstance3D).material_override = _bar_material
+		return
 	var track: MeshInstance3D = MeshInstance3D.new()
 	track.name = "Track"
 	var track_mesh: BoxMesh = BoxMesh.new()
