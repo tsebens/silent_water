@@ -38,4 +38,5 @@ jobs:
             - Labels on the issue now: ${{ join(github.event.issue.labels.*.name, ', ') }}
           github-token: ${{ secrets.GH_MCP_PAT }}
           oauth-token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          cadkit: "true"
           allowed-tools: "Bash,Read,Glob,Grep"

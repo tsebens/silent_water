@@ -16,9 +16,7 @@ are built from. The game-ready models live in `assets/models/kit/<part>/`. Godot
   of the plate.
 - **Edges.** Use chamfers rather than fillets, and keep fine texture (knurling, grip ridges) shallow and sparse:
   each ridge costs triangles.
-- **Colours.** Onshape appearances are only for your own view. The importer replaces each part's colour with a role
-  from the sub's palette, `assets/style_bible/palette.json`, which gathers the colours the game already uses. Name
-  each part's role when importing (`--materials`).
+- **Colours.** Use part appearances. They come through as materials named by their RGB values.
 
 ## Exporting
 
@@ -27,26 +25,25 @@ at Medium resolution. Save it here as `<part>/<part>.gltf`.
 
 ## Importing
 
-The importer is `tools/kit/onshape_import_bpy.py`, run in headless Blender:
+Run `asset import` in `tools/asset_pipeline/` (see `docs/asset_pipeline.md`):
 
 ```
-blender -b --factory-startup --python-exit-code 1 -P tools/kit/onshape_import_bpy.py -- \
-    assets/media/kit/<part>/<part>.gltf assets/models/kit/<part>/<part>.glb <moving part name> \
-    --materials "<Part>=<role>;<Part>=<role>"
+uv run asset import <part> assets/media/kit/<part>/<part>.gltf --pivot "<moving part name>" --limits -40 40
 ```
 
-It does the following:
+It copies the export here, converts it in headless Blender with `tools/asset_pipeline/asset_pipeline/blender/onshape_import_bpy.py`
+and records the result in `assets/models/kit/<part>/asset.yaml`. The conversion does the following:
 - puts the origin at the centre of the back face
 - puts the moving part under a `Pivot` node on its hinge, with no rotation
 - welds the CAD mesh and dissolves coplanar faces
 - flat-shades the mesh
-- writes the GLB
+- snaps the Onshape material colours to the kit palette (`assets/style_bible/kit_palette.yaml`), named by role
 
-The part's Godot scene (`<part>.tscn`) sets the control script, for example `SwitchLever` with `swing_deg`, and a
-grab box on collision layer 2.
+`uv run asset check <part>` and `uv run asset export <part>` then write the part's Godot scene (`<part>.tscn`), with the
+control script, for example `SwitchLever` with `swing_deg`, and a grab box on collision layer 2.
 
 ## Parts
 
-| Part | Moving part | Limits | Materials | Triangles (in → out) |
-| --- | --- | --- | --- | --- |
-| `toggle_switch` | `Switch` (bat), revolute about X | ±40° from upright (`swing_deg` 80) | Housing `fitting_dark_grey`, Switch `fitting_grey`, Indicator Light `led_cyan` | 4,060 → 3,190 (knurls removed; grip texture later) |
+| Part | Moving part | Limits | Triangles (in → out) |
+| --- | --- | --- | --- |
+| `toggle_switch` | `Switch` (bat), revolute about X | ±40° from upright (`swing_deg` 80) | 5,476 → 4,606; the source is now the knurl-free re-export, re-import pending (#377) |

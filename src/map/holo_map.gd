@@ -30,7 +30,6 @@ const CONE_FLATTEN: float = 0.25
 @export var table_rotation_deg: float = 0.0
 ## Centre on the sub; otherwise centre on [member focus].
 @export var follow_sub: bool = true
-@export var color: Color = Color(0.3, 0.85, 0.95)
 ## Scale of markers (display metres).
 @export var marker_size: float = 0.03
 ## Draw the fading sonar-mark blobs ([member MapModel.marks]).
@@ -71,10 +70,15 @@ func _ready() -> void:
 	_marks_root = Node3D.new()
 	_marks_root.name = "Marks"
 	_markers.add_child(_marks_root)
-	_sub_arrow = _marker(_arrow_mesh(), Color(0.85, 1.0, 1.0), 0.5)
-	_objective = _marker(_diamond_mesh(), Color(1.0, 0.85, 0.3), 0.45)
-	_cone = _marker(null, Color(1.0, 0.85, 0.2), 0.05)
+	_sub_arrow = _marker(_arrow_mesh(), readout_color().lightened(0.5), 0.5)
+	_objective = _marker(_diamond_mesh(), Palette.main().color(&"light_marker"), 0.45)
+	_cone = _marker(null, readout_color(), 0.05)
 	_cone.visible = false
+
+
+## Line and text colour of the chart: the palette's readout cyan.
+static func readout_color() -> Color:
+	return Palette.main().color(&"light_readout")
 
 
 ## World metres represented by one display metre, clamped to the zoom range.
@@ -220,7 +224,7 @@ func _build_terrain() -> void:
 	if site == null:
 		return
 	_terrain_built = true
-	var mat: ShaderMaterial = _holo_material(color, 0.025, 0.03)
+	var mat: ShaderMaterial = _holo_material(readout_color(), 0.025, 0.03)
 	# The site offers a lighter surface for maps; the rest is copied as-is.
 	if site.has_method(&"map_meshes"):
 		for pair: Array in site.call(&"map_meshes"):
@@ -236,7 +240,7 @@ func _build_terrain() -> void:
 	plane.size = Vector2(800, 1200)
 	water.mesh = plane
 	water.position = Vector3(0, 0, -200)
-	water.material_override = _holo_material(Color(0.3, 0.6, 1.0), 0.02, 0.0)
+	water.material_override = _holo_material(Palette.main().color(&"env_water"), 0.02, 0.0)
 	_content.add_child(water)
 
 

@@ -1,0 +1,25 @@
+slug: operator_seat
+group: furniture
+kind: furniture
+summary: Operator seat on a pedestal with armrests; grey, shoulder-height back with orange bolsters. Faces -Z.
+tags:
+- seat
+- chair
+- operator
+- pedestal
+- station
+scene: res://assets/models/furniture/operator_seat/operator_seat.tscn
+behaviour:
+  script: null
+  bind_on_parent: StationSeat or a subclass; sit_point = <instance>/SitPoint
+footprint_mm:
+- 630.0
+- 530.0
+mount: on the floor at Y=0, centred on the pedestal; occupant faces -Z
+seated_eye_height_m: 1.2
+triangles: 376
+built_by: tools/cadkit/scenes/operator_seat.py
+files:
+- component.yaml
+- operator_seat.glb
+- operator_seat.tscn

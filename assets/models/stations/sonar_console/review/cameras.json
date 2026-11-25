@@ -1,0 +1,87 @@
+[
+ {
+  "name": "concept_console_view",
+  "pos": [
+   -0.38,
+   1.32,
+   1.3
+  ],
+  "look_at": [
+   0.12,
+   1.0,
+   0.36
+  ],
+  "fov": 62.0
+ },
+ {
+  "name": "concept_primary_view",
+  "pos": [
+   -1.5,
+   1.7,
+   2.8
+  ],
+  "look_at": [
+   0.0,
+   0.9,
+   0.5
+  ],
+  "fov": 50.0
+ },
+ {
+  "name": "operator_eye",
+  "pos": [
+   0.0,
+   1.2,
+   0.98
+  ],
+  "look_at": [
+   0.0,
+   1.0,
+   0.4
+  ],
+  "fov": 75.0
+ },
+ {
+  "name": "operator_eye_red",
+  "pos": [
+   0.0,
+   1.2,
+   0.98
+  ],
+  "look_at": [
+   0.0,
+   1.0,
+   0.4
+  ],
+  "fov": 75.0,
+  "light": "red"
+ },
+ {
+  "name": "profile_right",
+  "pos": [
+   4.0,
+   0.9,
+   0.65
+  ],
+  "look_at": [
+   0.0,
+   0.9,
+   0.65
+  ],
+  "ortho": 2.1
+ },
+ {
+  "name": "front",
+  "pos": [
+   0.0,
+   0.9,
+   5.0
+  ],
+  "look_at": [
+   0.0,
+   0.9,
+   0.0
+  ],
+  "ortho": 2.1
+ }
+]

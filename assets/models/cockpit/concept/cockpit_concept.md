@@ -166,7 +166,7 @@ reference.
   floor is one step down, so the sonar seat should sit a step higher, on the main deck.
 - **The pilot's hologram** should always be the small cylinder; several shots drew it as a flat
   panel. Whether the pilot gets any zoom control is still open.
-- **Trackball or joystick** for pointing the passive array.
+- ~~Trackball or joystick for pointing the passive array.~~ Decided: the trackball (#349).
 - **The sub experiment's layout** (`program.yaml` and `brief_cockpit_concept.md` on the sub
   experiment branch) still has two seats in the cockpit and an "old" sub. Both need revising to
   this concept when that branch lands: sonar becomes a midships station just aft of the dome,

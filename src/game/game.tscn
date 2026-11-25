@@ -75,9 +75,7 @@ properties/1/replication_mode = 2
 
 [sub_resource type="Environment" id="env"]
 background_mode = 1
-background_color = Color(0.005, 0.015, 0.02, 1)
 ambient_light_source = 2
-ambient_light_color = Color(0.1, 0.16, 0.2, 1)
 ambient_light_energy = 0.15
 tonemap_mode = 2
 glow_enabled = true
@@ -86,7 +84,6 @@ glow_strength = 1.15
 glow_bloom = 0.05
 glow_hdr_threshold = 0.9
 fog_enabled = true
-fog_light_color = Color(0.01, 0.04, 0.05, 1)
 fog_density = 0.035
 fog_sky_affect = 0.0
 

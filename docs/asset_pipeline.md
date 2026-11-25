@@ -1,5 +1,7 @@
 # Asset pipeline: Godot side
 
+This covers Asset Studio: the image-to-3D route for organic assets, and the Onshape import for hand-modelled kit parts. Generated mechanical assets (controls, panels, stations) are built with cadkit instead: see [`asset_process.md`](asset_process.md).
+
 Backend usage is in [`tools/asset_pipeline/README.md`](../tools/asset_pipeline/README.md). This covers what Godot and the repo checks do with an asset.
 
 ## Vertex colours
@@ -13,6 +15,20 @@ Copies the cleaned GLB to `build/asset_check/<slug>/` (git-ignored), imports it 
 ## `asset export <slug>`
 
 Needs a mesh that passed `asset check`. Writes to `assets/models/<slug>/`: `<slug>.glb`, `<slug>.glb.import`, `<slug>.tscn` (an instance of the GLB), `concept/` (locked concept as `locked.<ext>`, the turnaround views and `brief.md`, with a `.gdignore`; PNGs over 2048 px are shrunk, other formats over 2048 px are an error) and `asset.yaml`.
+
+## Kit parts: `asset import <slug> <export.gltf>`
+
+The `kit` class (build route `cad`) is for the sub's controls, which Tristan models in Onshape instead of generating (conventions: `assets/media/kit/README.md`). It has no concept, turnaround or to3d stage: those commands refuse a kit asset. The class profile has a triangle budget of about 1,500, a scale range of 0.01–0.3 m and no silhouette gate.
+
+`asset import <slug> <export.gltf> [--pivot <part name>] [--axis x|y|z] [--limits MIN MAX] [--control switch_lever|none] [--folder A/B]`:
+
+- creates the asset (class `kit`, folder `kit`) when the slug is new;
+- copies the export to `assets/media/kit/<slug>/<slug>.gltf` and runs the converter, `tools/asset_pipeline/asset_pipeline/blender/onshape_import_bpy.py`, in headless Blender (native or Docker, the same runner as `cleanup`). The origin goes to the centre of the back face, and the moving part goes under a `Pivot` node on its hinge with identity rotation;
+- snaps each material to the nearest entry of `assets/style_bible/kit_palette.yaml` (still to move onto the game palette, `docs/palette.md`) (powder grey, safety orange, black, LED), by the RGB value in the Onshape material name, and renames it by role; materials that snap to one role merge;
+- records a `mesh` lineage entry (`i1`, `i2`, …, provider `onshape`) whose `source` holds the export's path and SHA-256, plus an `imports` record (parts, triangles, size, materials, how Blender ran). A re-import adds a new entry;
+- records the moving part in the manifest's `pivots`: part name, axis, limits in degrees (default -40 40) and control. A `--pivot` that names no part of the export is an error that lists the parts.
+
+`check` and `godot-check` then work on the latest import, and `check` reads the size from the import and skips the silhouette gates. The first toggle has 4,606 triangles against the 1,500 budget, so `check` fails its `triangles` gate until the part is simplified or checked with `--triangle-budget`. `export` writes `assets/models/<folder>/<slug>/<slug>.glb`, its `.glb.import` (kept if present) and `<slug>.tscn`: the model, a `SwitchLever` with `swing_deg` (the span of the limits) and `pivot` set from the manifest, and a grab box on collision layer 2 sized to the part. Other control scripts are separate work. The Studio's Model tab has an **Import CAD…** button (kit class): it opens a file dialog for the glTF export, with a field for the pivot part name, and runs this command. For `kit` assets the Studio hides the Concept and Turnaround tabs and the 3D-provider controls.
 
 ## Folders and moves
 
@@ -36,6 +52,8 @@ Rename and delete are refused while another backend command is running on the as
 ## CLI progress
 
 **Reference images.** `asset concept <slug> --reference <image> [--reference …] [--mode paint-over|inspire]` hands your own images (a blockout render, a sketch; PNG, JPEG or WebP) to the image model with the style anchors. Paint-over (the default) keeps the reference's composition, camera, proportions and major shapes and restyles it, using the provider's edit path; inspire treats it as a loose starting point. References are copied, converted to PNG and scaled to the provider's input limit under `.asset_work/<slug>/references/`. With several references, `--n` variants are made per reference. Each variant's lineage records `reference: {name, sha256}` (original file name and content hash, never a path) and `mode`; `refine` of a paint-over variant re-passes the same reference. `--estimate` and the cost ledger count one generation per variant.
+
+**Presentation.** `asset concept <slug> --presentation subject|scene` (default `subject`). `subject` is the single-asset look for image-to-3D: one subject, centred, on a plain neutral dark-grey background, flat frontal light, no people. `scene` is for interiors and environment shots: the global presentation paragraph in `style.md` and the shared list in `negative.md` are swapped for the `## presentation_scene` section of each file. The scene rules keep the reference's camera, perspective and framing, put the full environment in frame, allow in-world light (cove lights, screens, holograms) but no bloom or lens effects, and allow people when the brief asks. A class may set `concept_presentation: scene` in `classes.yaml`; it applies when the flag is absent, and an explicit flag overrides it. Each concept variant's lineage records `presentation`, and `refine` inherits its variant's presentation (a variant from before the field counts as `subject`). `subject` prompts are byte-for-byte what they were before the flag existed. The `interior` class (the sub's inside, styled from the art direction's "The sub" and "Modern, not antiquated" sections) has build route `scripted` and defaults to `scene`. The Studio's Subject / Scene toggle is a separate arc.
 
 **Reference picker (Asset Studio, Concept tab).** *Add reference…* opens a file dialog for any PNG, JPEG or WebP on disk. Chosen references show as thumbnails with *Remove* buttons, and a Paint-over / Inspire toggle appears beside them. *Generate more* then passes `--reference` (once per image) and `--mode`; the picker clears when another asset is selected. Each variant card shows a small thumbnail of its reference (the stored copy under `.asset_work/<slug>/references/`, found from the lineage `sha256`), and the Lineage panel shows the reference and its mode. *Refine* does not use the picker: the backend re-passes the variant's own reference.
 

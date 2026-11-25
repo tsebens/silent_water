@@ -168,8 +168,8 @@ def code_commit(root: Path) -> str:
         return ""
 
 
-def script_digest() -> str:
-    return hashlib.sha256(SCRIPT.read_bytes()).hexdigest()
+def script_digest(script: Path = SCRIPT) -> str:
+    return hashlib.sha256(script.read_bytes()).hexdigest()
 
 
 def _run_streaming(cmd: list[str], timeout: float) -> tuple[int, str, str]:

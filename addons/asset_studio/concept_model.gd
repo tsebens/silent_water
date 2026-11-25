@@ -23,15 +23,27 @@ var in_flight: int = 0
 ## the image model should use them: "paint-over" or "inspire".
 var references: PackedStringArray = PackedStringArray()
 var reference_mode: String = "paint-over"
+## "subject" (one object on a plain ground) or "scene" (the full environment in frame). Preset
+## from the class's `concept_presentation` default on load_asset; the toggle overrides it.
+var presentation: String = "subject"
 
 const REFERENCE_SUFFIXES: PackedStringArray = ["png", "jpg", "jpeg", "webp"]
 const REFERENCE_MODES: PackedStringArray = ["paint-over", "inspire"]
+const PRESENTATIONS: PackedStringArray = ["subject", "scene"]
+## Classes that are never built as a single mesh from a turnaround, so the Turnaround and
+## 3D model tabs are hidden for them.
+const NO_BUILD_TABS_CLASSES: PackedStringArray = ["interior", "kit"]
+## Classes imported from CAD rather than generated: the Concept tab and the 3D-provider
+## controls are hidden too; the Model tab keeps its Import CAD… button.
+const CAD_CLASSES: PackedStringArray = ["kit"]
 
 
 func load_asset(asset: Dictionary, providers: Dictionary = {}, selected: Dictionary = {}) -> void:
 	slug = str(asset.get("slug", ""))
 	asset_class = str(asset.get("class", ""))
 	description = str(asset.get("description", ""))
+	var preset: String = str(asset.get("concept_presentation", "subject"))
+	presentation = preset if PRESENTATIONS.has(preset) else "subject"
 	_lineage = asset.get("lineage", [])
 	var locked_id: String = ""
 	var locked: Variant = asset.get("locked")
@@ -111,6 +123,26 @@ func remove_reference(index: int) -> void:
 func set_reference_mode(mode: String) -> void:
 	if REFERENCE_MODES.has(mode):
 		reference_mode = mode
+
+
+func set_presentation(value: String) -> void:
+	if PRESENTATIONS.has(value):
+		presentation = value
+
+
+## True for classes (interior) whose Turnaround and 3D model tabs are hidden.
+func hides_build_tabs() -> bool:
+	return NO_BUILD_TABS_CLASSES.has(asset_class)
+
+
+## True for classes imported from CAD (kit): no Concept tab, no 3D-provider controls.
+func hides_concept_and_to3d() -> bool:
+	return CAD_CLASSES.has(asset_class)
+
+
+## `--presentation <subject|scene>`. Only for new concepts: a refine keeps its variant's.
+func presentation_args() -> PackedStringArray:
+	return PackedStringArray(["--presentation", presentation])
 
 
 ## `--reference` per chosen image, then `--mode`; empty when none are chosen.
@@ -254,11 +286,13 @@ func refine_args(variant_id: String, notes: String, provider: String = "", write
 	return _with_writer(a, writer)
 
 
-func generate_more_args(n: int, provider: String = "", writer: String = "", with_references: bool = true) -> PackedStringArray:
+func generate_more_args(n: int, provider: String = "", writer: String = "", with_references: bool = true, with_presentation: bool = true) -> PackedStringArray:
 	var a: PackedStringArray = PackedStringArray(["concept", slug, "--n", str(maxi(n, 1))])
 	if provider != "":
 		a.append_array(PackedStringArray(["--image-provider", provider]))
 	a = _with_writer(a, writer)
+	if with_presentation:
+		a.append_array(presentation_args())
 	if with_references:
 		a.append_array(reference_args())
 	return a

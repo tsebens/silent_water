@@ -1,0 +1,10 @@
+[gd_resource type="StandardMaterial3D" script_class="RoleMaterial" format=3]
+
+[ext_resource type="Script" path="res://src/palette/role_material.gd" id="1_a3yjq"]
+
+[resource]
+resource_name = "infra_metal"
+metallic = 0.6
+roughness = 0.45
+script = ExtResource("1_a3yjq")
+swatch = &"infra_metal"

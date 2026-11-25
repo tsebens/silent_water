@@ -1,0 +1,10 @@
+[gd_resource type="StandardMaterial3D" script_class="RoleMaterial" format=3]
+
+[ext_resource type="Script" path="res://src/palette/role_material.gd" id="1_i78hb"]
+
+[resource]
+resource_name = "map_marker"
+emission_energy_multiplier = 1.6
+script = ExtResource("1_i78hb")
+swatch = &"info_black"
+glow = &"light_marker"

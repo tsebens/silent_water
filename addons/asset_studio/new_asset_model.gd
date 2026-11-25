@@ -4,7 +4,7 @@ extends RefCounted
 ## Validation here mirrors the backend's rules so the dialog can disable OK; the backend
 ## still has the last word and its errors are shown verbatim.
 
-const CLASSES: PackedStringArray = ["creature", "prop", "architecture", "terrain"]
+const CLASSES: PackedStringArray = ["creature", "prop", "architecture", "interior", "terrain"]
 
 var slug: String = ""
 var asset_class: String = "creature"

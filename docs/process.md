@@ -73,7 +73,8 @@ Checks the proposal against the concept and the design doc: fidelity, design con
 4. **Recovers orphaned claims** (before claiming, so a revert frees its in-flight slot first and `WORKER_CAP` is never exceeded). A `claimed` arc is an orphan if it has no open `arc/<n>-*` PR, its claim comment (the dispatcher's own, which names the run) is older than `ORPHAN_GRACE_MINUTES` (default 15; unrelated to `STALE_MINUTES`) and that development run is no longer queued or in progress (with no run URL in the comment, any live development run counts). The dispatcher logs it, swaps `claimed` for `ready` and comments naming the dead run, with a hidden marker (`dispatcher:orphan-reverted`). If the marker is already in the arc's comments, it was orphaned before: the arc gets `needs-human` and `tsebens` assigned instead of a second revert. No label is created. A failed run lookup counts as alive.
 5. **Claims.** First drops a stray `ready` from any arc already `claimed` or `in-review`. In-flight count = open arcs labeled `claimed` or `in-review` (a PR awaiting review or rework still occupies its slice of `dev`). While in-flight is below `WORKER_CAP` (repository variable, start at 2): take the oldest `ready` arc whose `Touches:` do not overlap any in-flight arc (prefix-directory match, except that `docs`, `tests`, `tests/unit` and the design doc are compared by exact path only, so `Touches:` names files there and folders under `src/`; an arc with no `Touches:` line counts as touching everything), swap `ready` for `claimed`, start `role-development.yml` with `gh workflow run`, and comment the run URL on the arc. If the run cannot be started, revert to `ready`.
 6. **Closes finished concepts.** Any open `concept` issue carrying `plan-approved` (and not `needs-human`) whose arcs, found by their `Concept: #<n>` line, are all closed is closed as completed; a concept with no arcs is never closed. This backstops the review agent's Accept step 4.
-7. **Projects labels onto the board**, first adding any arc, concept or `design` issue that is not yet a project item (plan review creates arcs without touching the board): arcs `blocked` → Backlog, `ready` → Ready, `claimed` → In progress, `in-review` → In review (or In progress while the PR carries `changes-requested`), closed → Done; concepts `plan-approved` → In progress, otherwise Backlog; open issues labelled `design` (draft concepts and `Design:` notes) → Backlog, closed → Done. Closed arcs also lose any stale state label. Items carrying `needs-human` are left where they are.
+   - **Closes finished milestones.** Any open milestone issue (title `M<n> · …`, not `needs-human`) with at least one sub-issue, all of them closed, is closed as completed once the last sub-issue has been closed for `MILESTONE_QUIET_HOURS` (default 24). The quiet period keeps a milestone that is still receiving arcs open between two of them. A closed milestone that gets new work is reopened by whoever files that work (the head developer, when the concept is written), since plan review only places arcs under open milestones.
+7. **Projects labels onto the board**, first adding any arc, concept or `design` issue that is not yet a project item (plan review creates arcs without touching the board): arcs `blocked` → Backlog, `ready` → Ready, `claimed` → In progress, `in-review` → In review (or In progress while the PR carries `changes-requested`), closed → Done; concepts `plan-approved` → In progress, otherwise Backlog; open issues labelled `design` (draft concepts and `Design:` notes) → Backlog, closed → Done; closed milestones → Done. Closed arcs also lose any stale state label. Items carrying `needs-human` are left where they are.
 8. **Logs anomalies**: an arc PR that has carried `changes-requested` for 30+ minutes with no rework run clearing it.
 
 The dispatcher is the only thing that starts builds: `ready` is a queue marker, not a trigger.
@@ -102,6 +103,17 @@ Read-only on the pipeline. Gathers every workflow run since the last audit (conc
 
 The cron runs hourly as a floor; a shell gate enforces the real interval from `vars.PIPELINE_REVIEW_INTERVAL` (a schedule cannot read variables) and skips when no run, issue or PR has changed since the watermark.
 
+## Asset concepts
+
+Mechanical assets (controls, panels, furniture, stations) are built by the same pipeline, with one spec on top of this one: [`asset_process.md`](asset_process.md). In short:
+
+- A station enters as a concept issue whose body is a **station brief** (template `.github/ISSUE_TEMPLATE/station_brief.md`): concept images committed to the repo, an authoritative list of functions, and what the review may and may not compare against the art.
+- The organization agent scans the asset library (`cadkit catalogue`), breaks the whole station down at once, and proposes one arc per new scene, one ordinary development arc per new control behaviour, and a final assembly arc. `Blocked by:` chains are the recursion: leaves build first.
+- **Tristan approves the breakdown before any arc exists.** When a brief's breakdown passes plan review, the agent posts `## Plan review: ready for approval` and applies `needs-human`. Tristan approves by removing `needs-human` and re-applying `plan-proposed`; the plan-review agent then creates the arcs. To send it back he comments, removes `needs-human` and applies `plan-rejected`. This is the existing `needs-human` convention, not a new state.
+- The development agent builds each scene with `cadkit` (a parametric CAD script, geometric checks, a Godot test, committed review renders). CI runs `cadkit verify`, so generated files that are stale or hand-edited fail.
+- The review agent judges the look from the committed renders and, for a station, compares them with the concept art on the brief's terms. It merges without a further human gate. Tristan's feedback after a merge is a short follow-up concept.
+- Roles that work with assets get the cadkit environment on their runner (`.github/actions/setup-cadkit`); the development role also gets Xvfb and a software Vulkan driver for rendering.
+
 ## Issues and labels
 
 ### Issue kinds
@@ -109,7 +121,8 @@ The cron runs hourly as a floor; a shell gate enforces the real interval from `v
 | Kind | Title | Label | Created by | Parent |
 | --- | --- | --- | --- | --- |
 | Concept | Free-form, usually `Concept: …` | `concept` | Head developer | None |
-| Milestone | `M<n> · <name>` | none | Tristan or head developer | None |
+| Station brief | `Concept: <station>`; the body is a brief (`asset_process.md`) | `concept` | Head developer | None |
+| Milestone | `M<n> · <name>` | none | Tristan or head developer. Closed by the dispatcher once every sub-issue is closed (after a quiet period); reopened by whoever files new work under it | None |
 | Arc | `M<n>.<k> · <name>` (`<k>` assigned by plan review at creation) | `arc` | Plan-review agent (or the head developer for a shakedown) | Its milestone |
 | Design note | `Design: …` | `design` | Head developer | None |
 | Decision | `Decision: …` | `decision` | Anyone | None |
@@ -143,13 +156,15 @@ Every workflow fires on a label being **added**; a label already present fires n
 
 The dispatcher is the only writer of board Status. Agents never update the board; Tristan may, and the dispatcher mirrors a manual move to Ready back onto the `ready` label.
 
-| Board Status | Concept | Arc |
-| --- | --- | --- |
-| Backlog | Awaiting breakdown or plan review; any open `design` issue (draft concept or `Design:` note) | `blocked` |
-| Ready | Not used | `ready` |
-| In progress | `plan-approved`, arcs in flight | `claimed`, or `in-review` with `changes-requested` on the PR |
-| In review | Not used | `in-review`, PR awaiting CI or review |
-| Done | Closed | Closed |
+**Ready holds arcs only.** It is the dispatcher's queue: an arc there is claimed and built. For anything else the column means nothing to automation, so an issue that is not an arc sitting in Ready only looks like stalled work. Work that needs a person (a playtest, files only Tristan has, a decision) stays in **Backlog** with that person assigned until it is done; a milestone's own card stays in Backlog or In progress and goes to Done when the dispatcher closes it.
+
+| Board Status | Concept | Arc | Milestone, human task |
+| --- | --- | --- | --- |
+| Backlog | Awaiting breakdown or plan review; any open `design` issue (draft concept or `Design:` note) | `blocked` | Open; a human task carries its assignee |
+| Ready | Not used | `ready` | Not used |
+| In progress | `plan-approved`, arcs in flight | `claimed`, or `in-review` with `changes-requested` on the PR | A milestone with arcs in flight (set by hand) |
+| In review | Not used | `in-review`, PR awaiting CI or review | Not used |
+| Done | Closed | Closed | Closed |
 
 ## State machine
 
@@ -169,6 +184,8 @@ concept added ─► organization agent ─► plan-proposed ─► plan-review 
                             ▼                               ▼
                      plan-rejected (×2) → needs-human  plan-approved
 ```
+
+A concept that carries a station brief has one more stop: a passing plan goes to `needs-human` (`## Plan review: ready for approval`) instead of `plan-approved`, and Tristan's re-applying `plan-proposed` sends it back through plan review, which then creates the arcs ([`asset_process.md`](asset_process.md), 6.3). His `plan-rejected` does not count toward the two-rejection cap.
 
 ### Arc
 

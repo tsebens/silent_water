@@ -136,6 +136,7 @@ This is the highest-risk system. Prototype several versions.
 
 - **Terrain is always known** from the expedition ship's pre-dive survey and shown at the charts station or pin-table. Sonar adds what moves: creatures, vents and objectives.
 - **Passive (default)** is a listening job. The operator hears directional audio in their headphones and turns the hydrophone to locate sounds. It is vague and silent, and only the operator hears it.
+- **Pointing the hydrophone:** a desk trackball on the sonar console, rolled sideways to swing the bearing (decided in #349; the earlier handwheel felt clunky against the modern sub). The handwheel assets stay in the repo.
 - **Bearing display:** the sonar station's main bezel shows a non-interactive heading-up hologram of the chart with a cone on the current hydrophone bearing and fading blobs where the operator has marked contacts. It is a memory aid for the operator, not a sonar picture.
 - **Active** pings paint a 3D cloud of points that fades over a few seconds, similar to Scanner Sombre. It is clear but loud, and gives the sub away.
 - **Wide or narrow:** a wide ping is blurry and announces you everywhere; a narrow beam is sharper and quieter but shows only a slice.

@@ -17,6 +17,16 @@ var flicker: Dictionary = {}
 
 var _base: Dictionary = {}
 
+## Stealth (red light) mode: cabin lights take `light_stealth_red` instead of `light_cabin`.
+var stealth: bool = false:
+	set(v):
+		stealth = v
+		for l: Light3D in cabin_lights():
+			for c: Node in l.get_children():
+				var pl: PaletteLight = c as PaletteLight
+				if pl != null:
+					pl.stealth = v
+
 
 func _ready() -> void:
 	add_to_group(&"cabin_lights")

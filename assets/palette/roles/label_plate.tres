@@ -1,0 +1,10 @@
+[gd_resource type="StandardMaterial3D" script_class="RoleMaterial" format=3]
+
+[ext_resource type="Script" path="res://src/palette/role_material.gd" id="1_pykhf"]
+
+[resource]
+resource_name = "label_plate"
+metallic = 0.7
+roughness = 0.4
+script = ExtResource("1_pykhf")
+swatch = &"sub_aluminium"

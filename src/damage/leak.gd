@@ -32,6 +32,7 @@ func _init() -> void:
 
 func _ready() -> void:
 	super._ready()
+	_colour_spray()
 	_hiss = AudioStreamPlayer3D.new()
 	_hiss.stream = ProceduralSounds.hiss()
 	_hiss.unit_size = SubAudio.UNIT_SIZE
@@ -39,6 +40,15 @@ func _ready() -> void:
 	_hiss.pitch_scale = 1.4
 	add_child(_hiss)
 	set_open(false)
+
+
+## The spray is alarm-coloured: an open leak is an emergency (palette swatch `light_alarm`).
+func _colour_spray() -> void:
+	if spray == null or spray.mesh == null:
+		return
+	var m: StandardMaterial3D = spray.mesh.material as StandardMaterial3D
+	if m != null:
+		m.albedo_color = Color(Palette.main().color(&"light_alarm"), 0.6)
 
 
 func set_open(open: bool) -> void:

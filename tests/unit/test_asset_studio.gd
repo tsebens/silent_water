@@ -141,7 +141,7 @@ func test_action_arguments() -> void:
 		PackedStringArray(["concept", "angler", "--refine", "v2", "--notes", "more teeth", "--image-provider", "openai"])
 	)
 	expect(c.refine_args("v2", "  ").is_empty(), "refine without notes builds no command")
-	expect_eq(c.generate_more_args(3, "fal"), PackedStringArray(["concept", "angler", "--n", "3", "--image-provider", "fal"]))
+	expect_eq(c.generate_more_args(3, "fal"), PackedStringArray(["concept", "angler", "--n", "3", "--image-provider", "fal", "--presentation", "subject"]))
 
 
 func test_prompt_writer_is_passed_on_generate_refine_and_brief() -> void:
@@ -150,7 +150,7 @@ func test_prompt_writer_is_passed_on_generate_refine_and_brief() -> void:
 	c.load_asset((l["assets"] as Array)[0] as Dictionary, {"prompt_writer": ["mock", "claude-cli"]}, {"prompt_writer": "claude-cli"})
 	expect_eq(c.prompt_writers.size(), 2)
 	expect_eq(c.default_writer, "claude-cli")
-	expect_eq(c.generate_more_args(3, "", "claude-cli"), PackedStringArray(["concept", "angler", "--n", "3", "--prompt-writer", "claude-cli"]))
+	expect_eq(c.generate_more_args(3, "", "claude-cli"), PackedStringArray(["concept", "angler", "--n", "3", "--prompt-writer", "claude-cli", "--presentation", "subject"]))
 	expect_eq(
 		c.refine_args("v2", "more teeth", "fal", "mock"),
 		PackedStringArray(["concept", "angler", "--refine", "v2", "--notes", "more teeth", "--image-provider", "fal", "--prompt-writer", "mock"])
@@ -915,18 +915,19 @@ func test_reference_list_builds_backend_args() -> void:
 	expect(not c.add_reference("/home/me/notes.txt"), "only PNG, JPEG and WebP")
 	expect_eq(c.references.size(), 2)
 	expect_eq(c.generate_more_args(3, "fal"), PackedStringArray([
-		"concept", "angler", "--n", "3", "--image-provider", "fal",
+		"concept", "angler", "--n", "3", "--image-provider", "fal", "--presentation", "subject",
 		"--reference", "/home/me/sketch.PNG", "--reference", "/home/me/photo.webp", "--mode", "paint-over"]))
 	c.set_reference_mode("inspire")
 	c.set_reference_mode("bogus")
 	expect_eq(c.reference_mode, "inspire")
 	c.remove_reference(0)
 	expect_eq(c.generate_more_args(2), PackedStringArray([
-		"concept", "angler", "--n", "2", "--reference", "/home/me/photo.webp", "--mode", "inspire"]))
-	expect_eq(c.generate_more_args(2, "", "", false), PackedStringArray(["concept", "angler", "--n", "2"]))
+		"concept", "angler", "--n", "2", "--presentation", "subject", "--reference", "/home/me/photo.webp", "--mode", "inspire"]))
+	expect_eq(c.generate_more_args(2, "", "", false), PackedStringArray(["concept", "angler", "--n", "2", "--presentation", "subject"]))
+	expect_eq(c.generate_more_args(2, "", "", false, false), PackedStringArray(["concept", "angler", "--n", "2"]))
 	c.remove_reference(5)
 	c.remove_reference(0)
-	expect_eq(c.generate_more_args(1), PackedStringArray(["concept", "angler", "--n", "1"]))
+	expect_eq(c.generate_more_args(1), PackedStringArray(["concept", "angler", "--n", "1", "--presentation", "subject"]))
 	c.references = PackedStringArray(["/a.png"])
 	expect(c.refine_args("v1", "more teeth").has("--reference") == false, "a refine keeps its own reference")
 
@@ -944,3 +945,55 @@ func test_variant_cards_expose_their_reference() -> void:
 	expect_eq(c.variant("v1")["mode"], "paint-over")
 	expect(c.variant("v2")["reference"].is_empty(), "no reference when the manifest has none")
 	expect_eq(c.lineage_of("v1")[0]["reference"]["name"], "sketch.png")
+
+
+func test_presentation_toggle_builds_backend_args_and_presets_from_class() -> void:
+	var c: AssetConceptModel = AssetConceptModel.new()
+	c.load_asset({"slug": "cab", "class": "interior", "concept_presentation": "scene"})
+	expect_eq(c.presentation, "scene")
+	expect_eq(c.generate_more_args(2), PackedStringArray(["concept", "cab", "--n", "2", "--presentation", "scene"]))
+	c.set_presentation("subject")
+	c.set_presentation("bogus")
+	expect_eq(c.presentation, "subject")
+	expect_eq(c.generate_more_args(1), PackedStringArray(["concept", "cab", "--n", "1", "--presentation", "subject"]))
+	expect(not c.refine_args("v1", "more light").has("--presentation"), "a refine keeps its variant's presentation")
+	c.load_asset({"slug": "cab", "class": "interior", "concept_presentation": "scene"})
+	expect_eq(c.presentation, "scene", "loading re-presets from the class default")
+	c.load_asset({"slug": "eel", "class": "creature"})
+	expect_eq(c.presentation, "subject", "no class default means subject")
+
+
+func test_interior_hides_build_tabs_and_architecture_does_not() -> void:
+	var c: AssetConceptModel = AssetConceptModel.new()
+	c.load_asset({"slug": "cab", "class": "interior"})
+	expect(c.hides_build_tabs())
+	c.load_asset({"slug": "wall", "class": "architecture"})
+	expect(not c.hides_build_tabs(), "architecture is unchanged")
+	c.load_asset({"slug": "eel", "class": "creature"})
+	expect(not c.hides_build_tabs())
+
+
+func test_import_model_builds_args() -> void:
+	var m: AssetImportModel = AssetImportModel.new()
+	m.open("toggle")
+	expect(m.import_args().is_empty(), "no export chosen")
+	m.export_path = "/tmp/toggle.gltf"
+	expect_eq(m.import_args(), PackedStringArray(["import", "toggle", "/tmp/toggle.gltf"]))
+	m.pivot = " Lever "
+	expect_eq(m.import_args(), PackedStringArray(["import", "toggle", "/tmp/toggle.gltf", "--pivot", "Lever"]))
+	m.export_path = "/tmp/toggle.step"
+	expect(m.import_args().is_empty(), "not a glTF")
+	m.open("")
+	m.export_path = "/tmp/a.glb"
+	expect(m.import_args().is_empty(), "no asset selected")
+
+
+func test_kit_hides_concept_turnaround_and_to3d() -> void:
+	var c: AssetConceptModel = AssetConceptModel.new()
+	c.load_asset({"slug": "toggle", "class": "kit"})
+	expect(c.hides_build_tabs(), "turnaround and model build tabs")
+	expect(c.hides_concept_and_to3d(), "concept tab and 3D controls")
+	c.load_asset({"slug": "cab", "class": "interior"})
+	expect(not c.hides_concept_and_to3d(), "interior keeps the concept tab")
+	c.load_asset({"slug": "eel", "class": "creature"})
+	expect(not c.hides_concept_and_to3d())

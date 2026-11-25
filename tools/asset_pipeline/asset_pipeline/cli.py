@@ -3,20 +3,22 @@ from __future__ import annotations
 
 import argparse
 import getpass
+import hashlib
 import json
 import os
 import shutil
 import sys
 import time
 from contextlib import contextmanager
+from dataclasses import asdict
 from pathlib import Path
 from typing import Any
 
 import yaml
 
-from . import check, cleanup, cost, doctor, folders, godot_stage, paths, providers, references, trash
+from . import check, cleanup, cost, doctor, folders, godot_stage, kit_import, paths, providers, references, trash
 from .manifest import (CLASSES, DECISIONS, BriefRecord, CheckRecord, CleanupRecord, ExportRecord, GodotCheckRecord,
-                       LineageEntry, Manifest)
+                       ImportRecord, LineageEntry, Manifest, PivotRecord)
 from .writers import PromptWriterError
 
 VIEWS = check.VIEWS  # the four views every turnaround has
@@ -40,6 +42,36 @@ def style_dir(root: Path) -> Path:
 def read_block(root: Path, name: str) -> str:
     f = style_dir(root) / name
     return f.read_text().strip() if f.is_file() else ""
+
+
+SCENE_HEADING = "## presentation_scene"
+PRESENTATIONS = ("subject", "scene")
+DEFAULT_PRESENTATION = "subject"
+
+
+def split_scene(text: str) -> tuple[str, str]:
+    """Split a style-bible file into (the shared text, the `## presentation_scene` section), both stripped.
+    Without the section the second part is empty and the first is the whole file."""
+    head: list[str] = []
+    scene: list[str] = []
+    cur = head
+    for line in text.splitlines():
+        if line.startswith("## "):
+            cur = scene if line.strip().lower() == SCENE_HEADING else head
+            if cur is scene:
+                continue
+        cur.append(line)
+    return "\n".join(head).strip(), "\n".join(scene).strip()
+
+
+def class_presentation(root: Path, asset_class: str) -> str:
+    """The class's `concept_presentation` in classes.yaml, or `subject`."""
+    cf = style_dir(root) / "classes.yaml"
+    prof = ((yaml.safe_load(cf.read_text()) or {}).get("classes", {}).get(asset_class) or {}) if cf.is_file() else {}
+    val = prof.get("concept_presentation", DEFAULT_PRESENTATION)
+    if val not in PRESENTATIONS:
+        raise ValueError(f"classes.yaml: {asset_class} concept_presentation must be one of {list(PRESENTATIONS)}, got {val!r}")
+    return val
 
 
 def anchors_for(root: Path, asset_class: str) -> list[Path]:
@@ -75,23 +107,52 @@ def class_section(root: Path, asset_class: str, heading: str) -> str:
     return "\n".join(out).strip()
 
 
-def style_block(root: Path, asset_class: str) -> str:
+def shared_style(root: Path, presentation: str) -> str:
+    """style.md. For `scene`, its Presentation paragraph is replaced by the `presentation_scene` section."""
+    main, scene = split_scene(read_block(root, "style.md"))
+    if presentation != "scene" or not scene:
+        return main
+    paras = [p for p in main.split("\n\n") if not p.startswith("Presentation:")]
+    return "\n\n".join(paras + [scene])
+
+
+def shared_negative(root: Path, presentation: str) -> str:
+    """negative.md. For `scene`, the `presentation_scene` section replaces the whole shared list."""
+    main, scene = split_scene(read_block(root, "negative.md"))
+    return scene if presentation == "scene" and scene else main
+
+
+def style_block(root: Path, asset_class: str, presentation: str = DEFAULT_PRESENTATION) -> str:
     """Shared style, then the class style."""
-    return "\n\n".join(x for x in (read_block(root, "style.md"), class_section(root, asset_class, "Style")) if x)
+    return "\n\n".join(x for x in (shared_style(root, presentation), class_section(root, asset_class, "Style")) if x)
 
 
-def negative_block(root: Path, asset_class: str) -> str:
+def negative_block(root: Path, asset_class: str, presentation: str = DEFAULT_PRESENTATION) -> str:
     """Shared negative list, then the class's Avoid list."""
-    return "\n".join(x for x in (read_block(root, "negative.md"), class_section(root, asset_class, "Avoid")) if x)
+    return "\n".join(x for x in (shared_negative(root, presentation), class_section(root, asset_class, "Avoid")) if x)
 
 
-def full_prompt(root: Path, asset_class: str, body: str) -> str:
+def full_prompt(root: Path, asset_class: str, body: str, presentation: str = DEFAULT_PRESENTATION) -> str:
     """Shared style, class style, the writer's prompt, shared negative, class negative."""
-    neg = negative_block(root, asset_class)
-    parts = [style_block(root, asset_class), body]
+    neg = negative_block(root, asset_class, presentation)
+    parts = [style_block(root, asset_class, presentation), body]
     if neg:
         parts.append("Avoid:\n" + neg)
     return "\n\n".join(x for x in parts if x)
+
+
+def is_cad(root: Path, asset_class: str) -> bool:
+    """True for a class on the `cad` route (kit): modelled outside the pipeline and brought in with `asset import`."""
+    try:
+        return cleanup.class_profile(root, asset_class).get("build_route") == "cad"
+    except ValueError:
+        return False
+
+
+def refuse_cad(root: Path, m: Manifest, stage: str) -> None:
+    if is_cad(root, m.asset_class):
+        raise ValueError(f"{m.slug!r} is a {m.asset_class} asset (cad route): it is modelled in CAD and brought in with "
+                         f"`asset import`, so it has no {stage} stage")
 
 
 @contextmanager
@@ -112,6 +173,7 @@ def _ledger_guard(mpath: Path, m: Manifest):
 def cmd_concept(args: argparse.Namespace, root: Path) -> dict[str, Any]:
     mpath = paths.manifest_path(root, args.slug)
     m = Manifest.load(mpath)
+    refuse_cad(root, m, "concept")
     if args.brief is not None:
         m.description = args.brief
     if args.refine and not args.notes:
@@ -131,6 +193,7 @@ def cmd_concept(args: argparse.Namespace, root: Path) -> dict[str, Any]:
     mode = args.mode or (references.DEFAULT_MODE if args.reference else None)
     if args.mode and not args.reference:
         raise ValueError("--mode needs --reference")
+    presentation = args.presentation or class_presentation(root, m.asset_class)
     if args.refine and args.reference:
         raise ValueError("--reference does not combine with --refine: a refine keeps its variant's reference")
     refs_in: list[references.Reference] = []
@@ -139,6 +202,8 @@ def cmd_concept(args: argparse.Namespace, root: Path) -> dict[str, Any]:
         if parent.kind != "concept":
             raise ValueError(f"{args.refine!r} is a {parent.kind}, only concept variants can be refined")
         base.append(abspath(root, parent.path))
+        if not args.presentation:  # a refine keeps its variant's presentation
+            presentation = parent.presentation or DEFAULT_PRESENTATION  # older variants were subject shots
         if parent.reference and parent.mode == "paint-over":  # keep the geometry the parent was painted over
             mode = parent.mode
             refs_in = [references.load_stored(root, args.slug, parent.reference)]
@@ -156,14 +221,14 @@ def cmd_concept(args: argparse.Namespace, root: Path) -> dict[str, Any]:
             try:
                 bodies = cost.paid_call(
                     m, writer, "prompt_writer", prices, command="concept", stage=stage,
-                    fn=lambda: writer.write_prompts(m.description, style_block(root, m.asset_class), args.notes or "",
+                    fn=lambda: writer.write_prompts(m.description, style_block(root, m.asset_class, presentation), args.notes or "",
                                                     writer_images, args.n, mode=mode if ref else None))
             except PromptWriterError as e:
                 raise ValueError(f"prompt writer failed: {e}") from e
             for i, body in enumerate(bodies, 1):
                 progress(f"image {i}/{len(bodies)} ({img.name})…")
                 vid = next_id(m, "v")
-                prompt = full_prompt(root, m.asset_class, body)
+                prompt = full_prompt(root, m.asset_class, body, presentation)
                 rel = (out_dir / f"{vid}.png").relative_to(root)
                 if ref and mode == "paint-over":
                     sent = [ref.path, *base]
@@ -175,8 +240,9 @@ def cmd_concept(args: argparse.Namespace, root: Path) -> dict[str, Any]:
                 m.add(LineageEntry(id=vid, kind="concept", path=rel.as_posix(), provider=img.name, model=img.model,
                                    prompt=prompt, parent=parent.id if parent else None,
                                    writer=f"{writer.name}:{writer.model}", references=[_rel(root, r) for r in sent],
-                                   reference=ref.record() if ref else {}, mode=mode if ref else ""))
+                                   reference=ref.record() if ref else {}, mode=mode if ref else "", presentation=presentation))
                 made.append({"id": vid, "path": rel.as_posix(), "parent": parent.id if parent else None,
+                             "presentation": presentation,
                              **({"reference": ref.record(), "mode": mode} if ref else {})})
     if m.stage in ("new", "concept"):
         m.stage = "concept"
@@ -208,6 +274,7 @@ def class_views(root: Path, asset_class: str) -> list[str]:
 def cmd_turnaround(args: argparse.Namespace, root: Path) -> dict[str, Any]:
     mpath = paths.manifest_path(root, args.slug)
     m = Manifest.load(mpath)
+    refuse_cad(root, m, "turnaround")
     if m.locked is None:
         raise ValueError("no locked concept: run `asset lock` first")
     src = m.entry(m.locked.variant)
@@ -274,6 +341,7 @@ def _turnaround_views(args, root, m, img, src, src_path, out_dir, n, only, prev,
 def cmd_brief(args: argparse.Namespace, root: Path) -> dict[str, Any]:
     mpath = paths.manifest_path(root, args.slug)
     m = Manifest.load(mpath)
+    refuse_cad(root, m, "brief")
     if m.locked is None:
         raise ValueError("no locked concept: run `asset lock` first")
     locked = m.entry(m.locked.variant)
@@ -373,6 +441,7 @@ def cmd_to3d(args: argparse.Namespace, root: Path) -> dict[str, Any]:
     A provider that fails is reported under `errors` and does not stop the others."""
     mpath = paths.manifest_path(root, args.slug)
     m = Manifest.load(mpath)
+    refuse_cad(root, m, "to3d")
     tid = _latest_turnaround(m)
     by_view = {e.id[len(tid):]: e for e in m.lineage if e.kind == "turnaround" and e.id.startswith(tid)}
     if not by_view:
@@ -435,6 +504,7 @@ def cmd_cleanup(args: argparse.Namespace, root: Path) -> dict[str, Any]:
     """Clean a raw mesh (a `mesh` lineage entry from `to3d`) with the class profile's recipe, in headless Blender."""
     mpath = paths.manifest_path(root, args.slug)
     m = Manifest.load(mpath)
+    refuse_cad(root, m, "cleanup")
     src = m.entry(args.source)
     if src.kind != "mesh":
         raise ValueError(f"{args.source!r} is a {src.kind}, cleanup needs a mesh run (see `asset to3d`)")
@@ -481,25 +551,22 @@ def cmd_check(args: argparse.Namespace, root: Path) -> dict[str, Any]:
     fails; the failing gates are listed and recorded in the manifest."""
     mpath = paths.manifest_path(root, args.slug)
     m = Manifest.load(mpath)
-    if args.source:
-        src = m.entry(args.source)
-    elif m.cleanups:
-        src = m.entry(m.cleanups[-1].id)
-    else:
-        raise ValueError("nothing to check: run `asset cleanup` first, or pass --source <mesh id>")
-    if src.kind != "mesh":
-        raise ValueError(f"{src.id!r} is a {src.kind}, check needs a mesh")
+    src = _pick_mesh(m, args.source)
     profile = cleanup.class_profile(root, m.asset_class)
+    cad = profile.get("build_route") == "cad"
     brief = abspath(root, m.brief.path) if m.brief else None
+    imported = next((r for r in m.imports if r.id == src.id), None)
     if args.size_m is not None:
         size_m, size_from = args.size_m, "--size-m"
+    elif imported is not None:
+        size_m, size_from = imported.size_m, "import"
     else:
         size_m, size_from = cleanup.brief_size_m(brief, profile)
     budget = args.triangle_budget or profile["triangle_budget"]
     prefix = _latest_turnaround(m)
     views = {v: abspath(root, e.path) for v in ALL_VIEWS for e in m.lineage if e.id == f"{prefix}{v}"}
     mesh = check.load_mesh(abspath(root, src.path))
-    gates = check.run_gates(mesh, profile, size_m, size_from, budget, views)
+    gates = check.run_gates(mesh, profile, size_m, size_from, budget, views, silhouettes=not cad)
     failed = [g["name"] for g in gates if not g["ok"]]
     rel = (paths.asset_dir(root, args.slug) / "checks" / f"{src.id}.json").relative_to(root)
     report = {"slug": m.slug, "class": m.asset_class, "mesh": src.id, "mesh_path": src.path,
@@ -517,13 +584,16 @@ def cmd_check(args: argparse.Namespace, root: Path) -> dict[str, Any]:
 
 
 def _pick_mesh(m: Manifest, source: str | None) -> LineageEntry:
-    """The mesh to import or export: --source, else the latest cleanup."""
+    """The mesh to check, import into Godot or export: --source, else the latest import (a kit part) or cleanup."""
     if source:
         src = m.entry(source)
+    elif m.imports:
+        src = m.entry(m.imports[-1].id)
     elif m.cleanups:
         src = m.entry(m.cleanups[-1].id)
     else:
-        raise ValueError("nothing to use: run `asset cleanup` first, or pass --source <mesh id>")
+        raise ValueError("nothing to use: run `asset cleanup` (or `asset import` for a kit part) first, "
+                         "or pass --source <mesh id>")
     if src.kind != "mesh":
         raise ValueError(f"{src.id!r} is a {src.kind}, this needs a mesh")
     return src
@@ -569,14 +639,19 @@ def cmd_export(args: argparse.Namespace, root: Path) -> dict[str, Any]:
     imp.write_text(godot_stage.import_stub(res_dir, m.slug))
     put(imp)
     scene = out / f"{m.slug}.tscn"
-    scene.write_text(godot_stage.tscn(m.slug, res_dir))
+    cad = is_cad(root, m.asset_class)
+    if cad:
+        scene.write_text(_kit_scene(m, src, res_dir, glb))
+    else:
+        scene.write_text(godot_stage.tscn(m.slug, res_dir))
     put(scene)
-    concept = out / "concept"
-    concept.mkdir(parents=True, exist_ok=True)
-    (concept / ".gdignore").write_text("")
-    put(concept / ".gdignore")
     resized: list[str] = []
-    if m.locked is not None:
+    if not cad:  # a kit part has no concept art to commit
+        concept = out / "concept"
+        concept.mkdir(parents=True, exist_ok=True)
+        (concept / ".gdignore").write_text("")
+        put(concept / ".gdignore")
+    if m.locked is not None and not cad:
         lp = abspath(root, m.entry(m.locked.variant).path)
         dst = concept / f"locked{lp.suffix.lower()}"
         if godot_stage.downscale_png(lp, dst):
@@ -598,11 +673,89 @@ def cmd_export(args: argparse.Namespace, root: Path) -> dict[str, Any]:
             "files": sorted(files), "resized": resized}
 
 
+def _kit_scene(m: Manifest, src: LineageEntry, res_dir: str, glb: Path) -> str:
+    """The Godot scene of a kit part: its moving part and control script come from the manifest."""
+    pivot = m.pivots[0] if m.pivots else None
+    imported = next((r for r in m.imports if r.id == src.id), None)
+    if pivot is not None and imported is not None and pivot.part not in imported.parts:
+        raise ValueError(f"the manifest's pivot {pivot.part!r} is not a part of {src.id!r}")
+    return kit_import.scene_text(m.slug, res_dir, glb, pivot.part if pivot else None,
+                                 pivot.limits_deg if pivot else None, pivot.control if pivot else "none")
+
+
 def _latest_turnaround(m: Manifest) -> str:
     ids = [e.id for e in m.lineage if e.kind == "turnaround"]
     if not ids:
         return "t0_"
     return max((i.split("_")[0] for i in ids), key=lambda x: int(x[1:])) + "_"
+
+
+def cmd_import(args: argparse.Namespace, root: Path) -> dict[str, Any]:
+    """Bring an Onshape glTF export of a kit part in: copy it to assets/media/kit/<slug>/, convert it in Blender,
+    snap its materials to the kit palette, and record a `mesh` lineage entry carrying the export's hash. The asset is
+    created (class kit) when it does not exist; a re-import adds a new mesh entry."""
+    export = Path(args.export).resolve()
+    if not export.is_file():
+        raise ValueError(f"no such file: {args.export}")
+    if export.suffix.lower() not in (".gltf", ".glb"):
+        raise ValueError(f"{export.name}: an Onshape export is a .gltf (or .glb) file")
+    parts = kit_import.part_names(export)
+    kit_import.check_pivot(args.pivot, parts, export.name)
+    limits = [float(x) for x in (args.limits if args.limits is not None else (-40.0, 40.0))]
+    control = args.control or ("switch_lever" if args.pivot else "none")
+    kit_import.check_pivot_fields(args.axis, limits, control)
+    if control != "none" and not args.pivot:
+        raise ValueError(f"--control {control} needs --pivot <part name>")
+    mpath = paths.manifest_path(root, args.slug)
+    if mpath.is_file():
+        m = Manifest.load(mpath)
+    else:
+        folder = paths.check_folder(args.folder)
+        mpath = paths.folder_dir(root, folder) / args.slug / "asset.yaml"
+        m = Manifest(slug=args.slug, asset_class="kit", issue=args.issue, description=(args.description or "").strip())
+    if not is_cad(root, m.asset_class):
+        raise ValueError(f"{m.slug!r} is a {m.asset_class} asset: `asset import` is for the cad route (class kit)")
+    profile = cleanup.class_profile(root, m.asset_class)
+    palette = kit_import.load_palette(root)
+    media = root / kit_import.MEDIA_DIR / m.slug
+    copy = media / f"{m.slug}{export.suffix.lower()}"
+    k = 1
+    while any(e.id == f"i{k}" for e in m.lineage):
+        k += 1
+    iid = f"i{k}"
+    rel = (paths.work_dir(root, m.slug) / "import" / f"{iid}.glb").relative_to(root)
+    digest = hashlib.sha256(export.read_bytes()).hexdigest()
+    media.mkdir(parents=True, exist_ok=True)
+    if export != copy.resolve():
+        shutil.copyfile(export, copy)
+        for extra in kit_import.external_files(export):
+            (media / extra).parent.mkdir(parents=True, exist_ok=True)
+            shutil.copyfile(export.parent / extra, media / extra)
+    progress(f"converting {copy.name} in Blender…")
+    result = kit_import.run_converter(root, copy, root / rel, args.pivot)
+    glb = root / rel
+    if args.pivot:
+        kit_import.find_pivot(glb, args.pivot)
+    mapping = kit_import.snap_materials(glb, palette)
+    size = kit_import.measure(glb)
+    lo, hi = profile["scale_range_m"]
+    if not lo <= size["size_m"] <= hi:
+        raise ValueError(f"the part is {size['size_m']:.3f} m across, outside the {m.asset_class} scale range "
+                         f"[{lo:g}, {hi:g}] m: check the units of the Onshape export")
+    src_rel = paths.posix_rel(root, copy)
+    m.add(LineageEntry(id=iid, kind="mesh", path=rel.as_posix(), provider="onshape", model=export.suffix.lstrip(".").lower(),
+                       source={"path": src_rel, "sha256": digest}))
+    m.imports.append(ImportRecord(id=iid, source=src_rel, sha256=digest, parts=parts, pivot=args.pivot or "",
+                                  size_m=round(size["size_m"], 5), triangles=size["triangles"], materials=mapping,
+                                  commit=cleanup.code_commit(root), script_sha256=result.get("script_sha256", ""),
+                                  blender=result.get("blender_version", ""), runner=result.get("runner", ""),
+                                  image=result.get("image", "")))
+    m.set_pivots([PivotRecord(part=args.pivot, axis=args.axis, limits_deg=limits, control=control)] if args.pivot else [])
+    m.stage = "cleanup"
+    m.save(mpath)
+    return {"slug": m.slug, "stage": m.stage, "id": iid, "path": rel.as_posix(), "source": src_rel, "sha256": digest,
+            "parts": parts, "pivots": [asdict(p) for p in m.pivots], "materials": mapping,
+            "triangles": size["triangles"], "size_m": round(size["size_m"], 5), "manifest": paths.posix_rel(root, mpath)}
 
 
 def cmd_new(args: argparse.Namespace, root: Path) -> dict[str, Any]:
@@ -652,7 +805,8 @@ def cmd_list(args: argparse.Namespace, root: Path) -> dict[str, Any]:
         m = Manifest.load(mpath)
         # The effective soft budget (the manifest's, else its class's) so the Godot plugin need not read classes.yaml.
         folder = mpath.parent.parent.relative_to(paths.models_dir(root)).as_posix()
-        assets.append(m.to_dict() | {"budget_usd": cost.budget_for(root, m), "folder": "" if folder == "." else folder})
+        assets.append(m.to_dict() | {"budget_usd": cost.budget_for(root, m), "folder": "" if folder == "." else folder,
+                                           "concept_presentation": class_presentation(root, m.asset_class)})
     cfg = providers.load_config()
     names = {kind: sorted(cfg["providers"].get(kind) or {}) for kind in ("image", "three_d", "prompt_writer")}
     from . import adapters, writers  # noqa: F401  register the real adapters
@@ -835,6 +989,9 @@ def build_parser() -> argparse.ArgumentParser:
                    help="an image (PNG, JPEG or WebP) to work from; repeat for several. --n variants are made per reference")
     c.add_argument("--mode", choices=references.MODES, default=None,
                    help="with --reference: paint-over (default; keep composition, camera, proportions) or inspire (loose starting point)")
+    c.add_argument("--presentation", choices=PRESENTATIONS, default=None,
+                   help="subject (one isolated subject on a plain background) or scene (keep the reference's camera, "
+                        "full environment in frame, people allowed); default: the class's concept_presentation, else subject")
     c.add_argument("--estimate", action="store_true", help="print what this would cost from prices.yaml and the request, and call nothing")
     c.set_defaults(fn=cmd_concept)
     ESTIMATE = "print what this would cost from prices.yaml and the request, and call nothing"
@@ -884,6 +1041,19 @@ def build_parser() -> argparse.ArgumentParser:
     gc.add_argument("--log-dir", default=None, help="where the renders and Godot logs go (default: $LOG_DIR, else ./logs)")
     gc.add_argument("--no-render", action="store_true", help="import and verify only; skip the renders")
     gc.set_defaults(fn=cmd_godot_check)
+    im = sub.add_parser("import", help="bring an Onshape glTF export of a kit part in (the cad route); creates the asset if new")
+    im.add_argument("slug")
+    im.add_argument("export", metavar="EXPORT.gltf", help="the Onshape glTF export")
+    im.add_argument("--pivot", default=None, metavar="PART", help="name of the moving part (omit for a fixed part)")
+    im.add_argument("--axis", default="x", choices=kit_import.AXES, help="the pivot's hinge axis (default x)")
+    im.add_argument("--limits", nargs=2, type=float, default=None, metavar=("MIN", "MAX"),
+                    help="pivot limits in degrees from the rest pose (default -40 40)")
+    im.add_argument("--control", default=None, choices=kit_import.CONTROLS,
+                    help="control script `export` puts on the scene (default switch_lever with --pivot, else none)")
+    im.add_argument("--folder", default="kit", metavar="A/B", help="folder under assets/models/ for a new asset (default kit)")
+    im.add_argument("--issue", type=int)
+    im.add_argument("--description", default=None, metavar="TEXT")
+    im.set_defaults(fn=cmd_import)
     ex = sub.add_parser("export", help="write the deliverable into assets/models/<slug>/")
     ex.add_argument("slug")
     ex.add_argument("--source", default=None, metavar="MESH", help="mesh id (default: the latest cleanup)")
