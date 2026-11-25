@@ -1,0 +1,32 @@
+slug: scrubber_canister
+group: furniture
+kind: furniture
+summary: 'CO2 scrubber canister: perforated steel cylinder showing dark beads, grey cap with an orange carry handle
+  and a 300-degree ring of 12 indicator lights. ScrubberCanister carries it; CanisterRing lights the ring from capacity.'
+tags:
+- scrubber
+- canister
+- co2
+- life support
+- carried
+- ring
+scene: res://assets/models/furniture/scrubber_canister/scrubber_canister.tscn
+behaviour:
+  script: ScrubberCanister
+  values: capacity 0..1
+  signal: capacity_changed
+  wire: seat in a CanisterSlot; the child Ring (CanisterRing) is already bound to it
+footprint_mm:
+- 150.0
+- 150.0
+stand_out_mm: 300.0
+mount: base on Y=0, centred; stands along +Y; seats in a cradle or a storage hole (CanisterSlot)
+set_on_instance:
+  capacity: remaining capacity, drives the ring
+  lift_height, carry_offset: carry motion
+triangles: 1360
+built_by: tools/cadkit/scenes/scrubber_canister.py
+files:
+- component.yaml
+- scrubber_canister.glb
+- scrubber_canister.tscn
