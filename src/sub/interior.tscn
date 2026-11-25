@@ -15,6 +15,7 @@
 [ext_resource type="Script" path="res://src/sub/palette_light.gd" id="palette_light"]
 [ext_resource type="Script" path="res://src/sub/station_placement.gd" id="station_placement"]
 [ext_resource type="PackedScene" path="res://assets/models/stations/sonar_console/sonar_console.tscn" id="sonar_console"]
+[ext_resource type="PackedScene" path="res://assets/models/stations/map_table/map_table.tscn" id="map_table"]
 
 [sub_resource type="BoxMesh" id="fascia_mesh"]
 size = Vector3(0.06, 0.22, 3.2)
@@ -56,7 +57,7 @@ height = 0.09
 size = Vector3(1.0, 1.1, 1.0)
 
 [sub_resource type="BoxShape3D" id="table_grab"]
-size = Vector3(1.3, 0.85, 0.8)
+size = Vector3(2.2, 0.9, 0.9)
 
 [node name="Interior" type="Node3D"]
 
@@ -162,6 +163,24 @@ surface_material_override/0 = SubResource("fitting")
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.9, 1.95, 1.4)
 mesh = SubResource("fascia_mesh")
 surface_material_override/0 = SubResource("fitting")
+
+[node name="WorkLampPort" type="OmniLight3D" parent="Lights"]
+light_energy = 0.4
+omni_range = 1.8
+
+[node name="PaletteLight" type="Node" parent="Lights/WorkLampPort"]
+script = ExtResource("palette_light")
+swatch = &"light_cabin"
+stealth_swatch = &"light_stealth_red"
+
+[node name="WorkLampStarboard" type="OmniLight3D" parent="Lights"]
+light_energy = 0.4
+omni_range = 1.8
+
+[node name="PaletteLight" type="Node" parent="Lights/WorkLampStarboard"]
+script = ExtResource("palette_light")
+swatch = &"light_cabin"
+stealth_swatch = &"light_stealth_red"
 
 [node name="Headlight" type="SpotLight3D" parent="Lights"]
 position = Vector3(0, -0.8, -4.3)
@@ -522,45 +541,52 @@ omni_range = 1.2
 script = ExtResource("palette_light")
 swatch = &"light_readout"
 
-[node name="MapTable" type="Node3D" parent="Stations/Maps" node_paths=PackedStringArray("holo", "sit_point")]
-position = Vector3(0, 0, 0.285)
+[node name="MapTablePlacement" type="Node3D" parent="Stations"]
+script = ExtResource("station_placement")
+station_id = &"map_table"
+placements = {
+"../../Lights/WorkLampPort": Vector3(-0.053, 1.1, 0.64),
+"../../Lights/WorkLampStarboard": Vector3(-0.053, 1.1, -0.64),
+"../Maps/MapTable": Vector3(-0.6131, 0, 0)
+}
+
+[node name="MapTable" type="Node3D" parent="Stations/Maps" node_paths=PackedStringArray("holo", "sit_point", "pan_ball", "zoom_lever", "follow_toggle", "follow_lamp", "eye_point")]
+rotation = Vector3(0, 1.5708, 0)
 script = ExtResource("16")
 holo = NodePath("TableHolo")
-sit_point = NodePath("StandPoint")
+sit_point = NodePath("Station/OperatorPoint")
+pan_ball = NodePath("Station/Controls/PanTrackball")
+zoom_lever = NodePath("Station/Controls/ZoomLever")
+follow_toggle = NodePath("Station/Controls/FollowToggle")
+follow_lamp = NodePath("Station/Controls/FollowLamp")
+eye_point = NodePath("Station/OperatorEye")
 label = "map table"
 
-[node name="StandPoint" type="Node3D" parent="Stations/Maps/MapTable"]
-position = Vector3(0, 0, 0.85)
+[node name="Station" parent="Stations/Maps/MapTable" instance=ExtResource("map_table")]
 
 [node name="Grab" type="StaticBody3D" parent="Stations/Maps/MapTable"]
 collision_layer = 2
 collision_mask = 0
 
 [node name="Shape" type="CollisionShape3D" parent="Stations/Maps/MapTable/Grab"]
-position = Vector3(0, 0.45, 0)
+position = Vector3(0, 0.45, 0.45)
 shape = SubResource("table_grab")
 
 [node name="TableHolo" type="Node3D" parent="Stations/Maps/MapTable"]
-position = Vector3(0, 0.78, 0)
+position = Vector3(0, 0.745, 0.34)
 script = ExtResource("15")
 heading_up = false
 follow_sub = false
-meters_per_unit = 470.0
+meters_per_unit = 350.0
 min_meters_per_unit = 60.0
 max_meters_per_unit = 900.0
-clip_rx = 0.6
-clip_rz = 0.36
+clip_rx = 0.9
+clip_rz = 0.5
 height = 0.03
 d_shaped = true
+d_flat_z = -0.62
 back_panel = true
+panel_gap = 0.0
+panel_width = 1.3
 table_rotation_deg = 90.0
 marker_size = 0.022
-
-[node name="TableProjector" type="OmniLight3D" parent="Stations/Maps/MapTable/TableHolo"]
-position = Vector3(0, 0.05, 0)
-light_energy = 0.25
-omni_range = 1.3
-
-[node name="PaletteLight" type="Node" parent="Stations/Maps/MapTable/TableHolo/TableProjector"]
-script = ExtResource("palette_light")
-swatch = &"light_readout"

@@ -116,7 +116,7 @@ func test_cabin_dimmer_dims_cabin_but_not_headlight() -> void:
 	await _frames(2)
 	expect_near(fore.light_energy, bright * CabinLights.MIN_LEVEL, 0.001, "dimmed to near dark")
 	expect_eq(head.light_energy, head_before, "headlight untouched")
-	expect(cabin.cabin_lights().size() == 8, "eight cabin lights (four room lights, two coves, scanner and status board spots)")
+	expect(cabin.cabin_lights().size() == 10, "ten cabin lights (four room lights, two coves, scanner and status board spots, two map table work lamps)")
 
 
 func test_dev_overlay_stats_cover_sub_noise_and_apex() -> void:
@@ -148,7 +148,7 @@ func test_dimmer_scales_every_cabin_light_including_the_coves() -> void:
 	for l: Light3D in cabin:
 		names.append(String(l.name))
 	expect(names.has("CoveLeft") and names.has("CoveRight"), "cove lights are cabin lights (%s)" % str(names))
-	expect(cabin.size() <= 8, "a handful of lights (%d)" % cabin.size())
+	expect(cabin.size() <= 10, "a handful of lights (%d)" % cabin.size())
 	var base: Dictionary = {}
 	dimmer.host_set_value(1.0)
 	await _frames(3)
