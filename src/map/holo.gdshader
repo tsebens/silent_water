@@ -14,6 +14,10 @@ uniform vec3 clip_axis_x = vec3(1.0, 0.0, 0.0);
 uniform float clip_rx = 0.5;
 uniform float clip_rz = 0.5;
 uniform float clip_height = 0.6;
+// Flat edge of a D-shaped outline, in units of clip_rz (-1 = a full ellipse).
+uniform float clip_flat_z = -1.0;
+// 1 fades the top of the volume; 0 for a thin relief.
+uniform float top_fade = 1.0;
 // Contour lines every this many display metres (0 = none).
 uniform float contour_spacing = 0.02;
 uniform float contour_strength = 0.35;
@@ -30,7 +34,7 @@ void fragment() {
 	vec3 axis_z = normalize(cross(clip_axis_x, clip_up));
 	float x = dot(d, clip_axis_x) / clip_rx;
 	float z = dot(d, axis_z) / clip_rz;
-	if (h < 0.0 || h > clip_height || x * x + z * z > 1.0) {
+	if (h < 0.0 || h > clip_height || x * x + z * z > 1.0 || z < clip_flat_z) {
 		discard;
 	}
 	float facing = abs(dot(normalize(NORMAL), normalize(VIEW)));
@@ -41,7 +45,7 @@ void fragment() {
 		contour = (1.0 - smoothstep(0.0, 0.08, min(f, 1.0 - f))) * contour_strength;
 	}
 	// Fade toward the top of the volume so the hologram reads as projected.
-	float fade = 1.0 - smoothstep(0.75, 1.0, h / clip_height);
+	float fade = 1.0 - top_fade * smoothstep(0.75, 1.0, h / clip_height);
 	ALBEDO = holo_color.rgb;
 	ALPHA = clamp((alpha + edge + contour) * fade, 0.0, 1.0);
 }
