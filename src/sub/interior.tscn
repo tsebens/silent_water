@@ -18,6 +18,7 @@
 [ext_resource type="PackedScene" path="res://src/sub/bilge_water.tscn" id="17"]
 [ext_resource type="Script" path="res://src/map/flat_chart.gd" id="flat_chart"]
 [ext_resource type="Script" path="res://src/sonar/sonar_panel.gd" id="sonar_panel"]
+[ext_resource type="Script" path="res://src/sub/palette_light.gd" id="palette_light"]
 
 [sub_resource type="BoxMesh" id="fascia_mesh"]
 size = Vector3(0.06, 0.22, 3.2)
@@ -89,44 +90,68 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 1.0)
 
 [node name="Fore" type="OmniLight3D" parent="Lights"]
 position = Vector3(0, 2.4, -0.4)
-light_color = Color(0.5, 0.82, 0.9, 1)
 light_energy = 0.55
 omni_range = 4.5
 
+[node name="PaletteLight" type="Node" parent="Lights/Fore"]
+script = ExtResource("palette_light")
+swatch = &"light_cabin"
+stealth_swatch = &"light_stealth_red"
+
 [node name="Mid" type="OmniLight3D" parent="Lights"]
 position = Vector3(0, 2.6, 1.0)
-light_color = Color(0.5, 0.82, 0.9, 1)
 light_energy = 0.6
 shadow_enabled = true
 omni_range = 4.5
 
+[node name="PaletteLight" type="Node" parent="Lights/Mid"]
+script = ExtResource("palette_light")
+swatch = &"light_cabin"
+stealth_swatch = &"light_stealth_red"
+
 [node name="Aft" type="OmniLight3D" parent="Lights"]
 position = Vector3(-0.6, 2.3, 3.0)
-light_color = Color(0.55, 0.8, 0.85, 1)
 light_energy = 1.4
 omni_range = 4.5
 
+[node name="PaletteLight" type="Node" parent="Lights/Aft"]
+script = ExtResource("palette_light")
+swatch = &"light_cabin"
+stealth_swatch = &"light_stealth_red"
+
 [node name="AftMachinery" type="OmniLight3D" parent="Lights"]
 position = Vector3(0.5, 1.9, 4.2)
-light_color = Color(0.6, 0.8, 0.85, 1)
 light_energy = 0.9
 omni_range = 3.0
+
+[node name="PaletteLight" type="Node" parent="Lights/AftMachinery"]
+script = ExtResource("palette_light")
+swatch = &"light_cabin"
+stealth_swatch = &"light_stealth_red"
 
 [node name="CoveLeft" type="SpotLight3D" parent="Lights"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1, 2.45, 1.4)
 rotation_degrees = Vector3(-50, 90, 0)
-light_color = Color(0.45, 0.8, 0.9, 1)
 light_energy = 1.2
 spot_range = 4.0
 spot_angle = 65.0
 
+[node name="PaletteLight" type="Node" parent="Lights/CoveLeft"]
+script = ExtResource("palette_light")
+swatch = &"light_cabin"
+stealth_swatch = &"light_stealth_red"
+
 [node name="CoveRight" type="SpotLight3D" parent="Lights"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1, 2.45, 1.4)
 rotation_degrees = Vector3(-50, -90, 0)
-light_color = Color(0.45, 0.8, 0.9, 1)
 light_energy = 1.2
 spot_range = 4.0
 spot_angle = 65.0
+
+[node name="PaletteLight" type="Node" parent="Lights/CoveRight"]
+script = ExtResource("palette_light")
+swatch = &"light_cabin"
+stealth_swatch = &"light_stealth_red"
 
 [node name="Fascia" type="Node3D" parent="."]
 
@@ -142,11 +167,14 @@ surface_material_override/0 = SubResource("fitting")
 
 [node name="Headlight" type="SpotLight3D" parent="Lights"]
 position = Vector3(0, -0.8, -4.3)
-light_color = Color(0.9, 0.95, 1, 1)
 light_energy = 16.0
 spot_range = 70.0
 spot_attenuation = 0.6
 spot_angle = 30.0
+
+[node name="PaletteLight" type="Node" parent="Lights/Headlight"]
+script = ExtResource("palette_light")
+swatch = &"light_work_white"
 
 [node name="Stations" type="Node3D" parent="."]
 
@@ -543,9 +571,12 @@ height = 0.75
 
 [node name="PilotProjector" type="OmniLight3D" parent="Stations/Maps/PilotHolo"]
 position = Vector3(0, 0.05, 0)
-light_color = Color(0.35, 0.85, 0.95, 1)
 light_energy = 0.25
 omni_range = 1.2
+
+[node name="PaletteLight" type="Node" parent="Stations/Maps/PilotHolo/PilotProjector"]
+script = ExtResource("palette_light")
+swatch = &"light_readout"
 
 [node name="MapTable" type="Node3D" parent="Stations/Maps" node_paths=PackedStringArray("holo", "sit_point")]
 position = Vector3(0, 0, 0.285)
@@ -581,6 +612,9 @@ marker_size = 0.022
 
 [node name="TableProjector" type="OmniLight3D" parent="Stations/Maps/MapTable/TableHolo"]
 position = Vector3(0, 0.05, 0)
-light_color = Color(0.35, 0.85, 0.95, 1)
 light_energy = 0.25
 omni_range = 1.3
+
+[node name="PaletteLight" type="Node" parent="Stations/Maps/MapTable/TableHolo/TableProjector"]
+script = ExtResource("palette_light")
+swatch = &"light_readout"
