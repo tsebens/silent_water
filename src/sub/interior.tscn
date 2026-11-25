@@ -610,6 +610,7 @@ clip_rx = 0.6
 clip_rz = 0.36
 height = 0.03
 d_shaped = true
+back_panel = true
 table_rotation_deg = 90.0
 marker_size = 0.022
 
