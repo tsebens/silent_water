@@ -7,7 +7,7 @@
 - The redesigned sub's hull is generated from `assets/models/vehicles/sub_interior/program.yaml` by a parametric script (decision #395; hull arc under #396). `SubModel` loads it (#401); the old Onshape model and `tools/convert_sub.py` are gone. The hull is about 10 m × 4 m; the pilot floor is 0.2 m below the main deck.
 - `Game/Interior` sits at the origin with an identity transform, permanently. Players, controls, interior lights, and the sub's exterior lights (the headlight) live here. Everything inside the sub is in **sub-local space**.
 - `Game/World` holds everything outside the sub: terrain, creatures, objectives. Its children use **world space** as their local space.
-- `SubFrame` owns the sub's pose in the world (`sub_transform`, host-authoritative, replicated). Each frame it sets `World.transform = sub_transform.affine_inverse()`. In render space the sub is always at the origin, and the world moves past it.
+- `SubFrame` owns the sub's pose in the world (`sub_transform`, host-authoritative, replicated). Each frame it sets `World.transform = render_transform().affine_inverse()`, where `render_transform()` is the pose smoothed toward `sub_transform` on clients (and equal to it on the host). Anything that must line up with the rendered sub reads `render_transform()`, not `sub_transform`. In render space the sub is always at the origin, and the world moves past it.
 - Players sync `sync_position`, `sync_yaw` and `sync_pitch` in sub-local space. The sub's motion can't jitter, slide or desync the crew, because it never touches their transforms.
 
 ## Gravity and tilt
