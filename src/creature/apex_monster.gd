@@ -357,10 +357,10 @@ func _clamp_to_territory(p: Vector3) -> Vector3:
 ## Low-poly coelacanth-like silhouette from primitives: shape over texture.
 func _build_body() -> void:
 	var skin: StandardMaterial3D = StandardMaterial3D.new()
-	skin.albedo_color = Color(0.16, 0.17, 0.16)
+	skin.albedo_color = Palette.main().color(&"floor_rock_black")
 	skin.roughness = 0.8
 	var fin_mat: StandardMaterial3D = StandardMaterial3D.new()
-	fin_mat.albedo_color = Color(0.12, 0.13, 0.13)
+	fin_mat.albedo_color = Palette.main().color(&"floor_rock_black").darkened(0.25)
 	fin_mat.roughness = 0.9
 	fin_mat.cull_mode = BaseMaterial3D.CULL_DISABLED
 

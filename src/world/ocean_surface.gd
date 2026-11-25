@@ -32,7 +32,7 @@ const GRAVITY: float = 9.81
 @export var speed: float = 0.4
 ## Whole-surface opacity (< 1: translucent) and the tint blended into it.
 @export_range(0.0, 1.0) var alpha: float = 0.7
-@export var tint: Color = Color(0.6, 0.85, 0.9, 1.0)
+@export var tint: Color = Color.WHITE
 ## How much of the sky shows through from below (0..1).
 @export_range(0.0, 1.0) var transmission: float = 0.6
 ## Fragment ripple layer: spatial frequency (rad/m) and normal strength.
@@ -183,6 +183,16 @@ static func set_waves(m: ShaderMaterial, waves: Array[Wave]) -> void:
 	m.set_shader_parameter(&"amplitude", total)
 
 
+## The water's own colour (palette swatch `env_water`), before the light sources modulate it.
+static func water_color() -> Color:
+	return Palette.main().color(&"env_water")
+
+
+## The ocean fog colour (palette swatch `env_deep`).
+static func fog_color() -> Color:
+	return Palette.main().color(&"env_deep")
+
+
 ## Hands the sun (direction towards it, colour, strength) to the material.
 func set_sun(direction: Vector3, color: Color, strength: float) -> void:
 	if _material == null:
@@ -207,14 +217,14 @@ func apply_settings(m: ShaderMaterial) -> void:
 
 
 ## Sets the surface colours (from the active light preset).
-func set_colors(top: Color, under: Color, sky: Color = Color(-1, 0, 0)) -> void:
+func set_colors(top: Color, under: Color, sky: Color = Color.TRANSPARENT) -> void:
 	if _material == null:
 		_material = material_override as ShaderMaterial
 	if _material == null:
 		return
 	_material.set_shader_parameter(&"top_color", top)
 	_material.set_shader_parameter(&"under_color", under)
-	if sky.r >= 0.0:
+	if sky.a > 0.0:
 		_material.set_shader_parameter(&"sky_color", sky)
 
 

@@ -176,7 +176,7 @@ evenly as one of today's cabin lights lights a surface 1.5 m away. Regenerate wi
 
 ## Still to move onto the palette
 
-- The game's hard-coded colours: 86 colour literals across 19 files, among them the gauges, the chart screen, the
+- The game's hard-coded colours: the world, creatures and objectives are done (M13.6); the rest are in files such as among them the gauges, the chart screen, the
   holographic maps, the cabin lights (still cyan-tinted) and the debug overlay.
 - The Onshape import route (`asset import`), which still snaps to `assets/style_bible/kit_palette.yaml`.
 - The image-to-3D route's vertex-colour palettes (creatures, terrain).

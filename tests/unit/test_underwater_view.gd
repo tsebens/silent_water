@@ -88,7 +88,7 @@ func test_tunables_exported_on_player_scene() -> void:
 	for prop: Dictionary in v.get_property_list():
 		if (int(prop["usage"]) & PROPERTY_USAGE_EDITOR) != 0:
 			names.append(str(prop["name"]))
-	for n: String in ["tint", "fog_density", "hysteresis_m"]:
+	for n: String in ["tint_strength", "fog_density", "hysteresis_m"]:
 		expect(names.has(n), "%s exported" % n)
 	p.free()
 
