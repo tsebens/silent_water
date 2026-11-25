@@ -27,8 +27,8 @@ def solids() -> tuple[list[Solid], list[Solid]]:
     expect(BALL_R * 0.9 < proud < BALL_R * 1.4, f"ball stands {proud:.0f} mm proud of the ring: rollable, not perched")
     for bx, by in scene_module("control_base").bolt_positions(*BASE):
         expect((bx * bx + by * by) ** 0.5 > RING_R + 3.5, f"bolt at {bx},{by} clear of the ring")
-    out = [Solid(ring, "black")], [Solid(ball, "black")]
-    expect_in_front(out[0] + [Solid(at(ball, z=BALL_Z), "black")], SLUG)
+    out = [Solid(ring, "trim_black")], [Solid(ball, "control_grey")]
+    expect_in_front(out[0] + [Solid(at(ball, z=BALL_Z), "control_grey")], SLUG)
     return out
 
 

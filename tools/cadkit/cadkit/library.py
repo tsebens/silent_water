@@ -15,6 +15,7 @@ the catalogue does not load the CAD kernel.
 """
 from __future__ import annotations
 
+import re
 from pathlib import Path
 
 import yaml
@@ -22,7 +23,8 @@ import yaml
 REPO = Path(__file__).resolve().parents[3]
 MODELS = REPO / "assets" / "models"
 MODELS_RES = "res://assets/models"
-PALETTE_FILE = REPO / "assets" / "style_bible" / "kit_palette.yaml"
+PALETTE_FILE = REPO / "assets" / "palette" / "palette.tres"
+ROLES_DIR = REPO / "assets" / "palette" / "roles"
 GROUPS = ("kit", "furniture", "panels", "stations")
 
 MODULE_MM = 60.0          # the control-panel module: bases come in whole modules
@@ -118,7 +120,27 @@ def quiet_noise(scene, max_intensity: float = 0.02, clank_rate: float = 1.0) -> 
                                            "clank_rate": clank_rate, "exponent": 2.0})
 
 
-def palette() -> dict[str, tuple[float, float, float]]:
-    """The kit palette by role, as the style bible gives it (sRGB, 0..1)."""
-    doc = yaml.safe_load(PALETTE_FILE.read_text())
-    return {role: tuple(float(c) for c in rgb[:3]) for role, rgb in doc["colours"].items()}
+def swatches() -> dict[str, tuple[float, float, float]]:
+    """Every palette swatch by name, paint and light alike, as sRGB 0..1 (read from the Godot palette resource)."""
+    text = PALETTE_FILE.read_text()
+    out = {}
+    for name, args in re.findall(r'&"([A-Za-z0-9_]+)":\s*Color\(([^)]*)\)', text):
+        out[name] = tuple(float(c) for c in args.split(",")[:3])
+    return out
+
+
+def roles() -> dict[str, dict[str, str]]:
+    """Every palette role (docs/palette.md) by name: the swatches its material names ({"swatch", "glow", "stripe"})."""
+    out = {}
+    for path in sorted(ROLES_DIR.glob("*.tres")):
+        fields = dict(re.findall(r'^(swatch|glow|stripe) = &"([A-Za-z0-9_]*)"$', path.read_text(), re.M))
+        out[path.stem] = {k: fields.get(k, "") for k in ("swatch", "glow", "stripe")}
+    return out
+
+
+def role_preview(role: str) -> tuple[float, float, float]:
+    """An sRGB colour that stands for a role outside Godot (the glTF material's base colour): what it glows, else its
+    surface colour. In the game the shared role material replaces it on import."""
+    r = roles()[role]
+    sw = swatches()
+    return sw[r["glow"]] if r["glow"] else sw[r["swatch"]]

@@ -40,8 +40,8 @@ def solids() -> tuple[list[Solid], list[Solid]]:
     nlo, nhi = bbox_mm(needle)
     expect(abs(nlo[2]) < 0.01 and abs(nhi[1] - NEEDLE_TIP) < 0.01 and abs(nlo[0] + nhi[0]) < 0.01,
            "needle: pivot on the origin, pointing +Y, lying on Z=0")
-    return ([Solid(back, "black"), Solid(rim, "black"), Solid(hub, "black"), Solid(plate, "black")],
-            [Solid(needle, "powder_grey")])
+    return ([Solid(back, "trim_black"), Solid(rim, "trim_black"), Solid(hub, "trim_black"), Solid(plate, "trim_black")],
+            [Solid(needle, "readout_ink")])
 
 
 def build() -> dict:

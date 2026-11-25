@@ -41,8 +41,8 @@ def solids() -> list[Solid]:
     expect(bhi[2] > hi[2] - 40, "backrest at the back (+Z) of the pan")
     expect(900 < bhi[1] < 1050, f"backrest top {bhi[1]:.0f} mm: shoulder height")
     expect(ARM_X - 30 > PAN_W / 2, "armrests outside the pan")
-    return ([Solid(base, "black"), Solid(column, "black"), Solid(pan, "powder_grey"), Solid(back, "powder_grey")]
-            + [Solid(s, "safety_orange") for s in stripes] + [Solid(a, "black") for a in arms + posts])
+    return ([Solid(base, "trim_black"), Solid(column, "trim_black"), Solid(pan, "interior_panel"), Solid(back, "interior_panel")]
+            + [Solid(s, "control_interface") for s in stripes] + [Solid(a, "trim_black") for a in arms + posts])
 
 
 def build() -> dict:

@@ -6,6 +6,8 @@
     cadkit verify                          the same, then report generated files that are stale or hand-edited
     cadkit render <slug> [--out DIR] [--cameras FILE]    PNGs of a scene (default out: build/renders/<slug>/)
     cadkit sheet <slug>                    render afresh, then write review sheets in <scene>/review/
+    cadkit palette [--sheets] [--out DIR]  swatches with their values and roles with their swatches; --sheets renders
+                                           the swatch sheets (default out: docs/images/palette/)
 
 The process these serve is docs/asset_process.md.
 """
@@ -33,6 +35,9 @@ def main(argv: list[str] | None = None) -> int:
     r.add_argument("--cameras", type=Path)
     s = sub.add_parser("sheet")
     s.add_argument("slug")
+    pp = sub.add_parser("palette")
+    pp.add_argument("--sheets", action="store_true")
+    pp.add_argument("--out", type=Path)
     args = p.parse_args(argv)
 
     if args.cmd == "catalogue":
@@ -41,6 +46,22 @@ def main(argv: list[str] | None = None) -> int:
         if args.words:
             cat = catalogue.search(cat, args.words)
         print(json.dumps(cat, indent=1) if args.json else catalogue.table(cat))
+        return 0
+    if args.cmd == "palette":
+        if args.sheets:
+            from cadkit import render
+            try:
+                shots = render.palette_sheets(args.out.resolve() if args.out else None)
+            except RuntimeError as e:
+                print(json.dumps({"ok": False, "error": str(e)}, indent=1))
+                return 1
+            print(json.dumps({"ok": True, "sheets": [str(x) for x in shots]}, indent=1))
+            return 0
+        sw = library.swatches()
+        print("## swatches: name | value")
+        print("\n".join(f"- {n} | #{''.join(f'{round(c * 255):02X}' for c in rgb)}" for n, rgb in sw.items()))
+        print("## roles: name | swatch | glow | stripe")
+        print("\n".join(f"- {n} | {r['swatch']} | {r['glow'] or '-'} | {r['stripe'] or '-'}" for n, r in library.roles().items()))
         return 0
     if args.cmd in ("check", "build", "verify"):
         from cadkit import build

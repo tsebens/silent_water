@@ -24,7 +24,7 @@ The `kit` class (build route `cad`) is for the sub's controls, which Tristan mod
 
 - creates the asset (class `kit`, folder `kit`) when the slug is new;
 - copies the export to `assets/media/kit/<slug>/<slug>.gltf` and runs the converter, `tools/asset_pipeline/asset_pipeline/blender/onshape_import_bpy.py`, in headless Blender (native or Docker, the same runner as `cleanup`). The origin goes to the centre of the back face, and the moving part goes under a `Pivot` node on its hinge with identity rotation;
-- snaps each material to the nearest entry of `assets/style_bible/kit_palette.yaml` (powder grey, safety orange, black, LED), by the RGB value in the Onshape material name, and renames it by role; materials that snap to one role merge;
+- snaps each material to the nearest entry of `assets/style_bible/kit_palette.yaml` (still to move onto the game palette, `docs/palette.md`) (powder grey, safety orange, black, LED), by the RGB value in the Onshape material name, and renames it by role; materials that snap to one role merge;
 - records a `mesh` lineage entry (`i1`, `i2`, …, provider `onshape`) whose `source` holds the export's path and SHA-256, plus an `imports` record (parts, triangles, size, materials, how Blender ran). A re-import adds a new entry;
 - records the moving part in the manifest's `pivots`: part name, axis, limits in degrees (default -40 40) and control. A `--pivot` that names no part of the export is an error that lists the parts.
 

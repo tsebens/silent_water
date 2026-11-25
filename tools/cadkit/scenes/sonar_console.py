@@ -98,9 +98,9 @@ def solids() -> list[Solid]:
     hook_x = W / 2 + FRAME_T
     hook = at(bd.Box(70, 20, 20, align=(bd.Align.MIN, bd.Align.CENTER, bd.Align.CENTER)), hook_x, 1250, 200)
     hook_lip = at(bd.Box(20, 40, 20, align=(bd.Align.MIN, bd.Align.MIN, bd.Align.CENTER)), hook_x + 50, 1250, 200)
-    out = ([Solid(body, "powder_grey"), Solid(on_face(bezel, BEZEL_S), "black"), Solid(on_face(glass, OPEN_S), "black"),
-            Solid(inset, "black"), Solid(kick, "black"), Solid(hook + hook_lip, "black")]
-           + [Solid(f, "safety_orange") for f in frames])
+    out = ([Solid(body, "interior_panel"), Solid(on_face(bezel, BEZEL_S), "trim_black"), Solid(on_face(glass, OPEN_S), "screen_off"),
+            Solid(inset, "interior_dark"), Solid(kick, "trim_black"), Solid(hook + hook_lip, "trim_black")]
+           + [Solid(f, "control_interface") for f in frames])
     _check(body, frames)
     return out
 

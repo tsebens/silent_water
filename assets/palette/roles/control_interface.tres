@@ -1,0 +1,9 @@
+[gd_resource type="StandardMaterial3D" script_class="RoleMaterial" format=3]
+
+[ext_resource type="Script" path="res://src/palette/role_material.gd" id="1_ogsua"]
+
+[resource]
+resource_name = "control_interface"
+roughness = 0.7
+script = ExtResource("1_ogsua")
+swatch = &"sub_orange"

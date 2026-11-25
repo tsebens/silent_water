@@ -1,0 +1,9 @@
+[gd_resource type="StandardMaterial3D" script_class="RoleMaterial" format=3]
+
+[ext_resource type="Script" path="res://src/palette/role_material.gd" id="1_f2niw"]
+
+[resource]
+resource_name = "interior_dark"
+roughness = 0.8
+script = ExtResource("1_f2niw")
+swatch = &"sub_grey_dark"

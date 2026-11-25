@@ -46,9 +46,9 @@ def solids() -> tuple[list[Solid], list[Solid]]:
     for bx, by in scene_module("control_base").bolt_positions(*BASE):
         expect(((bx) ** 2 + (LAMP_Y - by) ** 2) ** 0.5 > lamp_out + 3.5, f"lamp clear of bolt {bx},{by}")
     expect(len(bat.solids()) == 1, "bat is one solid")
-    body = [Solid(collar, "powder_grey"), Solid(lamp_ring, "black"), Solid(lamp, "led")] + [Solid(wl, "safety_orange") for wl in walls]
-    bat = [Solid(bat, "black")]
-    expect_in_front(body + [Solid(at(bat[0].shape, z=HINGE_Z), "black")], SLUG)
+    body = [Solid(collar, "interior_dark"), Solid(lamp_ring, "trim_black"), Solid(lamp, "indicator_off")] + [Solid(wl, "control_interface") for wl in walls]
+    bat = [Solid(bat, "control_grey")]
+    expect_in_front(body + [Solid(at(bat[0].shape, z=HINGE_Z), "control_grey")], SLUG)
     return body, bat
 
 
@@ -70,8 +70,8 @@ def build() -> dict:
     tris = rb["triangles"] + rt["triangles"]
     write_entry(GROUP, SLUG, {
         "kind": "control",
-        "summary": "Guarded two-position toggle; bat swings +/-40 deg and snaps to on or off. Its lamp is a static "
-                   "coloured solid: it does not light.",
+        "summary": "Guarded two-position toggle; light grey bat swings +/-40 deg and snaps to on or off. Its lamp "
+                   "lens is a static solid (indicator_off): it does not light.",
         "tags": ["toggle", "switch", "guarded", "on-off", "lamp", "safety"],
         "scene": res(d / f"{SLUG}.tscn"),
         "behaviour": {"script": "SwitchLever", "values": "0 off (bat down), 1 on (bat up)", "signal": "value_changed"},

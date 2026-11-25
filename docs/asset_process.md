@@ -14,7 +14,7 @@ Out of scope: organic assets (creatures, terrain), which use the image-to-3D rou
 ## 1. The split
 
 - **CAD makes solids only.** A build script writes one GLB per rigid set: every static solid of a scene that shares
-  one frame, several palette colours allowed (as vertex colours). A moving part gets its own GLB, modelled in its own
+  one frame: one mesh with a surface per palette role ([`palette.md`](palette.md)). A moving part gets its own GLB, modelled in its own
   frame with its motion axis through the origin.
 - **Godot scenes do the assembly.** Hinges, slides, springs and every other behaviour live in the scene's control
   script and node tree, never in a GLB. Scenes instance other scenes: base → control → panel → station → sub.
@@ -23,9 +23,12 @@ Out of scope: organic assets (creatures, terrain), which use the image-to-3D rou
 - **Generated files are never edited by hand.** A change is a change to the build script, followed by a rebuild. CI
   fails a pull request whose generated files differ from what their scripts make.
 - **A solid that will be addressed on its own gets its own GLB now**, even while it is static: a lens a later
-  behaviour will light, a needle, a cap. One vertex-coloured mesh cannot have one of its parts lit or moved alone.
+  behaviour will light, a needle, a cap. One mesh cannot have one of its parts lit or moved alone.
 - **Low-poly by construction.** Round things are prisms with an explicit side count. Edges are chamfered, never
-  filleted. Colours are roles from `assets/style_bible/kit_palette.yaml`.
+  filleted. **Solids name palette roles, never colours** (`Solid(shape, "control_interface")`): on import each surface
+  gets the role's shared material, so a palette change reaches every asset with no rebuild. Pick roles by the
+  palette's rules (orange for interaction, light grey for switches and selectors, red for buttons, yellow for large
+  levers). `cadkit palette` lists them.
 
 Frames (metres in Godot, millimetres in CAD): X right, Y up, Z out of the mount face.
 
@@ -359,7 +362,7 @@ def solids() -> list[Solid]:               # shapes, then every check, before an
     bezel = prism(8, BEZEL_R, BEZEL_H, chamfer_top=1.0)       # radius is to the corners
     lo, hi = bbox_mm(bezel)
     expect(hi[2] <= 10.0, f"stands {hi[2]:.1f} mm out; the brief allows 10")
-    body = [Solid(bezel, "black")]                             # a colour is a palette role
+    body = [Solid(bezel, "trim_black")]                        # a palette role (docs/palette.md), never a colour
     expect_in_front(body, SLUG)
     return body
 
@@ -394,7 +397,7 @@ The game's tests need only Godot: the GLBs are committed.
 ## 9. Known limits of the alpha
 
 - None of this has run on a GitHub runner yet: the cadkit environment, rendering under Xvfb, and the CI sync check.
-- `cadkit verify` accepts a GLB that differs in bytes but not in triangle count, bounds and colours, because
+- `cadkit verify` accepts a GLB that differs in bytes but not in triangles per role and bounds, because
   byte-identical tessellation across machines is unproven.
 - Renders show a blank chart screen (it draws only in a running game) and no figure for scale.
 - The review agent judges the look from committed sheets; it does not re-render.

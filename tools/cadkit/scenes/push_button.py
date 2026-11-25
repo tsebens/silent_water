@@ -22,7 +22,7 @@ def solids() -> tuple[list[Solid], list[Solid]]:
     expect(CAP_R < RING_IN_R, "cap fits inside the ring")
     expect(CAP_Z + CAP_H - TRAVEL >= RING_H - 0.01, "pressed cap stays flush or proud of the ring")
     expect(bbox_mm(cap)[1][2] == CAP_Z + CAP_H, "cap top where the brief says")
-    body, cap = [Solid(ring, "black")], [Solid(cap, "powder_grey")]
+    body, cap = [Solid(ring, "trim_black")], [Solid(cap, "button")]
     expect_in_front(body + cap, SLUG)
     return body, cap
 
@@ -42,7 +42,7 @@ def build() -> dict:
     s.write(d / f"{SLUG}.tscn")
     write_entry(GROUP, SLUG, {
         "kind": "element",
-        "summary": "Momentary push button: black bezel ring, grey cap, 4 mm travel. Mounts on a plate, no base.",
+        "summary": "Momentary push button: black bezel ring, red cap (buttons are red), 4 mm travel. Mounts on a plate, no base.",
         "tags": ["button", "push", "momentary", "key"],
         "scene": res(d / f"{SLUG}.tscn"),
         "behaviour": {"script": "PushButton", "values": "0 released, 1 held", "signal": "value_changed"},

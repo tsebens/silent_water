@@ -28,21 +28,16 @@ Raindrop's infrastructure follows brutalist construction: massive, honest, built
 
 ## Light: soft fading neon
 
-- **Colors:** soft neon in **orange, blue and green**. Use them as lines, strips, slots and small point lights on the architecture, not as floodlighting.
+The colours themselves, and the rules for using them, are in [`palette.md`](palette.md). Name colours by palette
+swatch or role, never by value.
+
+- **Colors:** soft neon in **amber, yellow and red**. Use them as lines, strips, slots and small point lights on the architecture, not as floodlighting. Blue and green are out: they vanish against the water and would compete with the cyan of readouts and with sea life.
 - **Soft, not cyberpunk:** low intensity, wide glow, no hard magenta-and-cyan signage. Light should seem to come from the structure, through its slots and windows and along its edges.
 - **Fading reach:** colored light falls off quickly into the fog. A station is a few glowing lines and windows hanging in the dark, which shows how vast the ocean is and how isolated the infrastructure is.
 - **The ocean around it stays dark:** deep teal to black, marine snow, volumetric beams with short reach.
-- **White and red light remain gameplay** (see the design doc). The neon palette belongs to the architecture; the sub's working lights are white or red.
-
-### Suggested color roles (to confirm)
-
-Not yet decided. One option:
-
-- **orange:** working, powered, safe
-- **blue:** idle or passive systems
-- **green:** restored or friendly infrastructure
-
-Fixed roles would let players read a site's state from a distance.
+- **Infrastructure reads light against the dark:** its concrete and metal are painted lighter than they would be in reality.
+- **White and red light remain gameplay** (see the design doc). The sub's working lights are halogen white or a dim, rusty stealth red; the bright red is for alarms only.
+- **Sea life is bright and cool, near neon** (violet, magenta, coral, jade, peach), and flora adds muted greens and pale yellow. Neither uses the bright cyan reserved for information.
 
 ## The sub
 
