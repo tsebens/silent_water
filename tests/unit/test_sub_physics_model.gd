@@ -101,11 +101,12 @@ func test_vent_does_not_flood_while_riding_high() -> void:
 func test_flood_and_blow() -> void:
 	m.tank_water_t = 0.0
 	_run(10.0, 0.0, 0.0, 0.0, 1.0)
-	expect_near(m.tank_water_t, 7.0, 0.1, "flooded")
+	expect_near(m.tank_water_t, 10.0 * m.flood_rate_t, 0.1, "flooded")
 	var air_before: float = m.air_t
 	_run(2.0, 0.0, 0.0, 0.0, 0.0, 1.0)
-	expect_near(m.tank_water_t, 4.2, 0.1, "blown")
-	expect_near(air_before - m.air_t, 2.8, 0.1, "air used")
+	var blown: float = 2.0 * m.blow_rate_t
+	expect_near(m.tank_water_t, 10.0 * m.flood_rate_t - blown, 0.1, "blown")
+	expect_near(air_before - m.air_t, blown, 0.1, "air used")
 
 
 func test_blow_stops_when_air_runs_out() -> void:
@@ -210,3 +211,25 @@ func test_hull_bounds_come_from_layout() -> void:
 	expect(not m.is_surfaced(), "just below the surface")
 	m.position.y = -SubPhysicsModel.hull_bottom() + 0.01
 	expect_eq(m.submerged_fraction(), 0.0)
+
+
+func test_flood_fills_empty_tank_in_capacity_over_rate() -> void:
+	m.tank_water_t = 0.0
+	var t: float = m.tank_capacity_t / m.flood_rate_t
+	_run(t - 0.5, 0.0, 0.0, 0.0, 1.0, 0.0)
+	expect(m.tank_water_t < m.tank_capacity_t - 0.1, "tank should not be full early (%f)" % m.tank_water_t)
+	_run(1.0, 0.0, 0.0, 0.0, 1.0, 0.0)
+	expect_near(m.tank_water_t, m.tank_capacity_t, 0.001, "tank full after capacity / flood rate")
+	expect_near(t, 14.3, 0.5, "full flood time about 14 s")
+
+
+func test_blow_empties_full_tank_in_capacity_over_rate() -> void:
+	m.tank_water_t = m.tank_capacity_t
+	var air_before: float = m.air_t
+	var t: float = m.tank_capacity_t / m.blow_rate_t
+	_run(t - 0.5, 0.0, 0.0, 0.0, 0.0, 1.0)
+	expect(m.tank_water_t > 0.1, "tank should not be empty early (%f)" % m.tank_water_t)
+	_run(1.0, 0.0, 0.0, 0.0, 0.0, 1.0)
+	expect_near(m.tank_water_t, 0.0, 0.001, "tank empty after capacity / blow rate")
+	expect_near(air_before - m.air_t, m.tank_capacity_t, 0.001, "air spent equals tank capacity")
+	expect_near(t, 7.1, 0.5, "full blow time about 7 s")
