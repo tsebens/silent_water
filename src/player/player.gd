@@ -423,5 +423,5 @@ func _release_held() -> void:
 
 func _tint_from_id(peer_id: int) -> void:
 	var mat: StandardMaterial3D = StandardMaterial3D.new()
-	mat.albedo_color = Color.from_hsv(fmod(float(peer_id % 997) * 0.618, 1.0), 0.5, 0.8)
+	mat.albedo_color = Color.from_hsv(fmod(float(peer_id % 997) * 0.618, 1.0), 0.5, 0.8)  # palette-ok: generated per-peer hue, not a design colour
 	_body_mesh.material_override = mat

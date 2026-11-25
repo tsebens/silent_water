@@ -174,6 +174,14 @@ evenly as one of today's cabin lights lights a surface 1.5 m away. Regenerate wi
 | White, 0.15x | ![](images/palette/palette_white_0.15x.png) |
 | Stealth red, 1x | ![](images/palette/palette_stealth_red_1x.png) |
 
+## No colour literals in code
+
+`tests/unit/test_no_colour_literals.gd` scans `src/` and fails on `Color(<number or string>)`, `Color8(...)`,
+`Color.from_*` and any named colour other than `Color.WHITE`, `Color.BLACK` and `Color.TRANSPARENT` (neutrals). Wrapping
+a swatch is fine: `Color(Palette.main().color(&"light_alarm"), 0.6)`. Allowed to hold values: `src/palette/`,
+`src/debug/`, `src/lab/` and `src/ui/reticle.gd`. A single line can opt out with a `# palette-ok: <reason>` comment;
+use it only for colours that are generated, not chosen (for example a hue per peer id).
+
 ## Still to move onto the palette
 
 - The game's hard-coded colours: the world, creatures and objectives are done (M13.6); still to go are the gauges,
