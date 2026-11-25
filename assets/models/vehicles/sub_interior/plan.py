@@ -383,7 +383,9 @@ def export_layout(spec: dict, hull: Hull, out: Path) -> None:
             cam["pos"] = [round(cx, 3), round(eye, 3), round(cz, 3)]
             cam["look"] = [round(cx + dx, 3), round(eye + dy, 3), round(cz + dz, 3)]
         cams.append(cam)
-    data = {"hull": {"length_m": hull.L, "width_m": hull.W, "height_m": hull.H, "rings": rings},
+    data = {"hull": {"length_m": hull.L, "width_m": hull.W, "height_m": hull.H,
+                     "wall_m": hull.wall, "plan_exponent": hull.pp, "profile_exponent": hull.pz,
+                     "section_exponent": hull.ps, "rings": rings},
             "main_deck_y": hull.deck_y(), "floors": floors, "items": items,
             "clearances": spec["clearances"], "compartments": spec["compartments"], "cameras": cams}
     out.write_text(json.dumps(data, indent=1), encoding="utf-8")

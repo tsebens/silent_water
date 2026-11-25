@@ -5,10 +5,9 @@
 
 [sub_resource type="ShaderMaterial" id="water_mat"]
 shader = ExtResource("2")
-shader_parameter/clip_radius = 1.86
 
 [sub_resource type="PlaneMesh" id="water_plane"]
-size = Vector2(4, 8.4)
+size = Vector2(3.8, 10)
 subdivide_width = 24
 subdivide_depth = 48
 

@@ -34,3 +34,20 @@ func test_water_lives_in_still_interior_frame() -> void:
 	w.set_tonnage(4.0)
 	expect_near(w.height_m(), SubPhysicsModel.bilge_height_m(4.0), 0.0001)
 	game.free()
+
+
+func test_water_stays_inside_hull_at_bilge() -> void:
+	var w: BilgeWater = (load("res://src/sub/bilge_water.tscn") as PackedScene).instantiate() as BilgeWater
+	runner.add_child(w)
+	var half: Vector3 = SubLayout.hull_size() / 2.0
+	for t: float in [0.5, 3.0, 8.0]:
+		w.set_tonnage(t)
+		# The plane is the hull's footprint; the shader clips what pokes out. Check the clip's reference
+		# (SubLayout.inside_hull) accepts the middle of the water and rejects the hull-corner of the plane.
+		expect(SubLayout.inside_hull(0.0, w.position.y, 0.0), "water middle is inside the hull at %f t" % t)
+		expect(not SubLayout.inside_hull(half.x, w.position.y, half.z), "plane corner is clipped at %f t" % t)
+		expect(w.position.y > SubLayout.hull_bottom_y(), "surface above the hull bottom")
+	var mat: ShaderMaterial = w.material_override as ShaderMaterial
+	expect_near(float(mat.get_shader_parameter(&"clip_axis_y")), SubLayout.hull_centre_y() - w.position.y, 0.0001, "clip axis follows hull centre")
+	expect_near((w.mesh as PlaneMesh).size.y, SubLayout.hull_size().z, 0.0001, "plane spans the hull length")
+	w.free()

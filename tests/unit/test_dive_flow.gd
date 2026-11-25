@@ -35,6 +35,13 @@ func _frames(n: int) -> void:
 		await runner.get_tree().physics_frame
 
 
+## Height at which the hull floats at rest with its current load: the hull's top just breaks the surface.
+func _floating_y() -> float:
+	var m: SubPhysicsModel = controller.model
+	var height: float = SubPhysicsModel.hull_top() - SubPhysicsModel.hull_bottom()
+	return -SubPhysicsModel.hull_bottom() - m.total_mass_t() / m.displacement_t * height
+
+
 func _hover_over_array() -> void:
 	controller.model.position = CanyonSite.OBJECTIVE_POSITION + Vector3(0, 15, 0)
 	controller.model.velocity = Vector3.ZERO
@@ -82,7 +89,7 @@ func test_progress_drains_when_position_is_lost() -> void:
 
 func test_surfacing_after_scan_completes_the_dive_then_resets() -> void:
 	scan.complete = true
-	controller.model.position = Vector3(0, -0.2, 30)
+	controller.model.position = Vector3(0, _floating_y(), 30)
 	await _frames(int(60 * (DiveDirector.SURFACED_HOLD_SEC + 0.5)))
 	expect_eq(director.phase, DiveDirector.Phase.COMPLETE)
 	expect(director.status_text().contains("DIVE COMPLETE"))
@@ -92,7 +99,7 @@ func test_surfacing_after_scan_completes_the_dive_then_resets() -> void:
 
 
 func test_surfacing_without_scan_does_not_complete() -> void:
-	controller.model.position = Vector3(0, -0.2, 30)
+	controller.model.position = Vector3(0, _floating_y(), 30)
 	await _frames(60 * 5)
 	expect_eq(director.phase, DiveDirector.Phase.DIVING)
 

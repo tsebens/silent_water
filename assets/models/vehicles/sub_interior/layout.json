@@ -3,6 +3,10 @@
   "length_m": 10.0,
   "width_m": 3.8,
   "height_m": 3.0,
+  "wall_m": 0.12,
+  "plan_exponent": 2.6,
+  "profile_exponent": 5.0,
+  "section_exponent": 2.4,
   "rings": [
    {
     "z": -4.98,

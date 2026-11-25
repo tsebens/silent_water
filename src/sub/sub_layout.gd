@@ -123,6 +123,51 @@ static func hull_size() -> Vector3:
 	return Vector3(float(h["width_m"]), float(h["height_m"]), float(h["length_m"]))
 
 
+## Hull shape parameters from the program (wall_m, plan_exponent, profile_exponent, section_exponent).
+static func hull_param(key: String) -> float:
+	_load()
+	return float((_data["hull"] as Dictionary)[key])
+
+
+## Lowest point of the hull's outer envelope, in the interior frame (the sub's origin).
+static func hull_bottom_y() -> float:
+	return to_interior(Vector3(0.0, -hull_size().y / 2.0, 0.0)).y
+
+
+## Highest point of the hull's outer envelope, in the interior frame.
+static func hull_top_y() -> float:
+	return to_interior(Vector3(0.0, hull_size().y / 2.0, 0.0)).y
+
+
+## Height of the hull's centre line in the interior frame.
+static func hull_centre_y() -> float:
+	return to_interior(Vector3.ZERO).y
+
+
+static func _superellipse_half(extent: float, t: float, p: float) -> float:
+	return extent * pow(1.0 - pow(minf(absf(t), 1.0), p), 1.0 / p)
+
+
+## Inner half-width and half-height of the hull's cross-section at hull station z (outer envelope less the wall).
+static func hull_inner_half(z: float) -> Vector2:
+	var size: Vector3 = hull_size()
+	var t: float = z / (size.z / 2.0)
+	var wall: float = hull_param("wall_m")
+	var hw: float = _superellipse_half(size.x / 2.0, t, hull_param("plan_exponent")) - wall
+	var hh: float = _superellipse_half(size.y / 2.0, t, hull_param("profile_exponent")) - wall
+	return Vector2(maxf(hw, 0.0), maxf(hh, 0.0))
+
+
+## True when the point (x across, y in the interior frame, z along) is inside the hull's inner surface.
+static func inside_hull(x: float, y: float, z: float) -> bool:
+	var half: Vector2 = hull_inner_half(z)
+	if half.x <= 0.0 or half.y <= 0.0:
+		return false
+	var e: float = hull_param("section_exponent")
+	var yc: float = y - hull_centre_y()
+	return pow(absf(x) / half.x, e) + pow(absf(yc) / half.y, e) <= 1.0
+
+
 ## A program clearance by key (aisle_min_m, walk_around_m, head_clear_m, hatch_width_m, ...).
 static func clearance(key: String) -> float:
 	_load()

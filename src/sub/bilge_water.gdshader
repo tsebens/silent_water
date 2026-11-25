@@ -1,7 +1,7 @@
 shader_type spatial;
 // Minimal shared water surface: translucent, gently rippling, with a bright
-// fresnel rim. Optionally clipped to a horizontal-cylinder hull (axis along Z)
-// so a flat plane inside the hull never pokes through the lining.
+// fresnel rim. Clipped to the hull's inner surface (the program's superellipse
+// envelope less the wall, axis along Z) so a flat plane never pokes through.
 render_mode cull_disabled, depth_draw_opaque, shadows_disabled;
 
 uniform vec4 water_color : source_color = vec4(0.05, 0.22, 0.28, 0.72);
@@ -10,8 +10,14 @@ uniform vec4 underside_color : source_color = vec4(0.25, 0.55, 0.62, 0.85);
 uniform float wave_height = 0.004;
 uniform float wave_speed = 0.6;
 uniform float wave_scale = 6.0;
-// Hull clip, in the node's local space. radius <= 0 disables the clip.
-uniform float clip_radius = 0.0;
+// Hull clip, in the node's local space; set from SubLayout by bilge_water.gd.
+// hull_half: outer half-width and half-height. Mirrors SubLayout.inside_hull.
+uniform vec2 hull_half = vec2(0.0);
+uniform float hull_half_length = 0.0;
+uniform float wall = 0.0;
+uniform float plan_exponent = 2.0;
+uniform float profile_exponent = 2.0;
+uniform float section_exponent = 2.0;
 uniform float clip_axis_y = 0.0;
 
 varying vec3 local_pos;
@@ -26,9 +32,13 @@ void vertex() {
 }
 
 void fragment() {
-	if (clip_radius > 0.0) {
+	if (hull_half_length > 0.0) {
+		float t = min(abs(local_pos.z) / hull_half_length, 1.0);
+		float hw = hull_half.x * pow(1.0 - pow(t, plan_exponent), 1.0 / plan_exponent) - wall;
+		float hh = hull_half.y * pow(1.0 - pow(t, profile_exponent), 1.0 / profile_exponent) - wall;
 		float dy = local_pos.y - clip_axis_y;
-		if (local_pos.x * local_pos.x + dy * dy > clip_radius * clip_radius) {
+		if (hw <= 0.0 || hh <= 0.0
+				|| pow(abs(local_pos.x) / hw, section_exponent) + pow(abs(dy) / hh, section_exponent) > 1.0) {
 			discard;
 		}
 	}

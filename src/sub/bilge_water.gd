@@ -5,8 +5,6 @@ extends MeshInstance3D
 ## child of the still interior, so it does not slosh with hull motion. Purely
 ## client-side: it reads the replicated tonnage from the `sub_readouts` node.
 
-const HULL_RADIUS: float = 1.86
-const HULL_AXIS_Y: float = 0.98
 ## Rise/fall smoothing (1/s), so leaks and the pump move the surface smoothly.
 const RESPONSE: float = 4.0
 
@@ -21,6 +19,20 @@ var _source: Node
 
 func _ready() -> void:
 	add_to_group(&"bilge_water")
+	var size: Vector3 = SubLayout.hull_size()
+	var mat: ShaderMaterial = material_override as ShaderMaterial
+	if mat != null:
+		mat.set_shader_parameter(&"hull_half", Vector2(size.x, size.y) / 2.0)
+		mat.set_shader_parameter(&"hull_half_length", size.z / 2.0)
+		mat.set_shader_parameter(&"wall", SubLayout.hull_param("wall_m"))
+		mat.set_shader_parameter(&"plan_exponent", SubLayout.hull_param("plan_exponent"))
+		mat.set_shader_parameter(&"profile_exponent", SubLayout.hull_param("profile_exponent"))
+		mat.set_shader_parameter(&"section_exponent", SubLayout.hull_param("section_exponent"))
+	var plane: PlaneMesh = mesh as PlaneMesh
+	if plane != null:
+		plane.size = Vector2(size.x, size.z)
+	position.x = 0.0
+	position.z = 0.0
 	set_tonnage(0.0)
 
 
@@ -41,8 +53,8 @@ func set_tonnage(tonnes: float) -> void:
 	visible = h > 0.0005
 	var mat: ShaderMaterial = material_override as ShaderMaterial
 	if mat != null:
-		# The node sits at the floor + h, so the hull axis is that far below it.
-		mat.set_shader_parameter(&"clip_axis_y", HULL_AXIS_Y - position.y)
+		# The node sits at the floor + h, so the hull's centre line is that far below it.
+		mat.set_shader_parameter(&"clip_axis_y", SubLayout.hull_centre_y() - position.y)
 
 
 ## Height of the surface above the floor.
