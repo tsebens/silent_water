@@ -20,6 +20,7 @@ behaviour:
     hologram_mount: HoloMount
     backdrop_anchor: BackPanelAnchor
     standing_eye: OperatorEye
+    leaning_eye: LeanEye
     noise_repeater: Shelf/NoiseRepeater
 footprint_mm:
 - 2260.0

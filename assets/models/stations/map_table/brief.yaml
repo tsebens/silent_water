@@ -64,8 +64,8 @@ functions:                    # authoritative: one entry per real game function
 constraints:
   kind: station
   frame: floor at Y=0, back on Z=0 against the hull wall, operator at +Z facing -Z
-  operator_eye_height_m: 1.65  # standing (answer 1)
+  operator_eye_height_m: 1.40  # the LEANING eye (#430): the standing 1.65 m (answer 1) less MapTable.LEAN_DOWN 0.25 m; node LeanEye, and 0.15 m toward the table
   aisle_min_m: 0.8             # the whole station, console included, stays clear of the walkway (answer 5)
-  reach_m: 0.75               # console controls from the operator's eye
+  reach_m: 0.75               # console controls from the operator's leaning eye
   triangle_budget: 12000
   placement: the map_table entry of program.yaml in #378 (port bay, footprint about 2.2 x 0.9 m, top at about 0.75 m)

@@ -101,9 +101,10 @@ displays:
   - The pilot has a 20 cm hologram locked centred on the sub, low and out of the dome view.
   - Sonar has its own 2D screen, sub-centred by default but free to zoom, pan and rotate; it is not shared with the pilot.
   - The map table covers every scale for the crew to plan around; its hologram is capped at 0.7 m to fit the headroom.
-  - Everyone at the map table stands, the operator included, so the hologram is tuned for one eye height (1.65 m),
-    about 0.2 m above the slab's top. A seated eye (1.2 m) would sit inside the slab. The top stays at desk height,
-    so the slab still fits under the overhead.
+  - Everyone at the map table stands to the table and leans over it (MapTable.lean_eye, 0.25 m down and 0.15 m toward the
+    hologram), so the hologram is tuned for a standing eye of 1.65 m and a leaning eye of 1.40 m, about 0.65 m above the
+    slab's top. A seated eye (1.2 m) would sit inside the slab. The top stays at desk height, so the slab still fits
+    under the overhead. The operator's console is level with the table top and reached from the leaning eye.
 
 design_notes:
   - "The operational core shares one volume: the pilot in the dome, sonar a metre behind their right shoulder, countermeasures beside sonar, and the map table across the aisle. Nobody is more than a few steps from anyone else."
