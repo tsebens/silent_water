@@ -1,10 +1,34 @@
 # Map table: concept
 
-Concept record for the map table. Tracked in #319 (the free-standing circular table, rounds 1 to 3)
-and #329 (the table moved to the hull side, rounds 4 and 5). The locked primary concept art is
-`map_table_primary.png` in this folder; `map_table_operator_reference.png` is the companion shot
-from the seated operator's eye level. Everything else explored on the way is linked below by commit
-permalink.
+Concept record for the map table. Tracked in #319 (the free-standing circular table, rounds 1 to 3),
+#329 (the table moved to the hull side, rounds 4 and 5) and #380 (round 6, the build). **Round 6 is the
+current lock** (below). Round 5's primary, `map_table_primary.png`, stays as the reference for where the
+table sits; `map_table_operator_reference.png` is round 5's companion shot from the seated operator's eye
+level. Everything else explored on the way is linked below by commit permalink.
+
+## Round 6: locked (2026-11-25, #380)
+
+![Round 6: the table in the port bay, the console in the front edge, the relief and its back panel](map_table_round6_primary.png)
+
+Tristan's round 6 art, built as a generated station (`docs/asset_process.md`) at the port-bay position in
+`assets/models/vehicles/sub_interior/program.yaml`. Where it differs from round 5 below, round 6 wins.
+
+- **The hologram changes model.** The terrain is a **low relief lying on the tabletop**: glowing contour lines
+  in readout cyan on a dark base, with pins and contacts as small glowing dots. It is **not** a 0.7 m slab.
+  A **curved panel of light** stands along the back edge, following the hull: translucent, faintly glowing,
+  open to the air.
+- **The back panel is a backdrop for now.** It shows nothing. Making that space useful (instrumentation, a
+  depth profile) is a later idea, so keep it simple to extend.
+- **The operator stands** at a console jutting from the middle of the front edge, as the observers do, so
+  everyone shares one perspective (#378's reasoning holds). The art's seat is not built.
+- **The console** carries a trackball (pan), a zoom lever, a guarded toggle with a lamp (follow the sub) and a
+  **rotation knob that is decoration only**. Rotation is real, but is driven by mouse and keyboard, like the
+  pins.
+- **The instruments** are a shelf of separate modules on an orange rail with two work lamps on arms, replacing
+  round 5's continuous cab cowl. Besides the noise repeater, the shelf **may carry non-functional modules**
+  (screens, gauge clusters, switch panels) as set dressing.
+- **The pilot's small hologram** uses the same display model: a small disc of relief, heading-up and centred
+  on the sub.
 
 ## What the table is for
 
@@ -167,7 +191,17 @@ Links: [var13 context](https://github.com/tsebens/silent_water/blob/bc404ae23b9c
 
 None at present.
 
+## Decisions recorded on #380 (round 6)
+
+- **The operator stands**, at the console in the middle of the front edge. No seat.
+- **The hologram is a low relief on the tabletop with a curved back panel**, replacing the 0.7 m slab.
+- **The back panel is a plain backdrop** for now; its use as instrument space is a later idea.
+- **The shelf may carry non-functional modules** as set dressing, beside the noise repeater.
+- **Rotation is driven by mouse and keyboard.** The console's rotation knob is decoration.
+
 ## Decisions recorded on #329
+
+Round 6 supersedes the first (the operator sits) and second (a filled slab) of these.
 
 - The operator sits at the **middle** of the front edge, not the aft end of the D.
 - The slab is **filled** with terrain to its faces; no isolated plug.
