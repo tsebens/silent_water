@@ -47,3 +47,17 @@ The host writes `sub_transform` at physics rate. Clients receive it at 20 Hz and
 ### Bilge water surface
 
 `BilgeWater` (`src/sub/bilge_water.tscn`) is a child of the still `Interior`. It sits at `bilge_height_m(bilge_water_t)` above the floor, is hidden when dry, and eases toward the replicated tonnage on every peer. Its shader (`bilge_water.gdshader`) is a minimal translucent rippling surface, clipped to the hull cylinder; the ocean surface can adopt it.
+
+## Program frame and the interior frame
+
+The sub interior program (`assets/models/vehicles/sub_interior/program.yaml`) is written in the **program frame**: origin at the hull's centre, +X starboard, +Y up, +Z toward the stern, with the main deck at y = -0.95. The game's interior frame (everything under `Interior`, above) has its origin on the main cabin floor at the centreline. The two differ only in height:
+
+| Interior | = Program |
+| --- | --- |
+| x | x |
+| y | y + 0.95 (the program's `main_deck_y`, negated) |
+| z | z |
+
+So the main deck is y = 0, the sunken cockpit floor (`floor_offset_m: -0.20`) is y = -0.20, and a standing eye (1.65 m) is y = 1.65.
+
+`plan.py` resolves the program into `layout.json` (stations, features, footprints, floors, clearances, cameras). `SubLayout` (`src/sub/sub_layout.gd`) reads it and is the **only** code that converts between the frames: `to_interior`, `to_program`, `position(id)`, `footprint(id)`, `floor_y(compartment)`, `cockpit_floor_offset()`, `clearance(key)`. Other systems ask it; none repeat the offset. After changing `program.yaml`, run `uv run --project tools/asset_pipeline python assets/models/vehicles/sub_interior/plan.py` and commit `layout.json`; `tests/unit/test_layout_in_sync.gd` fails when it is stale.

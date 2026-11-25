@@ -1,9 +1,10 @@
 """Draw and check the sub interior program (program.yaml): top, side and front views plus a clearance report.
 
-    uv run --project tools/asset_pipeline python assets/models/vehicles/sub_interior/plan.py [out_dir]
+    uv run --project tools/asset_pipeline python assets/models/vehicles/sub_interior/plan.py [out_dir [layout_json]]
 
 Writes plan_top.png, plan_side.png, plan_front.png and clearance.txt to out_dir (default: this folder's
-renders/ subfolder). The hull is a superellipse from the top and from the front, so the deck width and the
+renders/ subfolder) and layout.json to layout_json (default: this folder; the game's SubLayout reads it,
+and tests/unit/test_layout_in_sync.gd regenerates it elsewhere to check it is current). The hull is a superellipse from the top and from the front, so the deck width and the
 headroom are computed per station instead of being assumed.
 """
 from __future__ import annotations
@@ -384,7 +385,7 @@ def export_layout(spec: dict, hull: Hull, out: Path) -> None:
         cams.append(cam)
     data = {"hull": {"length_m": hull.L, "width_m": hull.W, "height_m": hull.H, "rings": rings},
             "main_deck_y": hull.deck_y(), "floors": floors, "items": items,
-            "compartments": spec["compartments"], "cameras": cams}
+            "clearances": spec["clearances"], "compartments": spec["compartments"], "cameras": cams}
     out.write_text(json.dumps(data, indent=1), encoding="utf-8")
 
 
@@ -399,7 +400,7 @@ def main() -> None:
     draw_front(spec, hull, out / "plan_front.png")
     report = clearance_report(spec, hull)
     (out / "clearance.txt").write_text("\n".join(report) + "\n", encoding="utf-8")
-    export_layout(spec, hull, HERE / "layout.json")
+    export_layout(spec, hull, Path(sys.argv[2]) if len(sys.argv) > 2 else HERE / "layout.json")
     print("\n".join(report))
 
 
