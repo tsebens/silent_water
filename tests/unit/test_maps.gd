@@ -75,7 +75,8 @@ func test_table_click_picks_the_real_terrain() -> void:
 	table.holo.focus = Vector3(0, -100, -200)
 	await _frames(3)
 	# A ray straight down through the display over the middle of the canyon.
-	var over: Vector3 = table.holo.to_display(Vector3(0, 0, -200))
+	# Off the exact centre line: a ray along a mesh seam can slip between two triangles.
+	var over: Vector3 = table.holo.to_display(Vector3(1.3, 0, -200.7))
 	var from_r: Vector3 = table.holo.global_transform * Vector3(over.x, table.holo.height + 0.2, over.z)
 	var hit: Variant = table.pick_world_from_ray(from_r, -table.holo.global_basis.y)
 	expect(hit != null, "the ray should find terrain")
