@@ -12,9 +12,9 @@ signal marks_changed
 enum Kind { WAYPOINT, DANGER, APEX, NOTE, CONTACT }
 
 const KIND_NAMES: PackedStringArray = ["WAYPOINT", "DANGER", "LAST SEEN: APEX", "NOTE", "SONAR CONTACT"]
-const KIND_COLORS: Array[Color] = [
-	Color(0.35, 0.9, 1.0), Color(1.0, 0.3, 0.25), Color(1.0, 0.55, 0.15), Color(0.9, 0.9, 0.85), Color(1.0, 0.8, 0.2),
-]
+## Palette swatch per [enum Kind] (docs/palette.md): markers and pins are purple, threats alarm red, a sonar
+## contact is "unknown" yellow until contact classes (#359) say otherwise.
+const KIND_SWATCHES: Array[StringName] = [&"light_marker", &"light_alarm", &"light_alarm", &"light_marker", &"light_warn"]
 const MAX_PINS: int = 64
 
 ## [{id, pos (world), kind, author}], oldest first.
@@ -134,7 +134,7 @@ static func kind_name(kind: int) -> String:
 
 
 static func kind_color(kind: int) -> Color:
-	return KIND_COLORS[clampi(kind, 0, KIND_COLORS.size() - 1)]
+	return Palette.main().color(KIND_SWATCHES[clampi(kind, 0, KIND_SWATCHES.size() - 1)])
 
 
 ## Any peer: place a pin at a world position.

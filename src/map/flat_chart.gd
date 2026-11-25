@@ -15,7 +15,6 @@ extends MeshInstance3D
 ## World metres from the centre to the edge of the chart.
 @export var range_m: float = 320.0
 @export var game: Game
-@export var color: Color = Color(0.3, 0.85, 0.95)
 
 var viewport: SubViewport
 var canvas: FlatChartCanvas
@@ -87,30 +86,37 @@ class FlatChartCanvas:
 	func _draw() -> void:
 		if chart == null or chart.game == null:
 			return
-		var c: Color = chart.color
+		var pal: Palette = Palette.main()
+		var c: Color = pal.color(&"light_readout")
 		var mid: Vector2 = Vector2(chart.resolution, chart.resolution) * 0.5
 		var r: float = float(chart.resolution) * 0.5 * 0.96
-		draw_circle(mid, r, Color(0.02, 0.07, 0.09))
+		draw_circle(mid, r, pal.color(&"info_black"))
 		var ppm: float = chart.pixels_per_m()
 		for ring: int in range(1, 4):
-			draw_arc(mid, chart.range_m * ppm * float(ring) / 3.0, 0.0, TAU, 64, Color(c, 0.28), 2.0)
-		draw_arc(mid, r, 0.0, TAU, 96, Color(c, 0.8), 4.0)
-		draw_line(mid + Vector2(0, -r), mid + Vector2(0, r), Color(c, 0.18), 1.5)
-		draw_line(mid + Vector2(-r, 0), mid + Vector2(r, 0), Color(c, 0.18), 1.5)
+			draw_arc(mid, chart.range_m * ppm * float(ring) / 3.0, 0.0, TAU, 64, _alpha(c, 0.28), 2.0)
+		draw_arc(mid, r, 0.0, TAU, 96, _alpha(c, 0.8), 4.0)
+		draw_line(mid + Vector2(0, -r), mid + Vector2(0, r), _alpha(c, 0.18), 1.5)
+		draw_line(mid + Vector2(-r, 0), mid + Vector2(r, 0), _alpha(c, 0.18), 1.5)
 		if _map_model == null:
 			_map_model = chart.get_tree().get_first_node_in_group(&"map_model") as MapModel
-		_draw_cone()
+		_draw_cone(c)
 		if _map_model != null:
 			_draw_marks()
 			_draw_pins()
 		var target: Node3D = chart.game.get_node_or_null("World/ScanTarget") as Node3D
 		if target != null:
-			_diamond(chart.to_display(target.position), 9.0, Color(1.0, 0.85, 0.3), mid, r)
+			_diamond(chart.to_display(target.position), 9.0, pal.color(&"light_marker"), mid, r)
 		# The sub: an arrow, bow up.
 		draw_colored_polygon(
 			PackedVector2Array([mid + Vector2(0, -16), mid + Vector2(10, 12), mid + Vector2(0, 6), mid + Vector2(-10, 12)]),
-			Color(0.85, 1.0, 1.0)
+			c.lightened(0.5)
 		)
+
+	## [param c] with alpha [param a].
+	static func _alpha(c: Color, a: float) -> Color:
+		var o: Color = c
+		o.a = a
+		return o
 
 	func _inside(p: Vector2, mid: Vector2, r: float) -> bool:
 		return p.distance_to(mid) <= r
@@ -120,7 +126,7 @@ class FlatChartCanvas:
 			return
 		draw_colored_polygon(PackedVector2Array([p + Vector2(0, -s), p + Vector2(s, 0), p + Vector2(0, s), p + Vector2(-s, 0)]), col)
 
-	func _draw_cone() -> void:
+	func _draw_cone(readout: Color) -> void:
 		var sonar: SonarStation = chart.get_tree().get_first_node_in_group(&"sonar") as SonarStation
 		if sonar == null or sonar.headset == null or sonar.headset.state.holder == InteractableState.NO_HOLDER:
 			return
@@ -133,8 +139,8 @@ class FlatChartCanvas:
 		for i: int in range(13):
 			var a: float = centre_angle - half + 2.0 * half * float(i) / 12.0
 			pts.append(mid + Vector2.from_angle(a) * len_px)
-		draw_colored_polygon(pts, Color(1.0, 0.85, 0.2, 0.35))
-		draw_polyline(PackedVector2Array([pts[1], mid, pts[pts.size() - 1]]), Color(1.0, 0.85, 0.2, 0.9), 2.5)
+		draw_colored_polygon(pts, _alpha(readout, 0.35))
+		draw_polyline(PackedVector2Array([pts[1], mid, pts[pts.size() - 1]]), _alpha(readout, 0.9), 2.5)
 
 	func _draw_marks() -> void:
 		var mid: Vector2 = Vector2(chart.resolution, chart.resolution) * 0.5
@@ -147,7 +153,7 @@ class FlatChartCanvas:
 			var p: Vector2 = chart.to_display(m["pos"] as Vector3)
 			if _inside(p, mid, r):
 				var col: Color = MapModel.kind_color(MapModel.Kind.CONTACT)
-				draw_circle(p, lerpf(5.0, 14.0, k), Color(col, 0.85 * k))
+				draw_circle(p, lerpf(5.0, 14.0, k), _alpha(col, 0.85 * k))
 
 	func _draw_pins() -> void:
 		var mid: Vector2 = Vector2(chart.resolution, chart.resolution) * 0.5
@@ -157,7 +163,11 @@ class FlatChartCanvas:
 			if not _inside(p, mid, r):
 				continue
 			var col: Color = MapModel.kind_color(int(pin["kind"]))
-			if int(pin["kind"]) == MapModel.Kind.CONTACT:
+			var kind: int = int(pin["kind"])
+			if kind == MapModel.Kind.CONTACT:
 				draw_arc(p, 9.0, 0.0, TAU, 20, col, 3.0)
+			elif kind == MapModel.Kind.DANGER or kind == MapModel.Kind.APEX:
+				# Threats are triangles, so they differ from markers by shape as well as colour.
+				draw_colored_polygon(PackedVector2Array([p + Vector2(0, -10), p + Vector2(9, 7), p + Vector2(-9, 7)]), col)
 			else:
 				_diamond(p, 8.0, col, mid, r)
