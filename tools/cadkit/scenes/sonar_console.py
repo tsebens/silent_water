@@ -113,6 +113,18 @@ def _check(body: bd.Part, frames: list[bd.Part], hook: bd.Part) -> None:
     expect(abs(body.bounding_box().min.Y) < 0.01, "console stands on the floor")
     for f in frames:
         expect(f.bounding_box().min.Y > -0.01, "side frames do not go below the floor")
+    # bd.Plane.YZ's normal is -X, so an extrusion of FRAME_T runs from X=-FRAME_T to 0; the frames are shifted to compensate.
+    # Measured, not assumed: each frame's outer face is FRAME_PROUD past the body side and its band overlaps the body.
+    right, left = sorted(frames, key=lambda f: f.bounding_box().min.X)[::-1]
+    rb, lb = right.bounding_box(), left.bounding_box()
+    expect(abs(rb.max.X - (W / 2 + FRAME_PROUD)) < 0.01 and abs(rb.min.X - (W / 2 + FRAME_PROUD - FRAME_T)) < 0.01,
+           f"right frame spans X {W / 2 + FRAME_PROUD - FRAME_T:.0f}..{W / 2 + FRAME_PROUD:.0f} ({rb.min.X:.1f}..{rb.max.X:.1f})")
+    expect(abs(lb.min.X + (W / 2 + FRAME_PROUD)) < 0.01 and abs(lb.max.X + (W / 2 + FRAME_PROUD - FRAME_T)) < 0.01,
+           f"left frame spans X -{W / 2 + FRAME_PROUD:.0f}..-{W / 2 + FRAME_PROUD - FRAME_T:.0f} ({lb.min.X:.1f}..{lb.max.X:.1f})")
+    expect(abs(lb.min.X + rb.max.X) < 0.01, "frames mirror each other about the console centre")
+    hb = hook.bounding_box()
+    expect(abs(hb.min.X - (W / 2 + FRAME_PROUD)) < 0.01 and abs(hb.max.X - (W / 2 + FRAME_PROUD + HOOK_OUT)) < 0.01,
+           f"hook stands out of the right frame ({hb.min.X:.1f}..{hb.max.X:.1f})")
     parts = [body, hook, *frames]
     lo, hi = min(p.bounding_box().min.X for p in parts), max(p.bounding_box().max.X for p in parts)
     expect(hi - lo <= MAX_W + 0.01, f"console overall width at most {MAX_W:.0f} mm (program's sonar desk), body, frame and hook ({hi - lo:.1f})")
