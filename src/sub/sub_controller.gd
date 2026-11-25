@@ -12,6 +12,8 @@ const LAYER_EXTERIOR: int = 1 << 3
 ## Hull collision box in sub-local space (matches the interior's outer shell).
 const HULL_SIZE: Vector3 = Vector3(4.0, 4.0, 10.0)
 const HULL_CENTER: Vector3 = Vector3(0, 0.98, 0)
+## Longest ray for the altitude readout (m). Reported when nothing is below.
+const ALTITUDE_MAX: float = 200.0
 ## Minimum impact speed that counts as a strike.
 const STRIKE_THRESHOLD: float = 0.15
 
@@ -203,6 +205,28 @@ func thruster_intensity() -> float:
 	return THRUSTER_INTENSITY * absf(rudder.get_value()) if rudder != null else 0.0
 
 
-## Reads a replicated readout by name, for gauges.
+## Height above the terrain straight below the sub (m), clamped to
+## [constant ALTITUDE_MAX]. Computed locally on every peer from the terrain it
+## already has, so nothing is replicated. In render space the sub sits at the
+## origin and world-down is the inverse of the sub's rotation applied to down.
+func altitude() -> float:
+	if sub_frame == null or not sub_frame.is_inside_tree():
+		return ALTITUDE_MAX
+	var space: PhysicsDirectSpaceState3D = sub_frame.get_viewport().world_3d.direct_space_state
+	if space == null:
+		return ALTITUDE_MAX
+	var down: Vector3 = sub_frame.render_transform().basis.inverse() * Vector3.DOWN
+	var query: PhysicsRayQueryParameters3D = PhysicsRayQueryParameters3D.create(
+		Vector3.ZERO, down.normalized() * ALTITUDE_MAX, LAYER_EXTERIOR)
+	var hit: Dictionary = space.intersect_ray(query)
+	if hit.is_empty():
+		return ALTITUDE_MAX
+	return (hit["position"] as Vector3).length()
+
+
+## Reads a readout by name, for gauges. Altitude is computed on demand; the
+## rest are replicated.
 func readout(property: StringName) -> float:
+	if property == &"altitude":
+		return altitude()
 	return float(get(property))
