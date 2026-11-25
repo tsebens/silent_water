@@ -53,6 +53,19 @@ const OUTLINE_SEGMENTS: int = 48
 @export var table_rotation_deg: float = 0.0
 ## Centre on the sub; otherwise centre on [member focus].
 @export var follow_sub: bool = true
+## Stand a translucent curved panel of light along the back edge (table only).
+## Plain backdrop; instruments can later mount on [member BackPanel] "Surface".
+@export var back_panel: bool = false
+## Radius of the panel's curve (display metres); its centre lies toward the viewer.
+@export var panel_radius: float = 3.0
+## Chord width of the panel (display metres).
+@export var panel_width: float = 0.9
+## Height of the panel above the display's base (display metres).
+@export var panel_height: float = 0.4
+## Gap between the back edge of the outline and the panel's centre line.
+@export var panel_gap: float = 0.03
+## Opacity of the panel's glow.
+@export var panel_alpha: float = 0.12
 ## Scale of markers (display metres).
 @export var marker_size: float = 0.03
 ## Draw the fading sonar-mark blobs ([member MapModel.marks]).
@@ -96,6 +109,8 @@ func _ready() -> void:
 	_markers.add_child(_marks_root)
 	if relief:
 		_build_base()
+	if back_panel:
+		_build_back_panel()
 	_sub_arrow = _marker(_arrow_mesh(), readout_color().lightened(0.5), 0.5)
 	_objective = _marker(_diamond_mesh(), Palette.main().color(&"light_marker"), 0.45)
 	_cone = _marker(null, readout_color(), 0.05)
@@ -152,6 +167,48 @@ func _build_base() -> void:
 	_base.position = Vector3(0, -0.001, 0)
 	_base.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	add_child(_base)
+
+
+## The back panel: a curved sheet of faint light standing behind the relief,
+## concave toward the viewer. Its "Surface" child is a clear mount point at the
+## panel's centre, facing the viewer (+Z), for content added later.
+func _build_back_panel() -> void:
+	var half: float = clampf(panel_width * 0.5, 0.01, panel_radius * 0.99)
+	var half_angle: float = asin(half / panel_radius)
+	var back_z: float = (d_flat_z if d_shaped else -1.0) * clip_rz - panel_gap
+	# Circle centre sits toward the viewer so the apex touches back_z.
+	var centre_z: float = back_z + panel_radius
+	var st: SurfaceTool = SurfaceTool.new()
+	st.begin(Mesh.PRIMITIVE_TRIANGLES)
+	var segs: int = 24
+	for i: int in range(segs):
+		var a0: float = lerpf(-half_angle, half_angle, float(i) / float(segs))
+		var a1: float = lerpf(-half_angle, half_angle, float(i + 1) / float(segs))
+		var p0: Vector3 = Vector3(sin(a0) * panel_radius, 0.0, centre_z - cos(a0) * panel_radius)
+		var p1: Vector3 = Vector3(sin(a1) * panel_radius, 0.0, centre_z - cos(a1) * panel_radius)
+		var up: Vector3 = Vector3(0, panel_height, 0)
+		st.set_normal(Vector3(0, 0, 1))
+		for v: Vector3 in [p0, p0 + up, p1, p1, p0 + up, p1 + up]:
+			st.add_vertex(v)
+	var mat: StandardMaterial3D = StandardMaterial3D.new()
+	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	mat.blend_mode = BaseMaterial3D.BLEND_MODE_ADD
+	mat.cull_mode = BaseMaterial3D.CULL_DISABLED
+	mat.depth_draw_mode = BaseMaterial3D.DEPTH_DRAW_DISABLED
+	var c: Color = readout_color()
+	c.a = panel_alpha
+	mat.albedo_color = c
+	var panel: MeshInstance3D = MeshInstance3D.new()
+	panel.name = "BackPanel"
+	panel.mesh = st.commit()
+	panel.material_override = mat
+	panel.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	add_child(panel)
+	var surface: Node3D = Node3D.new()
+	surface.name = "Surface"
+	surface.position = Vector3(0, panel_height * 0.5, back_z)
+	panel.add_child(surface)
 
 
 ## World metres represented by one display metre, clamped to the zoom range.
