@@ -182,3 +182,34 @@ func test_pump_beats_one_leak_but_not_two() -> void:
 	m.change_bilge(2.0 * leaks.leak_flow * 10.0)
 	m.change_bilge(-leaks.pump_flow * 10.0)
 	expect(m.bilge_water_t > before, "two leaks + pump: rising")
+
+
+func _station_node(path: String) -> Node3D:
+	return game.get_node("Interior/" + path) as Node3D
+
+
+func test_ballast_station_is_at_the_program_panel() -> void:
+	var fp: Rect2 = SubLayout.footprint(&"ballast")
+	for n: String in ["FloodValve", "BlowValve", "TankGauge", "AirGauge", "NoiseGauge"]:
+		var p: Vector3 = _station_node("Stations/Ballast/" + n).position
+		expect(fp.grow(0.3).has_point(Vector2(p.x, p.z)), "%s at the ballast panel (%s)" % [n, p])
+		expect(p.y > SubLayout.position(&"ballast").y, "%s above the floor" % n)
+
+
+func test_engineering_gauge_is_at_the_program_panel() -> void:
+	var p: Vector3 = _station_node("Stations/Engineering/EngineGauge").position
+	expect(SubLayout.footprint(&"engineering").grow(0.3).has_point(Vector2(p.x, p.z)), "engine gauge at the engineering panel (%s)" % p)
+
+
+func test_bilge_controls_are_beside_the_program_bilge_well() -> void:
+	var fp: Rect2 = SubLayout.footprint(&"bilge")
+	for n: String in ["Pump", "BilgeGauge", "NoiseGauge"]:
+		var p: Vector3 = _station_node("Stations/Bilge/" + n).position
+		expect(fp.grow(1.0).has_point(Vector2(p.x, p.z)), "%s near the bilge well (%s)" % [n, p])
+		expect(SubLayout.inside_hull(p.x, p.y, p.z), "%s inside the hull (%s)" % [n, p])
+
+
+func test_every_leak_is_inside_the_hull() -> void:
+	for leak: Node in game.get_node("Interior/Leaks").get_children():
+		var p: Vector3 = (leak as Node3D).position
+		expect(SubLayout.inside_hull(p.x, p.y, p.z), "%s inside the hull (%s)" % [leak.name, p])
