@@ -273,7 +273,7 @@ Everything outside the files in this repository:
 - **Secrets:** `CLAUDE_CODE_OAUTH_TOKEN` (output of `claude setup-token`; runs bill to that subscription) and `GH_MCP_PAT` (issues and pull requests read/write, user projects read/write, workflows; classic `repo` + `project` + `workflow` also works). For notifications: `HUMAN_NOTIFY_URL` and `HUMAN_NOTIFY_TOKEN`, the fire URL and bearer token of the scheduled task's API trigger (claude.ai/code/routines → the task → Trigger → API → Generate token; the token is shown once and scoped to that task).
 - **Variables:** `WORKER_CAP` (2), `PIPELINE_PAUSED` (`false`), `PIPELINE_REVIEW_INTERVAL` (minutes between audits; default 360 when unset).
 - **Labels:** the table above.
-- **Scheduled task:** "Silent Water: pipeline needs Tristan", no schedule, a fresh session per fire, push notifications on. Its prompt is the liaison described under "Notifying Tristan".
+- **Scheduled task:** "Silent Water: pipeline needs Tristan", no schedule, a fresh session per fire, push notifications on. Its prompt is the liaison described under "Notifying Tristan". **`tsebens/silent_water` must be attached as one of the task's repositories** (claude.ai/code/routines → the task → edit): without it the session it opens has no GitHub access at all and can only report that it couldn't read the issue.
 - **Branches:** `dev` default; branch protection on `dev` (PRs only, CI required) and `main` (PRs from `dev`, merged by Tristan).
 
 Portability to another repository: copy `.github/` and this document, create the labels, add the two secrets, set the variables, make the integration branch the default.
