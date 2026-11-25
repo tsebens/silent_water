@@ -36060,15 +36060,15 @@
    "compartment": "engineering",
    "kind": "panel",
    "side": "port",
-   "z": 3.25,
+   "z": 3.275,
    "footprint": [
-    1.0,
+    0.95,
     0.4
    ],
    "floor_box": [
     -1.0473,
     -0.6473,
-    2.75,
+    2.8,
     3.75
    ],
    "floor_y": -0.95
@@ -36088,6 +36088,24 @@
     0.45,
     3.75,
     4.45
+   ],
+   "floor_y": -0.95
+  },
+  {
+   "id": "scanner",
+   "compartment": "engineering",
+   "kind": "panel",
+   "side": "starboard",
+   "z": 3.55,
+   "footprint": [
+    0.4,
+    0.4
+   ],
+   "floor_box": [
+    0.6473,
+    1.0473,
+    3.35,
+    3.75
    ],
    "floor_y": -0.95
   },
@@ -36168,6 +36186,28 @@
     1.1676,
     3.15,
     3.35
+   ],
+   "floor_y": -0.95
+  },
+  {
+   "id": "status_board",
+   "compartment": "bulkhead",
+   "kind": "wall_display",
+   "side": "centre",
+   "z": 1.5,
+   "footprint": [
+    0.05,
+    1.0
+   ],
+   "mounted": true,
+   "board_bottom_m": 2.0,
+   "facing": "forward",
+   "notes": "Orders and dive status, above the bulkhead hatch.",
+   "floor_box": [
+    -0.5,
+    0.5,
+    1.475,
+    1.525
    ],
    "floor_y": -0.95
   }

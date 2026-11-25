@@ -117,7 +117,8 @@ def link_hosts(spec: dict) -> None:
 
 def clearance_report(spec: dict, hull: Hull) -> list[str]:
     c = spec["clearances"]
-    items = spec["stations"] + spec["features"]
+    # Wall-mounted items (`mounted: true`, e.g. the status board above the hatch) take no floor.
+    items = [i for i in spec["stations"] + spec["features"] if not i.get("mounted")]
     lines, fails = [], 0
     for it in items:
         x0, x1, z0, z1 = place(it, hull)

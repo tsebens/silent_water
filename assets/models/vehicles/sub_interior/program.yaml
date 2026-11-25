@@ -67,8 +67,11 @@ stations:
      display: {size: table, placement: a curved slab of light filling the D-shaped top, capped at 0.7 m tall, purpose: every scale for the crew; one operator moves the camera, observers place pins; everyone stands, so all share one perspective}}
   - {id: engineering,     compartment: engineering, kind: panel, side: starboard, z: 2.3, footprint: [1.2, 0.45]}
   - {id: life_support,    compartment: engineering, kind: panel, side: port,      z: 2.3, footprint: [1.0, 0.5]}
-  - {id: ballast,         compartment: engineering, kind: panel, side: port,      z: 3.25, footprint: [1.0, 0.4]}
+  - {id: ballast,         compartment: engineering, kind: panel, side: port,      z: 3.275, footprint: [0.95, 0.4]}
   - {id: bilge,           compartment: engineering, kind: well,  side: centre,    z: 4.1, footprint: [0.7, 0.9]}
+  # The scanner's wall panel (switch and SCAN gauge). The engineering panel and the drop weights fill the starboard
+  # wall beside the hatch, so it sits aft of the drop weights, ahead of the bilge well.
+  - {id: scanner,         compartment: engineering, kind: panel, side: starboard, z: 3.55, footprint: [0.4, 0.4]}
 
 features:
   - id: lock_out_trunk
@@ -87,6 +90,11 @@ features:
      notes: Patches, scrubber canisters, cargo.}
   - {id: drop_weights, compartment: engineering, kind: release_lever, side: starboard, z: 3.25, footprint: [0.2, 0.15],
      notes: One-time emergency release, across the aisle from the ballast valves.}
+  # Wall-mounted: takes no floor (`mounted`), so it is left out of the clearance report. The mission orders and
+  # dive status, on the forward face of the bulkhead above the hatch (lintel 1.85 m), readable from the map table.
+  - {id: status_board, compartment: bulkhead, kind: wall_display, side: centre, z: 1.5, footprint: [0.05, 1.0],
+     mounted: true, board_bottom_m: 2.0, facing: forward,
+     notes: "Orders and dive status, above the bulkhead hatch."}
 
 displays:
   # Two charts, not one shared view: the pilot's small locked hologram and sonar's own screen, plus the map table.
