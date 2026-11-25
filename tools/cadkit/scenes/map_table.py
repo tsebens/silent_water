@@ -344,7 +344,7 @@ def build() -> dict:
     write_entry(GROUP, SLUG, {
         "kind": "station",
         "summary": "Crew map table: D-shaped table with orange edge rail, plinth and braces, a console jutting from the front "
-                   "edge (pan trackball, zoom lever, decorative knob, guarded toggle, lamp), an orange-railed instrument shelf "
+                   "edge (pan trackball, zoom lever, decorative knob, follow switch, lamp), an orange-railed instrument shelf "
                    "with the noise repeater, and two work lamps. The operator stands; no seat.",
         "tags": ["station", "map", "table", "console", "standing"],
         "scene": res(d / f"{SLUG}.tscn"),
