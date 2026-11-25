@@ -4,6 +4,8 @@ Brief (cockpit concept #328): modern operator seat on a suspension pedestal, arm
 accents. The occupant faces -Z. The parent binds the behaviour (StationSeat, SonarSeat...) on a node above this
 scene and points `sit_point` at SitPoint, because which seat script applies depends on the station.
 """
+import math
+
 import build123d as bd
 
 from cadkit.solids import Solid, at, box, prism, expect, bbox_mm, export_solids_glb
@@ -18,6 +20,11 @@ BOLSTER_W = 45.0
 ARM_Y, ARM_X = 640.0, 285.0
 
 
+def at_box(b: bd.Shape, y_mm: float) -> bd.Shape:
+    """A half-space box whose bottom face sits at `y_mm` (build units are mm)."""
+    return b.moved(bd.Location((0, y_mm + 1000, 0)))
+
+
 def solids() -> list[Solid]:
     base = prism(8, 240, 20)
     base = base.rotate(axis=bd.Axis.X, angle=-90)          # lie flat: prism +Z becomes +Y
@@ -26,11 +33,11 @@ def solids() -> list[Solid]:
     pan = at(box(PAN_W, PAN_D, PAN_T, chamfer_mm=15).rotate(axis=bd.Axis.X, angle=-90), y=PAN_Y, z=20)
     back = box(BACK_W, BACK_H, BACK_T, chamfer_mm=15, base_z=False)
     back = at(back, y=BACK_H / 2)                                       # bottom edge at y=0
-    back = back.rotate(axis=bd.Axis.X, angle=-BACK_TILT)   # lean back (+Z)
+    back = back.rotate(axis=bd.Axis.X, angle=BACK_TILT)   # lean back (+Z)
     back = at(back, y=PAN_Y + PAN_T + 10, z=PAN_D / 2 + 20 - BACK_T / 2)
     stripes = [at(box(BOLSTER_W, BACK_H, BACK_T + 20, chamfer_mm=10, base_z=False), sx * (BACK_W + BOLSTER_W) / 2, BACK_H / 2)
                for sx in (-1, 1)]
-    stripes = [at(s.rotate(axis=bd.Axis.X, angle=-BACK_TILT), y=PAN_Y + PAN_T + 10, z=PAN_D / 2 + 20 - BACK_T / 2)
+    stripes = [at(s.rotate(axis=bd.Axis.X, angle=BACK_TILT), y=PAN_Y + PAN_T + 10, z=PAN_D / 2 + 20 - BACK_T / 2)
                for s in stripes]
     arms = [at(box(60, 40, 300, chamfer_mm=8, base_z=False), sx * ARM_X, ARM_Y, 40) for sx in (-1, 1)]
     posts = [at(prism(8, 15, ARM_Y - PAN_Y - PAN_T).rotate(axis=bd.Axis.X, angle=-90),
@@ -40,6 +47,13 @@ def solids() -> list[Solid]:
     blo, bhi = bbox_mm(back)
     expect(bhi[2] > hi[2] - 40, "backrest at the back (+Z) of the pan")
     expect(900 < bhi[1] < 1050, f"backrest top {bhi[1]:.0f} mm: shoulder height")
+    mid_y = (blo[1] + bhi[1]) / 2                          # centres of the upper and lower halves differ by H/2 along the lean
+    half = bd.Box(2000, 2000, 2000)
+    upper = back & at_box(half, mid_y)
+    lower = back & at_box(half, mid_y - 2000)
+    lean = upper.center().Z - lower.center().Z
+    want = BACK_H / 2 * math.sin(math.radians(BACK_TILT))
+    expect(abs(lean - want) < 2, f"backrest top is {lean:.1f} mm further toward +Z than its bottom (want {want:.1f})")
     expect(ARM_X - 30 > PAN_W / 2, "armrests outside the pan")
     return ([Solid(base, "trim_black"), Solid(column, "trim_black"), Solid(pan, "interior_panel"), Solid(back, "interior_panel")]
             + [Solid(s, "control_interface") for s in stripes] + [Solid(a, "trim_black") for a in arms + posts])
