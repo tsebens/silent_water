@@ -1,0 +1,41 @@
+slug: life_support
+group: stations
+kind: station
+summary: 'Life-support wall unit, first half: tall grey body on a hazard-striped plinth, orange handle rails, and
+  a chamfered chest-height alcove of two cradles, each with a scrubber canister standing in it and a linear gauge
+  for its saturation. The face above is blank for the upper panel. The operator stands.'
+tags:
+- station
+- life support
+- scrubber
+- canister
+- cradle
+- wall unit
+- standing
+scene: res://assets/models/stations/life_support/life_support.tscn
+behaviour:
+  wire:
+    cradles: CradleA, CradleB (CanisterSlot; call try_seat on CanisterA, CanisterB)
+    gauges: 'SaturationA, SaturationB read life_support_readouts: saturation_a, saturation_b (0..1)'
+    upper_panel: UpperPanelAnchor (front face, top of the alcove)
+    standing_eye: OperatorEye
+footprint_mm:
+- 1000.0
+- 542.0
+stand_out_mm: 542.0
+mount: floor at Y=0, back against the hull on Z=0, centred on X, operator standing at +Z facing -Z
+uses:
+- scrubber_canister
+- linear_gauge
+triangles: 3924
+triangles_by_part:
+  body: 508
+checks:
+  aisle_m: 1.805
+built_by: tools/cadkit/scenes/life_support.py
+files:
+- component.yaml
+- life_support.tscn
+- life_support_body.glb
+- review/.gdignore
+- review/cameras.json

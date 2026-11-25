@@ -1,0 +1,54 @@
+[gd_scene format=3]
+
+[ext_resource type="PackedScene" path="res://assets/models/stations/life_support/life_support_body.glb" id="1"]
+[ext_resource type="Script" path="res://src/interact/canister_slot.gd" id="2"]
+[ext_resource type="PackedScene" path="res://assets/models/furniture/scrubber_canister/scrubber_canister.tscn" id="3"]
+[ext_resource type="PackedScene" path="res://assets/models/kit/linear_gauge/linear_gauge.tscn" id="4"]
+
+[sub_resource type="BoxShape3D" id="unit"]
+size = Vector3(1, 1.9, 0.5)
+
+[node name="LifeSupport" type="Node3D"]
+
+[node name="Body" parent="." instance=ExtResource("1")]
+
+[node name="Collision" type="StaticBody3D" parent="."]
+
+[node name="Unit" type="CollisionShape3D" parent="Collision"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.95, 0.25)
+shape = SubResource("unit")
+
+[node name="OperatorPoint" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0.65)
+
+[node name="OperatorEye" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.65, 0.65)
+
+[node name="UpperPanelAnchor" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.56, 0.5)
+
+[node name="CradleA" type="Node3D" parent="."]
+script = ExtResource("2")
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.3, 1.188, 0.34)
+
+[node name="CanisterA" parent="." instance=ExtResource("3")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.3, 1.188, 0.34)
+
+[node name="SaturationA" parent="." instance=ExtResource("4")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.1, 1.26, 0.24)
+source_group = &"life_support_readouts"
+readout = &"saturation_a"
+max_value = 1
+
+[node name="CradleB" type="Node3D" parent="."]
+script = ExtResource("2")
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.18, 1.188, 0.34)
+
+[node name="CanisterB" parent="." instance=ExtResource("3")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.18, 1.188, 0.34)
+
+[node name="SaturationB" parent="." instance=ExtResource("4")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.38, 1.26, 0.24)
+source_group = &"life_support_readouts"
+readout = &"saturation_b"
+max_value = 1
