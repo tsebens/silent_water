@@ -12,6 +12,9 @@ extends StationSeat
 ##   E/Esc  step back
 ## Pins go to the shared [MapModel], so they show on the pilot's map too.
 ## There is no seat: [member sit_point] is where the operator stands.
+## Whoever steps up leans over the table ([constant LEAN_DOWN], [constant LEAN_TOWARD]).
+## Only the operator drives the camera; [MapTableObserver] points either side
+## let others step up to place and remove pins.
 
 const PAN_SPEED: float = 0.6  # display metres per second
 ## Display metres of pan per unit of trackball roll.
@@ -23,6 +26,10 @@ const LEVER_DEADZONE: float = 0.02
 ## Chart rotation speed on the keys, degrees per second, and per pixel of mouse drag.
 const ROTATE_DEG_PER_S: float = 60.0
 const ROTATE_DEG_PER_PX: float = 0.4
+## How far a stepped-up player's eye drops below the standing eye (m).
+const LEAN_DOWN: float = 0.25
+## How far it moves toward the hologram (m, horizontal).
+const LEAN_TOWARD: float = 0.15
 const PICK_RADIUS_PX: float = 24.0
 ## Pin types offered on keys 1-4.
 const KEY_KINDS: Array[int] = [MapModel.Kind.WAYPOINT, MapModel.Kind.DANGER, MapModel.Kind.APEX, MapModel.Kind.NOTE]
@@ -74,12 +81,58 @@ func interaction_hint() -> String:
 	return "press E to use the map table"
 
 
-## Camera pose while standing at the table (render space).
-func view_transform() -> Transform3D:
+func has_table_view() -> bool:
+	return true
+
+
+func table_view() -> Transform3D:
+	return view_transform()
+
+
+## The standing eye of the operator (render space).
+func standing_eye() -> Vector3:
+	return eye_point.global_position if eye_point != null else holo.global_position + holo.global_basis * view_offset
+
+
+## [param eye] leaned over the table: [constant LEAN_DOWN] lower and
+## [constant LEAN_TOWARD] toward the hologram. Same for everyone.
+func lean_eye(eye: Vector3) -> Vector3:
+	var up: Vector3 = holo.global_basis.y
+	var flat: Vector3 = holo.global_position - eye
+	flat -= up * flat.dot(up)
+	var toward: Vector3 = flat.normalized() if flat.length() > 1e-4 else Vector3.ZERO
+	return eye - up * LEAN_DOWN + toward * LEAN_TOWARD
+
+
+## Camera pose for a player whose standing eye is [param eye] (render space).
+func view_transform_from(eye: Vector3) -> Transform3D:
+	var leaned: Vector3 = lean_eye(eye)
 	var base: Vector3 = holo.global_position
-	var eye: Vector3 = eye_point.global_position if eye_point != null else base + holo.global_basis * view_offset
 	var look: Vector3 = base + holo.global_basis * Vector3(0, holo.height * 0.3, holo.clip_rz * 0.4)
-	return Transform3D.IDENTITY.looking_at(look - eye, holo.global_basis.y).translated(eye)
+	return Transform3D.IDENTITY.looking_at(look - leaned, holo.global_basis.y).translated(leaned)
+
+
+## Camera pose of the operator at the table (render space).
+func view_transform() -> Transform3D:
+	return view_transform_from(standing_eye())
+
+
+## Places a pin of [param kind] under a screen position, if it meets the display.
+func place_pin_at(screen_pos: Vector2, kind: int) -> void:
+	var p: Variant = pick_world(screen_pos)
+	if p != null:
+		_model().add_pin(p as Vector3, kind)
+
+
+## Removes the pin nearest a screen position, if one is close enough.
+func remove_pin_at(screen_pos: Vector2) -> void:
+	var id: int = pin_near(screen_pos)
+	if id != -1:
+		_model().remove_pin(id)
+
+
+func _model() -> MapModel:
+	return holo.get_tree().get_first_node_in_group(&"map_model") as MapModel
 
 
 func begin_interaction() -> void:
@@ -183,13 +236,9 @@ func _unhandled_input(event: InputEvent) -> void:
 			MOUSE_BUTTON_WHEEL_DOWN:
 				holo.set_zoom(holo.meters_per_unit * ZOOM_STEP)
 			MOUSE_BUTTON_LEFT:
-				var p: Variant = pick_world(mb.position)
-				if p != null:
-					(holo.get_tree().get_first_node_in_group(&"map_model") as MapModel).add_pin(p as Vector3, pin_kind)
+				place_pin_at(mb.position, pin_kind)
 			MOUSE_BUTTON_RIGHT:
-				var id: int = pin_near(mb.position)
-				if id != -1:
-					(holo.get_tree().get_first_node_in_group(&"map_model") as MapModel).remove_pin(id)
+				remove_pin_at(mb.position)
 		get_viewport().set_input_as_handled()
 		return
 	var key: InputEventKey = event as InputEventKey
