@@ -170,47 +170,14 @@ class _FakeSource extends Node3D:
 const INTERIOR_SCENE: PackedScene = preload("res://src/sub/interior.tscn")
 
 
-## Signed turn (radians) of the sonar wheel mesh as the operator sees it for a
-## wheel value of `v`: negative is clockwise, seen from the seat. The axle and
-## the operator's side are read from the scene (mesh transform, seat sit point).
-func _operator_turn(it: Node3D, v: float) -> Dictionary:
-	var hw: HydrophoneWheel = it.get_node("Stations/Sonar/Wheel") as HydrophoneWheel
-	var mesh: Node3D = hw.wheel
-	var sit: Node3D = it.get_node("Stations/Sonar/Seat/SitPoint") as Node3D
-	var axle_world: Vector3 = (mesh.global_basis * HydrophoneWheel.axle_of(mesh)).normalized()
-	var seat: StationSeat = it.get_node("Stations/Sonar/Seat") as StationSeat
-	var eye: Vector3 = sit.global_position + Vector3.UP * seat.eye_height
-	var to_operator: Vector3 = eye - mesh.global_position
-	# The axle sign that points at the operator (the axle is only a line).
-	var toward: Vector3 = axle_world if axle_world.dot(to_operator) >= 0.0 else -axle_world
-	hw._apply_visual(0.0)
-	var b0: Basis = mesh.transform.basis
-	hw._apply_visual(v)
-	var rel: Quaternion = (b0.inverse() * mesh.transform.basis).get_rotation_quaternion()
-	var world_axis: Vector3 = (mesh.global_basis.orthonormalized() * rel.get_axis()).normalized()
-	var angle: float = rel.get_angle() * signf(world_axis.dot(toward))
-	return {"angle": angle, "toward_dot": absf(axle_world.dot(to_operator.normalized()))}
-
-
-func test_wheel_mesh_turns_clockwise_for_operator() -> void:
-	var it: Node3D = INTERIOR_SCENE.instantiate() as Node3D
-	runner.add_child.call_deferred(it)
-	await runner.get_tree().process_frame
-	# 30 of a 120-per-turn wheel is a quarter turn.
-	var r: Dictionary = _operator_turn(it, 30.0)
-	expect(float(r["toward_dot"]) > 0.5, "axle roughly faces the operator: %s" % str(r))
-	# Right-handed rotation about an axis pointing at the viewer is counter-clockwise,
-	# so a clockwise turn as seen by the operator has a negative angle.
-	expect_near(float(r["angle"]), -PI / 2.0, 0.01, "positive input turns clockwise for the operator")
-	it.queue_free()
-
-
 func test_wheel_bearing_and_ratio_unchanged() -> void:
 	var w: HydrophoneWheel = HydrophoneWheel.new()
 	expect_near(w.degrees_per_turn, 120.0, 0.0001, "degrees_per_turn")
 	expect_near(w._drag_to_value(90.0, Vector2.ZERO), 90.0, 0.0001, "no sweep, no change")
 	w.free()
 	var it: Node3D = INTERIOR_SCENE.instantiate() as Node3D
-	var hw: HydrophoneWheel = it.get_node("Stations/Sonar/Wheel") as HydrophoneWheel
+	var hw: HydrophoneWheel = it.get_node("Stations/Sonar/Controls/Trackball") as HydrophoneWheel
+	expect(hw is Trackball, "the sonar desk trains the hydrophone with the trackball")
 	expect_near(hw.degrees_per_turn, 120.0, 0.0001, "scene degrees_per_turn")
+	expect_near(hw._drag_to_value(90.0, Vector2(40, 0)), 90.0 + 40.0 * (hw as Trackball).degrees_per_px, 0.0001, "drag right is clockwise")
 	it.free()
