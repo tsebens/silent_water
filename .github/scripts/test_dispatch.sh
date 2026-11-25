@@ -51,6 +51,27 @@ paths_overlap $'docs/process.md' $'docs/process.md'; check "overlap: same docs f
 paths_overlap $'src/sub' $'src/sub/foo.gd'; check "overlap: src parent vs file" 0 $?
 paths_overlap $'src/sub' $'src/noise'; check "overlap: src siblings" 1 $?
 
+# The look gate: an arc waiting on Tristan keeps its Touches: but holds no WORKER_CAP slot, and no look-gate arc
+# between its build and its PR is ever an orphan.
+SAVED_ARCS="$ARCS"
+ARCS=$(cat <<'EOF2'
+[
+  {"number": 10, "created_at": "2026-01-01T00:00:00Z", "labels": ["arc","claimed"], "body": "Touches: src/a\n"},
+  {"number": 11, "created_at": "2026-01-02T00:00:00Z", "labels": ["arc","claimed","look-gate","look-review"], "body": "Touches: src/b\n"},
+  {"number": 12, "created_at": "2026-01-03T00:00:00Z", "labels": ["arc","claimed","look-gate","look-changes"], "body": "Touches: src/c\n"},
+  {"number": 13, "created_at": "2026-01-04T00:00:00Z", "labels": ["arc","claimed","look-gate","look-approved"], "body": "Touches: src/d\n"},
+  {"number": 14, "created_at": "2026-01-05T00:00:00Z", "labels": ["arc","claimed","look-gate"], "body": "Touches: src/e\n"}
+]
+EOF2
+)
+check "cap: look-review holds no slot; look-changes and look-approved runs do" $'10\n12\n13\n14' "$(counting_toward_cap $'10\n11\n12\n13\n14')"
+in_look_phase 11; check "look phase: look-review" 0 $?
+in_look_phase 12; check "look phase: look-changes" 0 $?
+in_look_phase 13; check "look phase: look-approved" 0 $?
+in_look_phase 14; check "look phase: a look-gate arc still building is not" 1 $?
+in_look_phase 10; check "look phase: ordinary arc" 1 $?
+ARCS="$SAVED_ARCS"
+
 # blockers_of unions the body line with the native dependency API; stub the API call.
 gh() { if [[ "$*" == *dependencies/blocked_by* ]]; then echo 9; echo 1; else return 1; fi; }
 check "blockers: body numbers ∪ native, de-duplicated, sorted" $'1\n7\n9' "$(blockers_of 2)"

@@ -170,12 +170,12 @@ assembly arc builds last.
 | --- | --- | --- |
 | Brief | Head developer with Tristan | The concept issue, labelled `concept` when final |
 | Breakdown | Organization agent | Scans the library; maps every function; proposes the arcs (6.1) |
-| Plan review | Plan-review agent | Checks the breakdown (6.2); for a brief, stops for Tristan |
-| **Approval** | **Tristan** | Reads the one-screen breakdown; approves or sends it back (6.3) |
+| Plan review | Plan-review agent | Checks the breakdown (6.2) and creates the arcs; stops for Tristan only on (approval) questions (6.3) |
 | Build | Development agent, one run per arc | Scans again; builds, tests, renders (6.4) |
+| **Look** | **Tristan** | On the arc that delivers what the concept asked for: approves the rendered look, or sends it back, before the PR (6.5) |
 | Sync and tests | CI | `cadkit verify`, the cadkit tests, `tools/check.sh` |
-| Review | Review agent | Asset checklist; for a station, compares renders with the concept (6.5); merges |
-| Look | Tristan, after the merge | Feedback is a short follow-up concept (6.6) |
+| Review | Review agent | Asset checklist; compares renders with the concept where Tristan did not already approve the look (6.6); merges |
+| After the merge | Tristan | Later feedback is a short follow-up concept (6.7) |
 
 ### 6.1 Breakdown (organization agent)
 
@@ -210,7 +210,8 @@ both edit `tools/cadkit/catalogue/existing.yaml` are chained. Changes to the cad
 
 Nothing is settled silently. `### Open questions` has two kinds, and each item says which:
 
-- **(approval)**: Tristan can answer in a line when he approves. A conflict between the concept art and `functions`;
+- **(approval)**: Tristan must answer in a line before the arcs are created (6.3). Raise one only when building
+  without the answer would waste a run. A conflict between the concept art and `functions`;
   a `status:` the code contradicts; an input the brief lacks that a check needs (an eye position, a size). An arc
   that depends on the answer says so in its acceptance list, and the answer is written into the arc when it is
   created.
@@ -232,20 +233,20 @@ On top of the usual checks:
 - reuse claims are true: the named catalogue scenes exist on `dev` and their entries fit;
 - dependencies follow `uses`: a scene arc is blocked by the arc of every scene it instances that does not exist yet.
 
-### 6.3 Tristan's approval
+### 6.3 Questions for Tristan
 
-A concept that carries a brief is **not** turned into arcs until Tristan has seen the breakdown. Nothing new is
-needed for this: it is the `needs-human` convention.
+The breakdown is **not** gated: plan review creates a station's arcs as soon as the plan passes. Tristan's gate on
+assets is the look, at the end (6.5). (Changed on 2026-11-25, #422: the look is where his input is worth most.)
 
-1. When the breakdown passes plan review, the agent posts `## Plan review: ready for approval`, removes
-   `plan-proposed`, applies `needs-human` and assigns Tristan. No arcs exist yet.
-2. **To approve**, Tristan answers the open questions marked (approval) in a comment, removes `needs-human` and
-   re-applies `plan-proposed`. The plan-review agent runs again, sees its own `ready for approval` comment newer than
-   the latest proposal, writes his answers into the arcs they affect, and creates the arcs.
-3. **To send it back**, Tristan comments what to change, removes `needs-human` and applies `plan-rejected`. The
-   organization agent proposes again, answering the comment. Tristan's rejections don't count toward the cap of two.
+The one stop: a proposal with an open question marked **(approval)**.
 
-An asset concept without a brief (one control, one restyle) is not gated.
+1. Plan review posts `## Plan review: questions for Tristan` (each question numbered, with the options and the
+   organizer's recommendation), removes `plan-proposed`, applies `needs-human` and assigns Tristan. That notifies
+   him (`docs/process.md`, "Notifying Tristan"). No arcs exist yet.
+2. Tristan answers in a comment, removes `needs-human` and re-applies `plan-proposed`. Plan review writes his answers
+   into the arcs they affect and creates them.
+3. To send the plan back instead, he comments, removes `needs-human` and applies `plan-rejected`; his rejections
+   don't count toward the cap of two.
 
 ### 6.4 Build (development agent)
 
@@ -285,7 +286,33 @@ Rules:
   the operator's eye under white and red light, and orthographic front and profile. A context solid the brief asks
   for (a piece of rail) is built as a local solid and named as context in the entry.
 
-### 6.5 Review
+### 6.5 Tristan's look review
+
+Tristan approves the look of what he asked for, before it becomes a pull request. **The level is set by the
+concept**: a station brief gates the station's assembly arc and he sees the finished station; a concept for one new
+button gates the button's arc and he sees the button. Leaves under a gated arc are not gated.
+
+1. **Marking.** The organization agent writes `Look gate: yes` on the arc (or arcs, if the concept asked for several
+   separate assets) that delivers what the concept asked for. Plan review checks the placement and creates that arc
+   with the `look-gate` label. Tristan may add or remove `look-gate` on an arc himself before it is built.
+2. **Build.** The development agent builds as in 6.4, pushes, renders the sheets from the pushed head, and posts
+   `## Look review: ready for approval` on the arc: what was built, every sheet by commit permalink (for a station,
+   the `*_vs_concept.png` sheets first), the check summaries, and anything it judged doubtful. Then it applies
+   `look-review`, which notifies Tristan, and ends with the arc still `claimed`. No pull request yet.
+3. **Tristan's answer**, given in the session the notification opens, or by hand:
+   - **Approve:** a `## Look review: approved` comment (with any small notes), then remove `look-review` and add
+     `look-approved`. A development run integrates `dev`, does the small notes, opens the pull request and hands it
+     to review as usual.
+   - **Change:** a `## Look review: changes requested` comment with numbered points, then remove `look-review` and
+     add `look-changes`. A look-rework run fixes them in the build script on the same branch, re-renders and posts
+     the next round. There is no round cap; each round is Tristan's.
+4. **While it waits**, the arc holds its `Touches:` (overlapping arcs stay queued) but no worker slot, and the
+   dispatcher never treats it as an orphan. The board shows it In review.
+
+A point that belongs to another scene, the palette or game code is discovered work, filed and named in the next
+round, never a shared part bent to suit one parent.
+
+### 6.6 Review
 
 For a pull request that touches generated assets, on top of the usual checks:
 
@@ -301,6 +328,9 @@ For a pull request that touches generated assets, on top of the usual checks:
      and red light; nothing floats, intersects or faces the wrong way;
    - a station: compare each `*_vs_concept.png` on the brief's `compare_on` list **only**. Differences on the
      `ignore` list are not findings. Each finding names its owner.
+   - a `look-gate` arc: Tristan has approved the look (6.5). Don't re-judge it against the concept; check only that
+     the committed sheets are the approved ones, or that the pull request says why they were re-rendered, and that
+     nothing is plainly broken.
 
 Routing a finding:
 
@@ -313,10 +343,12 @@ Routing a finding:
 On accepting a station's assembly arc, the review agent also comments on the concept issue with the sheets and the
 routed findings, so Tristan sees the result in one place.
 
-### 6.6 After the merge
+### 6.7 After the merge
 
-Tristan's feedback on the look is a short follow-up concept that names the station ("the wheel is too small"). The
-organization agent routes it to the scene that owns the problem, at the cheapest tier.
+Most look feedback is given at the gate (6.5). Feedback after the merge (something only seen in play, or on a scene
+that was a leaf under a gated arc) is a short follow-up concept that names the asset ("the wheel is too small"). The
+organization agent routes it to the scene that owns the problem, at the cheapest tier, and that concept's own arc is
+gated at its level.
 
 ## 7. Tooling
 

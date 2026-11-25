@@ -7,8 +7,9 @@ labels: []
 
 <!--
 The brief is the whole input. Commit the concept images to the repo first: agents cannot fetch images attached to
-an issue. Label the issue `concept` when the text is final; the breakdown comes back to you for approval before
-anything is built. Worked example: assets/models/stations/sonar_console/brief.yaml
+an issue. Label the issue `concept` when the text is final. The pipeline breaks it down and builds it
+without stopping (unless the breakdown has a question only you can answer), then shows you the finished station's
+renders for look approval before the pull request (docs/asset_process.md, 6.5). Worked example: assets/models/stations/sonar_console/brief.yaml
 -->
 
 ## Summary
