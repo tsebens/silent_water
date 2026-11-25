@@ -1,9 +1,11 @@
 # Development agent
 
-You build one **arc** on its own branch and open a PR into `dev`; and when that PR comes back (review changes requested, or CI red), you are the one who fixes it. The Run context says which of two modes this run is:
+You build one **arc** on its own branch and open a PR into `dev`; and when that PR comes back (review changes requested, or CI red), you are the one who fixes it. The Run context says which mode this run is:
 
-- **build**: your input is an arc issue. You end when the PR is open.
+- **build**: your input is an arc issue. You end when the PR is open, or, for a `look-gate` arc, when the look review is posted.
 - **rework**: your input is an arc PR carrying `changes-requested`. You end when the fix is pushed and the label is cleared.
+- **look approved**: your input is a `look-gate` arc whose look Tristan approved. You end when the PR is open.
+- **look rework**: your input is a `look-gate` arc whose look Tristan sent back. You end when the next look review is posted.
 
 Each run is a fresh job with no memory of earlier runs, so the PR thread is the shared memory: build leaves a `## Handoff`, every rework leaves a `## Rework`, and both read everything that is there.
 
@@ -13,7 +15,7 @@ Each run is a fresh job with no memory of earlier runs, so the PR thread is the 
 - Follow `CLAUDE.md`. Content goes in Resources, not code. Keep the diff inside the arc's scope and `Touches:`; discovered work becomes a new issue per the README.
 - Every behaviour you change has a unit test under `tests/unit/` (`test_<system>.gd`, extending `TestCase`). `tools/check.sh` must pass before you push anything meant for review. A test you cannot make pass is a scope problem to report, never one to disable or weaken.
 - Commit in small, titled commits with `Refs #<n>`.
-- You never touch `rework:N` (the review counter), `approved`, `ci-green` or `needs-human`, except to apply `needs-human` when escalating.
+- You never touch `rework:N` (the review counter), `approved`, `ci-green` or `needs-human`, except to apply `needs-human` when escalating. You never apply `look-approved` or `look-changes`: those are Tristan's answers.
 
 ## Asset arcs
 
@@ -49,6 +51,7 @@ Stop conditions, against the issue's **current** state: comment why and end if t
 5. **Document.** Update `docs/*.md` and the design doc where the arc changes documented behaviour or settles a listed open question.
 6. **Integrate.** `git fetch origin dev && git merge origin/dev`; resolve conflicts; run `tools/check.sh` again.
 7. **Push** the branch.
+   **If the arc carries `look-gate`, stop here and follow "Look gate" below instead of steps 8 to 10.**
 8. **PR** into `dev`, titled with the arc title. Body: what changed, how it was verified (paste the `tools/check.sh` summary lines), the acceptance checklist with each item ticked or explained, and `Closes #<n>`.
 9. **Handoff.** Comment on the PR under `## Handoff`, for the rework run that may follow: the decisions you made and why, anything you tried that did not work, which acceptance items were hard and how you verified them, and what you would look at first if CI or review comes back red. Two to six short paragraphs.
 10. **Labels.** `gh issue edit <n> --remove-label claimed --add-label in-review`.
@@ -56,6 +59,45 @@ Stop conditions, against the issue's **current** state: comment why and end if t
 End. CI runs on the PR; green adds `ci-green` and starts the review job; red adds `changes-requested` and starts you again in rework mode.
 
 If you cannot finish (bigger than scoped, a blocker not actually done, acceptance criteria that conflict with the design doc): push what you have, comment on the arc with what is done and what is not, and escalate per the README. Do not open a PR.
+
+## Look gate
+
+An arc labelled `look-gate` delivers the thing an asset concept asked for (a station, a panel, a single control), and Tristan approves its look before it becomes a PR (`docs/asset_process.md`, 6.5). The arc keeps `claimed` throughout; the dispatcher knows not to treat it as an orphan.
+
+### Posting a look review (end of build, and of every look rework)
+
+1. The branch is pushed, `tools/check.sh` passes, and `cadkit sheet <slug>` has rendered the sheets from the pushed head (for a station: `review/views.png` and each `*_vs_concept.png`). Open every sheet and fix what is plainly wrong first: Tristan's time is the gate's cost.
+2. Comment on the **arc issue**, headed exactly `## Look review: ready for approval`, then:
+   - `Round <r>`: 1 on the first build, one more for each `## Look review: changes requested` comment on the arc.
+   - What was built, in two to four lines, in the concept's terms.
+   - Every sheet, embedded by commit permalink on the pushed head (`![<name>](https://github.com/tsebens/silent_water/blob/<sha>/<path>?raw=true)`), each with a one-line caption saying which view it is. For a station the `*_vs_concept.png` sheets come first.
+   - The concept image(s) the arc was built to, embedded the same way, if no sheet already pairs them with a render.
+   - The `tools/check.sh` and `cadkit build` summary lines.
+   - In a look rework, each of Tristan's numbered points with what changed for it. A point that belongs to another scene, the palette or game code is filed as discovered work and listed here with its issue number.
+   - Anything you judged doubtful and left for Tristan, one line each.
+3. `gh issue edit <n> --add-label look-review`. Adding it notifies Tristan. End. Open no PR.
+
+### Look approved mode
+
+Started by `look-approved` being added to the arc. Stop conditions: comment why and end if the arc carries `needs-human`, is closed, or already has an open PR from an `arc/<n>-` branch.
+
+1. Read the arc, its latest `## Look review: approved` comment (Tristan's notes, if any) and the look-review rounds before it.
+2. `git fetch origin && git checkout arc/<n>-<slug>`. Integrate: `git merge origin/dev`, resolve conflicts, `cadkit build`, `tools/check.sh`. If the merge changed any scene this one uses, run `cadkit sheet <slug>` again and commit the sheets; say so in the PR body. If the look visibly changed, that is a new look review (post one, as above, and end) rather than a PR on an approval Tristan didn't give.
+3. Small notes Tristan left with the approval ("approved; nudge the lamp left") are done now, on the branch, and listed in the PR body. Anything larger is discovered work.
+4. Push, then build mode's steps 8 and 9 (PR and Handoff). The PR body links the approval comment, embeds the approved sheets and says the look was approved by Tristan.
+5. `gh issue edit <n> --remove-label claimed --remove-label look-approved --add-label in-review`. End.
+
+### Look rework mode
+
+Started by `look-changes` being added to the arc. Stop conditions: do nothing and end if the arc carries `needs-human`, is closed, or no longer carries `look-changes` (another run got there first).
+
+1. Read the arc and every look-review round on it, newest first: the latest `## Look review: changes requested` lists Tristan's points, numbered.
+2. `git fetch origin && git checkout arc/<n>-<slug>`.
+3. Address every point. Fix the look in the build script, at the cheapest tier (`docs/asset_process.md`, section 4), then `cadkit build`, the tests and `cadkit sheet`. A point this arc cannot reach (another scene, a new behaviour) is discovered work, filed and named in the next review; never change a shared part to suit this one parent.
+4. Commit with `Refs #<n>`, `gh issue edit <n> --remove-label look-changes`, push.
+5. Post the next look review (above), which re-applies `look-review`. End.
+
+There is no round cap: each round is started by Tristan.
 
 ## Rework mode
 
