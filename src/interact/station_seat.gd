@@ -28,3 +28,15 @@ func seated_hint() -> String:
 
 func interaction_hint() -> String:
 	return "press E to sit"
+
+
+## Whether this seat gives the leaning table view (the player's camera follows
+## [method table_view]). Overridden by the map table and its observer points.
+func has_table_view() -> bool:
+	return false
+
+
+## Camera pose for the leaning table view (render space). Only meaningful when
+## [method has_table_view] is true.
+func table_view() -> Transform3D:
+	return global_transform
