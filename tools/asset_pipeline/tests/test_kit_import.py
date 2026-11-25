@@ -25,8 +25,8 @@ def run(capsys, *argv):
 def kit(root, monkeypatch):
     sb = root / "assets" / "style_bible"
     sb.mkdir(parents=True)
-    for f in ("classes.yaml", "kit_palette.yaml"):
-        shutil.copy(REPO / "assets" / "style_bible" / f, sb / f)
+    shutil.copy(REPO / "assets" / "style_bible" / "classes.yaml", sb / "classes.yaml")
+    shutil.copytree(REPO / "assets" / "palette", root / "assets" / "palette")
     src = root / "incoming" / "Toggle Switch.gltf"  # an export saved anywhere, with an Onshape-style name
     src.parent.mkdir()
     shutil.copy(EXPORT, src)
@@ -92,21 +92,24 @@ def test_converted_glb_has_pivot_at_hinge_and_origin_at_back_face_centre(kit, ro
 
 def test_material_names_snap_to_the_nearest_palette_role(kit, root, capsys):
     palette = kit_import.load_palette(root)
-    assert set(palette) == {"powder_grey", "safety_orange", "black", "led"}
-    assert kit_import.snap_colour([0.647059, 0.647059, 0.647059], palette) == "powder_grey"
-    assert kit_import.snap_colour([0.95, 0.45, 0.05], palette) == "safety_orange"
-    assert kit_import.snap_colour([0.0, 0.0, 0.02], palette) == "black"
-    assert kit_import.snap_colour([0.25, 0.75, 0.95], palette) == "led"
+    assert {"control_grey", "control_interface", "button", "lever", "indicator_ok", "screen_off"} <= set(palette)
+    swatches = kit_import._swatches(root)
+    assert palette["control_interface"] == swatches["sub_orange"]
+    assert palette["indicator_ok"] == swatches["light_ok"]  # a lit role shows its glow
+    for role in ("control_interface", "button", "indicator_ok", "indicator_alarm"):
+        assert kit_import.snap_colour(palette[role], palette) == role
+    assert kit_import.snap_colour([1.0, 0.55, 0.25], palette) == "control_interface"
+    assert kit_import.snap_colour([0.03, 0.03, 0.04], palette) in ("screen_off", "indicator_off")  # roles can share a swatch
     assert kit_import.material_rgb("0.231373_0.380392_0.705882_0.000000_0.000000", None) == pytest.approx([0.231373, 0.380392, 0.705882])
     code, out = do_import(capsys, kit[0])
-    assert out["materials"]["0.647059_0.647059_0.647059_0.000000_0.000000"] == "powder_grey"
+    assert out["materials"]["0.647059_0.647059_0.647059_0.000000_0.000000"] in palette
     glb = root / ".asset_work" / "toggle_switch" / "import" / "i1.glb"
     doc, _ = kit_import.read_glb(glb)
     names = [x["name"] for x in doc["materials"]]
     assert names and set(names) <= set(palette)
     assert len(set(names)) == len(names)  # materials that snap to one role are merged
     for mat in doc["materials"]:
-        assert mat["pbrMetallicRoughness"]["baseColorFactor"][:3] == palette[mat["name"]]
+        assert "baseColorFactor" not in mat["pbrMetallicRoughness"]  # roles carry the colour, not the asset
     for mesh in doc["meshes"]:
         assert all(p["material"] < len(doc["materials"]) for p in mesh["primitives"])
     assert check.load_mesh(glb)["triangles"]  # still a readable mesh

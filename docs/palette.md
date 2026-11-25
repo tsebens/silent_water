@@ -186,5 +186,4 @@ use it only for colours that are generated, not chosen (for example a hue per pe
 
 - The game's hard-coded colours: the world, creatures and objectives are done (M13.6); still to go are the gauges,
   the chart screen, the holographic maps and the debug overlay.
-- The Onshape import route (`asset import`), which still snaps to `assets/style_bible/kit_palette.yaml`.
 - The image-to-3D route's vertex-colour palettes (creatures, terrain).
