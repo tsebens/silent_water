@@ -27,6 +27,31 @@ enum Slot { TOP, LEFT, RIGHT, BOTTOM }
 @export var face_swatch: StringName = &"info_black"
 @export var rim_swatch: StringName = &"light_readout"
 
+## Centre chevron column: up when the readout is positive, down when negative.
+@export var chevrons_enabled: bool = false
+@export var chevron_readout: StringName = &""
+## Chevrons in each direction.
+@export var chevron_count: int = 3
+## Readout units per lit chevron.
+@export var chevron_step: float = 1.0
+## Edge ring of segments, lit in proportion to a 0..1 readout.
+@export var ring_enabled: bool = false
+@export var ring_readout: StringName = &""
+@export var ring_segments: int = 24
+## The ring steps to the warning swatch at or below this fraction, then the alarm swatch.
+@export_range(0.0, 1.0) var ring_warn_below: float = 0.5
+@export_range(0.0, 1.0) var ring_alarm_below: float = 0.2
+@export var ring_ok_swatch: StringName = &"light_ok"
+@export var ring_warn_swatch: StringName = &"light_warn"
+@export var ring_alarm_swatch: StringName = &"light_alarm"
+@export var ring_unlit_swatch: StringName = &"interior_dark"
+## Optional configuration copied onto this display in [method _ready].
+@export var preset: MultiDisplayPreset
+
+## Latest chevron and ring readouts.
+var chevron_value: float = 0.0
+var ring_value: float = 0.0
+
 ## Latest readout of each slot (0 for an empty slot or until a source is found).
 var values: Array[float] = [0.0, 0.0, 0.0, 0.0]
 
@@ -37,6 +62,8 @@ var _source: Node
 
 
 func _ready() -> void:
+	if preset != null:
+		apply_preset(preset)
 	viewport = SubViewport.new()
 	viewport.name = "Viewport"
 	viewport.size = Vector2i(resolution, resolution)
@@ -67,6 +94,46 @@ func _process(_delta: float) -> void:
 		canvas.queue_redraw()
 
 
+## Copy [param p] onto this display.
+func apply_preset(p: MultiDisplayPreset) -> void:
+	slots = p.slots
+	chevrons_enabled = p.chevrons_enabled
+	chevron_readout = p.chevron_readout
+	chevron_count = p.chevron_count
+	chevron_step = p.chevron_step
+	ring_enabled = p.ring_enabled
+	ring_readout = p.ring_readout
+	ring_segments = p.ring_segments
+	ring_warn_below = p.ring_warn_below
+	ring_alarm_below = p.ring_alarm_below
+
+
+## Chevrons lit for [param v]: 0 when off or zero, otherwise 1..[member chevron_count].
+func chevrons_lit(v: float) -> int:
+	if not chevrons_enabled or chevron_step <= 0.0 or is_zero_approx(v):
+		return 0
+	return clampi(ceili(absf(v) / chevron_step), 1, maxi(chevron_count, 0))
+
+
+## Segments lit for the 0..1 readout [param v]: 0 when the ring is off.
+func ring_lit(v: float) -> int:
+	if not ring_enabled:
+		return 0
+	return clampi(roundi(clampf(v, 0.0, 1.0) * ring_segments), 0, ring_segments)
+
+
+## Fraction of the ring lit for [param v].
+func ring_lit_fraction(v: float) -> float:
+	return float(ring_lit(v)) / float(ring_segments) if ring_segments > 0 else 0.0
+
+
+## Swatch of the lit ring segments at [param v].
+func ring_swatch_for(v: float) -> StringName:
+	if v <= ring_alarm_below:
+		return ring_alarm_swatch
+	return ring_warn_swatch if v <= ring_warn_below else ring_ok_swatch
+
+
 ## The slot at [param i], or null when there is none.
 func slot_at(i: int) -> MultiDisplaySlot:
 	return slots[i] if i >= 0 and i < slots.size() else null
@@ -84,6 +151,10 @@ func refresh() -> void:
 		_source = get_tree().get_first_node_in_group(source_group) if is_inside_tree() else null
 		if _source == null:
 			return
+	if chevrons_enabled and chevron_readout != &"":
+		chevron_value = float(_source.call(&"readout", chevron_readout))
+	if ring_enabled and ring_readout != &"":
+		ring_value = float(_source.call(&"readout", ring_readout))
 	for i: int in range(4):
 		if draws_slot(i) and slot_at(i).readout != &"":
 			values[i] = float(_source.call(&"readout", slot_at(i).readout))
@@ -110,12 +181,41 @@ class MultiDisplayCanvas:
 		var r: float = minf(size.x, size.y) * 0.5 * 0.97
 		draw_circle(c, r, pal.color(display.face_swatch))
 		draw_arc(c, r, 0.0, TAU, 64, pal.color(display.rim_swatch), 3.0, true)
+		_paint_ring(c, r, pal)
+		_paint_chevrons(c, r, pal)
 		for i: int in range(4):
 			if not display.draws_slot(i):
 				continue
 			var dir: Vector2 = [Vector2(0, -1), Vector2(-1, 0), Vector2(1, 0), Vector2(0, 1)][i]
 			_paint_slot(display.slot_at(i), display.values[i], c + dir * r * 0.5, r * 0.4, i)
 			painted += 1
+
+	func _paint_ring(c: Vector2, r: float, pal: Palette) -> void:
+		var n: int = display.ring_segments
+		if not display.ring_enabled or n <= 0:
+			return
+		var lit: int = display.ring_lit(display.ring_value)
+		var on: Color = pal.color(display.ring_swatch_for(display.ring_value))
+		var off: Color = pal.color(display.ring_unlit_swatch)
+		var step: float = TAU / float(n)
+		for k: int in range(n):
+			var a0: float = -PI * 0.5 + step * float(k) + step * 0.12
+			draw_arc(c, r * 0.93, a0, a0 + step * 0.76, 6, on if k < lit else off, r * 0.05, true)
+
+	func _paint_chevrons(c: Vector2, r: float, pal: Palette) -> void:
+		if not display.chevrons_enabled:
+			return
+		var v: float = display.chevron_value
+		var lit: int = display.chevrons_lit(v)
+		var up: float = -1.0 if v >= 0.0 else 1.0
+		var on: Color = pal.color(&"light_readout")
+		var off: Color = pal.color(display.ring_unlit_swatch)
+		var w: float = r * 0.12
+		for k: int in range(display.chevron_count):
+			var y: float = c.y + up * (k + 0.5) * r * 0.1 - up * r * 0.02
+			var tip: Vector2 = Vector2(c.x, y + up * w * 0.5)
+			var col: Color = on if k < lit else off
+			draw_polyline(PackedVector2Array([tip + Vector2(-w, -up * w), tip, tip + Vector2(w, -up * w)]), col, 3.0, true)
 
 	func _text(pos: Vector2, s: String, px: int, col: Color) -> void:
 		var f: Font = ThemeDB.fallback_font
