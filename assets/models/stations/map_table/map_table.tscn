@@ -13,7 +13,7 @@
 size = Vector3(2.2, 0.75, 0.9)
 
 [sub_resource type="BoxShape3D" id="console"]
-size = Vector3(0.56, 1.15, 0.42)
+size = Vector3(0.56, 0.757337, 0.42)
 
 [node name="MapTable" type="Node3D"]
 
@@ -26,7 +26,7 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.375, 0.45)
 shape = SubResource("table")
 
 [node name="Console" type="CollisionShape3D" parent="Collision"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.575, 1.07)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.378669, 1.07)
 shape = SubResource("console")
 
 [node name="HoloMount" type="Node3D" parent="."]
@@ -41,8 +41,11 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 1.38)
 [node name="OperatorEye" type="Node3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.65, 1.38)
 
+[node name="LeanEye" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.4, 1.23)
+
 [node name="Controls" type="Node3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 0.507692, 0.861538, 0, -0.861538, 0.507692, 0, 1.07095, 1.14203)
+transform = Transform3D(1, 0, 0, 0, 0.052336, 0.99863, 0, -0.99863, 0.052336, 0, 0.753995, 1.14021)
 
 [node name="ZoomLever" parent="Controls" instance=ExtResource("2")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.17, 0, 0)

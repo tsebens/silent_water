@@ -1,7 +1,8 @@
 """map_table: the crew's planning table (a station). Brief: assets/models/stations/map_table/brief.yaml (concept #380).
 
 A D-shaped table in a bay against the port hull wall, an orange edge rail, a grey plinth with orange base ring and
-straps, and a console jutting from the middle of the front edge. The operator STANDS (answer 1: no seat), eye 1.65 m.
+straps, and a console jutting from the middle of the front edge. The operator STANDS (answer 1: no seat), eye 1.65 m, and leans over the table (eye 1.40 m, #429); the console
+strip is level with the table top and within reach of the leaning eye (#430).
 Above the table, an orange-railed shelf carries the noise repeater and non-functional set-dressing modules, and two
 work lamps hang on arms. Nodes are left for the hologram (`HoloMount`) and a plain backdrop panel (`BackPanelAnchor`).
 
@@ -15,7 +16,7 @@ import build123d as bd
 import numpy as np
 import yaml
 
-from cadkit.solids import Solid, at, box, expect, export_solids_glb, prism
+from cadkit.solids import Solid, at, bbox_mm, box, expect, export_solids_glb, prism
 from cadkit.library import REPO, entry, note, out_dir, res, scene_path, write_entry
 from cadkit.tscn import NodePath, Scene, Xform
 
@@ -31,12 +32,21 @@ STRAP_W, STRAP_OUT = 50.0, 14.0
 # Console jutting from the middle of the front edge.
 CON_W = 560.0
 CON_BACK_Z, CON_FRONT_Z = 860.0, 1280.0
-CON_UNDER_Y = 640.0
-STRIP_FRONT = (985.0, 1280.0)       # (y, z) of the strip's front edge and its back edge
-STRIP_BACK = (1150.0, 1000.0)
+CON_UNDER_Y = 540.0
+# The control strip is level with the table top (#430): its middle at TOP_Y, a shallow 3 degree rake rising away from the operator.
+STRIP_MID_Y, STRIP_RAKE_DEG = TOP_Y, 3.0
+STRIP_Z = (1280.0, 1000.0)          # z of the strip's front edge and its back edge
+_rise = (STRIP_Z[0] - STRIP_Z[1]) * math.tan(math.radians(STRIP_RAKE_DEG))
+STRIP_FRONT = (STRIP_MID_Y - _rise / 2, STRIP_Z[0])   # (y, z) of the strip's front edge and its back edge
+STRIP_BACK = (STRIP_MID_Y + _rise / 2, STRIP_Z[1])
+STRIP_TOL_MM = 10.0                 # how far the strip's middle may sit from the table top
 CHEEK_T, INSET_T = 22.0, 4.0
 LEG_W = 40.0
-EYE = np.array([0.0, 1650.0, CON_FRONT_Z + 100.0])   # the standing operator's eye (answer 1)
+EYE = np.array([0.0, 1650.0, CON_FRONT_Z + 100.0])   # the standing operator's eye (answer 1); MapTable leans it in code
+# The leaning eye: what src/map/map_table.gd's lean_eye() makes of EYE (LEAN_DOWN below, LEAN_TOWARD toward the hologram).
+# The game applies the lean to OperatorEye, so OperatorEye stays the standing eye and LeanEye is a measuring node only.
+LEAN_DOWN_MM, LEAN_TOWARD_MM = 250.0, 150.0
+LEAN_EYE = EYE + np.array([0.0, -LEAN_DOWN_MM, -LEAN_TOWARD_MM])   # the hologram is straight ahead (-Z) of the eye
 REACH_MM = 750.0
 # Shelf on the wall above the table.
 SHELF_HW, SHELF_D = 950.0, 130.0
@@ -97,9 +107,19 @@ def bar(p0, p1, w: float, h: float | None = None) -> bd.Part:
 
 
 def yz_extrude(pts: list[tuple[float, float]], x0: float, x1: float) -> bd.Part:
-    """A polygon given as (y, z) points, extruded along X from x0 to x1."""
+    """A polygon given as (y, z) points, extruded along X from x0 to x1.
+
+    An extrusion follows the face's normal, which follows the polygon's winding: a clockwise polygon in (y, z) went
+    toward -X (the console used to land at x -840..-280). The winding is made anticlockwise first, so it is always +X.
+    """
+    area = sum(a[0] * b[1] - b[0] * a[1] for a, b in zip(pts, pts[1:] + pts[:1]))
+    if area < 0:
+        pts = pts[::-1]
     sk = bd.Plane.YZ * bd.Polygon(*pts, align=None)
-    return at(bd.extrude(sk, amount=x1 - x0), x=x0)
+    out = at(bd.extrude(sk, amount=x1 - x0), x=x0)
+    b = out.bounding_box()
+    expect(abs(b.min.X - x0) < 0.01 and abs(b.max.X - x1) < 0.01, f"yz_extrude spans x {x0}..{x1} ({b.min.X:.1f}..{b.max.X:.1f})")
+    return out
 
 
 # The console strip, in station coordinates (x, y, z): origin at its middle, up the slope, outward normal.
@@ -164,6 +184,33 @@ def solids() -> list[Solid]:
         x0 = sx * (hw - 10) - LEG_W / 2
         legs.append(yz_extrude([(0, CON_FRONT_Z - 70), (0, CON_FRONT_Z - 10), (CON_UNDER_Y + 10, CON_FRONT_Z - 10),
                                 (CON_UNDER_Y + 10, CON_FRONT_Z - 110)], x0, x0 + LEG_W))
+    # The console's solids share its x extents: the body spans the width, the cheeks sit outside it, the front face and
+    # the legs inside the cheeks' outer faces, and the strip inset on the body's top.
+    bb = bbox_mm(body)
+    expect(abs(bb[0][0] + hw) < 0.1 and abs(bb[1][0] - hw) < 0.1, f"console body spans x -{hw}..{hw} ({bb[0][0]}..{bb[1][0]})")
+    expect(abs(bb[0][2] - CON_BACK_Z) < 0.1 and abs(bb[1][2] - CON_FRONT_Z) < 0.1, f"console body spans z {CON_BACK_Z}..{CON_FRONT_Z}")
+    expect(abs(bb[0][1] - CON_UNDER_Y) < 0.1 and abs(bb[1][1] - STRIP_BACK[0]) < 0.1, "console body from its underside to the strip's back edge")
+    outer = hw + CHEEK_T
+    for i, c in enumerate(cheeks):
+        cb_ = bbox_mm(c)
+        lo, hi = (hw, outer) if i == 0 else (-outer, -hw)
+        expect(abs(cb_[0][0] - lo) < 0.1 and abs(cb_[1][0] - hi) < 0.1, f"cheek {i} flush against the body, {lo}..{hi} ({cb_[0][0]}..{cb_[1][0]})")
+        expect(cb_[0][1:] == bb[0][1:] and cb_[1][1:] == bb[1][1:], f"cheek {i} the body's y and z extents")
+    fb = bbox_mm(front_face)
+    expect(fb[0][0] >= -hw and fb[1][0] <= hw, f"front face inside the body's x extents ({fb[0][0]}..{fb[1][0]})")
+    expect(abs(fb[0][2] - CON_FRONT_Z) < 0.1 and fb[1][2] <= CON_FRONT_Z + 6.1, "front face on the body's front")
+    for i, leg in enumerate(legs):
+        lb = bbox_mm(leg)
+        expect(lb[0][0] >= -outer and lb[1][0] <= outer, f"leg {i} inside the cheeks' outer faces ({lb[0][0]}..{lb[1][0]})")
+        expect(abs(lb[0][1]) < 0.1 and abs(lb[1][1] - (CON_UNDER_Y + 10)) < 0.1, f"leg {i} from the floor up into the body's underside")
+        expect(lb[0][2] >= CON_BACK_Z and lb[1][2] <= CON_FRONT_Z, f"leg {i} under the body in z")
+    ib = inset.bounding_box()
+    n = STRIP_N
+    plane_d = [float(np.dot(np.array(v) - strip_point(0, 0), n)) for v in
+               [(x, y, z) for x in (ib.min.X, ib.max.X) for y in (ib.min.Y, ib.max.Y) for z in (ib.min.Z, ib.max.Z)]]
+    expect(min(abs(d) for d in plane_d) < 0.5, "strip inset's underside lies on the body's top (the strip plane)")
+    expect(ib.min.X >= -hw and ib.max.X <= hw, "strip inset inside the body's x extents")
+    expect(ib.min.Z >= CON_BACK_Z and ib.max.Z <= CON_FRONT_Z, "strip inset inside the body's z extents")
     out += [Solid(body, "interior_panel"), Solid(inset, "interior_dark"), Solid(front_face, "trim_black")]
     out += [Solid(c, "control_interface") for c in cheeks + legs]
     # --- shelf: rails, back, modules
@@ -265,7 +312,18 @@ def _check(sol: list[Solid]) -> dict:
     opposite_x = hw - across
     aisle = opposite_x - front_x
     expect(aisle >= prog["aisle"], f"aisle between the console and the starboard side {aisle:.2f} m >= {prog['aisle']} m")
-    # Controls: footprint on the strip, reach from the standing eye, and mutual clearance.
+    # The strip is level with the table top, with a shallow rake.
+    rake = math.degrees(math.atan2(STRIP_BACK[0] - STRIP_FRONT[0], STRIP_Z[0] - STRIP_Z[1]))
+    expect(abs(STRIP_O[1] - TOP_Y) <= STRIP_TOL_MM, f"strip's middle level with the table top ({STRIP_O[1]:.1f} vs {TOP_Y} mm, +/-{STRIP_TOL_MM})")
+    expect(0 <= rake <= 5.0, f"strip rake {rake:.1f} degrees, at most 5")
+    expect(abs(STRIP_FRONT[0] - TOP_Y) <= STRIP_TOL_MM and abs(STRIP_BACK[0] - TOP_Y) <= STRIP_TOL_MM, "both strip edges within the tolerance of the table top")
+    # Sight line from the leaning eye to the hologram's middle (HoloMount, above the table's centre) clears the console.
+    holo = np.array([0.0, TOP_Y, TABLE_DEPTH / 2])
+    for z in np.linspace(CON_BACK_Z, CON_FRONT_Z, 9):
+        t = (LEAN_EYE[2] - z) / (LEAN_EYE[2] - holo[2])
+        y_line = LEAN_EYE[1] + t * (holo[1] - LEAN_EYE[1])
+        expect(y_line > STRIP_BACK[0] + 100, f"sight line from the leaning eye to the table clears the console at z={z:.0f} ({y_line:.0f} mm)")
+    # Controls: footprint on the strip, reach from the leaning eye, and mutual clearance.
     rects = []
     for name, (slug, x, s) in LAYOUT.items():
         e = entry(slug)
@@ -275,16 +333,16 @@ def _check(sol: list[Solid]) -> dict:
         rects.append((name, x - w / 2, x + w / 2, s - h / 2, s + h / 2))
         top_pt = strip_point(x, s, INSET_T + e["stand_out_mm"])
         for p in (strip_point(x, s, INSET_T), top_pt):
-            reach = float(np.linalg.norm(p - EYE))
-            expect(reach <= REACH_MM, f"{name} within reach of the standing eye ({reach:.0f} mm)")
+            reach = float(np.linalg.norm(p - LEAN_EYE))
+            expect(reach <= REACH_MM, f"{name} within reach of the leaning eye ({reach:.0f} mm)")
     for i, a in enumerate(rects):
         for b in rects[i + 1:]:
             gx = max(b[1] - a[2], a[1] - b[2])
             gs = max(b[3] - a[4], a[3] - b[4])
             expect(max(gx, gs) >= 24, f"{a[0]} and {b[0]} clear of each other ({max(gx, gs):.0f} mm)")
-    face_to_eye = math.degrees(math.acos(float(np.dot((EYE - STRIP_O) / np.linalg.norm(EYE - STRIP_O), STRIP_N))))
-    expect(face_to_eye <= 45, f"console strip faces the standing eye ({face_to_eye:.0f} degrees off)")
-    expect(STRIP_BACK[0] <= 1200, "console stays low enough to see over from standing")
+    face_to_eye = math.degrees(math.acos(float(np.dot((LEAN_EYE - STRIP_O) / np.linalg.norm(LEAN_EYE - STRIP_O), STRIP_N))))
+    expect(face_to_eye <= 45, f"console strip faces the leaning eye ({face_to_eye:.0f} degrees off)")
+    expect(STRIP_BACK[0] <= TOP_Y + STRIP_TOL_MM, "console stays level with the table, low enough to see over")
     # Shelf modules: gauges fit their module.
     gx = entry("gauge")["extent_radii"]
     for name, (mx, mw) in MODULES.items():
@@ -324,6 +382,7 @@ def build() -> dict:
     s.node("BackPanelAnchor", props={"transform": Xform(origin=(0, TOP_Y / 1000, 0.0))})
     s.node("OperatorPoint", props={"transform": Xform(origin=(0, 0, (CON_FRONT_Z + 100) / 1000))})
     s.node("OperatorEye", props={"transform": Xform(origin=tuple(EYE / 1000))})
+    s.node("LeanEye", props={"transform": Xform(origin=tuple(LEAN_EYE / 1000))})
     s.node("Controls", props={"transform": _xf(strip_point(0, 0, INSET_T), STRIP_UP, STRIP_N)})
     for name, (slug, x, sv) in LAYOUT.items():
         s.node(name, parent="Controls", instance=scene_path(slug), props={"transform": Xform(origin=(x / 1000, sv / 1000, 0))})
@@ -350,7 +409,7 @@ def build() -> dict:
         "scene": res(d / f"{SLUG}.tscn"),
         "behaviour": {"wire": {"pan": "Controls/PanTrackball", "zoom": "Controls/ZoomLever", "follow": "Controls/FollowToggle",
                                "follow_lamp": "Controls/FollowLamp", "hologram_mount": "HoloMount",
-                               "backdrop_anchor": "BackPanelAnchor", "standing_eye": "OperatorEye",
+                               "backdrop_anchor": "BackPanelAnchor", "standing_eye": "OperatorEye", "leaning_eye": "LeanEye",
                                "noise_repeater": "Shelf/NoiseRepeater"}},
         "footprint_mm": [2 * (TABLE_HW + RAIL_W), CON_FRONT_Z],
         "stand_out_mm": CON_FRONT_Z,
@@ -370,12 +429,13 @@ def SName_none():
 
 def _cameras(d) -> None:
     """Review cameras: the concept viewpoints, the operator's eye (white and red light), orthographic profile and front."""
-    eye = [round(v / 1000, 3) for v in EYE]
+    eye = [round(v / 1000, 3) for v in LEAN_EYE]
     cams = [
         {"name": "concept_round6_view", "pos": [1.1, 2.0, 3.6], "look_at": [0.1, 0.95, 0.5], "fov": 58.0},
         {"name": "concept_round5_view", "pos": [-1.6, 1.8, 3.8], "look_at": [0.0, 1.0, 0.4], "fov": 55.0},
-        {"name": "operator_eye", "pos": eye, "look_at": [0.0, 0.9, 0.7], "fov": 75.0},
-        {"name": "operator_eye_red", "pos": eye, "look_at": [0.0, 0.9, 0.7], "fov": 75.0, "light": "red"},
+        {"name": "operator_eye", "pos": eye, "look_at": [0.0, 0.8, 0.7], "fov": 75.0},
+        {"name": "operator_eye_red", "pos": eye, "look_at": [0.0, 0.8, 0.7], "fov": 75.0, "light": "red"},
+        {"name": "console_level", "pos": [3.2, 0.8, 1.05], "look_at": [0.0, 0.75, 1.05], "ortho": 1.6},
         {"name": "profile_right", "pos": [4.5, 1.0, 0.7], "look_at": [0.0, 1.0, 0.7], "ortho": 2.6},
         {"name": "front", "pos": [0.0, 1.0, 5.5], "look_at": [0.0, 1.0, 0.0], "ortho": 2.6},
     ]
