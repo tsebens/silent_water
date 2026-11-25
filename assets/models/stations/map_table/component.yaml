@@ -1,0 +1,48 @@
+slug: map_table
+group: stations
+kind: station
+summary: 'Crew map table: D-shaped table with orange edge rail, plinth and braces, a console jutting from the front
+  edge (pan trackball, zoom lever, decorative knob, guarded toggle, lamp), an orange-railed instrument shelf with
+  the noise repeater, and two work lamps. The operator stands; no seat.'
+tags:
+- station
+- map
+- table
+- console
+- standing
+scene: res://assets/models/stations/map_table/map_table.tscn
+behaviour:
+  wire:
+    pan: Controls/PanTrackball
+    zoom: Controls/ZoomLever
+    follow: Controls/FollowToggle
+    follow_lamp: Controls/FollowLamp
+    hologram_mount: HoloMount
+    backdrop_anchor: BackPanelAnchor
+    standing_eye: OperatorEye
+    noise_repeater: Shelf/NoiseRepeater
+footprint_mm:
+- 2260.0
+- 1280.0
+stand_out_mm: 1280.0
+mount: floor at Y=0, back against the hull on Z=0 (the table's straight edge), operator standing at +Z facing -Z
+uses:
+- pan_trackball
+- zoom_lever
+- rotary_knob
+- guarded_toggle
+- indicator_lamp
+- gauge
+triangles: 4306
+triangles_by_part:
+  body: 1632
+checks:
+  aisle_m: 1.771
+  hull_half_width_m: 1.754
+built_by: tools/cadkit/scenes/map_table.py
+files:
+- component.yaml
+- map_table.tscn
+- map_table_body.glb
+- review/.gdignore
+- review/cameras.json
