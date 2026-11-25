@@ -9,7 +9,7 @@ document disagree, this document wins. The evidence behind each rule is in
 [`research/scene_assembly_spike.md`](research/scene_assembly_spike.md).
 
 Out of scope: organic assets (creatures, terrain), which use the image-to-3D route in Asset Studio
-([`asset_pipeline.md`](asset_pipeline.md)), and the hull, which is modelled in Onshape.
+([`asset_pipeline.md`](asset_pipeline.md)), and the hull, which is generated from `program.yaml` by a parametric script.
 
 ## 1. The split
 

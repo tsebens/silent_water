@@ -80,6 +80,9 @@ func test_player_slides_on_steep_deck() -> void:
 	if me == null:
 		expect(false, "no player")
 		return
+	# Start amidships, with room to slide before the bulkhead.
+	me.teleport(Vector3(0, 0.1, -2.0))
+	await _physics_frames(10)
 	game.sub_frame.set_pose(Transform3D(Basis.from_euler(Vector3(deg_to_rad(40), 0, 0)), Vector3.ZERO))
 	var start: Vector3 = me.position
 	await _physics_frames(60)
