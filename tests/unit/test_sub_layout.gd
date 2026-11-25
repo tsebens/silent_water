@@ -69,3 +69,12 @@ func test_footprint_and_clearances() -> void:
 	expect_near(SubLayout.clearance("aisle_min_m"), 0.8)
 	expect_near(SubLayout.clearance("head_clear_m"), 2.0)
 	expect_near(SubLayout.compartment_span(&"cockpit").x, -4.9)
+
+
+func test_hull_inside_checks() -> void:
+	expect(SubLayout.inside_hull(0.0, SubLayout.hull_centre_y(), 0.0), "centre is inside")
+	var half: Vector2 = SubLayout.hull_inner_half(0.0)
+	expect(SubLayout.inside_hull(half.x - 0.01, SubLayout.hull_centre_y(), 0.0), "just inside the wall")
+	expect(not SubLayout.inside_hull(half.x + 0.01, SubLayout.hull_centre_y(), 0.0), "just outside the wall")
+	expect(not SubLayout.inside_hull(0.0, SubLayout.hull_top_y(), 0.0), "the envelope top is wall, not cabin")
+	expect_eq(SubLayout.hull_inner_half(SubLayout.hull_size().z / 2.0), Vector2.ZERO, "closed at the ends")

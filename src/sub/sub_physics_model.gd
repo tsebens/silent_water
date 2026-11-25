@@ -115,21 +115,27 @@ func buoyancy_accel() -> float:
 	return (lift_t - total_mass_t()) / total_mass_t() * G
 
 
-## Hull extent above and below the sub's origin (m).
-const HULL_BOTTOM: float = -1.0
-const HULL_TOP: float = 2.96
+## Hull extent below and above the sub's origin (m), from the program via SubLayout.
+static func hull_bottom() -> float:
+	return SubLayout.hull_bottom_y()
+
+
+static func hull_top() -> float:
+	return SubLayout.hull_top_y()
+
+
 ## Vertical damping while the hull is partly out of the water (1/s).
 const SURFACE_DAMPING: float = 1.5
 
 
 ## Fraction of the hull below the surface (y = 0).
 func submerged_fraction() -> float:
-	return clampf((0.0 - (position.y + HULL_BOTTOM)) / (HULL_TOP - HULL_BOTTOM), 0.0, 1.0)
+	return clampf((0.0 - (position.y + hull_bottom())) / (hull_top() - hull_bottom()), 0.0, 1.0)
 
 
 ## True when the top of the hull breaks the surface.
 func is_surfaced() -> bool:
-	return position.y + HULL_TOP > 0.0
+	return position.y + hull_top() > 0.0
 
 
 func depth() -> float:
@@ -202,7 +208,7 @@ func step(delta: float, ordered_engine: float, rudder: float, planes: float, flo
 func _step_ballast(delta: float, flood: float, blow: float) -> void:
 	var flooded: float = flood * flood_rate_t * delta
 	# The vent sits high on the hull: it only floods once it's under water.
-	if position.y + HULL_TOP > 0.5:
+	if position.y + hull_top() > 0.5:
 		flooded = 0.0
 	# Air only goes out with water: an empty tank uses no more air.
 	var blown: float = minf(minf(blow * blow_rate_t * delta, air_t), tank_water_t + flooded)

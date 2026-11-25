@@ -198,3 +198,15 @@ func test_enough_bilge_defeats_blown_tanks() -> void:
 	expect(m.buoyancy_accel() < 0.0, "flooded sub sinks with tanks blown")
 	m.change_bilge(-100.0)
 	expect(m.buoyancy_accel() > 0.0, "pumped down it rises again")
+
+
+func test_hull_bounds_come_from_layout() -> void:
+	expect_near(SubPhysicsModel.hull_bottom(), SubLayout.hull_bottom_y(), 0.0001)
+	expect_near(SubPhysicsModel.hull_top(), SubLayout.hull_top_y(), 0.0001)
+	expect_near(SubPhysicsModel.hull_top() - SubPhysicsModel.hull_bottom(), SubLayout.hull_size().y, 0.0001, "hull height")
+	var m: SubPhysicsModel = SubPhysicsModel.new()
+	m.position.y = -SubPhysicsModel.hull_top() - 0.01
+	expect_eq(m.submerged_fraction(), 1.0)
+	expect(not m.is_surfaced(), "just below the surface")
+	m.position.y = -SubPhysicsModel.hull_bottom() + 0.01
+	expect_eq(m.submerged_fraction(), 0.0)
