@@ -73,10 +73,10 @@ There are more jobs than people, so the crew keeps moving between stations, and 
 
 | Load | Station | What it involves |
 | --- | --- | --- |
-| Constant | Pilot | Steering, diving planes and engine speed (throttle); rarely leaves the seat |
+| Constant | Pilot | Steering, diving planes, engine speed (throttle) and ballast; rarely leaves the seat |
 | Dominant | Sonar | Hands-on listening and pinging; the only person on the hydrophone |
 | Midway | Engineering | Engine upkeep and power; no longer sets speed (decided in M7) |
-| Rounds | Ballast | Valves that flood and blow the tanks for big depth changes |
+| Rounds | Ballast | The manual backup: valves in engineering that flood and blow the tanks when the pilot's control is lost (the pilot runs ballast directly, #445) |
 | Rounds | Life support | Swapping CO2 scrubber canisters, watching O2 (see *Life support* below) |
 | Rounds | Bilge and leaks | Pumps and patching |
 | Rounds | Countermeasures | Decoys and noisemakers; replaces the original concept's weapons station |
@@ -87,7 +87,7 @@ The original concept also had a charts station. It became the **map table** (M7)
 
 - **Physical by default:** valves, levers, switches and sliders worked with the mouse.
 - **Keys only for continuous fine control** that a mouse would make clunky. That covers the pilot's steering, diving planes and throttle.
-- **Discrete, occasional actions stay physical**, even ones the pilot needs, like ballast. Big moves take a second person. (Engine speed moved to the pilot's throttle in M7: an order telegraph made driving feel sluggish. Side thrusters let the sub turn in place, at a noise cost.)
+- **Discrete, occasional actions stay physical** where a station owns them. The pilot's own driving is not split across the crew: engine speed moved to the pilot's throttle in M7, because an order telegraph made driving feel sluggish, and ballast followed (#445, 2026-11-25): calling every depth change back to the engineer was too clunky. The pilot blows and floods the tanks from the keyboard; the ballast valves in engineering stay as the manual backup. Side thrusters let the sub turn in place, at a noise cost.
 - **Speed of movement sets noise.** Easing a lever is quiet; slamming it clanks.
 - **No HUD by default.** In-world screens the camera zooms into, like Helldivers 2's map table, are fine where a physical version is impractical. Prefer handling cargo physically over grid inventories.
 
