@@ -92,7 +92,7 @@ func _run() -> void:
 		me.sit_in(_game.get_node(seat_path) as StationSeat)
 		await get_tree().create_timer(0.3).timeout
 	if _has_wheel:
-		(_game.get_node("Interior/Stations/Sonar/Wheel") as Interactable).host_set_value(_wheel)
+		(_game.get_node("Interior/Stations/Sonar/Controls/Trackball") as Interactable).host_set_value(_wheel)
 	if OS.get_cmdline_user_args().has("--demo-map"):
 		# A few pins and a manned hydrophone so the charts have something to show.
 		var chart: MapModel = _game.get_node("MapModel") as MapModel
@@ -101,7 +101,7 @@ func _run() -> void:
 		chart.add_pin(sub_pos + Vector3(-25, -40, -160), MapModel.Kind.DANGER)
 		chart.add_pin(sub_pos + Vector3(10, -60, -230), MapModel.Kind.APEX)
 		chart.add_pin(sub_pos + Vector3(60, -10, -60), MapModel.Kind.CONTACT)
-		(_game.get_node("Interior/Stations/Sonar/Wheel") as Interactable).host_set_value(40.0)
+		(_game.get_node("Interior/Stations/Sonar/Controls/Trackball") as Interactable).host_set_value(40.0)
 		if me != null:
 			me.put_on(_game.get_node("Interior/Stations/Sonar/Headset") as Wearable)
 		await get_tree().create_timer(0.2).timeout

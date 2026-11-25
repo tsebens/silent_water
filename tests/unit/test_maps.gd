@@ -88,7 +88,7 @@ func test_sonar_contact_mark_at_bearing_and_range() -> void:
 	controller.enabled = false
 	game.sub_frame.set_pose(Transform3D(Basis(), Vector3(0, -40, -100)))
 	var seat: SonarSeat = game.get_node("Interior/Stations/Sonar/Seat") as SonarSeat
-	var wheel: HydrophoneWheel = game.get_node("Interior/Stations/Sonar/Wheel") as HydrophoneWheel
+	var wheel: HydrophoneWheel = game.get_node("Interior/Stations/Sonar/Controls/Trackball") as HydrophoneWheel
 	wheel.host_set_value(90.0)  # Starboard beam.
 	seat.contact_range_m = 200.0
 	seat.mark_contact()
@@ -138,7 +138,7 @@ func test_expired_marks_are_pruned_and_host_add_replicates_via_set() -> void:
 
 func test_bearing_display_is_heading_up_and_uses_shared_cone_constant() -> void:
 	await _frames(2)
-	var bezel: FlatChart = game.get_node_or_null("Interior/Stations/Sonar/BearingScreen") as FlatChart
+	var bezel: FlatChart = game.get_node_or_null("Interior/Stations/Sonar/ScreenMount/Chart") as FlatChart
 	expect(bezel != null, "bezel display exists")
 	controller.enabled = false
 	for deg: float in [0.0, 37.0, 150.0, 271.0]:
