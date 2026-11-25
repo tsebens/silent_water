@@ -1,0 +1,10 @@
+[gd_resource type="StandardMaterial3D" script_class="RoleMaterial" format=3]
+
+[ext_resource type="Script" path="res://src/palette/role_material.gd" id="1_e7sue"]
+
+[resource]
+resource_name = "indicator_alarm"
+emission_energy_multiplier = 2.0
+script = ExtResource("1_e7sue")
+swatch = &"info_black"
+glow = &"light_alarm"

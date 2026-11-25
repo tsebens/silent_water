@@ -148,17 +148,13 @@ def promote(built: dict, staging: Path, models: Path = library.MODELS) -> list[s
 
 
 def _same_mesh(a: Path, b: Path) -> bool:
-    """Two GLBs that are the same model: equal bytes, or equal triangle count, bounds and colours."""
+    """Two GLBs that are the same model: equal bytes, or the same triangles per role and the same bounds."""
     if a.read_bytes() == b.read_bytes():
         return True
     import numpy as np
-    import trimesh
-    ma, mb = trimesh.load(a, force="mesh"), trimesh.load(b, force="mesh")
-    if len(ma.faces) != len(mb.faces) or not np.allclose(ma.bounds, mb.bounds, atol=1e-5):
-        return False
-    ca = {tuple(c) for c in np.asarray(ma.visual.vertex_colors)}
-    cb = {tuple(c) for c in np.asarray(mb.visual.vertex_colors)}
-    return ca == cb
+    from cadkit.solids import read_glb
+    ra, rb = read_glb(a), read_glb(b)
+    return ra["surfaces"] == rb["surfaces"] and np.allclose(ra["bounds"], rb["bounds"], atol=1e-5)
 
 
 def compare(built: dict, staging: Path, models: Path = library.MODELS) -> list[str]:

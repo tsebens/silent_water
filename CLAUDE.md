@@ -51,3 +51,4 @@ The same server carries the `labels` toolset (`list_label`, `get_label`, `label_
 - No HUD unless the design calls for an in-world screen.
 - Content (creatures, equipment, objectives, sites) is Godot Resources so it can be tuned without code.
 - Sum noise as intensity (pressure squared), never as decibels.
+- **Colours come from the palette** ([`docs/palette.md`](docs/palette.md)): assets name roles, code asks `Palette.main().color(&"<swatch>")`. No colour literals in new code.

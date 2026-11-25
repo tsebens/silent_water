@@ -58,6 +58,28 @@ def render(slug: str, out: Path | None = None, cameras: Path | None = None) -> l
     return shots
 
 
+PALETTE_SCENE = "res://tests/palette_sheet.tscn"
+
+
+def palette_sheets(out: Path | None = None) -> list[Path]:
+    """Render the swatch sheets (tests/palette_sheet.tscn): every swatch and role under four white lights and the
+    stealth red. Default out: docs/images/palette/."""
+    out = out or library.REPO / "docs" / "images" / "palette"
+    out.mkdir(parents=True, exist_ok=True)
+    subprocess.run([godot(), "--headless", "--path", str(library.REPO), "--import"], capture_output=True, timeout=900)
+    cmd = [godot(), "--path", str(library.REPO), "--rendering-driver", "vulkan", PALETTE_SCENE, "--", str(out)]
+    if not os.environ.get("DISPLAY"):
+        if not shutil.which("xvfb-run"):
+            raise RuntimeError("no display and no xvfb-run: install xvfb and mesa-vulkan-drivers")
+        cmd = ["xvfb-run", "-a", "-s", "-screen 0 1800x1700x24", *cmd]
+    proc = subprocess.run(cmd, capture_output=True, text=True, timeout=900)
+    shots = sorted(out.glob("palette_*.png"))
+    if "SHEET" not in proc.stdout:
+        tail = "\n".join((proc.stdout + proc.stderr).strip().splitlines()[-15:])
+        raise RuntimeError(f"Godot rendered no sheet (exit {proc.returncode}):\n{tail}")
+    return shots
+
+
 def _label(im, text: str):
     from PIL import ImageDraw
     d = ImageDraw.Draw(im)

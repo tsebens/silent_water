@@ -1,0 +1,10 @@
+[gd_resource type="StandardMaterial3D" script_class="RoleMaterial" format=3]
+
+[ext_resource type="Script" path="res://src/palette/role_material.gd" id="1_y6bq8"]
+
+[resource]
+resource_name = "lamp_work"
+emission_energy_multiplier = 3.0
+script = ExtResource("1_y6bq8")
+swatch = &"info_black"
+glow = &"light_work_white"

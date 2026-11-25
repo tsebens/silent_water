@@ -22,7 +22,7 @@ def solids(cols: int, rows: int) -> list[Solid]:
     plate = bd.chamfer(plate.faces().sort_by(bd.Axis.Z)[-1].edges(), 1.0)
     bolts = [at(prism(6, BOLT_R, BOLT_H), sx * (w / 2 - BOLT_INSET), sy * (h / 2 - BOLT_INSET), PLATE_T_MM)
              for sx in (-1, 1) for sy in (-1, 1)]
-    out = [Solid(plate, "powder_grey")] + [Solid(b, "black") for b in bolts]
+    out = [Solid(plate, "interior_dark")] + [Solid(b, "trim_black") for b in bolts]
     lo, hi = bbox_mm(plate)
     expect(abs(hi[0] - lo[0] - w) < 0.01 and abs(hi[1] - lo[1] - h) < 0.01, f"plate {lo}..{hi} is {w} x {h}")
     expect(abs(lo[2]) < 0.01 and abs(hi[2] - PLATE_T_MM) < 0.01, "plate back on Z=0, front at PLATE_T_MM")

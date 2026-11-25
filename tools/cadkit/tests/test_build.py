@@ -18,7 +18,7 @@ WIDTH = {width}
 def build() -> dict:
     limit = min([entry(u)["width"] for u in USES], default=1000)
     expect(WIDTH <= limit, f"{{SLUG}} ({{WIDTH}} mm) fits what it uses ({{limit}} mm)")
-    rep = export_solids_glb([Solid(box(WIDTH, 10, 10), "black")], out_dir(GROUP, SLUG) / "{glb}.glb", "N")
+    rep = export_solids_glb([Solid(box(WIDTH, 10, 10), "trim_black")], out_dir(GROUP, SLUG) / "{glb}.glb", "N")
     write_entry(GROUP, SLUG, {{"kind": "element", "summary": "test", "tags": [], "width": WIDTH,
                                 "triangles": rep["triangles"]}})
     return {{"slug": SLUG, "triangles": rep["triangles"]}}

@@ -30,7 +30,7 @@ def solids() -> list[Solid]:
         for j in range(i + 1, len(keys)):
             dx, dy = keys[i][1] - keys[j][1], keys[i][2] - keys[j][2]
             expect((dx * dx + dy * dy) ** 0.5 >= 2 * r + 12, f"keys {keys[i][0]} and {keys[j][0]} a finger apart")
-    return [Solid(p, "black") for p in plates]
+    return [Solid(p, "label_plate") for p in plates]
 
 
 def build() -> dict:
