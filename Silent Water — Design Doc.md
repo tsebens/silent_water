@@ -145,21 +145,24 @@ station's active ports. Each is a perforated cylinder full of absorbent beads.
 
 **The life support station.**
 
-- A **wall unit** in engineering, where the layout puts life support, with the **O2 tank gauge** on the same
-  panel. Its interaction is diagrammed in `assets/models/life_support/concept/reference/`.
-- **Two active ports.** Each is a **canister carriage**: a cradle that holds the canister upright in a
-  chamfered alcove at chest height and pivots at its base, so opening it tilts the canister out toward the
-  player for removal and insertion, and closing it swings the canister back upright into the unit. Each
-  carriage has its own **vertical linear gauge** that fills from the bottom as the canister saturates: green
-  to 50%, yellow to 85%, red to 100%. This is a new base gauge asset.
-- **Six storage ports:** holes in the unit's sloped top shelf that the canisters drop into, leaving only
-  their tops and light rings visible at about head height.
-- On spawn the sub carries one canister per storage port, with two storage ports empty, matching the two
-  active ports, which spawn holding fresh canisters. Fresh canisters are a finite supply until resupply at
-  the hub: four spares on a fresh sub.
-- **Swap:** open the carriage, pull the spent canister, drop it into an empty storage hole, pull a fresh one
-  from storage, seat it in the tilted carriage, close the carriage. All physical, so it takes a person off
-  another job and makes noise.
+- A **wall unit against the port-side hull of engineering**, where the layout puts life support, not against
+  the aft bulkhead. The **O2 tank gauge** is on the same panel. Concept record and the locked art:
+  `assets/models/life_support/concept/`.
+- **Two active ports** side by side in a chamfered alcove at chest height. Each is a **minimal open
+  cradle**: a shallow socket the canister stands in, lifted straight out and dropped back in, with no door and
+  no pivot. Each port has its own **vertical linear gauge** that fills from the bottom as the canister
+  saturates: green to 50%, yellow to 85%, red to 100% (colour coding collapses under stealth red, so the
+  gauge and the canister rings still need the red-light check noted in `docs/palette.md`). The gauge is a
+  new base asset. A pivoting carriage that tilts the canister out toward the player (Tristan's diagrams in
+  the concept folder) is a possible future upgrade to the swap's feel, not part of the design.
+- **Six storage holes** in the unit's upper panel, above the alcove, in two rows of three. Canisters drop in
+  and leave only their tops and light rings visible, at about head height. Whether the holes angle toward
+  the player so the rings read from the aisle is open.
+- On spawn the two active ports hold fresh canisters and storage holds four fresh spares, leaving two holes
+  empty for the first spent pair. Fresh canisters are a finite supply until resupply at the hub.
+- **Swap:** lift the spent canister out of its cradle, drop it into an empty storage hole, lift a fresh one
+  from storage, drop it into the cradle; the port's gauge resets when a fresh canister seats. All physical,
+  so it takes a person off another job and makes noise.
 - **Pacing target:** a fresh canister lasts a full crew of four about half a dive, roughly 15 minutes, so a
   dive has one or two swaps and silent running measurably shortens the clock.
 - **Silent running** shuts the scrubber fans down late in the sequence; with the fans off the scrubber
@@ -441,8 +444,10 @@ Steam integration and in-game voice, expeditions, cargo, divers, facilities, upg
 - Whether to lock out crews of two. The lean is no lock, but no design effort goes toward two-person crews: target four, keep three viable.
 - Distinct sub types and hardware variants
 - Life support: what happens at incapacitating CO2; whether CO2 vents when the sub surfaces or docks;
-  whether O2 depletion and low-O2 effects are modelled. Decided in chat: two active ports and six storage
-  ports, a canister lasts four crew about 15 minutes, the station is a wall unit carrying the O2 gauge.
+  whether O2 depletion and low-O2 effects are modelled; whether the storage holes angle toward the player;
+  whether the pivoting canister carriage is worth adding later. Decided in chat: two active ports with open
+  cradles and six storage holes, a canister lasts four crew about 15 minutes, the station is a wall unit on
+  the port-side hull of engineering carrying the O2 gauge.
 
 ### Watch in playtesting
 
