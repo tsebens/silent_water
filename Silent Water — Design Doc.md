@@ -77,7 +77,7 @@ There are more jobs than people, so the crew keeps moving between stations, and 
 | Dominant | Sonar | Hands-on listening and pinging; the only person on the hydrophone |
 | Midway | Engineering | Engine upkeep and power; no longer sets speed (decided in M7) |
 | Rounds | Ballast | Valves that flood and blow the tanks for big depth changes |
-| Rounds | Life support | Scrubber canisters, fans, O2 |
+| Rounds | Life support | Swapping CO2 scrubber canisters, watching O2 (see *Life support* below) |
 | Rounds | Bilge and leaks | Pumps and patching |
 | Rounds | Countermeasures | Decoys and noisemakers; replaces the original concept's weapons station |
 
@@ -105,6 +105,102 @@ The original concept also had a charts station. It became the **map table** (M7)
 - **Instant patch:** a strong consumable that takes cargo space.
 - **Welded plate:** a permanent fix, but heavy cargo, and welding is loud, so it has to be timed.
 - Hull damage lowers the sub's safe depth, and breakdowns grow more frequent with pressure.
+
+### Life support: CO2 and O2
+
+The sub's air is two numbers: **CO2 mass** and **O2 level**. Neither is modelled physically; both are one
+variable for the whole hull.
+
+**CO2.** Every crew member breathing the sub's air adds CO2 at a fixed rate. Crew outside the sub, or inside
+but wearing diving gear with its own O2 supply, add nothing. The scrubber removes CO2 from the same pool. The
+level that matters is concentration, computed from the sub's free air volume and the CO2 mass it holds, in
+real-world ppm, so that the effect thresholds below can be taken from the literature and the rates tuned
+for pacing without the thresholds moving.
+
+**Scrubbers.** CO2 is removed by scrubber canisters: cylindrical consumables sitting in the life support
+station's active ports. Each is a perforated cylinder full of absorbent beads.
+
+- A fresh canister starts at 100% effectiveness and has a fixed total CO2 capacity.
+- Its absorption rate holds almost flat as it fills, then falls off steeply near the end: like a battery's
+  voltage under discharge, flat until about 85 to 90% and then dropping fast. Proposed curve, with saturation
+  *s* from 0 to 1: effectiveness is 1 until *s* = 0.85, then follows a smooth S-curve to 0 at *s* = 1. The
+  maximum absorption rate of one fresh canister is at least the full crew's output, so a fresh scrubber holds
+  CO2 steady or draws it down.
+- **Reality check.** This is how real absorbent canisters behave. Soda lime and lithium hydroxide beds
+  remove CO2 almost completely until the reaction front reaches the end of the bed, then the escaping CO2
+  rises along an S-shaped "breakthrough curve"; rebreather and submarine literature defines a canister's
+  useful life by that breakthrough point, which lands at roughly 70 to 90% of the chemical's theoretical
+  capacity depending on flow rate, temperature, humidity and channelling. Cold and high pressure cut both
+  the rate and the usable capacity. Rebreathers even monitor the reaction front with a "temperature stick"
+  down the bed, which is a good real-world cousin of the station's saturation gauge. Anchoring numbers: a
+  resting person produces about 0.9 kg of CO2 a day (about 20 L/h, 38 g/h), more with exertion; soda lime
+  holds about 110 to 140 L of CO2 per kg in practice, lithium hydroxide up to 0.92 kg per kg in theory. In
+  one test a single 3.8 kg soda lime canister fed one person's output let a sealed chamber reach 1% CO2 only
+  after 8 hours and 2% after 22. The game compresses time; the shape is what we keep.
+- The beads darken as they saturate, from pale off-white through brown to near black, so a spent canister
+  looks spent.
+- A ring of lights round the top of the canister (about 300 degrees of it) shows remaining scrubbing power
+  by how many are lit and their colour: all lit and green when fresh, fewer and yellow as it is used, few and
+  red near the end. It must be readable when only the top of the canister shows.
+
+**The life support station.**
+
+- A **wall unit against the port-side hull of engineering**, where the layout puts life support, not against
+  the aft bulkhead. The **O2 tank gauge** is on the same panel. Concept record and the locked art:
+  `assets/models/life_support/concept/`.
+- **Two active ports** side by side in a chamfered alcove at chest height. Each is a **minimal open
+  cradle**: a shallow socket the canister stands in, lifted straight out and dropped back in, with no door and
+  no pivot. Each port has its own **vertical linear gauge** that fills from the bottom as the canister
+  saturates: green to 50%, yellow to 85%, red to 100% (colour coding collapses under stealth red, so the
+  gauge and the canister rings still need the red-light check noted in `docs/palette.md`). The gauge is a
+  new base asset. A pivoting carriage that tilts the canister out toward the player (Tristan's diagrams in
+  the concept folder) is a possible future upgrade to the swap's feel, not part of the design.
+- A **double-needle rate gauge** on the panel, so the crew can see whether they are winning: the
+  **capacity needle** shows the maximum rate at which the scrubbers can currently remove CO2 (the sum of
+  both active ports' rates at their present saturation), and the **production needle** shows the rate at
+  which the crew are producing it (breathing crew times the per-crew rate). Production above capacity means
+  CO2 is rising, however the tank reads now. The capacity needle shows the achievable maximum rather than
+  the actual removal rate, because a fresh scrubber removes exactly what is produced and no more, and a
+  needle that merely tracked the production needle would be confusing. It is the shared gauge's existing
+  two-needle form, in the palette's existing readout colours; no new swatches.
+- **Six storage holes** in the unit's upper panel, above the alcove, in two rows of three. Canisters drop in
+  and leave only their tops and light rings visible, at about head height. Whether the holes angle toward
+  the player so the rings read from the aisle is open.
+- On spawn the two active ports hold fresh canisters and storage holds four fresh spares, leaving two holes
+  empty for the first spent pair. Fresh canisters are a finite supply until resupply at the hub.
+- **Swap:** lift the spent canister out of its cradle, drop it into an empty storage hole, lift a fresh one
+  from storage, drop it into the cradle; the port's gauge resets when a fresh canister seats. All physical,
+  so it takes a person off another job and makes noise.
+- **Pacing target:** a fresh canister lasts a full crew of four about half a dive, roughly 15 minutes, so a
+  dive has one or two swaps and silent running measurably shortens the clock.
+- **Silent running** shuts the scrubber fans down late in the sequence; with the fans off the scrubber
+  absorbs nothing and CO2 climbs, which is the clock on silence (see *Hiding*).
+
+**CO2 effects on the crew.** Thresholds are real ppm values; the rates feeding them are tuned for pacing.
+
+| Concentration | Real-world reference | In the game |
+| --- | --- | --- |
+| 0.04% (400 ppm) | fresh air | baseline |
+| 0.5% (5,000 ppm) | 8-hour occupational limit | nothing yet |
+| 0.7% (7,000 ppm) | submarine 90-day continuous limit | the "get a canister ready" line |
+| 1.5% (15,000 ppm) | faster breathing, mild headache, drowsiness | first effects: brief, rare blur |
+| 2.5% (25,000 ppm) | 1-hour emergency exposure limit | blur periods longer and more frequent; the edges of vision start to close in; movement slows and wanders |
+| 3% (30,000 ppm) | headache, laboured breathing, impaired judgement | clearly impaired |
+| 4% (40,000 ppm) | immediately dangerous to life (IDLH); dizziness, confusion | severe: most of the screen obscured, movement barely controllable |
+| 7% and above | unconsciousness within minutes | incapacitation (exact handling open) |
+
+- **Vision blurs** in periods that fade in and out. Escalation raises their frequency and length.
+- **Vision narrows** from the outside in; escalation obscures more of the screen.
+- **Movement slows and goes erratic.** An impairment vector is added to the player's input, pushing their
+  movement around drunkenly. Escalation makes it longer and swings it further from the intended direction.
+
+**O2** is one big tank. The crew can only watch its level and make sure there is enough for the dive.
+Refills may come later; low-O2 effects are not designed yet.
+
+**Air volume.** The hull is about 10 m by 3.8 m by 3.0 m; after walls, bilge and equipment the free air is
+roughly 40 m³, to be measured from the blockout. In that volume 1 kg of CO2 is about 1.3% (13,000 ppm),
+and four resting crew with no scrubbing add about 0.2% per real hour, which is why the game's rates will
+run far faster than life.
 
 ## Noise, stealth and sensing
 
@@ -355,6 +451,12 @@ Steam integration and in-game voice, expeditions, cargo, divers, facilities, upg
 - ~~Whether charts stays its own station~~ Decided in M7: the map table is a shared holographic chart anyone can use; the pilot has a heading-up copy.
 - Whether to lock out crews of two. The lean is no lock, but no design effort goes toward two-person crews: target four, keep three viable.
 - Distinct sub types and hardware variants
+- Life support: what happens at incapacitating CO2; whether CO2 vents when the sub surfaces or docks;
+  whether O2 depletion and low-O2 effects are modelled; whether the storage holes angle toward the player;
+  whether the pivoting canister carriage is worth adding later; where the double-needle rate gauge sits on
+  the panel. Decided in chat: two active ports with open
+  cradles and six storage holes, a canister lasts four crew about 15 minutes, the station is a wall unit on
+  the port-side hull of engineering carrying the O2 gauge.
 
 ### Watch in playtesting
 
@@ -372,3 +474,10 @@ Steam integration and in-game voice, expeditions, cargo, divers, facilities, upg
 - [GameDev.net: Godot 4.7.1 release](https://gamedev.net/news/4477/)
 - [GodotSteam: choosing a version](https://godotsteam.pages.dev/getting_started/what_are_you_making)
 - [Steamworks: ISteamUser and Steam Voice](https://partner.steamgames.com/doc/api/ISteamUser)
+- [Arieli et al., Personal CO2 scrubbing device for use in a disabled submarine (2009)](https://consensus.app/papers/details/w:70a9db96-fdb7-47bc-a3fd-a4b0c995e634/): soda lime canister performance against one person's CO2 output in a sealed chamber
+- [Pollock et al., Storage of partly used rebreather CO2 absorbent canisters (2018)](https://consensus.app/papers/details/w:5095000a-659a-4718-ab87-8f72e6ddea60/): canister life defined by breakthrough
+- [Silvanius et al., Temperature stick CO2 absorbent monitors in diving rebreathers (2019)](https://consensus.app/papers/details/w:a6843d5a-5f2a-4d7f-8270-34defb372c74/): monitoring the reaction front
+- [Rendell et al., Effect of environmental conditions on CO2 absorption using soda lime (2003)](https://consensus.app/papers/details/w:bc914ece-28f4-40b6-a888-d34f87dca18f/): cold and pressure reduce rate and capacity
+- [NIOSH: carbon dioxide IDLH documentation](https://cdc.gov/niosh/idlh/124389.html): 40,000 ppm IDLH, occupational limits
+- [National Research Council: Emergency and continuous exposure guidance levels for selected submarine contaminants, chapter 3 (2007)](https://www.nationalacademies.org/read/11170/chapter/6): submarine CO2 limits and effects
+- [Engineering ToolBox: CO2 emission from the human body vs activity](https://www.engineeringtoolbox.com/co2-persons-d_691.html)
