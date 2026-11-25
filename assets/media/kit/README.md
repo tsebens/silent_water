@@ -37,7 +37,7 @@ and records the result in `assets/models/kit/<part>/asset.yaml`. The conversion 
 - puts the moving part under a `Pivot` node on its hinge, with no rotation
 - welds the CAD mesh and dissolves coplanar faces
 - flat-shades the mesh
-- snaps the Onshape material colours to the kit palette (`assets/style_bible/kit_palette.yaml`), named by role
+- snaps the Onshape material colours to the nearest palette role (`docs/palette.md`) and names the material by it; the shared role material supplies the colour on import
 
 `uv run asset check <part>` and `uv run asset export <part>` then write the part's Godot scene (`<part>.tscn`), with the
 control script, for example `SwitchLever` with `swing_deg`, and a grab box on collision layer 2.
