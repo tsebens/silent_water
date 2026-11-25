@@ -5,10 +5,10 @@
 [resource]
 script = ExtResource("1")
 preset_name = "night"
-sky_color = Color(0.02, 0.04, 0.1, 1)
-light_color = Color(0.45, 0.55, 0.85, 1)
+sky_swatch = &"env_abyss"
+light_swatch = &"env_teal"
 sun_energy = 0.15
 ambient_energy = 0.22
-surface_top_color = Color(0.02, 0.08, 0.14, 1)
-surface_under_color = Color(0.12, 0.22, 0.32, 1)
+surface_top_swatch = &"env_abyss"
+surface_under_swatch = &"env_deep"
 sun_direction = Vector3(-0.5, 0.55, 0.35)
