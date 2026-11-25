@@ -116,6 +116,13 @@ static func cockpit_floor_offset() -> float:
 	return floor_y(&"cockpit")
 
 
+## The hull's outer envelope as Vector3(width, height, length), from the program.
+static func hull_size() -> Vector3:
+	_load()
+	var h: Dictionary = _data["hull"]
+	return Vector3(float(h["width_m"]), float(h["height_m"]), float(h["length_m"]))
+
+
 ## A program clearance by key (aisle_min_m, walk_around_m, head_clear_m, hatch_width_m, ...).
 static func clearance(key: String) -> float:
 	_load()

@@ -24,7 +24,7 @@ clearances:                  # from the player capsule (radius 0.3, height 1.75)
   walk_around_m: 0.8         # gap needed on each side of a centre item you walk round (the map table)
   head_clear_m: 2.0          # clear height needed above the deck along the walkway
   hatch_width_m: 0.75
-  hatch_height_m: 1.7
+  hatch_height_m: 1.85  # the capsule is 1.75 tall: its dome would jam under a 1.7 lintel (#400)
   overhead_margin_m: 0.15    # kept clear under the overhead (pipes, cove lights) when sizing the hologram
 
 # Bow to stern. z: [from, to].

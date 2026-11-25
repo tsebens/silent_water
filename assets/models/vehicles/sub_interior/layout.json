@@ -36173,7 +36173,7 @@
   "walk_around_m": 0.8,
   "head_clear_m": 2.0,
   "hatch_width_m": 0.75,
-  "hatch_height_m": 1.7,
+  "hatch_height_m": 1.85,
   "overhead_margin_m": 0.15
  },
  "compartments": [

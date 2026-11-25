@@ -61,3 +61,21 @@ The sub interior program (`assets/models/vehicles/sub_interior/program.yaml`) is
 So the main deck is y = 0, the sunken cockpit floor (`floor_offset_m: -0.20`) is y = -0.20, and a standing eye (1.65 m) is y = 1.65.
 
 `plan.py` resolves the program into `layout.json` (stations, features, footprints, floors, clearances, cameras). `SubLayout` (`src/sub/sub_layout.gd`) reads it and is the **only** code that converts between the frames: `to_interior`, `to_program`, `position(id)`, `footprint(id)`, `floor_y(compartment)`, `cockpit_floor_offset()`, `clearance(key)`. Other systems ask it; none repeat the offset. After changing `program.yaml`, run `uv run --project tools/asset_pipeline python assets/models/vehicles/sub_interior/plan.py` and commit `layout.json`; `tests/unit/test_layout_in_sync.gd` fails when it is stale.
+
+## The generated hull (`assets/sub/sub_hull.glb`)
+
+`tools/build_sub_hull.py` builds the redesigned hull from `layout.json` (which `plan.py` generates from `program.yaml`). It needs only numpy: `python3 tools/build_sub_hull.py` rewrites `assets/sub/sub_hull.glb`, in the interior frame. Change the program, run `plan.py`, then the hull script, and commit all three outputs. It is not wired into `SubModel` yet (the old `sub_model.glb` is still what the game loads). Surfaces are named after palette roles. Nodes ending `-col` get trimesh collision (a `StaticBody3D`) on import.
+
+| Part | What it is | Role |
+| --- | --- | --- |
+| `hull_shell-col` | The cabin wall from the cockpit rim to the stern, seen from inside | `hull_metal` |
+| `dome_glass-col` | The cockpit bubble, bow to the rim ring, glass underfoot beyond the cockpit floor | `glass` |
+| `dome_rim` | The steel ring where the dome meets the cabin | `trim_black` |
+| `deck_cockpit-col` | The pilot's floor, 0.2 m below the main deck, narrowing toward the bow | `interior_dark` |
+| `cockpit_step-col` | A 0.25 m ramp up from the cockpit floor to the main deck (a vertical 0.2 m riser would stop the capsule) | `interior_dark` |
+| `deck_midships-col`, `deck_bulkhead-col`, `deck_engineering-col` | The main deck, one slab per compartment; `deck_bulkhead` is the hatch sill | `interior_dark` |
+| `bulkhead-col` | The watertight bulkhead with its opening (`hatch_width_m` by `hatch_height_m`) | `interior_panel` |
+| `hatch_frame` | The coaming round the opening | `trim_black` |
+| `tower`, `tower_hatch` | The conning tower on the roof over the ladder, with its top hatch. The shaft through the roof belongs to the ladder's arc | `hull_metal`, `interior_panel` |
+
+The hatch is 1.85 m high, not the draft program's 1.7 m: the player capsule is 1.75 m tall, and its dome jams under a 1.7 m lintel. `tests/unit/test_sub_hull.gd` checks the envelope, deck heights, step, hatch opening and 2.0 m head room, and walks a capsule from the cockpit through the hatch and back.
