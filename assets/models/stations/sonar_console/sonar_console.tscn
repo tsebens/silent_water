@@ -13,10 +13,10 @@
 [ext_resource type="PackedScene" path="res://src/sonar/headset.tscn" id="11"]
 
 [sub_resource type="BoxShape3D" id="lower"]
-size = Vector3(0.82, 0.74, 0.3)
+size = Vector3(0.6, 0.74, 0.3)
 
 [sub_resource type="BoxShape3D" id="upper"]
-size = Vector3(0.82, 0.78, 0.4)
+size = Vector3(0.6, 0.78, 0.4)
 
 [node name="SonarConsole" type="Node3D" node_paths=PackedStringArray("headset", "wheel")]
 script = ExtResource("1")
@@ -47,7 +47,7 @@ transform = Transform3D(1, 0, 0, 0, 0.982805, 0.184648, 0, -0.184648, 0.982805, 
 
 [node name="SignalGauge" type="Node3D" parent="Gauges"]
 script = ExtResource("4")
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.255, 0, 0.012)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.235, 0, 0.012)
 source_group = &"sonar_readouts"
 readout = &"signal"
 title = "SIGNAL"
@@ -57,7 +57,7 @@ max_value = 110
 
 [node name="BearingGauge" type="Node3D" parent="Gauges"]
 script = ExtResource("4")
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.09, 0, 0.012)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.085, 0, 0.012)
 source_group = &"sonar_readouts"
 readout = &"bearing"
 title = "BEARING"
@@ -67,12 +67,12 @@ wraps = true
 wrap_labels = PackedStringArray("FWD", "STBD", "AFT", "PORT")
 
 [node name="NoiseGauge" parent="Gauges" instance=ExtResource("5")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.09, 0, 0.012)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.085, 0, 0.012)
 radius = 0.055
 
 [node name="BearingRateGauge" type="Node3D" parent="Gauges"]
 script = ExtResource("4")
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.255, 0, 0.012)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.235, 0, 0.012)
 source_group = &"sonar_readouts"
 readout = &"bearing_rate"
 title = "BRG RATE"
@@ -85,7 +85,7 @@ sweep_deg = 180
 transform = Transform3D(1, 0, 0, 0, 0.478852, 0.877896, 0, -0.877896, 0.478852, 0, 0.803512, 0.511915)
 
 [node name="ActiveSonar" parent="Controls" instance=ExtResource("6")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.23, 0, 0)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.19, 0, 0)
 label = "active sonar"
 
 [node name="Trackball" parent="Controls" instance=ExtResource("7")]
@@ -93,7 +93,7 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0)
 label = "hydrophone trackball"
 
 [node name="MapKeys" parent="Controls" instance=ExtResource("8")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.23, 0, 0)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.19, 0, 0)
 
 [node name="Seat" type="Node3D" parent="." node_paths=PackedStringArray("headset", "sit_point")]
 script = ExtResource("9")
@@ -106,4 +106,4 @@ label = "sonar seat"
 [node name="Model" parent="Seat" instance=ExtResource("10")]
 
 [node name="Headset" parent="." instance=ExtResource("11")]
-transform = Transform3D(0, 0, 1, 0, 1, 0, -1, 0, 0, 0.525, 1.15, 0.2)
+transform = Transform3D(0, 0, 1, 0, 1, 0, -1, 0, 0, 0.34, 1.15, 0.2)
