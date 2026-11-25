@@ -46,4 +46,4 @@ control script, for example `SwitchLever` with `swing_deg`, and a grab box on co
 
 | Part | Moving part | Limits | Triangles (in → out) |
 | --- | --- | --- | --- |
-| `toggle_switch` | `Switch` (bat), revolute about X | ±40° from upright (`swing_deg` 80) | 5,476 → 4,606 |
+| `toggle_switch` | `Switch` (bat), revolute about X | ±40° from upright (`swing_deg` 80) | 5,476 → 4,606; the source is now the knurl-free re-export, re-import pending (#377) |

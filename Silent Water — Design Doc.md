@@ -81,7 +81,7 @@ There are more jobs than people, so the crew keeps moving between stations, and 
 | Rounds | Bilge and leaks | Pumps and patching |
 | Rounds | Countermeasures | Decoys and noisemakers; replaces the original concept's weapons station |
 
-The original concept also had a charts station. It became the **map table** (M7): a holographic terrain display built into the port wall of midships, with a seated operator who moves the camera and standing observers who drop pins (concept in `assets/models/map_table/concept/`). Countermeasures stands against the starboard wall just aft of the sonar station, across the aisle from the table, so its operator can watch their decoys on the hologram. The pilot has a smaller heading-up hologram of the same shared chart.
+The original concept also had a charts station. It became the **map table** (M7): a holographic terrain display built into the port wall of midships, with a standing operator who moves the camera and standing observers who drop pins. Everyone at the table stands, so they all see the hologram from the same height and it is tuned for one perspective (concept in `assets/models/map_table/concept/`). Countermeasures stands against the starboard wall just aft of the sonar station, across the aisle from the table, so its operator can watch their decoys on the hologram. The pilot has a smaller heading-up hologram of the same shared chart.
 
 ### Controls
 
