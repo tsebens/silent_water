@@ -1,6 +1,7 @@
 extends TestCase
-## The generated life-support wall unit, first half (docs/asset_process.md): every instance resolves, a canister
-## seats in each cradle, and the cradles and gauges are within reach of the standing eye.
+## The generated life-support wall unit (docs/asset_process.md): every instance resolves, a canister seats in each
+## cradle and in all six storage holes, and the cradles, gauges, fan toggle and storage tops are within reach of the
+## standing eye.
 
 const SCENE: String = "res://assets/models/stations/life_support/life_support.tscn"
 const REACH_M: float = 0.75
@@ -22,6 +23,11 @@ func test_scene_loads_and_every_instance_resolves() -> void:
 	for n: String in ["SaturationA", "SaturationB"]:
 		expect(st.get_node_or_null(n) is LinearGauge, "%s is a LinearGauge" % n)
 	expect(st.get_node_or_null("UpperPanelAnchor") != null, "UpperPanelAnchor")
+	for n: String in ["O2Gauge", "Co2RateGauge", "NoiseRepeater"]:
+		expect(st.get_node_or_null(n) is Gauge, "%s is a Gauge" % n)
+	expect((st.get_node("Co2RateGauge") as Gauge).readout_b != &"", "the CO2 rate gauge has a second needle")
+	expect(st.get_node_or_null("FanToggle") is SwitchLever, "FanToggle is a SwitchLever")
+	expect(st.get_node_or_null("FanLamp") is IndicatorLamp, "FanLamp is an IndicatorLamp")
 	expect(st.get_script() == null, "the station adds no script")
 	st.queue_free()
 
@@ -35,6 +41,42 @@ func test_a_canister_seats_in_each_cradle() -> void:
 		expect(slot.is_occupied() and c.is_seated(), "cradle %s occupied" % n)
 		expect_near(c.global_position.distance_to(slot.global_position), 0.0, 1e-4, "canister %s stands at its cradle" % n)
 		expect(not slot.try_seat(c), "a second seating is refused")
+	st.queue_free()
+
+
+func test_a_canister_seats_in_all_six_storage_holes() -> void:
+	var st: Node3D = _make()
+	var filled: int = 0
+	for i: int in range(1, 7):
+		var slot: CanisterSlot = st.get_node("Storage%d" % i) as CanisterSlot
+		expect(slot != null, "Storage%d is a CanisterSlot" % i)
+		var stored: ScrubberCanister = st.get_node_or_null("Stored%d" % i) as ScrubberCanister
+		var c: ScrubberCanister = stored
+		if c == null:
+			c = (load("res://assets/models/furniture/scrubber_canister/scrubber_canister.tscn") as PackedScene).instantiate() as ScrubberCanister
+			st.add_child(c)
+		else:
+			filled += 1
+		expect(slot.try_seat(c), "a canister seats in hole %d" % i)
+		# Seated, the canister's axis points out of the face (+Z) and its top shows just behind the plate.
+		var up: Vector3 = c.global_transform.basis.y
+		expect(up.dot(Vector3(0, 0, 1)) > 0.999, "hole %d: canister stands along +Z" % i)
+		var top: Vector3 = c.global_position + up * 0.3
+		expect_near(top.z, 0.5 + 0.008 - 0.015, 0.002, "hole %d: the canister top just behind the plate face" % i)
+	expect(filled == 4, "four holes hold a canister on a new sub (%d)" % filled)
+	st.queue_free()
+
+
+func test_fan_toggle_and_storage_tops_within_reach() -> void:
+	var st: Node3D = _make()
+	var eye: Vector3 = (st.get_node("OperatorEye") as Node3D).global_position
+	var tog: float = eye.distance_to((st.get_node("FanToggle") as Node3D).global_position)
+	expect(tog <= REACH_M, "the fan toggle is %.2f m from the eye" % tog)
+	for i: int in range(1, 7):
+		var slot: Node3D = st.get_node("Storage%d" % i) as Node3D
+		var top: Vector3 = slot.global_position + slot.global_transform.basis.y * 0.3
+		var d: float = eye.distance_to(top)
+		expect(d <= REACH_M, "storage top %d is %.2f m from the eye" % [i, d])
 	st.queue_free()
 
 

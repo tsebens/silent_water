@@ -1,0 +1,80 @@
+# Station brief for the life support unit (concept #424).
+station: life_support
+summary: >
+  The life support wall unit on the port-side hull of engineering. A standing crew member lifts spent CO2 scrubber
+  canisters out of two open cradles, drops them into storage holes above, and seats fresh ones; vertical gauges
+  beside the cradles show each canister's saturation, and the upper panel carries the O2 gauge and the CO2 rate
+  gauge. Modern, overbuilt, well kept: powder-grey steel with safety-orange rails and handles.
+
+concept:                              # the look and the arrangement; NOT the control list
+  images:
+    - path: assets/models/life_support/concept/life_support_primary.png
+      role: primary                   # the unit to build (it is drawn on an end wall; it belongs on the port side hull)
+      camera: concept_swap_view
+      view: from beside the crew member's left shoulder at chest height, the left cradle's canister lifted out
+    - path: assets/models/life_support/concept/scrubber_canister_primary.png
+      role: context                   # the canister the unit holds, fresh and spent, on a bench
+      camera: concept_canister_pair
+      view: three-quarter, product-shot, two canisters side by side
+    - path: assets/models/life_support/concept/scrubber_canister_storage_reference.png
+      role: context                   # the canister tops and light rings as seen in the storage holes
+      camera: concept_storage_tops
+      view: from slightly above the storage holes, close
+  doc: assets/models/life_support/concept/life_support_concept.md
+  compare_on:                         # what the concept review is allowed to judge
+    - overall massing and silhouette (tall wall unit, chamfered chest-height alcove, upper panel, plinth)
+    - the two cradles side by side in the alcove, with a vertical gauge beside each
+    - six storage holes above the alcove in two rows of three, canisters showing only their tops
+    - the O2 gauge on the upper panel
+    - colour blocking (grey body, orange rails and handles, dark alcove, hazard-striped plinth)
+    - canister proportions (about 30 cm tall, 15 cm across; perforated wall, solid cap with handle, ring of lights round the top)
+  ignore:                             # differences the review must not flag
+    - number, type and labels of switches (the functional spec below decides those)
+    - the wall the unit stands on, lighting mood, the person, surroundings
+    - the beads' exact colour and the CO2 rate gauge, which is not in the art
+
+functions:                            # authoritative: one entry per real game function
+  - id: scrubber_cradle_a
+    furniture: open cradle in the alcove holding one scrubber canister, lifted straight out and dropped back in
+    binds: none yet (design doc, Life support; no life support system in src/)
+    status: control only; CO2 and scrubbers are not implemented
+  - id: scrubber_cradle_b
+    furniture: second open cradle beside the first
+    status: control only
+  - id: saturation_gauge_a
+    display: vertical linear gauge beside cradle A, bar rising from the bottom; green to 50%, yellow to 85%, red above
+    status: control only; a new display scene, and a new behaviour (no linear gauge script exists)
+  - id: saturation_gauge_b
+    display: the same beside cradle B
+    status: control only
+  - id: canister_storage
+    furniture: six storage holes in the upper panel, two rows of three, each holding one canister top-up
+    status: control only
+  - id: scrubber_canister
+    furniture: the carried canister, a scene the unit instances in the cradles and the holes; perforated cylinder
+      showing beads, solid cap with carry handle, ring of indicator lights round the top (about 300 degrees)
+    status: control only; new scene; carrying and seating it, and driving the ring from remaining capacity, are new behaviours
+  - id: o2_gauge
+    display: the shared gauge, reading an O2 level readout
+    status: control only; no O2 readout exists yet
+  - id: co2_rate_gauge
+    display: the shared gauge with its second needle; capacity needle (scrubbers' maximum removal rate) and production
+      needle (crew's CO2 output), in the existing readout colours
+    status: control only; no CO2 readouts exist yet
+  - id: scrubber_fans
+    control: one guarded toggle with indicator lamp
+    binds: silent running (design doc, Hiding); nothing in src/ yet
+    status: control only
+  - id: noise_repeater
+    display: noise repeater (every station gets one, design doc)
+    status: implemented (the existing noise_gauge)
+
+constraints:
+  kind: station                       # floor-standing, no seat; the operator stands (as the map table)
+  frame: floor at Y=0, back on Z=0 against the hull wall, operator at +Z facing -Z
+  operator_eye_height_m: 1.65         # standing
+  reach_m: 0.75                       # cradles, gauges and the fan toggle from the standing eye; storage tops reachable at head height
+  aisle_min_m: 0.8                    # the unit stays clear of the engineering walkway
+  triangle_budget: 12000              # the interior class; the canister scene within about 1500 each
+  placement: the life_support entry of program.yaml (engineering, port side, z 2.3, footprint about 1.0 x 0.5 m)
+  palette: assets/palette/palette.tres
