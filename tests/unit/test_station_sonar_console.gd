@@ -128,3 +128,15 @@ func test_toggle_bat_stays_inside_its_guard() -> void:
 		var aabb: AABB = sw.global_transform.affine_inverse() * mesh.global_transform * mesh.get_aabb()
 		expect(absf(aabb.position.y) <= 0.034 and absf(aabb.end.y) <= 0.034, "bat within the 64 mm guard at %f (%s)" % [v, aabb])
 	st.queue_free()
+
+
+## The program's sonar desk is 0.65 m across (brief constraint footprint_m): the body, collision and the
+## headset on its hook all stay inside it.
+func test_console_fits_the_sonar_desk_width() -> void:
+	var st: SonarStation = _make()
+	var coll: Node = st.get_node("Collision")
+	for c: Node in coll.get_children():
+		var cs: CollisionShape3D = c as CollisionShape3D
+		var half: float = (cs.shape as BoxShape3D).size.x * 0.5
+		expect(absf(cs.position.x) + half <= 0.325 + 0.001, "%s collision within 650 mm" % c.name)
+	st.queue_free()
