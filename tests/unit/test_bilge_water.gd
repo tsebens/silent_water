@@ -51,3 +51,12 @@ func test_water_stays_inside_hull_at_bilge() -> void:
 	expect_near(float(mat.get_shader_parameter(&"clip_axis_y")), SubLayout.hull_centre_y() - w.position.y, 0.0001, "clip axis follows hull centre")
 	expect_near((w.mesh as PlaneMesh).size.y, SubLayout.hull_size().z, 0.0001, "plane spans the hull length")
 	w.free()
+
+
+func test_floor_follows_the_program_bilge_well() -> void:
+	var w: BilgeWater = (load("res://src/sub/bilge_water.tscn") as PackedScene).instantiate() as BilgeWater
+	runner.add_child(w)
+	expect_near(w.floor_y, SubLayout.position(&"bilge").y, 0.0001, "floor from the program")
+	w.set_tonnage(0.0)
+	expect_near(w.position.y, SubLayout.position(&"bilge").y, 0.0001, "dry surface at the well floor")
+	w.free()

@@ -63,7 +63,6 @@ size = Vector3(1.3, 0.85, 0.8)
 [node name="Model" parent="." instance=ExtResource("1")]
 
 [node name="BilgeWater" parent="." instance=ExtResource("17")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 1.0)
 
 [node name="Lights" type="Node3D" parent="."]
 
@@ -328,35 +327,41 @@ placements = {
 [node name="Sonar" parent="Stations" instance=ExtResource("sonar_console")]
 
 [node name="Ballast" type="Node3D" parent="Stations"]
+script = ExtResource("station_placement")
+station_id = &"ballast"
+placements = {
+"BlowLabel": Vector3(-0.26, 0.72, 0.25),
+"BlowValve": Vector3(-0.2, 1.0, 0.25),
+"FloodLabel": Vector3(-0.26, 0.72, -0.25),
+"FloodValve": Vector3(-0.2, 1.0, -0.25),
+"NoiseGauge": Vector3(-0.18, 1.95, 0),
+"TankGauge": Vector3(-0.26, 1.55, -0.25),
+"AirGauge": Vector3(-0.26, 1.55, 0.25)
+}
 
 [node name="FloodValve" parent="Stations/Ballast" instance=ExtResource("2")]
-position = Vector3(-1.84, 1.0, 1.0)
 rotation = Vector3(0, 1.5708, 0)
 turns_full_range = 2.0
 label = "flood valve"
 
 [node name="BlowValve" parent="Stations/Ballast" instance=ExtResource("2")]
-position = Vector3(-1.84, 1.0, 1.5)
 rotation = Vector3(0, 1.5708, 0)
 turns_full_range = 2.0
 label = "blow valve"
 
 [node name="FloodLabel" type="Label3D" parent="Stations/Ballast"]
-position = Vector3(-1.9, 0.72, 1.0)
 rotation = Vector3(0, 1.5708, 0)
 pixel_size = 0.002
 text = "FLOOD"
 modulate = Color(0.5, 0.75, 0.95, 1)
 
 [node name="BlowLabel" type="Label3D" parent="Stations/Ballast"]
-position = Vector3(-1.9, 0.72, 1.5)
 rotation = Vector3(0, 1.5708, 0)
 pixel_size = 0.002
 text = "BLOW"
 modulate = Color(0.95, 0.6, 0.45, 1)
 
 [node name="TankGauge" type="Node3D" parent="Stations/Ballast"]
-position = Vector3(-1.9, 1.55, 1.0)
 rotation = Vector3(0, 1.5708, 0)
 script = ExtResource("3")
 readout = &"tank_fraction"
@@ -365,7 +370,6 @@ max_value = 1.0
 sweep_deg = 180.0
 
 [node name="AirGauge" type="Node3D" parent="Stations/Ballast"]
-position = Vector3(-1.9, 1.55, 1.5)
 rotation = Vector3(0, 1.5708, 0)
 script = ExtResource("3")
 readout = &"air_fraction"
@@ -374,7 +378,6 @@ max_value = 1.0
 sweep_deg = 180.0
 
 [node name="NoiseGauge" parent="Stations/Ballast" instance=ExtResource("6")]
-position = Vector3(-1.82, 1.95, 1.25)
 rotation = Vector3(0, 1.5708, 0)
 
 [node name="Scanner" type="Node3D" parent="Stations"]
@@ -395,10 +398,14 @@ max_value = 1.0
 sweep_deg = 180.0
 
 [node name="Engineering" type="Node3D" parent="Stations"]
+script = ExtResource("station_placement")
+station_id = &"engineering"
+placements = {
+"EngineGauge": Vector3(0.2, 1.55, 0)
+}
 
 [node name="EngineGauge" type="Node3D" parent="Stations/Engineering"]
-position = Vector3(0, 1.55, 3.9)
-rotation = Vector3(0, 3.14159, 0)
+rotation = Vector3(0, -1.5708, 0)
 script = ExtResource("3")
 readout = &"engine_output"
 title = "ENGINE"
@@ -407,14 +414,19 @@ max_value = 1.0
 sweep_deg = 180.0
 
 [node name="Bilge" type="Node3D" parent="Stations"]
+script = ExtResource("station_placement")
+station_id = &"bilge"
+placements = {
+"BilgeGauge": Vector3(-0.8, 1.6, -0.3),
+"NoiseGauge": Vector3(-0.8, 1.6, 0.2),
+"Pump": Vector3(-0.75, 1.1, -0.3)
+}
 
 [node name="Pump" parent="Stations/Bilge" instance=ExtResource("8")]
-position = Vector3(-1.84, 1.1, 2.8)
 rotation = Vector3(0, 0, -1.5708)
 label = "bilge pump switch"
 
 [node name="BilgeGauge" type="Node3D" parent="Stations/Bilge"]
-position = Vector3(-1.9, 1.6, 2.8)
 rotation = Vector3(0, 1.5708, 0)
 script = ExtResource("3")
 readout = &"bilge_water_t"
@@ -423,7 +435,6 @@ max_value = 8.0
 sweep_deg = 180.0
 
 [node name="NoiseGauge" parent="Stations/Bilge" instance=ExtResource("6")]
-position = Vector3(-1.9, 1.6, 3.3)
 rotation = Vector3(0, 1.5708, 0)
 
 [node name="StatusBoard" type="Label3D" parent="Stations"]
@@ -439,21 +450,25 @@ autowrap_mode = 2
 modulate = Color(0.6, 0.9, 0.85, 1)
 
 [node name="Leaks" type="Node3D" parent="."]
+script = ExtResource("station_placement")
+station_id = &"ballast"
+placements = {
+"AftPortLow": Vector3(-0.3, 0.45, 0.65)
+}
 
 [node name="PortFore" parent="Leaks" instance=ExtResource("7")]
-position = Vector3(-1.88, 1.85, 0.6)
+position = Vector3(-1.65, 1.5, 0.6)
 rotation = Vector3(0, 1.5708, 0)
 
 [node name="StbdFore" parent="Leaks" instance=ExtResource("7")]
-position = Vector3(1.88, 1.85, 0.1)
+position = Vector3(1.65, 1.5, 0.1)
 rotation = Vector3(0, -1.5708, 0)
 
 [node name="Overhead" parent="Leaks" instance=ExtResource("7")]
-position = Vector3(0.4, 2.85, 1.2)
+position = Vector3(0.4, 2.2, 1.2)
 rotation = Vector3(1.5708, 0, 0)
 
 [node name="AftPortLow" parent="Leaks" instance=ExtResource("7")]
-position = Vector3(-1.82, 0.45, 3.9)
 rotation = Vector3(0, 1.5708, 0)
 
 [node name="Maps" type="Node3D" parent="Stations"]

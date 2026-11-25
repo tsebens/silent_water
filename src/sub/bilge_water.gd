@@ -8,8 +8,8 @@ extends MeshInstance3D
 ## Rise/fall smoothing (1/s), so leaks and the pump move the surface smoothly.
 const RESPONSE: float = 4.0
 
-## Floor level in the interior frame (cabin floor is y = 0).
-@export var floor_y: float = 0.0
+## Floor level in the interior frame: the program's bilge well floor (0 on the main deck).
+var floor_y: float = 0.0
 @export var source_group: StringName = &"sub_readouts"
 
 ## Tonnage currently shown.
@@ -19,6 +19,7 @@ var _source: Node
 
 func _ready() -> void:
 	add_to_group(&"bilge_water")
+	floor_y = SubLayout.position(&"bilge").y
 	var size: Vector3 = SubLayout.hull_size()
 	var mat: ShaderMaterial = material_override as ShaderMaterial
 	if mat != null:
