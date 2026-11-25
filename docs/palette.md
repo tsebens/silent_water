@@ -176,6 +176,6 @@ evenly as one of today's cabin lights lights a surface 1.5 m away. Regenerate wi
 
 ## Still to move onto the palette
 
-- The game's hard-coded colours: 86 colour literals across 19 files, among them the gauges, the chart screen, the
-  holographic maps and the debug overlay.
+- The game's hard-coded colours: the world, creatures and objectives are done (M13.6); still to go are the gauges,
+  the chart screen, the holographic maps and the debug overlay.
 - The image-to-3D route's vertex-colour palettes (creatures, terrain).

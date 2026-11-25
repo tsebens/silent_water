@@ -42,8 +42,13 @@ const CELL: float = 2.0
 ## Coarser copy for the holographic maps.
 const MAP_CELL: float = 6.0
 
-const SAND: Color = Color(0.29, 0.28, 0.24)
-const ROCK: Color = Color(0.16, 0.18, 0.17)
+## Sea floor colours come from the palette (`floor_sand`, `floor_rock`).
+static func sand_color() -> Color:
+	return Palette.main().color(&"floor_sand")
+
+
+static func rock_color() -> Color:
+	return Palette.main().color(&"floor_rock")
 
 const DETAIL_FREQ: float = 0.03
 
@@ -361,7 +366,7 @@ func _grid_mesh(heights: PackedFloat32Array, nx: int, nz: int, cell: float, step
 			verts[k] = Vector3(GRID_MIN.x + i * cell, h, GRID_MIN.y + j * cell)
 			normals[k] = n
 			var rockiness: float = smoothstep(0.82, 0.55, n.y)
-			var col: Color = SAND.lerp(ROCK, rockiness)
+			var col: Color = sand_color().lerp(rock_color(), rockiness)
 			# Strata colour bands by height, strongest on rock.
 			var band_hash: float = fposmod(floorf(h / strata_height) * 0.618034, 1.0)
 			col *= 1.0 + (band_hash - 0.5) * strata_tint * lerpf(0.4, 1.0, rockiness)
@@ -404,7 +409,7 @@ func _grid_mesh(heights: PackedFloat32Array, nx: int, nz: int, cell: float, step
 ## Irregular boulders on the shelves and the floor: cover to hide behind.
 func _build_boulders() -> void:
 	var rock_mat: StandardMaterial3D = StandardMaterial3D.new()
-	rock_mat.albedo_color = ROCK.lightened(0.05)
+	rock_mat.albedo_color = rock_color().lightened(0.05)
 	rock_mat.roughness = 0.95
 	var shape_mesh: SphereMesh = SphereMesh.new()
 	shape_mesh.radius = 0.5
@@ -460,7 +465,7 @@ func _vent(vent_name: String, xz: Vector2, source_db: float) -> void:
 	add_child(zone)
 	# A chimney of rock so it reads as a vent in the headlight.
 	var mat: StandardMaterial3D = StandardMaterial3D.new()
-	mat.albedo_color = ROCK
+	mat.albedo_color = rock_color()
 	var chimney: MeshInstance3D = MeshInstance3D.new()
 	var cyl: CylinderMesh = CylinderMesh.new()
 	cyl.top_radius = 0.8
