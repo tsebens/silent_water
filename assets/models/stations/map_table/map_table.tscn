@@ -1,0 +1,91 @@
+[gd_scene format=3]
+
+[ext_resource type="PackedScene" path="res://assets/models/stations/map_table/map_table_body.glb" id="1"]
+[ext_resource type="PackedScene" path="res://assets/models/kit/zoom_lever/zoom_lever.tscn" id="2"]
+[ext_resource type="PackedScene" path="res://assets/models/kit/pan_trackball/pan_trackball.tscn" id="3"]
+[ext_resource type="PackedScene" path="res://assets/models/kit/rotary_knob/rotary_knob.tscn" id="4"]
+[ext_resource type="PackedScene" path="res://assets/models/kit/guarded_toggle/guarded_toggle.tscn" id="5"]
+[ext_resource type="PackedScene" path="res://assets/models/kit/indicator_lamp/indicator_lamp.tscn" id="6"]
+[ext_resource type="PackedScene" path="res://src/noise/noise_gauge.tscn" id="7"]
+[ext_resource type="PackedScene" path="res://assets/models/kit/gauge/gauge.tscn" id="8"]
+
+[sub_resource type="BoxShape3D" id="table"]
+size = Vector3(2.2, 0.75, 0.9)
+
+[sub_resource type="BoxShape3D" id="console"]
+size = Vector3(0.56, 1.15, 0.42)
+
+[node name="MapTable" type="Node3D"]
+
+[node name="Body" parent="." instance=ExtResource("1")]
+
+[node name="Collision" type="StaticBody3D" parent="."]
+
+[node name="Table" type="CollisionShape3D" parent="Collision"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.375, 0.45)
+shape = SubResource("table")
+
+[node name="Console" type="CollisionShape3D" parent="Collision"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.575, 1.07)
+shape = SubResource("console")
+
+[node name="HoloMount" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.75, 0.45)
+
+[node name="BackPanelAnchor" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.75, 0)
+
+[node name="OperatorPoint" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 1.38)
+
+[node name="OperatorEye" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.65, 1.38)
+
+[node name="Controls" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 0.507692, 0.861538, 0, -0.861538, 0.507692, 0, 1.07095, 1.14203)
+
+[node name="ZoomLever" parent="Controls" instance=ExtResource("2")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.17, 0, 0)
+
+[node name="PanTrackball" parent="Controls" instance=ExtResource("3")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.045, 0)
+
+[node name="RotaryKnob" parent="Controls" instance=ExtResource("4")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.08, 0.105, 0)
+
+[node name="FollowToggle" parent="Controls" instance=ExtResource("5")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.17, 0, 0)
+
+[node name="FollowLamp" parent="Controls" instance=ExtResource("6")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.17, 0.1, 0)
+
+[node name="Shelf" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.17, 1.425, 0.068)
+
+[node name="NoiseRepeater" parent="Shelf" instance=ExtResource("7")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.01, 0)
+radius = 0.075
+
+[node name="DecorGauge1" parent="Shelf" instance=ExtResource("8")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.11, 0.055, 0)
+radius = 0.04
+title = ""
+source_group = &"map_table_no_readouts"
+
+[node name="DecorGauge2" parent="Shelf" instance=ExtResource("8")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.11, 0.055, 0)
+radius = 0.04
+title = ""
+source_group = &"map_table_no_readouts"
+
+[node name="DecorGauge3" parent="Shelf" instance=ExtResource("8")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.11, -0.06, 0)
+radius = 0.04
+title = ""
+source_group = &"map_table_no_readouts"
+
+[node name="DecorGauge4" parent="Shelf" instance=ExtResource("8")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.11, -0.06, 0)
+radius = 0.04
+title = ""
+source_group = &"map_table_no_readouts"

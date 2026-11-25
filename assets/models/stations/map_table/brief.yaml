@@ -1,0 +1,71 @@
+# Station brief for the map table (concept #380, approved by Tristan 2026-11-25; answers 1-7 applied).
+station: map_table
+
+concept:                      # the look and the arrangement; NOT the control list
+  images:
+    - path: assets/models/map_table/concept/map_table_round6_primary.png
+      role: primary
+      view: from the aisle, above and behind the operator's left shoulder, looking into the port bay
+      camera: concept_round6_view
+    - path: assets/models/map_table/concept/map_table_primary.png
+      role: context           # the locked round 5 bay, for where the table sits; its cowl and slab are superseded
+      view: from the aisle, looking into the port bay
+      camera: concept_round5_view
+  doc: assets/models/map_table/concept/map_table_concept.md   # round 6 supersedes it where they disagree (see below)
+  compare_on:
+    - overall massing (a table in a bay against the hull, with a rounded D-shaped top, an orange edge rail, an orange plinth and braces)
+    - the operator's console jutting from the middle of the front edge (the operator stands: no seat)
+    - the instrument shelf above the table on an orange rail, and two work lamps on arms
+    - colour blocking (grey surfaces, orange structure, cyan hologram)
+  ignore:
+    - number, type and labels of controls and instruments (functions decides those)
+    - screen and hologram content, contact dots, lighting mood, people
+    - the hull, hull frames, door, cables and anything outside the station
+
+functions:                    # authoritative: one entry per real game function
+  - id: chart_pan
+    control: a trackball on the operator's console
+    binds: MapTable (src/map/map_table.gd; WASD today)
+    status: implemented on keys; the trackball input is new
+  - id: chart_zoom
+    control: a zoom lever on the operator's console
+    binds: MapTable (mouse wheel today)
+    status: implemented; the lever input is new
+  - id: chart_rotate
+    control: a rotation knob or wheel on the operator's console
+    binds: HoloMap.table_rotation_deg (fixed today)
+    status: control only; rotation is not implemented
+  - id: follow_sub
+    control: a guarded toggle with an indicator lamp on the operator's console
+    binds: MapTable (F key today)
+    status: implemented on a key; the toggle input is new
+  - id: pins
+    control: observers and the operator click the terrain to place a pin and right-click to remove one; pin type on keys 1-4
+    binds: MapTable, MapModel
+    status: implemented; stays on mouse and keys (no physical control)
+  - id: table_hologram
+    display: the new display model (see below), filling the tabletop
+    binds: HoloMap, table layout
+    status: implemented as a slab; the display model is new
+  - id: pilot_hologram
+    display: the same display model at the pilot's small scale, heading-up and centred on the sub
+    binds: HoloMap, heading-up layout (Stations/Maps/PilotHolo)
+    status: implemented as a cylinder; the display model is new
+  - id: noise_repeater
+    display: the noise repeater dial (every station gets one), on the instrument shelf
+    status: implemented
+  - id: task_lights
+    furniture: two work lamps on articulated arms over the table, lit (palette lamp_cabin face and light_cabin light)
+    status: new; light fixtures, not controls
+  - id: operator_seat
+    furniture: none (answer 1, the operator stands, sharing the observers' perspective; operator_seat is not instanced)
+    status: dropped
+
+constraints:
+  kind: station
+  frame: floor at Y=0, back on Z=0 against the hull wall, operator at +Z facing -Z
+  operator_eye_height_m: 1.65  # standing (answer 1)
+  aisle_min_m: 0.8             # the whole station, console included, stays clear of the walkway (answer 5)
+  reach_m: 0.75               # console controls from the operator's eye
+  triangle_budget: 12000
+  placement: the map_table entry of program.yaml in #378 (port bay, footprint about 2.2 x 0.9 m, top at about 0.75 m)
