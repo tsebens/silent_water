@@ -86,50 +86,75 @@ func _open_door() -> void:
 	door.transform = hinge * swing * hinge.affine_inverse() * door.transform
 
 
+## Worn-metal parts: role (its swatch is the base tone), metallic, roughness. Parts not listed here are furniture
+## and fittings.
+const METAL_LOOKS: Dictionary = {
+	"Shell": [&"hull_metal", 0.1, 0.85],
+	"Deck": [&"interior_dark", 0.35, 0.75],
+	"BulkheadHatch": [&"interior_panel", 0.4, 0.85],
+}
+const MACHINERY_LOOK: Array = [&"hull_metal", 0.6, 0.5]
+const PRESSURE_LOOK: Array = [&"hull_metal", 0.55, 0.55]
+const FITTING_LOOK: Array = [&"interior_panel", 0.0, 0.85]
+
+var _metals: Array[ShaderMaterial] = []
+var _roles: Array[StringName] = []
+var _glass: StandardMaterial3D
+var _displays: Array[StandardMaterial3D] = []
+
+
+## The colour a role gets from the palette.
+func _role_color(role: StringName) -> Color:
+	var rm: RoleMaterial = RoleMaterial.lookup(String(role))
+	return Palette.main().color(rm.swatch)
+
+
+func _refresh_colors() -> void:
+	for i: int in range(_metals.size()):
+		_metals[i].set_shader_parameter("base_tone", _role_color(_roles[i]))
+	if _glass != null:
+		_glass.albedo_color = _role_color(&"glass")
+		_glass.albedo_color.a = 0.07
+	for d: StandardMaterial3D in _displays:
+		d.albedo_color = _role_color(&"screen_off")
+		d.emission = Palette.main().color(&"light_readout")
+
+
 func _material_for(part_name: String) -> Material:
+	var pal: Palette = Palette.main()
+	if not pal.changed.is_connected(_refresh_colors):
+		pal.changed.connect(_refresh_colors)
 	var m: StandardMaterial3D = StandardMaterial3D.new()
 	m.roughness = 0.85
 	if part_name == "FrontWindow":
 		m.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-		m.albedo_color = Color(0.55, 0.75, 0.8, 0.07)
 		m.roughness = 0.04
 		m.metallic = 0.2
 		m.cull_mode = BaseMaterial3D.CULL_DISABLED
 		m.specular_mode = BaseMaterial3D.SPECULAR_SCHLICK_GGX
+		_glass = m
+		_refresh_colors()
 		return m
 	if part_name.begins_with("Display"):
-		m.albedo_color = Color(0.03, 0.08, 0.09)
 		m.emission_enabled = true
-		m.emission = Color(0.2, 0.62, 0.7)
 		m.emission_energy_multiplier = 0.55
+		_displays.append(m)
+		_refresh_colors()
 		return m
+	var look: Array = FITTING_LOOK
+	if METAL_LOOKS.has(part_name):
+		look = METAL_LOOKS[part_name]
+	elif part_name.begins_with("PressurizedCylinder"):
+		look = PRESSURE_LOOK
+	elif part_name in ["EngineBlock", "Flywheel", "EngineMount", "HydrophoneWheel"] or part_name.begins_with("Slider"):
+		look = MACHINERY_LOOK
 	var sm: ShaderMaterial = ShaderMaterial.new()
 	sm.shader = WORN_METAL
 	sm.set_shader_parameter("wear_amount", METAL_WEAR_AMOUNT)
 	sm.set_shader_parameter("scale", METAL_SCALE)
-	if part_name == "Shell":
-		sm.set_shader_parameter("base_tone", Color(0.15, 0.17, 0.18))
-		sm.set_shader_parameter("metallic_amount", 0.1)
-		sm.set_shader_parameter("roughness_amount", 0.85)
-	elif part_name == "Deck":
-		sm.set_shader_parameter("base_tone", Color(0.1, 0.11, 0.115))
-		sm.set_shader_parameter("metallic_amount", 0.35)
-		sm.set_shader_parameter("roughness_amount", 0.75)
-	elif part_name.begins_with("PressurizedCylinder"):
-		sm.set_shader_parameter("base_tone", Color(0.38, 0.4, 0.39))
-		sm.set_shader_parameter("metallic_amount", 0.55)
-		sm.set_shader_parameter("roughness_amount", 0.55)
-	elif part_name == "BulkheadHatch":
-		sm.set_shader_parameter("base_tone", Color(0.2, 0.22, 0.23))
-		sm.set_shader_parameter("metallic_amount", 0.4)
-		sm.set_shader_parameter("roughness_amount", 0.85)
-	elif part_name in ["EngineBlock", "Flywheel", "EngineMount", "HydrophoneWheel"] or part_name.begins_with("Slider"):
-		sm.set_shader_parameter("base_tone", Color(0.3, 0.31, 0.3))
-		sm.set_shader_parameter("metallic_amount", 0.6)
-		sm.set_shader_parameter("roughness_amount", 0.5)
-	else:
-		# Furniture and fittings: muted grey-blue.
-		sm.set_shader_parameter("base_tone", Color(0.24, 0.27, 0.29))
-		sm.set_shader_parameter("metallic_amount", 0.0)
-		sm.set_shader_parameter("roughness_amount", 0.85)
+	sm.set_shader_parameter("metallic_amount", float(look[1]))
+	sm.set_shader_parameter("roughness_amount", float(look[2]))
+	_metals.append(sm)
+	_roles.append(look[0] as StringName)
+	_refresh_colors()
 	return sm
