@@ -145,17 +145,23 @@ station's active ports. Each is a perforated cylinder full of absorbent beads.
 
 **The life support station.**
 
-- Some number of **active ports**, each holding one canister, each with its own **vertical linear gauge**
-  that fills from the bottom as the canister saturates: green to 50%, yellow to 85%, red to 100%. This is a
-  new base gauge asset.
-- Some number of **storage ports**: holes the canisters slide into, leaving only their tops and light rings
-  visible.
-- On spawn the sub carries one canister per storage port, with *N* storage ports empty, where *N* is the
-  number of active ports, which spawn holding fresh canisters. Fresh canisters are a finite supply until
-  resupply at the hub.
-- **Swap:** open an active port, pull the spent canister, drop it into an empty storage port, pull a fresh
-  one from storage, seat it in the active port, close the port. All physical, so it takes a person off
+- A **wall unit** in engineering, where the layout puts life support, with the **O2 tank gauge** on the same
+  panel. Its interaction is diagrammed in `assets/models/life_support/concept/reference/`.
+- **Two active ports.** Each is a **canister carriage**: a cradle that holds the canister upright in a
+  chamfered alcove at chest height and pivots at its base, so opening it tilts the canister out toward the
+  player for removal and insertion, and closing it swings the canister back upright into the unit. Each
+  carriage has its own **vertical linear gauge** that fills from the bottom as the canister saturates: green
+  to 50%, yellow to 85%, red to 100%. This is a new base gauge asset.
+- **Six storage ports:** holes in the unit's sloped top shelf that the canisters drop into, leaving only
+  their tops and light rings visible at about head height.
+- On spawn the sub carries one canister per storage port, with two storage ports empty, matching the two
+  active ports, which spawn holding fresh canisters. Fresh canisters are a finite supply until resupply at
+  the hub: four spares on a fresh sub.
+- **Swap:** open the carriage, pull the spent canister, drop it into an empty storage hole, pull a fresh one
+  from storage, seat it in the tilted carriage, close the carriage. All physical, so it takes a person off
   another job and makes noise.
+- **Pacing target:** a fresh canister lasts a full crew of four about half a dive, roughly 15 minutes, so a
+  dive has one or two swaps and silent running measurably shortens the clock.
 - **Silent running** shuts the scrubber fans down late in the sequence; with the fans off the scrubber
   absorbs nothing and CO2 climbs, which is the clock on silence (see *Hiding*).
 
@@ -434,9 +440,9 @@ Steam integration and in-game voice, expeditions, cargo, divers, facilities, upg
 - ~~Whether charts stays its own station~~ Decided in M7: the map table is a shared holographic chart anyone can use; the pilot has a heading-up copy.
 - Whether to lock out crews of two. The lean is no lock, but no design effort goes toward two-person crews: target four, keep three viable.
 - Distinct sub types and hardware variants
-- Life support: how many active and storage ports; how long one canister should last a full crew in
-  game time; what happens at incapacitating CO2; whether CO2 vents when the sub surfaces or docks; whether
-  O2 depletion and low-O2 effects are modelled
+- Life support: what happens at incapacitating CO2; whether CO2 vents when the sub surfaces or docks;
+  whether O2 depletion and low-O2 effects are modelled. Decided in chat: two active ports and six storage
+  ports, a canister lasts four crew about 15 minutes, the station is a wall unit carrying the O2 gauge.
 
 ### Watch in playtesting
 
