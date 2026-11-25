@@ -222,8 +222,26 @@ def kmeans(points, k, iters=12):
     return cents
 
 
+def srgb_to_linear(c):
+    return c / 12.92 if c <= 0.04045 else ((c + 0.055) / 1.055) ** 2.4
+
+
+def snap_to_swatches(cents, swatches):
+    """Snap each centroid (linear RGB) to the nearest swatch (sRGB in params, compared and stored as linear).
+    Returns (distinct swatch colours in linear, names used in order of first use)."""
+    lin = {n: tuple(srgb_to_linear(c) for c in rgb[:3]) for n, rgb in swatches.items()}
+    names = []
+    for c in cents:
+        n = min(sorted(lin), key=lambda k: sum((a - b) ** 2 for a, b in zip(c, lin[k])))
+        if n not in names:
+            names.append(n)
+    return [lin[n] for n in names], names
+
+
 def step_vertex_colour_palette(obj, p):
-    """Replace the noisy (baked-lighting) vertex colours with one of at most palette_size flat colours per face."""
+    """Replace the noisy (baked-lighting) vertex colours with one of at most palette_size flat colours per face.
+    With `swatches` (organic classes) each colour is snapped to the nearest palette swatch and the swatches used are
+    recorded; the colours are then exactly the swatch values."""
     mesh = obj.data
     k = max(1, int(p["palette_size"]))
     attr = colour_attr(mesh)
@@ -240,7 +258,11 @@ def step_vertex_colour_palette(obj, p):
         face_col = [(0.5, 0.5, 0.5)] * len(mesh.polygons)
     cents = kmeans(face_col, k)
     # Round to 8 bits so the palette survives export unchanged.
-    cents = [tuple(round(c * 255) / 255 for c in cc) for cc in cents]
+    used = None
+    if p.get("swatches"):
+        cents, used = snap_to_swatches(cents, p["swatches"])
+    else:
+        cents = [tuple(round(c * 255) / 255 for c in cc) for cc in cents]
     cents = list(dict.fromkeys(cents))
     new = mesh.color_attributes.new(name="Color", type="FLOAT_COLOR", domain="CORNER")
     for poly, fc in zip(mesh.polygons, face_col):
@@ -249,7 +271,10 @@ def step_vertex_colour_palette(obj, p):
             new.data[li].color = (*best, 1.0)
     mesh.color_attributes.active_color = new
     mesh.color_attributes.render_color_index = list(mesh.color_attributes).index(new)
-    return {"palette": [list(c) for c in cents]}
+    res = {"palette": [list(c) for c in cents]}
+    if used is not None:
+        res["swatches_used"] = used
+    return res
 
 
 def step_collision_helper(obj, p):
