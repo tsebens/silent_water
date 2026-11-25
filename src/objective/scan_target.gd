@@ -29,12 +29,13 @@ func outside_stream() -> AudioStream:
 
 
 func _build() -> void:
+	var pal: Palette = Palette.main()
 	var steel: StandardMaterial3D = StandardMaterial3D.new()
-	steel.albedo_color = Color(0.55, 0.5, 0.3)
+	steel.albedo_color = pal.color(&"infra_metal_light")
 	steel.metallic = 0.6
 	steel.roughness = 0.5
 	var dark: StandardMaterial3D = StandardMaterial3D.new()
-	dark.albedo_color = Color(0.15, 0.16, 0.15)
+	dark.albedo_color = pal.color(&"sub_grey_dark")
 	dark.roughness = 0.7
 	var parts: Array[Array] = [
 		# [size, position, material]
@@ -59,11 +60,11 @@ func _build() -> void:
 	label.text = "RAINDROP\nARRAY S-7"
 	label.pixel_size = 0.02
 	label.position = Vector3(0, 4.0, 2.75)
-	label.modulate = Color(0.95, 0.9, 0.7)
+	label.modulate = pal.color(&"light_readout")
 	label.billboard = BaseMaterial3D.BILLBOARD_DISABLED
 	add_child(label)
 	var beacon: OmniLight3D = OmniLight3D.new()
-	beacon.light_color = Color(1.0, 0.15, 0.1)
+	beacon.light_color = pal.color(&"light_infra_red")
 	beacon.light_energy = 2.0
 	beacon.omni_range = 10.0
 	beacon.position = Vector3(0, 10.2, 0)

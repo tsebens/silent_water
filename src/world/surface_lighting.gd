@@ -15,10 +15,7 @@ const NIGHT: LightPreset = preload("res://src/world/presets/night.tres")
 
 var preset: LightPreset = DAY
 var _sun: DirectionalLight3D
-var _base_background: Color
-var _base_ambient_color: Color
 var _base_ambient_energy: float
-var _base_fog: Color
 var _captured: bool = false
 
 
@@ -82,14 +79,12 @@ func _apply(depth: float) -> void:
 	var env: Environment = environment_node.environment
 	if not _captured:
 		_captured = true
-		_base_background = env.background_color
-		_base_ambient_color = env.ambient_light_color
 		_base_ambient_energy = env.ambient_light_energy
-		_base_fog = env.fog_light_color
-	env.background_color = _base_background.lerp(preset.sky_color, r)
-	env.ambient_light_color = _base_ambient_color.lerp(preset.light_color, r)
+	var pal: Palette = Palette.main()
+	env.background_color = pal.color(&"env_abyss").lerp(preset.sky_color, r)
+	env.ambient_light_color = pal.color(&"env_teal").lerp(preset.light_color, r)
 	env.ambient_light_energy = lerpf(_base_ambient_energy, preset.ambient_energy, r)
-	env.fog_light_color = _base_fog.lerp(preset.sky_color * 0.5, r)
+	env.fog_light_color = OceanSurface.fog_color().lerp(preset.sky_color * 0.5, r)
 
 
 func _apply_surface_colors() -> void:

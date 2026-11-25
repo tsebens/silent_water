@@ -7,8 +7,10 @@ extends Node3D
 ## hysteresis band so the surface does not flicker. No gameplay effect.
 ## Muffled audio is left out: it would need new bus routing.
 
-## Water seen through the lens. Alpha is the strength of the flat tint.
-@export var tint: Color = Color(0.04, 0.2, 0.26, 0.28)
+## Water seen through the lens: the `env_water` swatch at this strength.
+@export_range(0.0, 1.0) var tint_strength: float = 0.28
+var tint: Color:
+	get: return Color(OceanSurface.water_color(), tint_strength)
 ## Exponential fog density (1/m) for distant cabin geometry.
 @export var fog_density: float = 0.25
 ## Total width (m) of the hysteresis band centred on the surface: entering
