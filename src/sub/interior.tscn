@@ -564,10 +564,12 @@ rotation = Vector3(0, 1.5708, 0)
 position = Vector3(0, -0.385, -2.2)
 script = ExtResource("15")
 heading_up = true
-meters_per_unit = 240.0
-clip_rx = 0.47
-clip_rz = 0.47
-height = 0.75
+meters_per_unit = 120.0
+clip_rx = 0.1
+clip_rz = 0.1
+height = 0.01
+contour_count = 6
+marker_size = 0.012
 
 [node name="PilotProjector" type="OmniLight3D" parent="Stations/Maps/PilotHolo"]
 position = Vector3(0, 0.05, 0)
@@ -606,7 +608,8 @@ min_meters_per_unit = 60.0
 max_meters_per_unit = 900.0
 clip_rx = 0.6
 clip_rz = 0.36
-height = 0.6
+height = 0.03
+d_shaped = true
 table_rotation_deg = 90.0
 marker_size = 0.022
 
