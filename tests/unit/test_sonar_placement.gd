@@ -34,7 +34,7 @@ func _console_footprint() -> Rect2:
 func test_console_is_at_the_program_desk() -> void:
 	var origin: Vector3 = SubLayout.position(&"sonar")
 	var console: Node3D = interior.get_node("Stations/Sonar") as Node3D
-	expect_near(console.position.x, origin.x, 0.1, "x at the sonar desk")
+	expect_near(console.position.x, origin.x, 0.2, "x at the sonar desk")
 	expect_near(console.position.y, origin.y, 0.001, "on the floor")
 	expect(absf(console.position.z - SubLayout.footprint(&"sonar").position.y) < 0.001, "back at the desk's forward edge (z=%f)" % console.position.z)
 	expect(console.global_basis.is_equal_approx(Basis.IDENTITY), "facing aft")

@@ -322,7 +322,7 @@ radius = 0.08
 script = ExtResource("station_placement")
 station_id = &"sonar"
 placements = {
-"../Sonar": Vector3(0, 0, -0.35)
+"../Sonar": Vector3(0.135, 0, -0.35)
 }
 
 [node name="Sonar" parent="Stations" instance=ExtResource("sonar_console")]
