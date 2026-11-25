@@ -1,0 +1,48 @@
+[gd_resource type="Resource" script_class="MultiDisplayPreset" format=3]
+
+[ext_resource type="Script" path="res://src/interact/multi_display_preset.gd" id="1_rqce1"]
+[ext_resource type="Script" path="res://src/interact/multi_display_slot.gd" id="2_ix8uk"]
+
+[sub_resource type="Resource" id="Resource_uygmb"]
+script = ExtResource("2_ix8uk")
+kind = 1
+readout = &"depth"
+label = "DEPTH"
+units = "m"
+max_value = 400.0
+texts = PackedStringArray()
+
+[sub_resource type="Resource" id="Resource_nlqx3"]
+script = ExtResource("2_ix8uk")
+kind = 3
+readout = &"tank_fraction"
+label = "BALLAST"
+max_value = 1.0
+format = "%.2f"
+texts = PackedStringArray()
+
+[sub_resource type="Resource" id="Resource_evob4"]
+script = ExtResource("2_ix8uk")
+kind = 5
+readout = &"buoyancy"
+label = "BUOY"
+min_value = -2.0
+max_value = 2.0
+texts = PackedStringArray()
+
+[sub_resource type="Resource" id="Resource_egmgo"]
+script = ExtResource("2_ix8uk")
+kind = 1
+readout = &"altitude"
+label = "ALT"
+units = "m"
+texts = PackedStringArray()
+
+[resource]
+script = ExtResource("1_rqce1")
+slots = Array[ExtResource("2_ix8uk")]([SubResource("Resource_uygmb"), SubResource("Resource_nlqx3"), SubResource("Resource_evob4"), SubResource("Resource_egmgo")])
+chevrons_enabled = true
+chevron_readout = &"vertical_speed"
+chevron_step = 0.5
+ring_enabled = true
+ring_readout = &"air_fraction"
