@@ -57,4 +57,4 @@ constraints:
   seated_eye_height_m: 1.2
   reach_m: 0.75                       # every control within this of the seated eye
   triangle_budget: 12000              # the interior class
-  palette: assets/style_bible/kit_palette.yaml
+  palette: assets/palette/palette.tres

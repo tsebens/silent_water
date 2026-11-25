@@ -1,7 +1,7 @@
 """`asset import <slug> <export.gltf>`: bring an Onshape glTF export of a kit part into the pipeline (the `cad` route).
 
 The converter (blender/onshape_import_bpy.py) makes the game-ready GLB; this module copies the export, runs the
-converter, snaps the material names to the kit palette, reads back what was made and writes the part's Godot scene.
+converter, snaps the material names to palette roles, reads back what was made and writes the part's Godot scene.
 The Blender run is the one function tests replace (`run_converter`); everything else is pure Python."""
 from __future__ import annotations
 
@@ -22,7 +22,8 @@ from .godot_stage import pascal
 SCRIPT = Path(__file__).resolve().parent / "blender" / "onshape_import_bpy.py"
 SCRIPT_REL = "tools/asset_pipeline/asset_pipeline/blender/onshape_import_bpy.py"
 RESULT_PREFIX = "KIT_IMPORT_RESULT "
-PALETTE_REL = "assets/style_bible/kit_palette.yaml"
+PALETTE_REL = "assets/palette/palette.tres"
+ROLES_REL = "assets/palette/roles"
 AXES = ("x", "y", "z")
 PIVOT_NODE = "Pivot"
 MEDIA_DIR = "assets/media/kit"
@@ -77,18 +78,32 @@ def check_pivot_fields(axis: str, limits: list[float], control: str) -> None:
 
 # --- the palette -----------------------------------------------------------------------------------------------
 
-def load_palette(root: Path) -> dict[str, list[float]]:
+def _swatches(root: Path) -> dict[str, list[float]]:
+    """Every swatch of the game palette (paint and light) by name, as sRGB 0..1."""
     f = root / PALETTE_REL
     if not f.is_file():
-        raise ValueError(f"no kit palette at {PALETTE_REL}")
-    colours = (yaml.safe_load(f.read_text()) or {}).get("colours")
-    if not isinstance(colours, dict) or not colours:
-        raise ValueError(f"{PALETTE_REL}: top-level 'colours' mapping missing")
-    return {str(k): [float(c) for c in v] for k, v in colours.items()}
+        raise ValueError(f"no palette at {PALETTE_REL}")
+    found = re.findall(r'&"([A-Za-z0-9_]+)":\s*Color\(([^)]*)\)', f.read_text())
+    return {name: [float(c) for c in args.split(",")[:3]] for name, args in found}
+
+
+def load_palette(root: Path) -> dict[str, list[float]]:
+    """The colour each palette role (docs/palette.md) shows, by role name: what it glows, else its surface swatch.
+    Colours come from `palette.tres` and the role files; nothing is copied, so a tuned swatch snaps differently."""
+    swatches = _swatches(root)
+    out: dict[str, list[float]] = {}
+    for f in sorted((root / ROLES_REL).glob("*.tres")):
+        fields = dict(re.findall(r'^(swatch|glow|stripe) = &"([A-Za-z0-9_]*)"$', f.read_text(), re.M))
+        key = fields.get("glow") or fields.get("swatch")
+        if key in swatches:
+            out[f.stem] = swatches[key]
+    if not out:
+        raise ValueError(f"no palette roles under {ROLES_REL}")
+    return out
 
 
 def snap_colour(rgb: list[float], palette: dict[str, list[float]]) -> str:
-    """The role of the palette entry nearest to `rgb` (ties go to the earlier entry)."""
+    """The role whose colour is nearest to `rgb` (ties go to the earlier role)."""
     return min(palette, key=lambda role: sum((a - b) ** 2 for a, b in zip(rgb, palette[role][:3])))
 
 
@@ -127,7 +142,8 @@ def write_glb(path: Path, doc: dict[str, Any], blob: bytes) -> None:
 
 
 def snap_materials(glb: Path, palette: dict[str, list[float]]) -> dict[str, str]:
-    """Rewrite the GLB so each material is named by its palette role and carries the palette colour. Materials that
+    """Rewrite the GLB so each material is named by its nearest palette role and carries no colour: on import the shared
+    post-import script gives the surface the role's material (docs/palette.md). Materials that
     snap to the same role merge into one. Returns {old material name: role}."""
     doc, blob = read_glb(glb)
     old = doc.get("materials", [])
@@ -144,7 +160,7 @@ def snap_materials(glb: Path, palette: dict[str, list[float]]) -> dict[str, str]
             index[role] = len(new)
             fixed = {**mat, "name": role}
             if rgb is not None:
-                fixed["pbrMetallicRoughness"] = {**pbr, "baseColorFactor": [*palette[role][:3], 1.0], "metallicFactor": 0.0}
+                fixed["pbrMetallicRoughness"] = {"metallicFactor": 0.0}
             new.append(fixed)
         remap[i] = index[role]
     if old:
