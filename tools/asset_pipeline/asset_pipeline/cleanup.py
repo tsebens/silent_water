@@ -136,6 +136,19 @@ def docker_command(runner: Runner, root: Path, params_rel: str) -> list[str]:
             "--", f"{CONTAINER_ROOT}/{params_rel}"]
 
 
+# Swatch families the image-to-3D route snaps vertex colours to (docs/palette.md): environment, sea floor, life, flora.
+SNAP_PREFIXES = ("env_", "floor_", "life_", "flora_")
+
+
+def snap_swatches(root: Path) -> dict[str, list[float]]:
+    """The swatches organic vertex colours snap to, by name, as sRGB 0..1 read from `palette.tres`."""
+    from . import kit_import
+    found = {n: c for n, c in kit_import._swatches(root).items() if n.startswith(SNAP_PREFIXES)}
+    if not found:
+        raise ValueError(f"no environment, floor, life or flora swatches in {kit_import.PALETTE_REL}")
+    return found
+
+
 def class_profile(root: Path, asset_class: str) -> dict[str, Any]:
     f = root / "assets" / "style_bible" / "classes.yaml"
     if not f.is_file():

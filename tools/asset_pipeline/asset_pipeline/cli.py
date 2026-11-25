@@ -529,6 +529,8 @@ def cmd_cleanup(args: argparse.Namespace, root: Path) -> dict[str, Any]:
               "asset_class": m.asset_class, "recipe": recipe, "triangle_budget": budget, "size_m": size_m,
               "palette_size": profile["palette_size"], "snap_grid_m": profile.get("snap_grid_m"),
               "max_loose_parts": profile["gates"]["max_loose_parts"]}
+    if profile.get("build_route") == "image-to-3d" and "vertex_colour_palette" in recipe:
+        params["swatches"] = cleanup.snap_swatches(root)  # organic colours snap to these, by name
     (root / rel).parent.mkdir(parents=True, exist_ok=True)
     progress(f"cleaning {src.id} in Blender ({runner.kind})…")
     result = cleanup.run_blender(params, root / rel.parent, runner, root)

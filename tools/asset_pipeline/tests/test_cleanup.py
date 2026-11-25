@@ -25,6 +25,8 @@ def asset(root, capsys):
     """A creature with the repo's class profiles, a brief that asks for 2 m, and the noisy fixture as raw run r1_mock."""
     (root / "assets" / "style_bible").mkdir(parents=True)
     shutil.copy(REPO / "assets" / "style_bible" / "classes.yaml", root / "assets" / "style_bible" / "classes.yaml")
+    (root / "assets" / "palette").mkdir(parents=True)
+    shutil.copy(REPO / "assets" / "palette" / "palette.tres", root / "assets" / "palette" / "palette.tres")
     assert run("new", "blob", "--class", "creature") == 0
     capsys.readouterr()
     mpath = root / "assets" / "models" / "blob" / "asset.yaml"
@@ -39,6 +41,46 @@ def asset(root, capsys):
     m.brief = BriefRecord(path=str(brief.relative_to(root)), writer="mock", model="mock")
     m.save(mpath)
     return root
+
+
+def linear(c):
+    return c / 12.92 if c <= 0.04045 else ((c + 0.055) / 1.055) ** 2.4
+
+
+def assert_colours_are_swatches(root, cols, used):
+    """Every vertex colour is exactly (to float precision) a snap swatch's value, and `used` names those swatches."""
+    swatches = cleanup.snap_swatches(root)
+    assert swatches and all(n.startswith(cleanup.SNAP_PREFIXES) for n in swatches)
+    lin = {n: [linear(c) for c in rgb] for n, rgb in swatches.items()}
+    seen = set()
+    for c in {tuple(round(x, 5) for x in c4[:3]) for c4 in cols}:
+        match = [n for n, v in lin.items() if all(abs(a - b) < 2e-4 for a, b in zip(c, v))]
+        assert match, f"vertex colour {c} is not a palette swatch"
+        seen.add(match[0])
+    assert seen <= set(used) and used
+
+
+def test_snap_swatches_reads_only_organic_families(asset):
+    swatches = cleanup.snap_swatches(asset)
+    assert "env_deep" in swatches and "life_coral" in swatches and "floor_sand" in swatches and "flora_sage" in swatches
+    assert not any(n.startswith(("light_", "sub_", "info_", "infra_")) for n in swatches)
+
+
+def test_snap_swatches_needs_a_palette(tmp_path):
+    with pytest.raises(ValueError):
+        cleanup.snap_swatches(tmp_path)
+
+
+def test_cleanup_passes_swatches_to_blender_for_organic_classes(asset, monkeypatch, capsys):
+    seen = {}
+
+    def fake_run(params, workdir, runner=None, root=None):
+        seen.update(params)
+        return {"blender_version": "4.5.0"}
+    monkeypatch.setattr(cleanup, "resolve_runner", lambda: cleanup.Runner("native", "blender"))
+    monkeypatch.setattr(cleanup, "run_blender", fake_run)
+    assert run("cleanup", "blob", "--source", "r1_mock") == 0
+    assert set(seen["swatches"]) == set(cleanup.snap_swatches(asset))
 
 
 def edge_stats(positions, tris):
@@ -129,6 +171,7 @@ def assert_cleanup_meets_the_profile(asset, capsys):
     assert bad_edges == 0, "mesh is not manifold"
     assert parts == 1
     assert 1 < len({tuple(round(c, 3) for c in c4[:3]) for c4 in cols}) <= prof["palette_size"]
+    assert_colours_are_swatches(asset, cols, out["result"]["steps"]["vertex_colour_palette"]["swatches_used"])
 
     # glTF is Y-up: height is Y, pivot at the bottom centre, largest dimension = the brief's size.
     xs, ys, zs = zip(*pos)

@@ -211,6 +211,8 @@ def test_check_on_blender_cleanup_output(root, capsys):
     """The real cleanup output (collision helper included) passes its gates against views projected from itself."""
     (root / "assets" / "style_bible").mkdir(parents=True)
     shutil.copy(REPO / "assets" / "style_bible" / "classes.yaml", root / "assets" / "style_bible" / "classes.yaml")
+    (root / "assets" / "palette").mkdir(parents=True)
+    shutil.copy(REPO / "assets" / "palette" / "palette.tres", root / "assets" / "palette" / "palette.tres")
     run("new", "blob", "--class", "creature")
     capsys.readouterr()
     mpath = root / "assets" / "models" / "blob" / "asset.yaml"
