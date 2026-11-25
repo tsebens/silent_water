@@ -39,11 +39,12 @@ const NEEDLE: PackedScene = preload("res://assets/models/kit/gauge/gauge_needle.
 @export var major_divisions: int = 4
 ## Short tick marks between two long ones.
 @export var minor_per_division: int = 1
-@export var face_color: Color = Color(0.03, 0.06, 0.07)
-@export var marking_color: Color = Color(0.88, 0.9, 0.86)
-@export var needle_color: Color = Color(0.95, 0.95, 0.9)
-## Light enough in red to show under the red lamps, at about half the first needle's brightness.
-@export var needle_b_color: Color = Color(0.45, 0.75, 1.0)
+## Readings stay legible without colour: the position and shape of the needle and ticks carry the value.
+## Colours come from the palette (roles `readout_face`, `readout_ink`; swatches `light_readout`, `info_black`).
+const FACE_ROLE: String = "readout_face"
+const INK_ROLE: String = "readout_ink"
+const INK_SWATCH: StringName = &"light_readout"
+const PLATE_TEXT_SWATCH: StringName = &"info_black"
 
 var _needle: Node3D
 var _needle_b: Node3D
@@ -54,6 +55,7 @@ var _shown_b: float = 0.0
 
 func _ready() -> void:
 	_build()
+	Palette.main().changed.connect(_recolor_labels)
 
 
 func _process(delta: float) -> void:
@@ -73,6 +75,20 @@ func _process(delta: float) -> void:
 	if _needle_b != null:
 		_shown_b = lerpf(_shown_b, _fraction(float(_source.call(&"readout", readout_b))), w)
 		_needle_b.rotation.z = _angle_for(_shown_b)
+
+
+## Label text is drawn here rather than by a role material, so it follows the palette by hand.
+func _recolor_labels() -> void:
+	for child: Node in get_children():
+		var l: Label3D = child as Label3D
+		if l != null:
+			l.modulate = Palette.main().color(l.get_meta(&"swatch", INK_SWATCH))
+
+
+func _exit_tree() -> void:
+	var pal: Palette = Palette.main()
+	if pal.changed.is_connected(_recolor_labels):
+		pal.changed.disconnect(_recolor_labels)
 
 
 func _fraction(v: float) -> float:
@@ -110,10 +126,7 @@ func _build() -> void:
 	face_mesh.height = 0.001
 	face_mesh.radial_segments = 32
 	face_mesh.rings = 1
-	var face_mat: StandardMaterial3D = StandardMaterial3D.new()
-	face_mat.albedo_color = face_color
-	face_mat.roughness = 0.8
-	face_mesh.material = face_mat
+	face_mesh.material = RoleMaterial.lookup(FACE_ROLE)
 	face.mesh = face_mesh
 	face.rotation.x = PI / 2.0
 	face.position.z = -0.0005
@@ -126,8 +139,8 @@ func _build() -> void:
 	add_child(marks)
 
 	if readout_b != &"":
-		_needle_b = _make_needle(needle_b_color, 0.003, "NeedleB")
-	_needle = _make_needle(needle_color, 0.006, "Needle")
+		_needle_b = _make_needle(0.003, "NeedleB")
+	_needle = _make_needle(0.006, "Needle")
 	if not wraps:
 		# At rest a needle lies on the start of its scale, wherever that is.
 		_needle.rotation.z = _angle_for(0.0)
@@ -140,7 +153,7 @@ func _build() -> void:
 	var title_w: float = ThemeDB.fallback_font.get_string_size(title, HORIZONTAL_ALIGNMENT_LEFT, -1, 32).x * title_px
 	if title_w > radius * 1.58:
 		title_px *= radius * 1.58 / title_w
-	var title_label: Label3D = _add_label(title, Vector3(0, -radius * 1.37, -0.0055), title_px)
+	var title_label: Label3D = _add_label(title, Vector3(0, -radius * 1.37, -0.0055), title_px, PLATE_TEXT_SWATCH)
 	title_label.name = "Title"
 	if show_scale and not wraps:
 		for t: float in [0.0, 0.5, 1.0]:
@@ -166,17 +179,14 @@ func _marks_mesh() -> ArrayMesh:
 		var side: Vector3 = Vector3(out.y, -out.x, 0.0) * radius * (0.016 if major else 0.008)
 		var a: Vector3 = out * radius * (0.76 if major else 0.84)
 		var b: Vector3 = out * radius * 0.93
-		for p: Vector3 in [a - side, b - side, b + side, a - side, b + side, a + side]:
+		# Counter-clockwise seen from +Z, so the shared role material needs no double-sided setting.
+		for p: Vector3 in [a - side, b + side, b - side, a - side, a + side, b + side]:
 			st.add_vertex(p)
-	var mat: StandardMaterial3D = StandardMaterial3D.new()
-	mat.albedo_color = marking_color
-	mat.roughness = 0.9
-	mat.cull_mode = BaseMaterial3D.CULL_DISABLED
-	st.set_material(mat)
+	st.set_material(RoleMaterial.lookup(INK_ROLE))
 	return st.commit()
 
 
-func _make_needle(color: Color, z: float, node_name: String) -> Node3D:
+func _make_needle(z: float, node_name: String) -> Node3D:
 	var pivot: Node3D = Node3D.new()
 	pivot.name = node_name
 	pivot.position = Vector3(0, 0, z)
@@ -184,9 +194,7 @@ func _make_needle(color: Color, z: float, node_name: String) -> Node3D:
 	var needle: Node3D = NEEDLE.instantiate() as Node3D
 	var k: float = radius / SOLID_RADIUS
 	needle.scale = Vector3(k, k, 1.0)
-	var mat: StandardMaterial3D = StandardMaterial3D.new()
-	mat.albedo_color = color
-	mat.roughness = 0.7
+	var mat: RoleMaterial = RoleMaterial.lookup(INK_ROLE)
 	for child: Node in needle.get_children():
 		var mi: MeshInstance3D = child as MeshInstance3D
 		if mi != null:
@@ -195,12 +203,13 @@ func _make_needle(color: Color, z: float, node_name: String) -> Node3D:
 	return pivot
 
 
-func _add_label(text: String, pos: Vector3, pixel: float) -> Label3D:
+func _add_label(text: String, pos: Vector3, pixel: float, swatch: StringName = INK_SWATCH) -> Label3D:
 	var l: Label3D = Label3D.new()
 	l.text = text
 	l.pixel_size = pixel
 	l.position = pos
-	l.modulate = marking_color
+	l.modulate = Palette.main().color(swatch)
+	l.set_meta(&"swatch", swatch)
 	l.outline_size = 0
 	l.font_size = 32
 	add_child(l)
