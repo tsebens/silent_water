@@ -5,9 +5,10 @@ extends Node3D
 ## The host spawns one Player per peer, named after the peer id.
 
 const PLAYER_SCENE: PackedScene = preload("res://src/player/player.tscn")
-## Spawn points along the corridor, sub-local.
+## Spawn points in the midships aisle, sub-local: between the map table (port) and the sonar desk and seat
+## (starboard), forward of the lock-out trunk. tests/unit/test_spawn_points.gd checks them against SubLayout.
 const SPAWN_POINTS: Array[Vector3] = [
-	Vector3(-0.9, 0.1, 1.2), Vector3(-0.9, 0.1, 0.3), Vector3(0.3, 0.1, 1.3), Vector3(0.9, 0.1, 0.1),
+	Vector3(-0.2, 0.1, -2.9), Vector3(0.2, 0.1, -2.2), Vector3(-0.2, 0.1, -1.5), Vector3(0.2, 0.1, -0.8),
 ]
 
 @onready var sub_frame: SubFrame = $SubFrame

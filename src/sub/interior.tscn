@@ -19,6 +19,7 @@
 [ext_resource type="Script" path="res://src/map/flat_chart.gd" id="flat_chart"]
 [ext_resource type="Script" path="res://src/sonar/sonar_panel.gd" id="sonar_panel"]
 [ext_resource type="Script" path="res://src/sub/palette_light.gd" id="palette_light"]
+[ext_resource type="Script" path="res://src/sub/station_placement.gd" id="station_placement"]
 
 [sub_resource type="BoxMesh" id="fascia_mesh"]
 size = Vector3(0.06, 0.22, 3.2)
@@ -179,9 +180,21 @@ swatch = &"light_work_white"
 [node name="Stations" type="Node3D" parent="."]
 
 [node name="Pilot" type="Node3D" parent="Stations"]
+script = ExtResource("station_placement")
+station_id = &"pilot"
+placements = {
+"../Maps/PilotHolo": Vector3(0, 0.2, -0.85),
+"CenterPod": Vector3(0, 0.45, -0.7),
+"Dimmer": Vector3(-0.62, 0.3, 0.1),
+"LeftPod": Vector3(-0.6, 0.75, -0.55),
+"Planes": Vector3(0, 0.2, -0.6),
+"RightPod": Vector3(0.6, 0.75, -0.55),
+"Rudder": Vector3(0, 0.2, -0.6),
+"Seat": Vector3(0, 0, 0),
+"Throttle": Vector3(0.58, 0.5, -0.05)
+}
 
 [node name="Seat" type="Node3D" parent="Stations/Pilot" node_paths=PackedStringArray("throttle", "rudder", "planes", "flood_valve", "blow_valve", "sit_point")]
-position = Vector3(0, -0.6, -0.9)
 script = ExtResource("4")
 throttle = NodePath("../Throttle")
 rudder = NodePath("../Rudder")
@@ -203,7 +216,6 @@ position = Vector3(0, 0.55, 0)
 shape = SubResource("pilot_seat_grab")
 
 [node name="Throttle" type="Node3D" parent="Stations/Pilot" node_paths=PackedStringArray("indicator")]
-position = Vector3(0.58, -0.1, -0.95)
 script = ExtResource("5")
 indicator = NodePath("Lever")
 indicator_axis = Vector3(-1, 0, 0)
@@ -224,22 +236,18 @@ position = Vector3(0, 0.3, 0)
 mesh = SubResource("throttle_knob")
 
 [node name="Rudder" type="Node3D" parent="Stations/Pilot"]
-position = Vector3(0, -0.4, -1.5)
 script = ExtResource("5")
 label = "rudder"
 
 [node name="Planes" type="Node3D" parent="Stations/Pilot"]
-position = Vector3(0, -0.4, -1.5)
 script = ExtResource("5")
 label = "dive planes"
 
 [node name="Dimmer" parent="Stations/Pilot" instance=ExtResource("12")]
-position = Vector3(-0.62, -0.3, -0.8)
 initial_value = 1.0
 label = "cabin lights"
 
 [node name="LeftPod" type="Node3D" parent="Stations/Pilot"]
-position = Vector3(-0.72, 0.12, -2.0)
 rotation = Vector3(-0.28, 0.55, 0)
 scale = Vector3(0.85, 0.85, 0.85)
 
@@ -269,7 +277,6 @@ position = Vector3(0.25, 0, 0)
 radius = 0.1
 
 [node name="RightPod" type="Node3D" parent="Stations/Pilot"]
-position = Vector3(0.72, 0.12, -2.0)
 rotation = Vector3(-0.28, -0.55, 0)
 scale = Vector3(0.85, 0.85, 0.85)
 
@@ -297,7 +304,6 @@ sweep_deg = 240.0
 radius = 0.1
 
 [node name="CenterPod" type="Node3D" parent="Stations/Pilot"]
-position = Vector3(0, -0.2, -2.0)
 rotation = Vector3(-0.28, 0, 0)
 scale = Vector3(0.85, 0.85, 0.85)
 
@@ -560,7 +566,6 @@ rotation = Vector3(0, 1.5708, 0)
 [node name="Maps" type="Node3D" parent="Stations"]
 
 [node name="PilotHolo" type="Node3D" parent="Stations/Maps"]
-position = Vector3(0, -0.385, -2.2)
 script = ExtResource("15")
 heading_up = true
 meters_per_unit = 120.0
