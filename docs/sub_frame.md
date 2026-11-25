@@ -92,3 +92,5 @@ The ballast valves and gauges (`Stations/Ballast`, port, z 3.25), the engine gau
 ## Scanner, status board and lights
 
 The scanner panel (starboard, aft of the drop weights) and the wall-mounted status board (forward face of the bulkhead, above the hatch) are program entries (`scanner`, `status_board`; a `mounted: true` item takes no floor). The interior's lights and fascia sit inside the hull; `tests/unit/test_station_clearance.gd` checks that nothing built overlaps a reserved footprint.
+
+The map table (`Interior/Stations/Maps/MapTable`, a `MapTable` over the generated `map_table` station) is placed by a `StationPlacement` (`Stations/MapTablePlacement`): its back sits on the hull end of the program's `top_box` for `map_table`, turned 90 degrees so the operator side faces the aisle, and the two work lamps (`Lights/WorkLamp*`, cabin lights the dimmer reaches) are offset from the same station. `tests/unit/test_map_table_placement.gd` checks the footprint against the bay and `aisle_min_m`.

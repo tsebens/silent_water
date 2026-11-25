@@ -1,28 +1,64 @@
 class_name MapTable
 extends StationSeat
-## The map table. E steps up to it: the view leans over the hologram and the
-## cursor appears.
+## The map table. The operator stands at it; E steps up to it: the view leans
+## over the hologram and the cursor appears. The table's console carries the
+## physical controls, which work whether or not anyone is stepped up:
+##   trackball   pan             lever   zoom (spring-centred rate)
+##   toggle      follow the sub  lamp    lit while following
+## Stepped up, the keys and mouse do the same, and pins:
 ##   WASD   pan            wheel   zoom          F   follow the sub
+##   Q / R  rotate the chart (or hold the middle button and drag)
 ##   1-4    pin type       click   place a pin   right-click   remove a pin
 ##   E/Esc  step back
 ## Pins go to the shared [MapModel], so they show on the pilot's map too.
+## There is no seat: [member sit_point] is where the operator stands.
 
 const PAN_SPEED: float = 0.6  # display metres per second
+## Display metres of pan per unit of trackball roll.
+const BALL_PAN: float = 0.08
 const ZOOM_STEP: float = 1.15
+## The lever at full throw halves or doubles the scale in this many seconds.
+const LEVER_ZOOM_SECONDS: float = 1.5
+const LEVER_DEADZONE: float = 0.02
+## Chart rotation speed on the keys, degrees per second, and per pixel of mouse drag.
+const ROTATE_DEG_PER_S: float = 60.0
+const ROTATE_DEG_PER_PX: float = 0.4
 const PICK_RADIUS_PX: float = 24.0
 ## Pin types offered on keys 1-4.
 const KEY_KINDS: Array[int] = [MapModel.Kind.WAYPOINT, MapModel.Kind.DANGER, MapModel.Kind.APEX, MapModel.Kind.NOTE]
 
 @export var holo: HoloMap
+@export var pan_ball: PanBall
+@export var zoom_lever: ZoomLever
+@export var follow_toggle: SwitchLever
+@export var follow_lamp: IndicatorLamp
+## The standing operator's eye (the station's OperatorEye). Without it the view
+## leans in at [member view_offset] from the hologram's base.
+@export var eye_point: Node3D
 ## Where the leaning view sits, relative to the hologram's base.
 @export var view_offset: Vector3 = Vector3(0, 0.95, 0.72)
 
 var pin_kind: int = MapModel.Kind.WAYPOINT
+## -1 turning with Q, +1 with R, 0 neither (set from key events).
+var _rotate_dir: float = 0.0
+var _rotate_keys: Dictionary = {}
+var _dragging_rotate: bool = false
 
 
 func _init() -> void:
 	super._init()
-	eye_height = 1.6
+	eye_height = 1.65
+
+
+func _ready() -> void:
+	super._ready()
+	if pan_ball != null:
+		pan_ball.rolled.connect(_on_ball_rolled)
+	if follow_toggle != null:
+		follow_toggle.value_changed.connect(_on_follow_toggled)
+	if holo != null and follow_toggle != null:
+		holo.follow_sub = follow_toggle.get_value() > 0.5
+	_update_lamp()
 
 
 func station_name() -> String:
@@ -30,7 +66,7 @@ func station_name() -> String:
 
 
 func seated_hint() -> String:
-	return "WASD pan · wheel zoom · F %s · 1-4 pin: %s · click place · right-click remove · E leave" % [
+	return "WASD pan · wheel zoom · Q/R rotate · F %s · 1-4 pin: %s · click place · right-click remove · E leave" % [
 		"stop following" if holo != null and holo.follow_sub else "follow sub", MapModel.kind_name(pin_kind)]
 
 
@@ -38,11 +74,11 @@ func interaction_hint() -> String:
 	return "press E to use the map table"
 
 
-## Camera pose while leaning over the table (render space).
+## Camera pose while standing at the table (render space).
 func view_transform() -> Transform3D:
 	var base: Vector3 = holo.global_position
-	var eye: Vector3 = base + holo.global_basis * view_offset
-	var look: Vector3 = base + holo.global_basis.y * holo.height * 0.3
+	var eye: Vector3 = eye_point.global_position if eye_point != null else base + holo.global_basis * view_offset
+	var look: Vector3 = base + holo.global_basis * Vector3(0, holo.height * 0.3, holo.clip_rz * 0.4)
 	return Transform3D.IDENTITY.looking_at(look - eye, holo.global_basis.y).translated(eye)
 
 
@@ -53,26 +89,93 @@ func begin_interaction() -> void:
 
 func end_interaction() -> void:
 	super.end_interaction()
+	_rotate_keys.clear()
+	_rotate_dir = 0.0
+	_dragging_rotate = false
 	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 
 
+## Turns the chart on the table by [param degrees].
+func rotate_table(degrees: float) -> void:
+	if holo != null:
+		holo.table_rotation_deg = fposmod(holo.table_rotation_deg + degrees, 360.0)
+
+
+## Pans the display by [param d_display] display metres (in the table's own directions).
+## Taking the camera off the sub switches following off.
+func pan_display(d_display: Vector3) -> void:
+	if holo == null:
+		return
+	_set_follow(false)
+	holo.focus += holo.display_basis().inverse() * d_display * holo.meters_per_unit
+
+
+## Turns following on or off: the toggle's position is the shared state, the lamp follows it.
+func _set_follow(on: bool) -> void:
+	if holo == null:
+		return
+	_apply_follow(on)
+	if follow_toggle != null and not follow_toggle.is_held_locally() and follow_toggle.is_inside_tree() \
+			and (follow_toggle.get_value() > 0.5) != on:
+		follow_toggle.begin_interaction()
+		follow_toggle.drive_to(follow_toggle.max_value if on else follow_toggle.min_value, true)
+		follow_toggle.end_interaction()
+
+
+func _apply_follow(on: bool) -> void:
+	if holo == null or holo.follow_sub == on:
+		return
+	if not on:
+		holo.focus = holo.game.sub_frame.sub_transform.origin
+	holo.follow_sub = on
+	_update_lamp()
+
+
+func _on_follow_toggled(value: float) -> void:
+	_apply_follow(value > 0.5)
+
+
+func _on_ball_rolled(delta: Vector2) -> void:
+	pan_display(Vector3(delta.x, 0.0, delta.y) * BALL_PAN)
+
+
+func _update_lamp() -> void:
+	if follow_lamp != null and holo != null:
+		follow_lamp.set_lit(holo.follow_sub)
+
+
 func _process(delta: float) -> void:
-	if not is_held_locally() or holo == null:
+	if holo == null:
+		return
+	_update_lamp()
+	# The lever's position is a zoom rate, held for as long as it is held.
+	if zoom_lever != null:
+		var rate: float = zoom_lever.zoom_rate()
+		if absf(rate) > LEVER_DEADZONE:
+			holo.set_zoom(holo.meters_per_unit * pow(2.0, -rate * delta / LEVER_ZOOM_SECONDS))
+	if not is_held_locally():
 		return
 	var move: Vector2 = Input.get_vector(&"move_left", &"move_right", &"move_forward", &"move_back")
 	if move != Vector2.ZERO:
-		if holo.follow_sub:
-			holo.focus = holo.game.sub_frame.sub_transform.origin
-			holo.follow_sub = false
-		# Pan in the table's own directions, converted to world metres.
-		var d_display: Vector3 = Vector3(move.x, 0.0, move.y) * PAN_SPEED * delta
-		holo.focus += holo.display_basis().inverse() * d_display * holo.meters_per_unit
+		pan_display(Vector3(move.x, 0.0, move.y) * PAN_SPEED * delta)
+	if _rotate_dir != 0.0:
+		rotate_table(_rotate_dir * ROTATE_DEG_PER_S * delta)
 
 
 func _unhandled_input(event: InputEvent) -> void:
 	if not is_held_locally() or holo == null:
 		return
+	var mm: InputEventMouseMotion = event as InputEventMouseMotion
+	if mm != null:
+		if _dragging_rotate:
+			rotate_table(mm.relative.x * ROTATE_DEG_PER_PX)
+			get_viewport().set_input_as_handled()
+		return
 	var mb: InputEventMouseButton = event as InputEventMouseButton
+	if mb != null and mb.button_index == MOUSE_BUTTON_MIDDLE:
+		_dragging_rotate = mb.pressed
+		get_viewport().set_input_as_handled()
+		return
 	if mb != null and mb.pressed:
 		match mb.button_index:
 			MOUSE_BUTTON_WHEEL_UP:
@@ -90,14 +193,21 @@ func _unhandled_input(event: InputEvent) -> void:
 		get_viewport().set_input_as_handled()
 		return
 	var key: InputEventKey = event as InputEventKey
-	if key != null and key.pressed and not key.echo:
+	if key == null or key.echo:
+		return
+	if key.keycode == KEY_Q or key.keycode == KEY_R:
+		if key.pressed:
+			_rotate_keys[key.keycode] = true
+		else:
+			_rotate_keys.erase(key.keycode)
+		_rotate_dir = (1.0 if _rotate_keys.has(KEY_R) else 0.0) - (1.0 if _rotate_keys.has(KEY_Q) else 0.0)
+		get_viewport().set_input_as_handled()
+	elif key.pressed:
 		if key.keycode >= KEY_1 and key.keycode <= KEY_4:
 			pin_kind = KEY_KINDS[key.keycode - KEY_1]
 			get_viewport().set_input_as_handled()
 		elif key.keycode == KEY_F:
-			holo.follow_sub = not holo.follow_sub
-			if not holo.follow_sub:
-				holo.focus = holo.game.sub_frame.sub_transform.origin
+			_set_follow(not holo.follow_sub)
 			get_viewport().set_input_as_handled()
 
 
