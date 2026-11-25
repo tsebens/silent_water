@@ -1,0 +1,24 @@
+slug: rotary_knob
+group: kit
+kind: element
+summary: 'Static decorative rotary knob: light grey 12-sided head with a pointer ridge on a black collar. No script
+  and no grab box; turn the Pivot node from outside.'
+tags:
+- knob
+- rotary
+- dial
+- decorative
+- static
+scene: res://assets/models/kit/rotary_knob/rotary_knob.tscn
+footprint_mm:
+- 40.0
+- 40.0
+stand_out_mm: 23.0
+mount: back on Z=0 (on a plate front), centred; the Pivot node turns about Z
+triangles: 140
+built_by: tools/cadkit/scenes/rotary_knob.py
+files:
+- component.yaml
+- rotary_knob.tscn
+- rotary_knob_body.glb
+- rotary_knob_head.glb
