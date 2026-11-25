@@ -78,3 +78,7 @@ So the main deck is y = 0, the sunken cockpit floor (`floor_offset_m: -0.20`) is
 | `tower`, `tower_hatch` | The conning tower on the roof over the ladder, with its top hatch. The shaft through the roof belongs to the ladder's arc | `hull_metal`, `interior_panel` |
 
 The hatch is 1.85 m high, not the draft program's 1.7 m: the player capsule is 1.75 m tall, and its dome jams under a 1.7 m lintel. `tests/unit/test_sub_hull.gd` checks the envelope, deck heights, step, hatch opening and 2.0 m head room, and walks a capsule from the cockpit through the hatch and back.
+
+## Pilot station and spawn points
+
+The pilot's seat, flight controls, gauge pods, cabin-light dimmer and the small elbow-rail hologram are placed by `StationPlacement` (`src/sub/station_placement.gd`, on `Interior/Stations/Pilot`): each part's position is `SubLayout.position(&"pilot")` plus a small offset, so the seat sits at x 0, z -3.8, on the cockpit floor 0.20 m below the main deck. Nothing in `interior.tscn` repeats those coordinates. `Game.SPAWN_POINTS` are in the midships aisle between the map table and the sonar desk; `tests/unit/test_spawn_points.gd` checks them against the footprints and `aisle_min_m`. `Player.INTERIOR_BOUNDS` reaches z -5.0 to cover the dome.

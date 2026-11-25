@@ -31,12 +31,12 @@ const SLIDE_ANGLE_DEG: float = 30.0
 const SLOPE_SPEED_EFFECT: float = 1.5
 ## Interior bounds (sub-local). A player outside them is put back inside;
 ## this guards against physics glitches pushing someone through the hull.
-const INTERIOR_BOUNDS: AABB = AABB(Vector3(-2.0, -0.8, -3.4), Vector3(4.0, 3.8, 8.4))
+const INTERIOR_BOUNDS: AABB = AABB(Vector3(-2.0, -0.8, -5.0), Vector3(4.0, 3.8, 10.0))
 ## Landing noise: louder than a walking step (a thud, not a footfall), fading
 ## over [constant LANDING_NOISE_S].
 const LANDING_INTENSITY: float = 1.2e-2
 const LANDING_NOISE_S: float = 0.25
-const RESCUE_POINT: Vector3 = Vector3(-0.9, 0.1, 1.2)
+const RESCUE_POINT: Vector3 = Vector3(0.0, 0.1, -0.8)
 
 ## Replicated pose (sub-local). Written by the owning peer.
 @export var sync_position: Vector3 = Vector3.ZERO
