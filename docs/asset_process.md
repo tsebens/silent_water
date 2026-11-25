@@ -156,6 +156,10 @@ commits a copy as `brief.yaml` beside the scene.
   above the seat; for a panel, `operator_eye_m`, the eye's position in the panel's own frame. Without one of these,
   reach and sight lines can't be checked.
 
+A bind that follows the sub's pose as drawn (a render-space bind) names `SubFrame.render_transform()`, the
+smoothed pose used for rendering this frame. `SubFrame.sub_transform` is the raw replicated pose and lags or leads what
+the player sees on a client, so a brief never names it for something that must line up with the rendered sub.
+
 Every `status:` and `binds:` in a brief is a claim about the game's code. The breakdown checks each against the code
 and reports what is wrong.
 
