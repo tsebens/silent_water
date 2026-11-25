@@ -58,18 +58,43 @@ func test_no_seat_and_no_scripts_of_its_own() -> void:
 	st.queue_free()
 
 
-func test_controls_within_reach_of_the_standing_eye() -> void:
+func test_lean_eye_is_the_standing_eye_leaned() -> void:
 	var st: Node3D = _make()
 	var eye: Vector3 = (st.get_node("OperatorEye") as Node3D).global_position
-	expect_near(eye.y, 1.65, 0.001, "standing eye height")
+	expect_near(eye.y, 1.65, 0.001, "standing eye height (the game leans this one)")
+	var lean: Vector3 = (st.get_node("LeanEye") as Node3D).global_position
+	var toward: Vector3 = (st.get_node("HoloMount") as Node3D).global_position - eye
+	toward.y = 0.0
+	toward = toward.normalized()
+	expect_near(eye.y - lean.y, MapTable.LEAN_DOWN, 0.001, "LeanEye is LEAN_DOWN below OperatorEye")
+	expect_near((lean - eye).dot(toward), MapTable.LEAN_TOWARD, 0.001, "LeanEye is LEAN_TOWARD toward the table")
+	expect_near(lean.y, 1.40, 0.001, "leaning eye height matches the brief")
+	st.queue_free()
+
+
+func test_controls_within_reach_of_the_leaning_eye() -> void:
+	var st: Node3D = _make()
+	var eye: Vector3 = (st.get_node("LeanEye") as Node3D).global_position
 	var controls: Array[Interactable] = _interactables(st)
 	expect_eq(controls.size(), 3, "trackball, lever and toggle are touched")
 	for c: Interactable in controls:
 		var d: float = eye.distance_to(_grab_aabb(c).get_center())
-		expect(d <= REACH_M, "%s is %.2f m from the eye" % [c.name, d])
+		expect(d <= REACH_M, "%s is %.2f m from the leaning eye" % [c.name, d])
 	for n: String in ["RotaryKnob", "FollowLamp"]:
 		var d2: float = eye.distance_to((st.get_node("Controls/" + n) as Node3D).global_position)
-		expect(d2 <= REACH_M, "%s is %.2f m from the eye" % [n, d2])
+		expect(d2 <= REACH_M, "%s is %.2f m from the leaning eye" % [n, d2])
+	st.queue_free()
+
+
+func test_console_is_level_with_the_table_top() -> void:
+	var st: Node3D = _make()
+	var holo_y: float = (st.get_node("HoloMount") as Node3D).global_position.y
+	var strip: Node3D = st.get_node("Controls") as Node3D
+	expect_near(strip.global_position.y, holo_y, 0.012, "the control strip's middle is level with the 0.75 m table top")
+	var rake: float = rad_to_deg(acos(clampf(strip.global_basis.z.dot(Vector3.UP), -1.0, 1.0)))
+	expect(rake <= 5.0, "strip rake %.1f degrees" % rake)
+	for c: Interactable in _interactables(st):
+		expect(c.global_position.y < holo_y + 0.12, "%s does not stand proud of the table" % c.name)
 	st.queue_free()
 
 

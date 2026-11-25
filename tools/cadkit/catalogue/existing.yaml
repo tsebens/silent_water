@@ -51,3 +51,7 @@ behaviours:                           # scripts a generated scene may use, contr
   - {script: PanBall, file: res://src/interact/pan_ball.gd, does: "trackball that emits a 2D roll delta (not a bearing)"}
   - {script: ZoomLever, file: res://src/interact/zoom_lever.gd, does: "spring-centred lever emitting a -1..1 zoom rate"}
   - {script: IndicatorLamp, file: res://src/interact/indicator_lamp.gd, does: "lit/unlit display lamp bound to a bool"}
+  - {script: LinearGauge, file: res://src/interact/linear_gauge.gd, does: "bar display; rises from the bottom of a vertical track with a readout from a source group, colour steps at 50% and 85% (exports)"}
+  - {script: ScrubberCanister, file: res://src/interact/scrubber_canister.gd, does: "carried CO2 canister; lifted straight out of a slot and dropped back; `capacity` 0..1 is a plain export (local only, no net sync)"}
+  - {script: CanisterSlot, file: res://src/interact/canister_slot.gd, does: "seat for one ScrubberCanister (cradle or storage hole); refuses a second, releases on lift-out; canister stands along the slot's +Y"}
+  - {script: CanisterRing, file: res://src/interact/canister_ring.gd, does: "ring of 12 light segments round a canister top (XZ circle, about 300 degrees); lit run and colour (green/yellow/red) follow the bound canister's capacity"}

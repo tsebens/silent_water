@@ -24,11 +24,12 @@ var payload_t: float = 0.36
 var tank_capacity_t: float = 20.0
 ## Water in the main ballast tank, 0..tank_capacity_t.
 var tank_water_t: float = 10.0
-## Flood rate with the vent fully open (tonnes/s). Flood and blow rates were
-## doubled in M7 (#50) so depth changes start twice as fast.
-var flood_rate_t: float = 0.7
-## Blow rate with the blow valve fully open (tonnes/s).
-var blow_rate_t: float = 1.4
+## Flood rate with the vent fully open (tonnes/s). Doubled again in #448: an
+## empty 20 t tank now fills in about 14 s.
+var flood_rate_t: float = 1.4
+## Blow rate with the blow valve fully open (tonnes/s). A full 20 t tank now
+## blows in about 7 s.
+var blow_rate_t: float = 2.8
 ## High-pressure air, measured in tonnes of water it can still expel.
 var air_capacity_t: float = 60.0
 var air_t: float = 60.0
