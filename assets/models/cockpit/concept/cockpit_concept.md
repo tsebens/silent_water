@@ -75,28 +75,45 @@ cove lighting, braided looms. See the "Modern, not antiquated" section of
 
 ## Pilot station, round 4 (2026-11-25, #446)
 
-Decided with Tristan while preparing the pilot station's brief. Where this disagrees with the locked
-arrangement above, this wins.
+Decided with Tristan while preparing the pilot station's brief, over three art rounds (the strip, the
+multidisplay #458, the navball #459). Where this disagrees with the locked arrangement above, this wins. The
+full specification is on #446.
 
-- **One knee-height strip.** All readouts and switches sit on a single lateral metal strip at about
-  knee height, up against the dome, with a **break at the dome's apex** so the pilot sees straight
-  ahead. The elbow-height rail and its two switch boards are gone.
-- **Inputs.** The keys stay; the controls move with them. The left joystick shows the throttle
-  (W/S). The right joystick shows the planes (R/F) fore and aft and the rudder (A/D) side to side.
-  The pedals are decoration. Ballast is on the keyboard (Numpad 8 blows, Numpad 2 floods): the
-  pilot now runs ballast directly (#445). The hologram's zoom is on the mouse wheel.
-- **Readouts.** Three two-needle gauges, each with independent scales whose minimum and maximum
-  sit at the same angles:
-  - speed (primary) with throttle (secondary);
-  - vertical speed (primary) with buoyancy (secondary);
-  - ballast level (primary) with air remaining (secondary).
+![Pilot strip: primary structure](pilot_strip_primary.png)
 
-  Then depth, pitch, heading, the noise repeater, and a small digital **depth-finder** display: a
-  2D trace of the sea floor, like a modern echo sounder.
-- **Switches.** Four: external lights on/off, external light colour (halogen or red), cabin lights
-  on/off, cabin light colour (standard or red).
-- **Pilot seat.** A pilot-specific seat that builds on the generated `operator_seat`: armrest
-  joysticks, pedals on a footrest, and a headrest.
+- **One knee-height strip** low against the dome, in two wings with a **clear break at the apex** so the
+  pilot sees straight ahead and down. The elbow-height rail and its switch boards are gone. Structure:
+  `pilot_strip_primary.png` (a tilted fascia with orange-edged end caps either side of the gap).
+  `pilot_strip_reference.png` shows the hologram up and to the side beside a letterbox depth finder.
+- **Left wing, from the gap outward:** the **depth finder** (a 2D digital trace of the sea floor) with the
+  **hologram** immediately above it; the **multidisplay**; the **speed / throttle** gauge.
+- **Right wing, from the gap outward:** the **navball**; the **noise repeater**; three **warning lamps**
+  (BILGE, CO2, LOW O2); the four **light switches** (external on/off, external colour halogen or red, cabin
+  on/off, cabin colour standard or red).
+- **Speed / throttle:** two needles, centred, the speed scale at plus and minus the sub's top forward speed,
+  computed from the physics model so it follows tuning.
+- **Multidisplay (#458):** a configurable round display, with four widget slots, rate chevrons and a
+  segmented ring. On the pilot it shows depth, the ballast air/water pie, buoyancy, height above the sea
+  floor, vertical rate as chevrons, and air remaining on the ring. Housing from
+  `multidisplay_housing_reference.png`; face content and style from `multidisplay_face_reference.png`.
+- **Navball (#459):** a ball held fixed to the world (apex up, N to north), so heading, pitch and roll show
+  through its motion behind a fixed orange reticle. It has HDG and PITCH digit windows and the
+  multidisplay's housing. Housing from `navball_housing_reference.png`; readouts and reticle from
+  `navball_readouts_reference.png`.
+- **Hologram:** the map table's display model, small and always centred on the sub, zoom on the mouse
+  wheel. Keeping terrain from hiding the sub and flipping the view when going astern are held for later
+  (#455).
+- **Inputs.** The keys stay and the controls move with them. The left joystick shows the throttle (W/S);
+  the right joystick shows the planes (R/F) fore and aft and the rudder (A/D) side to side; the pedals are
+  decoration. Ballast is on the keyboard (Numpad 8 blows, Numpad 2 floods): the pilot runs ballast
+  directly (#445).
+- **Shelved:** pitch and heading gauges (the navball covers both); depth, vertical speed, buoyancy and
+  ballast/air gauges (the multidisplay covers them); water temperature.
+- **Pilot seat.** A pilot-specific seat building on the generated `operator_seat`: armrest joysticks,
+  pedals on a grating footrest, and a headrest.
+- Unchosen round 1 images, by commit permalink:
+  [strip variant 1](https://github.com/tsebens/silent_water/blob/2e5d832e8368aa3ddf5fb7f5039f806d3de5826e/concepts/pilot/strip_var1.png?raw=true),
+  [navball variant 2](https://github.com/tsebens/silent_water/blob/d551f1173208e0eecf208f617b8dd83ee0efe223/concepts/pilot/navball_var2.png?raw=true).
 
 ## What was explored
 
