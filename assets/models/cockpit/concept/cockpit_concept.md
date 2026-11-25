@@ -42,7 +42,8 @@ The screen shows where the passive array is pointed.
   the pilot's seat into the dome.
 - Both seats are modern heavy-equipment operator seats on suspension pedestals with armrests.
 
-**Pilot station**
+**Pilot station** (the readouts and switches were re-planned on 2026-11-25: see "Pilot station, round 4"
+below, which supersedes the rail and switch boards here)
 - Two joysticks, one on each armrest.
 - Two pedals on an open grating footrest with the glass continuing below it.
 - A slim wraparound rail at seated elbow height carrying two small switch boards, kept out of
@@ -71,6 +72,31 @@ The screen shows where the passive array is pointed.
 old. Powder-coated matte grey with safety-orange grab rails and accents, modern switch boards,
 cove lighting, braided looms. See the "Modern, not antiquated" section of
 [`docs/art_direction.md`](../../../../docs/art_direction.md), which this session added.
+
+## Pilot station, round 4 (2026-11-25, #446)
+
+Decided with Tristan while preparing the pilot station's brief. Where this disagrees with the locked
+arrangement above, this wins.
+
+- **One knee-height strip.** All readouts and switches sit on a single lateral metal strip at about
+  knee height, up against the dome, with a **break at the dome's apex** so the pilot sees straight
+  ahead. The elbow-height rail and its two switch boards are gone.
+- **Inputs.** The keys stay; the controls move with them. The left joystick shows the throttle
+  (W/S). The right joystick shows the planes (R/F) fore and aft and the rudder (A/D) side to side.
+  The pedals are decoration. Ballast is on the keyboard (Numpad 8 blows, Numpad 2 floods): the
+  pilot now runs ballast directly (#445). The hologram's zoom is on the mouse wheel.
+- **Readouts.** Three two-needle gauges, each with independent scales whose minimum and maximum
+  sit at the same angles:
+  - speed (primary) with throttle (secondary);
+  - vertical speed (primary) with buoyancy (secondary);
+  - ballast level (primary) with air remaining (secondary).
+
+  Then depth, pitch, heading, the noise repeater, and a small digital **depth-finder** display: a
+  2D trace of the sea floor, like a modern echo sounder.
+- **Switches.** Four: external lights on/off, external light colour (halogen or red), cabin lights
+  on/off, cabin light colour (standard or red).
+- **Pilot seat.** A pilot-specific seat that builds on the generated `operator_seat`: armrest
+  joysticks, pedals on a footrest, and a headrest.
 
 ## What was explored
 
