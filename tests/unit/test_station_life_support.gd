@@ -5,6 +5,9 @@ extends TestCase
 
 const SCENE: String = "res://assets/models/stations/life_support/life_support.tscn"
 const REACH_M: float = 0.75
+const SHELF_DEG: float = 42.0
+## A point on the shelf surface (m) and the shelf's outward normal: the base's front edge, up and back.
+const SHELF_EDGE: Vector3 = Vector3(0.0, 1.02503, 0.5)
 
 
 func _make() -> Node3D:
@@ -23,11 +26,14 @@ func test_scene_loads_and_every_instance_resolves() -> void:
 	for n: String in ["SaturationA", "SaturationB"]:
 		expect(st.get_node_or_null(n) is LinearGauge, "%s is a LinearGauge" % n)
 	expect(st.get_node_or_null("UpperPanelAnchor") != null, "UpperPanelAnchor")
-	for n: String in ["O2Gauge", "Co2RateGauge", "NoiseRepeater"]:
+	for n: String in ["O2Gauge", "Co2LevelGauge", "Co2RateGauge", "NoiseRepeater"]:
 		expect(st.get_node_or_null(n) is Gauge, "%s is a Gauge" % n)
 	expect((st.get_node("Co2RateGauge") as Gauge).readout_b != &"", "the CO2 rate gauge has a second needle")
 	expect(st.get_node_or_null("FanToggle") is SwitchLever, "FanToggle is a SwitchLever")
 	expect(st.get_node_or_null("FanLamp") is IndicatorLamp, "FanLamp is an IndicatorLamp")
+	for n: String in ["O2AlarmLamp", "Co2AlarmLamp"]:
+		expect(st.get_node_or_null(n) is IndicatorLamp, "%s is an IndicatorLamp" % n)
+	expect_near((st.get_node("FanToggle") as SwitchLever).initial_value, 1.0, 1e-6, "the fan toggle is on by default")
 	expect(st.get_script() == null, "the station adds no script")
 	st.queue_free()
 
@@ -58,12 +64,22 @@ func test_a_canister_seats_in_all_six_storage_holes() -> void:
 		else:
 			filled += 1
 		expect(slot.try_seat(c), "a canister seats in hole %d" % i)
-		# Seated, the canister's axis points out of the face (+Z) and its top shows just behind the plate.
+		# Seated, the canister's axis is the shelf's normal and its top sits just below the surface.
 		var up: Vector3 = c.global_transform.basis.y
-		expect(up.dot(Vector3(0, 0, 1)) > 0.999, "hole %d: canister stands along +Z" % i)
+		var n: Vector3 = Vector3(0.0, cos(deg_to_rad(SHELF_DEG)), sin(deg_to_rad(SHELF_DEG)))
+		expect(up.dot(n) > 0.999, "hole %d: canister stands along the shelf normal" % i)
 		var top: Vector3 = c.global_position + up * 0.3
-		expect_near(top.z, 0.5 + 0.008 - 0.015, 0.002, "hole %d: the canister top just behind the plate face" % i)
+		expect_near((top - SHELF_EDGE).dot(n), -0.015, 0.003, "hole %d: the canister top just below the shelf" % i)
 	expect(filled == 4, "four holes hold a canister on a new sub (%d)" % filled)
+	st.queue_free()
+
+
+func test_the_carriages_are_at_crew_eye_level() -> void:
+	var st: Node3D = _make()
+	for n: String in ["CanisterA", "CanisterB"]:
+		var c: Node3D = st.get_node(n) as Node3D
+		var mid: float = c.global_position.y + 0.15
+		expect_near(mid, 1.65, 0.05, "%s stands at eye level (%.2f m)" % [n, mid])
 	st.queue_free()
 
 
@@ -101,5 +117,5 @@ func test_footprint_and_floor() -> void:
 		first = false
 	expect_near(box.position.y, 0.0, 0.001, "floor at Y=0")
 	expect(box.position.z >= -0.001, "nothing behind Z=0")
-	expect(box.size.x <= 1.001 and box.size.z <= 0.55, "footprint %s within about 1.0 x 0.5 m" % box.size)
+	expect(box.size.x <= 1.001 and box.size.z <= 0.61, "footprint %s: 0.5 m base, overhanging top block" % box.size)
 	st.queue_free()

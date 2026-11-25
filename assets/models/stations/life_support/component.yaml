@@ -1,10 +1,11 @@
 slug: life_support
 group: stations
 kind: station
-summary: 'Life-support wall unit: tall grey body on a hazard-striped plinth, orange handle rails, a chamfered chest-height
-  alcove of two cradles (each with a scrubber canister and a linear saturation gauge), and an upper panel with six
-  storage holes (canister tops showing), O2 gauge, two-needle CO2 rate gauge, a guarded fan toggle with run lamp
-  and the noise repeater. The operator stands.'
+summary: 'Life-support wall unit shaped like an arcade cabinet: a top block overhanging the front, a sloping upper
+  panel (O2, CO2 level, CO2 rate with two needles, noise repeater, O2 and CO2 alarm lamps, a guarded fan toggle
+  on by default with its run lamp), a recessed carriage face at eye level with two cradles (each with a scrubber
+  canister and a linear saturation gauge), a sloped console-desk shelf with six round storage holes (canisters inside,
+  tops showing), and a vertical base on a hazard-striped plinth. The operator stands.'
 tags:
 - station
 - life support
@@ -21,19 +22,22 @@ behaviour:
   wire:
     cradles: CradleA, CradleB (CanisterSlot; call try_seat on CanisterA, CanisterB)
     gauges: 'SaturationA, SaturationB read life_support_readouts: saturation_a, saturation_b (0..1)'
-    storage: Storage1..Storage6 (CanisterSlot lying along +Z, lower row then upper row; Stored1,2,3,5 hold a canister,
-      4 and 6 are empty)
+    storage: Storage1..Storage6 (CanisterSlot along the sloped shelf's normal, lower row then upper row; Stored1,2,3,5
+      hold a canister, 4 and 6 are empty)
     o2: 'O2Gauge reads life_support_readouts: o2_level (0..1)'
+    co2_level: 'Co2LevelGauge reads life_support_readouts: co2_level (0..1)'
     co2_rate: 'Co2RateGauge reads life_support_readouts: co2_capacity_rate, co2_production_rate (0..1, needle B
       is production)'
-    fans: FanToggle (SwitchLever, value_changed) with FanLamp (IndicatorLamp)
+    alarms: O2AlarmLamp, Co2AlarmLamp (IndicatorLamp)
+    fans: 'FanToggle (SwitchLever, value_changed, initial_value 1: on) with FanLamp (IndicatorLamp)'
     noise_repeater: NoiseRepeater
-    upper_panel: UpperPanelAnchor (bottom-left corner of the storage plate, on its face)
+    upper_panel: UpperPanelAnchor (bottom middle of the sloping panel plate, on its face; +Z out of the face, +Y
+      up the slope)
     standing_eye: OperatorEye
 footprint_mm:
 - 1000.0
-- 542.0
-stand_out_mm: 542.0
+- 570.0
+stand_out_mm: 570.0
 mount: floor at Y=0, back against the hull on Z=0, centred on X, operator standing at +Z facing -Z
 uses:
 - scrubber_canister
@@ -41,13 +45,15 @@ uses:
 - gauge
 - guarded_toggle
 - indicator_lamp
-triangles: 11980
+triangles: 13192
+triangle_budget: 24000
 triangles_by_part:
-  body: 1772
+  body: 2416
 checks:
-  aisle_m: 1.376
-  toggle_reach_mm: 280
-  storage_reach_mm: 530
+  aisle_m: 0.849
+  toggle_reach_mm: 444
+  storage_reach_mm: 688
+  dial_reach_mm: 599
 built_by: tools/cadkit/scenes/life_support.py
 files:
 - component.yaml

@@ -22,3 +22,7 @@ behaviour arc.
 | noise_repeater | `noise_gauge` | reuse |
 
 Placement in the sub and the life support system itself are out of scope.
+
+Look review round 1 reshaped the unit (carriages at standing eye level, arcade-cabinet profile, dials on a sloped upper
+panel, 24-sided storage bores, a 24,000 triangle budget for this asset, fan toggle on by default); the arrangement is
+recorded in `brief.yaml`.

@@ -75,6 +75,7 @@ constraints:
   operator_eye_height_m: 1.65         # standing
   reach_m: 0.75                       # cradles, gauges and the fan toggle from the standing eye; storage tops reachable at head height
   aisle_min_m: 0.8                    # the unit stays clear of the engineering walkway
-  triangle_budget: 12000              # the interior class; the canister scene within about 1500 each
+  triangle_budget: 24000              # raised from 12000 at look review round 1: the round canisters are costly; the canister scene within about 1500 each
+  layout: arcade-cabinet profile; top block overhanging the front, sloped upper panel (dials, alarm lamps, fan toggle), recessed carriage face with two cradles at standing eye level (1.65 m), sloped console-desk storage shelf with six 24-sided holes, vertical base in front of the carriage face
   placement: the life_support entry of program.yaml (engineering, port side, z 2.3, footprint about 1.0 x 0.5 m)
   palette: assets/palette/palette.tres
