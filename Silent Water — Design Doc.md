@@ -155,6 +155,13 @@ station's active ports. Each is a perforated cylinder full of absorbent beads.
   gauge and the canister rings still need the red-light check noted in `docs/palette.md`). The gauge is a
   new base asset. A pivoting carriage that tilts the canister out toward the player (Tristan's diagrams in
   the concept folder) is a possible future upgrade to the swap's feel, not part of the design.
+- A **double-needle rate gauge** on the panel, so the crew can see whether they are winning: the **blue
+  needle** shows the maximum rate at which the scrubbers can currently remove CO2 (the sum of both active
+  ports' rates at their present saturation), and the **white needle** shows the rate at which the crew are
+  producing it (breathing crew times the per-crew rate). White above blue means CO2 is rising, however the
+  tank reads now. The blue needle shows the achievable maximum rather than the actual removal rate, because
+  a fresh scrubber removes exactly what is produced and no more, and a needle that merely tracked the white
+  one would be confusing.
 - **Six storage holes** in the unit's upper panel, above the alcove, in two rows of three. Canisters drop in
   and leave only their tops and light rings visible, at about head height. Whether the holes angle toward
   the player so the rings read from the aisle is open.
@@ -445,7 +452,8 @@ Steam integration and in-game voice, expeditions, cargo, divers, facilities, upg
 - Distinct sub types and hardware variants
 - Life support: what happens at incapacitating CO2; whether CO2 vents when the sub surfaces or docks;
   whether O2 depletion and low-O2 effects are modelled; whether the storage holes angle toward the player;
-  whether the pivoting canister carriage is worth adding later. Decided in chat: two active ports with open
+  whether the pivoting canister carriage is worth adding later; where the double-needle rate gauge sits on
+  the panel. Decided in chat: two active ports with open
   cradles and six storage holes, a canister lasts four crew about 15 minutes, the station is a wall unit on
   the port-side hull of engineering carrying the O2 gauge.
 

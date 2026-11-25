@@ -34,6 +34,11 @@ panel arrangement are what is locked. Build it on the curved side hull.
 - Beside each port a **vertical linear gauge**, a slim backlit window whose bar rises from the bottom:
   green to 50%, yellow to 85%, red at the top. Left port in the primary is red (spent, being removed),
   right port green and low (fresh).
+- **Not in the primary image, added to the design after the lock:** a **double-needle rate gauge** on the
+  panel. Blue needle: the scrubbers' maximum achievable CO2 removal rate at their current saturation. White
+  needle: the crew's current CO2 production rate. White above blue means CO2 is rising. Its place on the
+  panel is open; the upper panel beside the O2 gauge is the natural spot. Note for the palette: the
+  information role is cyan on black, so a white and a blue needle need two needle swatches.
 - A hazard-striped plinth below the alcove.
 - Finish: powder-coated matte grey with safety-orange grab rails round it, engraved plates with no
   text, in line with the "Modern, not antiquated" section of `docs/art_direction.md`.
@@ -102,6 +107,7 @@ Links: [v1 unit](https://github.com/tsebens/silent_water/blob/318df8cbe60543a5a5
 ## Open questions and follow-ups
 
 - The O2 gauge's exact place on the panel, and whether a guarded switch belongs beside it.
+- Where the double-needle rate gauge sits, and the two needle colours in the palette.
 - How many fan toggles the station really has; the brief's `functions` list decides, not the art.
 - Whether the storage holes should be angled toward the player so the rings read from the aisle.
 - A red-light shot has not been drawn; indicator rings and gauge colours must be checked under it,
@@ -119,5 +125,6 @@ Suggested `concept.images` entries once the brief is written:
 
 `compare_on`: massing of the unit, the alcove's position and proportion, the two ports side by side
 with a vertical gauge beside each, storage holes above in two rows of three, the O2 gauge on the upper
-panel. `ignore`: the number and labels of switches, the wall the unit stands on, lighting mood, the
+panel. The double-needle rate gauge is not in the art and is placed by the brief's `functions`, not the
+concept. `ignore`: the number and labels of switches, the wall the unit stands on, lighting mood, the
 person, the beads' exact colour.
