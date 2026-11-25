@@ -1,21 +1,18 @@
 [gd_scene format=3]
 
 [ext_resource type="Script" path="res://src/interact/wearable.gd" id="1"]
-
-[sub_resource type="StandardMaterial3D" id="mat"]
-albedo_color = Color(0.1, 0.1, 0.1, 1)
-roughness = 0.7
+[ext_resource type="Material" path="res://assets/palette/roles/trim_black.tres" id="2_trim"]
 
 [sub_resource type="TorusMesh" id="band"]
 inner_radius = 0.08
 outer_radius = 0.095
-material = SubResource("mat")
+material = ExtResource("2_trim")
 
 [sub_resource type="CylinderMesh" id="cup"]
 top_radius = 0.045
 bottom_radius = 0.045
 height = 0.04
-material = SubResource("mat")
+material = ExtResource("2_trim")
 
 [sub_resource type="BoxShape3D" id="grab"]
 size = Vector3(0.25, 0.25, 0.2)
