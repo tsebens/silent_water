@@ -7,8 +7,11 @@
 #   2. unblock: `blocked` arcs whose blockers are all closed become `ready`
 #   2b. recover: a `claimed` arc whose build run died (no live run, no open arc PR, past the grace period) goes back to
 #      `ready` once; orphaned again, it gets `needs-human`
+#      An arc in its look gate (`look-review`, `look-approved`, `look-changes`) is never an orphan: it waits on
+#      Tristan, or on a run that a label started, not the dispatcher's build
 #   3. claim: drop a stray `ready` from arcs already claimed/in-review; while in-flight arcs < WORKER_CAP, claim the oldest `ready` arc whose
-#      Touches: do not overlap an in-flight arc, and start a development run
+#      Touches: do not overlap an in-flight arc, and start a development run. An arc waiting on Tristan's look review
+#      (`look-review`) does not count toward WORKER_CAP, but its Touches: still block overlapping arcs
 #   3b. close approved concepts whose arcs are all closed (backstop for the review agent)
 #   3c. close milestones (`M<n> · …`) whose sub-issues are all closed, once the last one has been closed for
 #      MILESTONE_QUIET_HOURS (a milestone still receiving arcs is not closed between two of them)
@@ -64,6 +67,22 @@ arcs_with() { # label -> numbers, oldest first
 
 arc_has() { # number label
   echo "$ARCS" | jq -e --argjson n "$1" --arg l "$2" '.[] | select(.number == $n) | .labels | index($l) != null' >/dev/null 2>&1
+}
+
+# The look gate (docs/asset_process.md, 6.5): a `look-gate` arc stops for Tristan before its PR.
+LOOK_LABELS=("look-review" "look-approved" "look-changes")
+
+in_look_phase() { # number -> 0 if the arc is between its build and its PR, in the look gate
+  local l
+  for l in "${LOOK_LABELS[@]}"; do arc_has "$1" "$l" && return 0; done
+  return 1
+}
+
+# In-flight arcs that count toward WORKER_CAP: claimed or in-review, minus those waiting on Tristan's look review
+# (no job is running for them). $1 = newline-separated in-flight numbers.
+counting_toward_cap() {
+  local n
+  for n in $1; do arc_has "$n" look-review || echo "$n"; done
 }
 
 arc_body() { echo "$ARCS" | jq -r --argjson n "$1" '.[] | select(.number == $n) | .body'; }
@@ -168,6 +187,7 @@ recover_orphans() {
   now=$(date -u +%s)
   for n in $(arcs_with claimed); do
     arc_has "$n" needs-human && continue
+    if in_look_phase "$n"; then log "  #$n claimed, in its look gate; not an orphan"; continue; fi
     if grep -qx "$n" <<<"$1"; then log "  #$n claimed, has an open PR; fine"; continue; fi
     info=$(claim_info "$n")
     if [ -z "$info" ]; then log "  #$n claimed with no dispatcher claim comment; cannot date it, leaving alone"; continue; fi
@@ -368,14 +388,14 @@ load_arcs
 
 log "3. Claim"
 in_flight=$( { arcs_with claimed; arcs_with in-review; } | sort -un)
-in_flight_count=$(echo "$in_flight" | grep -c . || true)
+in_flight_count=$(counting_toward_cap "$in_flight" | grep -c . || true)
 in_flight_touches=""
 for n in $in_flight; do
   t=$(touches_of "$n")
   if [ -z "$t" ]; then log "  #$n is in flight with no Touches: line; treating as touching everything"; t="."; fi
   in_flight_touches="$in_flight_touches"$'\n'"$t"
 done
-log "  in flight: $in_flight_count/$WORKER_CAP ($(echo "$in_flight" | tr '\n' ' '))"
+log "  in flight: $in_flight_count/$WORKER_CAP ($(echo "$in_flight" | tr '\n' ' '); look-review arcs hold Touches: but no slot)"
 
 DEFAULT_BRANCH=$(gh api "repos/$REPO" --jq .default_branch 2>/dev/null || echo dev)
 
@@ -463,6 +483,7 @@ for n in $(echo "$ARCS" | jq -r '.[].number'); do
   arc_has "$n" needs-human && continue
   if arc_has "$n" in-review; then
     if pr_has "$n" changes-requested; then project "$n" "In progress"; else project "$n" "In review"; fi
+  elif arc_has "$n" claimed && arc_has "$n" look-review; then project "$n" "In review"
   elif arc_has "$n" claimed; then project "$n" "In progress"
   elif arc_has "$n" ready;   then project "$n" "Ready"
   elif arc_has "$n" blocked; then project "$n" "Backlog"
@@ -482,7 +503,7 @@ CLOSED=$(gh api --paginate "repos/$REPO/issues?state=closed&since=$since&per_pag
   | jq -s 'add // []')
 for n in $(echo "$CLOSED" | jq -r '.[].number'); do
   project "$n" "Done"
-  for l in ready claimed in-review blocked; do
+  for l in ready claimed in-review blocked look-review look-approved look-changes; do
     if echo "$CLOSED" | jq -e --argjson n "$n" --arg l "$l" '.[] | select(.number == $n) | .labels | index($l) != null' >/dev/null; then
       remove_label "$n" "$l"
     fi

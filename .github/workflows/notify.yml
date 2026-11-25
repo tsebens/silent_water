@@ -1,0 +1,53 @@
+name: "Notify Tristan"
+
+# Tells Tristan the pipeline needs him: `look-review` (a gated asset is rendered and waiting on his look approval)
+# or `needs-human` (the pipeline stopped) being ADDED to an issue or PR. It POSTs the number and the reason to the
+# API trigger of a Claude scheduled task, which opens a fresh session that shows him the issue and relays his answer.
+# Spec: docs/process.md, "Notifying Tristan".
+#
+# No checkout and no instructions: the job only sends a number and a label name, so it is safe on
+# pull_request_target. One attempt, no retry: every successful call opens a session.
+# Until the secrets HUMAN_NOTIFY_URL and HUMAN_NOTIFY_TOKEN exist, the job logs a skip and passes.
+
+on:
+  issues:
+    types: [labeled]
+  pull_request_target:
+    types: [labeled]
+
+permissions: {}
+
+concurrency:
+  group: notify-${{ github.event.issue.number || github.event.pull_request.number }}-${{ github.event.label.name }}
+  cancel-in-progress: false
+
+jobs:
+  notify:
+    if: github.event.label.name == 'look-review' || github.event.label.name == 'needs-human'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Fire the scheduled task
+        env:
+          URL: ${{ secrets.HUMAN_NOTIFY_URL }}
+          TOKEN: ${{ secrets.HUMAN_NOTIFY_TOKEN }}
+          NUMBER: ${{ github.event.issue.number || github.event.pull_request.number }}
+          KIND: ${{ github.event_name == 'issues' && 'issue' || 'pull request' }}
+          REASON: ${{ github.event.label.name }}
+        run: |
+          if [ -z "$URL" ] || [ -z "$TOKEN" ]; then
+            echo "::notice::HUMAN_NOTIFY_URL or HUMAN_NOTIFY_TOKEN is not set; not notifying (#$NUMBER, $REASON)."
+            exit 0
+          fi
+          text=$(printf 'repository: %s\nnumber: %s\nkind: %s\nreason: %s\n' "$GITHUB_REPOSITORY" "$NUMBER" "$KIND" "$REASON")
+          body=$(jq -n --arg t "$text" '{text: $t}')
+          code=$(curl -sS -o response.json -w '%{http_code}' -X POST "$URL" \
+            -H "Authorization: Bearer $TOKEN" \
+            -H "anthropic-version: 2023-06-01" \
+            -H "Content-Type: application/json" \
+            --data "$body") || code=000
+          if [ "$code" = "200" ]; then
+            echo "Notified: #$NUMBER ($REASON), session $(jq -r '.claude_code_session_url // empty' response.json)"
+          else
+            echo "::warning::Notifying Tristan failed with HTTP $code for #$NUMBER ($REASON): $(head -c 300 response.json 2>/dev/null)"
+          fi

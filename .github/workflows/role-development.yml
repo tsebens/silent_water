@@ -1,16 +1,20 @@
 name: "Role: development"
 
 # Builds one arc on an arc/<n>-<slug> branch and opens a PR into dev (build mode), or fixes an
-# arc PR that was sent back by review or CI (rework mode). Same role, two triggers.
+# arc PR that was sent back by review or CI (rework mode). A `look-gate` arc stops for Tristan
+# before its PR; his answer starts look-approved (open the PR) or look-changes (look rework).
 # Spec: docs/process.md. Prompt: .github/agents/development.md.
 #
 # Build is started by the dispatcher (gh workflow run) once it has claimed a `ready` arc, or by
 # hand. Rework is started by `changes-requested` being ADDED to an arc PR, by the reviewer or by
 # CI. pull_request_target runs from the base branch, so the role's instructions come from dev and
-# the PR head is fetched as content.
+# the PR head is fetched as content. The look modes are started by `look-approved` or
+# `look-changes` being ADDED to a `look-gate` arc issue (issues events also run from dev).
 
 on:
   pull_request_target:
+    types: [labeled]
+  issues:
     types: [labeled]
   workflow_dispatch:
     inputs:
@@ -35,6 +39,14 @@ jobs:
           startsWith(github.event.pull_request.head.ref, 'arc/') &&
           github.event.pull_request.head.repo.full_name == github.repository &&
           !contains(github.event.pull_request.labels.*.name, 'needs-human')
+        ) ||
+        (
+          github.event_name == 'issues' &&
+          (github.event.label.name == 'look-approved' || github.event.label.name == 'look-changes') &&
+          contains(github.event.issue.labels.*.name, 'arc') &&
+          contains(github.event.issue.labels.*.name, 'look-gate') &&
+          !contains(github.event.issue.labels.*.name, 'needs-human') &&
+          github.event.issue.state == 'open'
         )
       )
     runs-on: ubuntu-latest
@@ -67,6 +79,16 @@ jobs:
               echo "- Head: \`${PR_HEAD}\` at \`${PR_SHA}\`; base: \`dev\`"
               echo "- Labels on the PR now: ${PR_LABELS}"
               echo "- The checkout is the base branch. Fetch and check out the head branch to work on it."
+            elif [ "$EVENT" = "issues" ] && [ "$LABEL" = "look-approved" ]; then
+              echo "- Mode: **look approved** (open the PR)"
+              echo "- Event: \`issues.labeled\`, label added: \`look-approved\` (Tristan approved the look)"
+              echo "- Arc issue: #${ARC}; its branch is \`arc/${ARC}-*\` on origin"
+              echo "- Integration branch: \`dev\`"
+            elif [ "$EVENT" = "issues" ]; then
+              echo "- Mode: **look rework**"
+              echo "- Event: \`issues.labeled\`, label added: \`look-changes\` (Tristan asked for changes to the look)"
+              echo "- Arc issue: #${ARC}; its branch is \`arc/${ARC}-*\` on origin"
+              echo "- Integration branch: \`dev\`"
             else
               echo "- Mode: **build**"
               echo "- Event: \`workflow_dispatch\` (started by the dispatcher, or by hand)"
