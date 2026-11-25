@@ -25,6 +25,8 @@ def style(root):
     shutil.copy(REPO / "assets" / "style_bible" / "classes.yaml", sb / "classes.yaml")
     (sb / "style.md").write_text("STYLE")
     (sb / "negative.md").write_text("- nothing")
+    (root / "assets" / "palette").mkdir(parents=True)
+    shutil.copy(REPO / "assets" / "palette" / "palette.tres", root / "assets" / "palette" / "palette.tres")
 
 
 def test_new_description_and_describe_feed_concept(root, capsys):
