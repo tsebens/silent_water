@@ -3,9 +3,9 @@ extends TestCase
 
 const STATIONS: Array[StringName] = [
 	&"pilot", &"sonar", &"sonar_seat", &"countermeasures", &"map_table",
-	&"engineering", &"life_support", &"ballast", &"bilge",
+	&"engineering", &"life_support", &"ballast", &"bilge", &"scanner",
 ]
-const FEATURES: Array[StringName] = [&"lock_out_trunk", &"tower_ladder", &"lockers", &"drop_weights"]
+const FEATURES: Array[StringName] = [&"lock_out_trunk", &"tower_ladder", &"lockers", &"drop_weights", &"status_board"]
 
 
 func test_deck_converts_to_zero() -> void:

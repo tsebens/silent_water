@@ -116,7 +116,7 @@ func test_cabin_dimmer_dims_cabin_but_not_headlight() -> void:
 	await _frames(2)
 	expect_near(fore.light_energy, bright * CabinLights.MIN_LEVEL, 0.001, "dimmed to near dark")
 	expect_eq(head.light_energy, head_before, "headlight untouched")
-	expect(cabin.cabin_lights().size() == 6, "six cabin lights (four room lights, two coves)")
+	expect(cabin.cabin_lights().size() == 8, "eight cabin lights (four room lights, two coves, scanner and status board spots)")
 
 
 func test_dev_overlay_stats_cover_sub_noise_and_apex() -> void:

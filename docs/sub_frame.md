@@ -88,3 +88,7 @@ The sonar desk is the generated `sonar_console` station instanced at `Interior/S
 ## Ballast, engineering and bilge stations
 
 The ballast valves and gauges (`Stations/Ballast`, port, z 3.25), the engine gauge (`Stations/Engineering`, starboard, z 2.3) and the bilge pump switch and gauges (`Stations/Bilge`, beside the centre bilge well, z 4.1) are placed by `StationPlacement` from the program's `ballast`, `engineering` and `bilge` entries. `BilgeWater` takes its floor height from the bilge well (`SubLayout.position(&"bilge").y`). The aft-port leak is placed relative to the ballast panel, and the three fore leaks sit just inside the hull surface; `test_every_leak_is_inside_the_hull` guards all four.
+
+## Scanner, status board and lights
+
+The scanner panel (starboard, aft of the drop weights) and the wall-mounted status board (forward face of the bulkhead, above the hatch) are program entries (`scanner`, `status_board`; a `mounted: true` item takes no floor). The interior's lights and fascia sit inside the hull; `tests/unit/test_station_clearance.gd` checks that nothing built overlaps a reserved footprint.
