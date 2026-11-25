@@ -1,0 +1,31 @@
+slug: zoom_lever
+group: kit
+kind: control
+summary: Short spring-centred lever on a 1x2 base; yellow handle swings +/-30 deg and returns to centre on release.
+  Emits a zoom rate -1..1 (up zooms in).
+tags:
+- lever
+- zoom
+- spring
+- rate
+- map
+scene: res://assets/models/kit/zoom_lever/zoom_lever.tscn
+behaviour:
+  script: ZoomLever
+  values: -1 down (zoom out), 0 centre, 1 up (zoom in)
+  signal: zoom_rate_changed
+base: 1x2
+footprint_mm:
+- 56.0
+- 116.0
+stand_out_mm: 54.0
+mount: back on Z=0, centred; front +Z; up is toward +Y
+set_on_instance:
+  label: name at the aiming point
+triangles: 156
+built_by: tools/cadkit/scenes/zoom_lever.py
+files:
+- component.yaml
+- zoom_lever.tscn
+- zoom_lever_body.glb
+- zoom_lever_handle.glb

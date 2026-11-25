@@ -1,0 +1,28 @@
+slug: pan_trackball
+group: kit
+kind: control
+summary: Desk trackball in a black ring; rolling it pans a view (emits a 2D roll delta, not a bearing).
+tags:
+- trackball
+- pointing
+- pan
+- map
+- roll
+scene: res://assets/models/kit/pan_trackball/pan_trackball.tscn
+behaviour:
+  script: PanBall
+  values: 2D roll delta
+  signal: rolled
+base: 2x2
+footprint_mm:
+- 116.0
+- 116.0
+stand_out_mm: 63.26782687642637
+mount: back on Z=0, centred; front +Z
+triangles: 386
+built_by: tools/cadkit/scenes/pan_trackball.py
+files:
+- component.yaml
+- pan_trackball.tscn
+- pan_trackball_ball.glb
+- pan_trackball_body.glb

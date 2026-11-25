@@ -227,7 +227,7 @@ def build_bulkhead(layout: dict, comp: dict) -> None:
         v.co.y -= (z1 - z0)
     bmesh.ops.recalc_face_normals(bm, faces=bm.faces)
     plate = mesh_object("bulkhead", bm, "bulkhead", "bulkhead")
-    door_w, door_h = 0.75, 1.7
+    door_w, door_h = layout["clearances"]["hatch_width_m"], layout["clearances"]["hatch_height_m"]
     door = box("bulkhead_door_cutter", -door_w / 2, door_w / 2, deck - 0.1, deck + door_h, z0 - 0.1, z1 + 0.1, "bulkhead", "cutter")
     mod = plate.modifiers.new("door", "BOOLEAN")
     mod.operation, mod.object, mod.solver = "DIFFERENCE", door, "EXACT"

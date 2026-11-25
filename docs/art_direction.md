@@ -63,7 +63,7 @@ wheelhouse. Concept art and models should avoid the WW2 submarine look that the 
 Structure can still show (frames, ribs, conduit), but it is machined and welded, not riveted. Wear is scuffs, worn
 paint on edges and walkways, and scratched plastic, never corrosion.
 
-Its hull is built in Onshape (`assets/media/sub/`) and converted with `tools/convert_sub.py`, so the hull shape is set there, not here.
+Its hull is generated from `assets/models/vehicles/sub_interior/program.yaml` by `tools/build_sub_hull.py`, so the hull shape is set there, not here.
 
 The sub and the stations still share one feel: industrial, utilitarian, competent. The sub is the crew's well-kept working tool; the stations are the massive, aging network it serves. Brutalist massing belongs to the stations, not the sub.
 

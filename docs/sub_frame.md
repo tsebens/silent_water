@@ -4,7 +4,7 @@
 
 ## How it works
 
-- The sub's geometry comes from the Onshape concept: `tools/convert_sub.py` turns `assets/media/sub/Assembly 1.gltf` into `assets/sub/sub_model.glb` (Godot axes, origin on the main cabin floor at the centreline, bow toward -Z, simplified meshes, named parts). `SubModel` gives the parts their materials and collision. The hull is about 10 m × 4 m; the pilot well is 0.6 m below the cabin floor.
+- The redesigned sub's hull is generated from `assets/models/vehicles/sub_interior/program.yaml` by a parametric script (decision #395; hull arc under #396). `SubModel` loads it (#401); the old Onshape model and `tools/convert_sub.py` are gone. The hull is about 10 m × 4 m; the pilot floor is 0.2 m below the main deck.
 - `Game/Interior` sits at the origin with an identity transform, permanently. Players, controls, interior lights, and the sub's exterior lights (the headlight) live here. Everything inside the sub is in **sub-local space**.
 - `Game/World` holds everything outside the sub: terrain, creatures, objectives. Its children use **world space** as their local space.
 - `SubFrame` owns the sub's pose in the world (`sub_transform`, host-authoritative, replicated). Each frame it sets `World.transform = sub_transform.affine_inverse()`. In render space the sub is always at the origin, and the world moves past it.
@@ -46,3 +46,49 @@ The host writes `sub_transform` at physics rate. Clients receive it at 20 Hz and
 ### Bilge water surface
 
 `BilgeWater` (`src/sub/bilge_water.tscn`) is a child of the still `Interior`. It sits at `bilge_height_m(bilge_water_t)` above the floor, is hidden when dry, and eases toward the replicated tonnage on every peer. Its shader (`bilge_water.gdshader`) is a minimal translucent rippling surface, clipped to the hull cylinder; the ocean surface can adopt it.
+
+## Program frame and the interior frame
+
+The sub interior program (`assets/models/vehicles/sub_interior/program.yaml`) is written in the **program frame**: origin at the hull's centre, +X starboard, +Y up, +Z toward the stern, with the main deck at y = -0.95. The game's interior frame (everything under `Interior`, above) has its origin on the main cabin floor at the centreline. The two differ only in height:
+
+| Interior | = Program |
+| --- | --- |
+| x | x |
+| y | y + 0.95 (the program's `main_deck_y`, negated) |
+| z | z |
+
+So the main deck is y = 0, the sunken cockpit floor (`floor_offset_m: -0.20`) is y = -0.20, and a standing eye (1.65 m) is y = 1.65.
+
+`plan.py` resolves the program into `layout.json` (stations, features, footprints, floors, clearances, cameras). `SubLayout` (`src/sub/sub_layout.gd`) reads it and is the **only** code that converts between the frames: `to_interior`, `to_program`, `position(id)`, `footprint(id)`, `floor_y(compartment)`, `cockpit_floor_offset()`, `clearance(key)`. Other systems ask it; none repeat the offset. After changing `program.yaml`, run `uv run --project tools/asset_pipeline python assets/models/vehicles/sub_interior/plan.py` and commit `layout.json`; `tests/unit/test_layout_in_sync.gd` fails when it is stale.
+
+## The generated hull (`assets/sub/sub_hull.glb`)
+
+`tools/build_sub_hull.py` builds the redesigned hull from `layout.json` (which `plan.py` generates from `program.yaml`). It needs only numpy: `python3 tools/build_sub_hull.py` rewrites `assets/sub/sub_hull.glb`, in the interior frame. Change the program, run `plan.py`, then the hull script, and commit all three outputs. `SubModel` loads it, gives each part its worn-metal, trim or glass look, and adds no collision of its own. Surfaces are named after palette roles. Nodes ending `-col` get trimesh collision (a `StaticBody3D`) on import.
+
+| Part | What it is | Role |
+| --- | --- | --- |
+| `hull_shell-col` | The cabin wall from the cockpit rim to the stern, seen from inside | `hull_metal` |
+| `dome_glass-col` | The cockpit bubble, bow to the rim ring, glass underfoot beyond the cockpit floor | `glass` |
+| `dome_rim` | The steel ring where the dome meets the cabin | `trim_black` |
+| `deck_cockpit-col` | The pilot's floor, 0.2 m below the main deck, narrowing toward the bow | `interior_dark` |
+| `cockpit_step-col` | A 0.25 m ramp up from the cockpit floor to the main deck (a vertical 0.2 m riser would stop the capsule) | `interior_dark` |
+| `deck_midships-col`, `deck_bulkhead-col`, `deck_engineering-col` | The main deck, one slab per compartment; `deck_bulkhead` is the hatch sill | `interior_dark` |
+| `bulkhead-col` | The watertight bulkhead with its opening (`hatch_width_m` by `hatch_height_m`) | `interior_panel` |
+| `hatch_frame` | The coaming round the opening | `trim_black` |
+| `tower`, `tower_hatch` | The conning tower on the roof over the ladder, with its top hatch. The shaft through the roof belongs to the ladder's arc | `hull_metal`, `interior_panel` |
+
+The hatch is 1.85 m high, not the draft program's 1.7 m: the player capsule is 1.75 m tall, and its dome jams under a 1.7 m lintel. `tests/unit/test_sub_hull.gd` checks the envelope, deck heights, step, hatch opening and 2.0 m head room, and walks a capsule from the cockpit through the hatch and back.
+
+## Pilot station and spawn points
+
+The pilot's seat, flight controls, gauge pods, cabin-light dimmer and the small elbow-rail hologram are placed by `StationPlacement` (`src/sub/station_placement.gd`, on `Interior/Stations/Pilot`): each part's position is `SubLayout.position(&"pilot")` plus a small offset, so the seat sits at x 0, z -3.8, on the cockpit floor 0.20 m below the main deck. Nothing in `interior.tscn` repeats those coordinates. `Game.SPAWN_POINTS` are in the midships aisle between the map table and the sonar desk; `tests/unit/test_spawn_points.gd` checks them against the footprints and `aisle_min_m`. `Player.INTERIOR_BOUNDS` reaches z -5.0 to cover the dome.
+
+The sonar desk is the generated `sonar_console` station instanced at `Interior/Stations/Sonar`; a `StationPlacement` (`SonarPlacement`) puts its back edge at the program's sonar footprint (z -3.3) and its centre at the desk's x. `tests/unit/test_sonar_placement.gd` checks its footprint against the program.
+
+## Ballast, engineering and bilge stations
+
+The ballast valves and gauges (`Stations/Ballast`, port, z 3.25), the engine gauge (`Stations/Engineering`, starboard, z 2.3) and the bilge pump switch and gauges (`Stations/Bilge`, beside the centre bilge well, z 4.1) are placed by `StationPlacement` from the program's `ballast`, `engineering` and `bilge` entries. `BilgeWater` takes its floor height from the bilge well (`SubLayout.position(&"bilge").y`). The aft-port leak is placed relative to the ballast panel, and the three fore leaks sit just inside the hull surface; `test_every_leak_is_inside_the_hull` guards all four.
+
+## Scanner, status board and lights
+
+The scanner panel (starboard, aft of the drop weights) and the wall-mounted status board (forward face of the bulkhead, above the hatch) are program entries (`scanner`, `status_board`; a `mounted: true` item takes no floor). The interior's lights and fascia sit inside the hull; `tests/unit/test_station_clearance.gd` checks that nothing built overlaps a reserved footprint.

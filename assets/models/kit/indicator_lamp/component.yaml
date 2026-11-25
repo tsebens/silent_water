@@ -1,0 +1,28 @@
+slug: indicator_lamp
+group: kit
+kind: display
+summary: 'Indicator lamp: black octagonal bezel and a lens in the indicator_ok palette role; IndicatorLamp lights
+  it from a bool. Mounts on a plate, no base.'
+tags:
+- lamp
+- indicator
+- light
+- status
+scene: res://assets/models/kit/indicator_lamp/indicator_lamp.tscn
+behaviour:
+  script: IndicatorLamp
+  values: lit bool
+  signal: lit_changed
+  wire: set_lit(bool) or bind(source, signal)
+footprint_mm:
+- 20.0
+- 20.0
+stand_out_mm: 5.0
+mount: back on Z=0 (on a plate front), centred; faces +Z
+triangles: 124
+built_by: tools/cadkit/scenes/indicator_lamp.py
+files:
+- component.yaml
+- indicator_lamp.tscn
+- indicator_lamp_bezel.glb
+- indicator_lamp_lens.glb

@@ -8,6 +8,12 @@ Backend usage is in [`tools/asset_pipeline/README.md`](../tools/asset_pipeline/R
 
 Cleaned meshes carry a small vertex-colour palette. Godot imports glTF vertex colours but does not apply them to albedo by default. Every asset GLB therefore uses the shared post-import script `res://assets/import/vertex_color_import.gd`, which sets `vertex_color_use_as_albedo` on every material (and gives material-less surfaces one). `asset export` writes `<slug>.glb.import` selecting it (`import_script/path`); Godot fills in the remaining import settings on first import.
 
+### Palette snap (image-to-3D route)
+
+For the image-to-3D classes (creature, prop, terrain), the `vertex_colour_palette` cleanup step snaps the vertex colours to the palette (`docs/palette.md`). It clusters the baked colours into at most `palette_size` colours, snaps each cluster to the nearest swatch among the environment (`env_*`), sea floor (`floor_*`), life (`life_*`) and flora (`flora_*`) swatches (by distance in linear RGB), and paints each face with its cluster's swatch. The swatch values are read from `assets/palette/palette.tres` when `asset cleanup` runs and passed to Blender as `swatches`, so a tuned swatch snaps, and bakes, its new value on the next cleanup. Every vertex colour in the result is then a swatch value (stored linear, as glTF expects). The swatches used are recorded in the cleanup record's `result.steps.vertex_colour_palette.swatches_used`, so the lineage says which swatches an asset depends on.
+
+The colours are baked into the mesh, so no role is involved: editing a swatch does not change an already-cleaned asset until it is cleaned again. Making swatch edits reach these assets live would need roles for them (open question). Classes on other routes (architecture, interior) keep the plain k-means palette.
+
 ## `asset godot-check <slug>`
 
 Copies the cleaned GLB to `build/asset_check/<slug>/` (git-ignored), imports it headless, and checks that every surface has `vertex_color_use_as_albedo`. It then renders three shots into the log dir (`$LOG_DIR`, `--log-dir`, else `./logs`): `<slug>_fog.png` (fog and ambient only), `<slug>_white.png` and `<slug>_red.png` (white and red light). Rendering needs a real display server; without `DISPLAY` it runs under `xvfb-run` when installed. `--no-render` skips the shots. The result is recorded in the manifest (`godot_checks`).
@@ -24,7 +30,7 @@ The `kit` class (build route `cad`) is for the sub's controls, which Tristan mod
 
 - creates the asset (class `kit`, folder `kit`) when the slug is new;
 - copies the export to `assets/media/kit/<slug>/<slug>.gltf` and runs the converter, `tools/asset_pipeline/asset_pipeline/blender/onshape_import_bpy.py`, in headless Blender (native or Docker, the same runner as `cleanup`). The origin goes to the centre of the back face, and the moving part goes under a `Pivot` node on its hinge with identity rotation;
-- snaps each material to the nearest entry of `assets/style_bible/kit_palette.yaml` (still to move onto the game palette, `docs/palette.md`) (powder grey, safety orange, black, LED), by the RGB value in the Onshape material name, and renames it by role; materials that snap to one role merge;
+- snaps each material to the nearest palette role (`docs/palette.md`: the colour a role shows is its glow swatch, else its surface swatch, read from `assets/palette/`), by the RGB value in the Onshape material name, and names it by the role, writing no colour; the post-import script applies the shared role material, and materials that snap to one role merge;
 - records a `mesh` lineage entry (`i1`, `i2`, …, provider `onshape`) whose `source` holds the export's path and SHA-256, plus an `imports` record (parts, triangles, size, materials, how Blender ran). A re-import adds a new entry;
 - records the moving part in the manifest's `pivots`: part name, axis, limits in degrees (default -40 40) and control. A `--pivot` that names no part of the export is an error that lists the parts.
 

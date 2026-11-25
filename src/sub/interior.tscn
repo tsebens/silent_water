@@ -8,17 +8,13 @@
 [ext_resource type="PackedScene" path="res://src/noise/noise_gauge.tscn" id="6"]
 [ext_resource type="PackedScene" path="res://src/damage/leak.tscn" id="7"]
 [ext_resource type="PackedScene" path="res://src/interact/bilge_pump.tscn" id="8"]
-[ext_resource type="Script" path="res://src/sonar/sonar_station.gd" id="9"]
-[ext_resource type="PackedScene" path="res://src/sonar/headset.tscn" id="10"]
-[ext_resource type="PackedScene" path="res://src/sonar/hydrophone_wheel.tscn" id="11"]
 [ext_resource type="PackedScene" path="res://src/interact/lever.tscn" id="12"]
-[ext_resource type="Script" path="res://src/sonar/sonar_seat.gd" id="13"]
 [ext_resource type="Script" path="res://src/map/holo_map.gd" id="15"]
 [ext_resource type="Script" path="res://src/map/map_table.gd" id="16"]
 [ext_resource type="PackedScene" path="res://src/sub/bilge_water.tscn" id="17"]
-[ext_resource type="Script" path="res://src/map/flat_chart.gd" id="flat_chart"]
-[ext_resource type="Script" path="res://src/sonar/sonar_panel.gd" id="sonar_panel"]
 [ext_resource type="Script" path="res://src/sub/palette_light.gd" id="palette_light"]
+[ext_resource type="Script" path="res://src/sub/station_placement.gd" id="station_placement"]
+[ext_resource type="PackedScene" path="res://assets/models/stations/sonar_console/sonar_console.tscn" id="sonar_console"]
 
 [sub_resource type="BoxMesh" id="fascia_mesh"]
 size = Vector3(0.06, 0.22, 3.2)
@@ -56,40 +52,22 @@ material = SubResource("fitting")
 radius = 0.045
 height = 0.09
 
-[sub_resource type="CylinderMesh" id="stool"]
-material = SubResource("fitting")
-top_radius = 0.24
-bottom_radius = 0.2
-height = 0.5
-
-[sub_resource type="BoxMesh" id="stool_back"]
-material = SubResource("fitting")
-size = Vector3(0.44, 0.45, 0.06)
-
 [sub_resource type="BoxShape3D" id="pilot_seat_grab"]
 size = Vector3(1.0, 1.1, 1.0)
 
-[sub_resource type="BoxShape3D" id="stool_grab"]
-size = Vector3(0.55, 1.0, 0.55)
-
 [sub_resource type="BoxShape3D" id="table_grab"]
 size = Vector3(1.3, 0.85, 0.8)
-
-[sub_resource type="CylinderShape3D" id="stool_body"]
-height = 0.5
-radius = 0.22
 
 [node name="Interior" type="Node3D"]
 
 [node name="Model" parent="." instance=ExtResource("1")]
 
 [node name="BilgeWater" parent="." instance=ExtResource("17")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 1.0)
 
 [node name="Lights" type="Node3D" parent="."]
 
 [node name="Fore" type="OmniLight3D" parent="Lights"]
-position = Vector3(0, 2.4, -0.4)
+position = Vector3(0, 2.1, -1.6)
 light_energy = 0.55
 omni_range = 4.5
 
@@ -99,7 +77,7 @@ swatch = &"light_cabin"
 stealth_swatch = &"light_stealth_red"
 
 [node name="Mid" type="OmniLight3D" parent="Lights"]
-position = Vector3(0, 2.6, 1.0)
+position = Vector3(0, 2.1, 0.6)
 light_energy = 0.6
 shadow_enabled = true
 omni_range = 4.5
@@ -110,7 +88,7 @@ swatch = &"light_cabin"
 stealth_swatch = &"light_stealth_red"
 
 [node name="Aft" type="OmniLight3D" parent="Lights"]
-position = Vector3(-0.6, 2.3, 3.0)
+position = Vector3(-0.5, 2.1, 3.0)
 light_energy = 1.4
 omni_range = 4.5
 
@@ -120,7 +98,7 @@ swatch = &"light_cabin"
 stealth_swatch = &"light_stealth_red"
 
 [node name="AftMachinery" type="OmniLight3D" parent="Lights"]
-position = Vector3(0.5, 1.9, 4.2)
+position = Vector3(0.5, 1.8, 4.1)
 light_energy = 0.9
 omni_range = 3.0
 
@@ -130,7 +108,7 @@ swatch = &"light_cabin"
 stealth_swatch = &"light_stealth_red"
 
 [node name="CoveLeft" type="SpotLight3D" parent="Lights"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1, 2.45, 1.4)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.95, 1.95, 1.4)
 rotation_degrees = Vector3(-50, 90, 0)
 light_energy = 1.2
 spot_range = 4.0
@@ -142,7 +120,7 @@ swatch = &"light_cabin"
 stealth_swatch = &"light_stealth_red"
 
 [node name="CoveRight" type="SpotLight3D" parent="Lights"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1, 2.45, 1.4)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.95, 1.95, 1.4)
 rotation_degrees = Vector3(-50, -90, 0)
 light_energy = 1.2
 spot_range = 4.0
@@ -153,15 +131,35 @@ script = ExtResource("palette_light")
 swatch = &"light_cabin"
 stealth_swatch = &"light_stealth_red"
 
+[node name="ScannerLight" type="OmniLight3D" parent="Lights"]
+position = Vector3(0.8, 1.9, 3.5)
+light_energy = 0.5
+omni_range = 2.0
+
+[node name="PaletteLight" type="Node" parent="Lights/ScannerLight"]
+script = ExtResource("palette_light")
+swatch = &"light_cabin"
+stealth_swatch = &"light_stealth_red"
+
+[node name="StatusBoardLight" type="OmniLight3D" parent="Lights"]
+position = Vector3(0, 1.9, 1.2)
+light_energy = 0.5
+omni_range = 2.0
+
+[node name="PaletteLight" type="Node" parent="Lights/StatusBoardLight"]
+script = ExtResource("palette_light")
+swatch = &"light_cabin"
+stealth_swatch = &"light_stealth_red"
+
 [node name="Fascia" type="Node3D" parent="."]
 
 [node name="FasciaLeft" type="MeshInstance3D" parent="Fascia"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.88, 2.5, 1.4)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.9, 1.95, 1.4)
 mesh = SubResource("fascia_mesh")
 surface_material_override/0 = SubResource("fitting")
 
 [node name="FasciaRight" type="MeshInstance3D" parent="Fascia"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.88, 2.5, 1.4)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.9, 1.95, 1.4)
 mesh = SubResource("fascia_mesh")
 surface_material_override/0 = SubResource("fitting")
 
@@ -179,9 +177,21 @@ swatch = &"light_work_white"
 [node name="Stations" type="Node3D" parent="."]
 
 [node name="Pilot" type="Node3D" parent="Stations"]
+script = ExtResource("station_placement")
+station_id = &"pilot"
+placements = {
+"../Maps/PilotHolo": Vector3(0, 0.2, -0.85),
+"CenterPod": Vector3(0, 0.45, -0.7),
+"Dimmer": Vector3(-0.62, 0.3, 0.1),
+"LeftPod": Vector3(-0.6, 0.75, -0.55),
+"Planes": Vector3(0, 0.2, -0.6),
+"RightPod": Vector3(0.6, 0.75, -0.55),
+"Rudder": Vector3(0, 0.2, -0.6),
+"Seat": Vector3(0, 0, 0),
+"Throttle": Vector3(0.58, 0.5, -0.05)
+}
 
 [node name="Seat" type="Node3D" parent="Stations/Pilot" node_paths=PackedStringArray("throttle", "rudder", "planes", "flood_valve", "blow_valve", "sit_point")]
-position = Vector3(0, -0.6, -0.9)
 script = ExtResource("4")
 throttle = NodePath("../Throttle")
 rudder = NodePath("../Rudder")
@@ -203,7 +213,6 @@ position = Vector3(0, 0.55, 0)
 shape = SubResource("pilot_seat_grab")
 
 [node name="Throttle" type="Node3D" parent="Stations/Pilot" node_paths=PackedStringArray("indicator")]
-position = Vector3(0.58, -0.1, -0.95)
 script = ExtResource("5")
 indicator = NodePath("Lever")
 indicator_axis = Vector3(-1, 0, 0)
@@ -224,22 +233,18 @@ position = Vector3(0, 0.3, 0)
 mesh = SubResource("throttle_knob")
 
 [node name="Rudder" type="Node3D" parent="Stations/Pilot"]
-position = Vector3(0, -0.4, -1.5)
 script = ExtResource("5")
 label = "rudder"
 
 [node name="Planes" type="Node3D" parent="Stations/Pilot"]
-position = Vector3(0, -0.4, -1.5)
 script = ExtResource("5")
 label = "dive planes"
 
 [node name="Dimmer" parent="Stations/Pilot" instance=ExtResource("12")]
-position = Vector3(-0.62, -0.3, -0.8)
 initial_value = 1.0
 label = "cabin lights"
 
 [node name="LeftPod" type="Node3D" parent="Stations/Pilot"]
-position = Vector3(-0.72, 0.12, -2.0)
 rotation = Vector3(-0.28, 0.55, 0)
 scale = Vector3(0.85, 0.85, 0.85)
 
@@ -269,7 +274,6 @@ position = Vector3(0.25, 0, 0)
 radius = 0.1
 
 [node name="RightPod" type="Node3D" parent="Stations/Pilot"]
-position = Vector3(0.72, 0.12, -2.0)
 rotation = Vector3(-0.28, -0.55, 0)
 scale = Vector3(0.85, 0.85, 0.85)
 
@@ -297,7 +301,6 @@ sweep_deg = 240.0
 radius = 0.1
 
 [node name="CenterPod" type="Node3D" parent="Stations/Pilot"]
-position = Vector3(0, -0.2, -2.0)
 rotation = Vector3(-0.28, 0, 0)
 scale = Vector3(0.85, 0.85, 0.85)
 
@@ -334,131 +337,51 @@ max_value = 1.0
 sweep_deg = 180.0
 radius = 0.08
 
-[node name="Sonar" type="Node3D" parent="Stations" node_paths=PackedStringArray("headset", "wheel")]
-script = ExtResource("9")
-headset = NodePath("Headset")
-wheel = NodePath("Wheel")
+[node name="SonarPlacement" type="Node3D" parent="Stations"]
+script = ExtResource("station_placement")
+station_id = &"sonar"
+placements = {
+"../Sonar": Vector3(0.135, 0, -0.35)
+}
 
-[node name="Seat" type="Node3D" parent="Stations/Sonar" node_paths=PackedStringArray("headset", "sit_point")]
-position = Vector3(1.2, 0, 0.8)
-rotation = Vector3(0, 3.14159, 0)
-script = ExtResource("13")
-headset = NodePath("../Headset")
-sit_point = NodePath("SitPoint")
-eye_height = 1.2
-label = "sonar seat"
-
-[node name="SitPoint" type="Node3D" parent="Stations/Sonar/Seat"]
-
-[node name="Stool" type="MeshInstance3D" parent="Stations/Sonar/Seat"]
-position = Vector3(0, 0.25, 0)
-mesh = SubResource("stool")
-
-[node name="Back" type="MeshInstance3D" parent="Stations/Sonar/Seat"]
-position = Vector3(0, 0.72, 0.22)
-mesh = SubResource("stool_back")
-
-[node name="Body" type="StaticBody3D" parent="Stations/Sonar/Seat"]
-
-[node name="Shape" type="CollisionShape3D" parent="Stations/Sonar/Seat/Body"]
-position = Vector3(0, 0.25, 0)
-shape = SubResource("stool_body")
-
-[node name="Grab" type="StaticBody3D" parent="Stations/Sonar/Seat"]
-collision_layer = 2
-collision_mask = 0
-
-[node name="Shape" type="CollisionShape3D" parent="Stations/Sonar/Seat/Grab"]
-position = Vector3(0, 0.5, 0)
-shape = SubResource("stool_grab")
-
-[node name="Headset" parent="Stations/Sonar" instance=ExtResource("10")]
-position = Vector3(1.55, 1.3, 1.62)
-
-[node name="Wheel" parent="Stations/Sonar" node_paths=PackedStringArray("wheel") instance=ExtResource("11")]
-position = Vector3(0.945, 0.83, 1.54)
-wheel = NodePath("../../../Model/Mesh/HydrophoneWheel")
-label = "hydrophone wheel"
-
-[node name="BearingGauge" type="Node3D" parent="Stations/Sonar"]
-position = Vector3(0.4, 1.4, 1.84)
-rotation = Vector3(0, 3.14159, 0)
-script = ExtResource("3")
-source_group = &"sonar_readouts"
-readout = &"bearing"
-title = "BEARING"
-max_value = 360.0
-wraps = true
-wrap_labels = PackedStringArray("FWD", "STBD", "AFT", "PORT")
-radius = 0.13
-
-[node name="SignalGauge" type="Node3D" parent="Stations/Sonar"]
-position = Vector3(0.05, 1.4, 1.84)
-rotation = Vector3(0, 3.14159, 0)
-script = ExtResource("3")
-source_group = &"sonar_readouts"
-readout = &"signal"
-title = "SIGNAL"
-min_value = 40.0
-max_value = 110.0
-radius = 0.055
-
-[node name="BearingRateGauge" type="Node3D" parent="Stations/Sonar"]
-position = Vector3(0.75, 1.4, 1.84)
-rotation = Vector3(0, 3.14159, 0)
-script = ExtResource("3")
-source_group = &"sonar_readouts"
-readout = &"bearing_rate"
-title = "BRG RATE"
-min_value = -120.0
-max_value = 120.0
-sweep_deg = 180.0
-radius = 0.055
-
-[node name="NoiseGauge" parent="Stations/Sonar" instance=ExtResource("6")]
-position = Vector3(0.4, 1.85, 1.84)
-rotation = Vector3(0, 3.14159, 0)
-
-[node name="BearingScreen" type="MeshInstance3D" parent="Stations/Sonar"]
-script = ExtResource("flat_chart")
-
-[node name="SonarPanel" type="Node3D" parent="Stations/Sonar" node_paths=PackedStringArray("model", "screen", "signal_gauge", "rate_gauge")]
-script = ExtResource("sonar_panel")
-model = NodePath("../../../Model")
-screen = NodePath("../BearingScreen")
-signal_gauge = NodePath("../SignalGauge")
-rate_gauge = NodePath("../BearingRateGauge")
+[node name="Sonar" parent="Stations" instance=ExtResource("sonar_console")]
 
 [node name="Ballast" type="Node3D" parent="Stations"]
+script = ExtResource("station_placement")
+station_id = &"ballast"
+placements = {
+"BlowLabel": Vector3(-0.26, 0.72, 0.25),
+"BlowValve": Vector3(-0.2, 1.0, 0.25),
+"FloodLabel": Vector3(-0.26, 0.72, -0.25),
+"FloodValve": Vector3(-0.2, 1.0, -0.25),
+"NoiseGauge": Vector3(-0.18, 1.95, 0),
+"TankGauge": Vector3(-0.26, 1.55, -0.25),
+"AirGauge": Vector3(-0.26, 1.55, 0.25)
+}
 
 [node name="FloodValve" parent="Stations/Ballast" instance=ExtResource("2")]
-position = Vector3(-1.84, 1.0, 1.0)
 rotation = Vector3(0, 1.5708, 0)
 turns_full_range = 2.0
 label = "flood valve"
 
 [node name="BlowValve" parent="Stations/Ballast" instance=ExtResource("2")]
-position = Vector3(-1.84, 1.0, 1.5)
 rotation = Vector3(0, 1.5708, 0)
 turns_full_range = 2.0
 label = "blow valve"
 
 [node name="FloodLabel" type="Label3D" parent="Stations/Ballast"]
-position = Vector3(-1.9, 0.72, 1.0)
 rotation = Vector3(0, 1.5708, 0)
 pixel_size = 0.002
 text = "FLOOD"
 modulate = Color(0.5, 0.75, 0.95, 1)
 
 [node name="BlowLabel" type="Label3D" parent="Stations/Ballast"]
-position = Vector3(-1.9, 0.72, 1.5)
 rotation = Vector3(0, 1.5708, 0)
 pixel_size = 0.002
 text = "BLOW"
 modulate = Color(0.95, 0.6, 0.45, 1)
 
 [node name="TankGauge" type="Node3D" parent="Stations/Ballast"]
-position = Vector3(-1.9, 1.55, 1.0)
 rotation = Vector3(0, 1.5708, 0)
 script = ExtResource("3")
 readout = &"tank_fraction"
@@ -467,7 +390,6 @@ max_value = 1.0
 sweep_deg = 180.0
 
 [node name="AirGauge" type="Node3D" parent="Stations/Ballast"]
-position = Vector3(-1.9, 1.55, 1.5)
 rotation = Vector3(0, 1.5708, 0)
 script = ExtResource("3")
 readout = &"air_fraction"
@@ -476,19 +398,22 @@ max_value = 1.0
 sweep_deg = 180.0
 
 [node name="NoiseGauge" parent="Stations/Ballast" instance=ExtResource("6")]
-position = Vector3(-1.82, 1.95, 1.25)
 rotation = Vector3(0, 1.5708, 0)
 
 [node name="Scanner" type="Node3D" parent="Stations"]
+script = ExtResource("station_placement")
+station_id = &"scanner"
+placements = {
+"Switch": Vector3(0.5, 1.1, 0),
+"ProgressGauge": Vector3(0.4, 1.6, 0)
+}
 
 [node name="Switch" parent="Stations/Scanner" instance=ExtResource("8")]
-position = Vector3(-1.84, 1.1, 0.25)
-rotation = Vector3(0, 0, -1.5708)
+rotation = Vector3(0, 0, 1.5708)
 label = "scanner switch"
 
 [node name="ProgressGauge" type="Node3D" parent="Stations/Scanner"]
-position = Vector3(-1.9, 1.6, 0.25)
-rotation = Vector3(0, 1.5708, 0)
+rotation = Vector3(0, -1.5708, 0)
 script = ExtResource("3")
 source_group = &"scan_readouts"
 readout = &"progress"
@@ -497,10 +422,14 @@ max_value = 1.0
 sweep_deg = 180.0
 
 [node name="Engineering" type="Node3D" parent="Stations"]
+script = ExtResource("station_placement")
+station_id = &"engineering"
+placements = {
+"EngineGauge": Vector3(0.2, 1.55, 0)
+}
 
 [node name="EngineGauge" type="Node3D" parent="Stations/Engineering"]
-position = Vector3(0, 1.55, 3.9)
-rotation = Vector3(0, 3.14159, 0)
+rotation = Vector3(0, -1.5708, 0)
 script = ExtResource("3")
 readout = &"engine_output"
 title = "ENGINE"
@@ -509,14 +438,19 @@ max_value = 1.0
 sweep_deg = 180.0
 
 [node name="Bilge" type="Node3D" parent="Stations"]
+script = ExtResource("station_placement")
+station_id = &"bilge"
+placements = {
+"BilgeGauge": Vector3(-0.8, 1.6, -0.3),
+"NoiseGauge": Vector3(-0.8, 1.6, 0.2),
+"Pump": Vector3(-0.75, 1.1, -0.3)
+}
 
 [node name="Pump" parent="Stations/Bilge" instance=ExtResource("8")]
-position = Vector3(-1.84, 1.1, 2.8)
 rotation = Vector3(0, 0, -1.5708)
 label = "bilge pump switch"
 
 [node name="BilgeGauge" type="Node3D" parent="Stations/Bilge"]
-position = Vector3(-1.9, 1.6, 2.8)
 rotation = Vector3(0, 1.5708, 0)
 script = ExtResource("3")
 readout = &"bilge_water_t"
@@ -525,11 +459,16 @@ max_value = 8.0
 sweep_deg = 180.0
 
 [node name="NoiseGauge" parent="Stations/Bilge" instance=ExtResource("6")]
-position = Vector3(-1.9, 1.6, 3.3)
 rotation = Vector3(0, 1.5708, 0)
 
+[node name="StatusBoardPlacement" type="Node3D" parent="Stations"]
+script = ExtResource("station_placement")
+station_id = &"status_board"
+placements = {
+"../StatusBoard": Vector3(0, 2.1, -0.05)
+}
+
 [node name="StatusBoard" type="Label3D" parent="Stations"]
-position = Vector3(-1.0, 1.45, 1.83)
 rotation = Vector3(0, 3.14159, 0)
 pixel_size = 0.0016
 font_size = 40
@@ -541,33 +480,38 @@ autowrap_mode = 2
 modulate = Color(0.6, 0.9, 0.85, 1)
 
 [node name="Leaks" type="Node3D" parent="."]
+script = ExtResource("station_placement")
+station_id = &"ballast"
+placements = {
+"AftPortLow": Vector3(-0.3, 0.45, 0.65)
+}
 
 [node name="PortFore" parent="Leaks" instance=ExtResource("7")]
-position = Vector3(-1.88, 1.85, 0.6)
+position = Vector3(-1.65, 1.5, 0.6)
 rotation = Vector3(0, 1.5708, 0)
 
 [node name="StbdFore" parent="Leaks" instance=ExtResource("7")]
-position = Vector3(1.88, 1.85, 0.1)
+position = Vector3(1.65, 1.5, 0.1)
 rotation = Vector3(0, -1.5708, 0)
 
 [node name="Overhead" parent="Leaks" instance=ExtResource("7")]
-position = Vector3(0.4, 2.85, 1.2)
+position = Vector3(0.4, 2.2, 1.2)
 rotation = Vector3(1.5708, 0, 0)
 
 [node name="AftPortLow" parent="Leaks" instance=ExtResource("7")]
-position = Vector3(-1.82, 0.45, 3.9)
 rotation = Vector3(0, 1.5708, 0)
 
 [node name="Maps" type="Node3D" parent="Stations"]
 
 [node name="PilotHolo" type="Node3D" parent="Stations/Maps"]
-position = Vector3(0, -0.385, -2.2)
 script = ExtResource("15")
 heading_up = true
-meters_per_unit = 240.0
-clip_rx = 0.47
-clip_rz = 0.47
-height = 0.75
+meters_per_unit = 120.0
+clip_rx = 0.1
+clip_rz = 0.1
+height = 0.01
+contour_count = 6
+marker_size = 0.012
 
 [node name="PilotProjector" type="OmniLight3D" parent="Stations/Maps/PilotHolo"]
 position = Vector3(0, 0.05, 0)
@@ -606,7 +550,9 @@ min_meters_per_unit = 60.0
 max_meters_per_unit = 900.0
 clip_rx = 0.6
 clip_rz = 0.36
-height = 0.6
+height = 0.03
+d_shaped = true
+back_panel = true
 table_rotation_deg = 90.0
 marker_size = 0.022
 

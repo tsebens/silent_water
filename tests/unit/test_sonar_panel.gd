@@ -1,14 +1,12 @@
 extends TestCase
-## The sonar panel: the bearing chart is a flat viewport screen on the large
-## bezel, and the SIGNAL and BRG RATE dials sit in the two small bezels.
+## The sonar desk in the sub: the generated sonar_console is the whole station (bearing chart screen, dials,
+## trackball, headset, seat). Nothing of the old model-mounted panel remains.
 
 const GAME_SCENE: PackedScene = preload("res://src/game/game.tscn")
-const SCREEN_PART: String = "Bezel"
-const SMALL_PARTS: PackedStringArray = ["Bezel2", "Bezel3"]
 
 var game: Game
 var model: SubModel
-var sonar: Node
+var sonar: SonarStation
 
 
 func before_each() -> void:
@@ -16,7 +14,7 @@ func before_each() -> void:
 	runner.add_child(game)
 	game.start_session()
 	model = game.get_node("Interior/Model") as SubModel
-	sonar = game.get_node("Interior/Stations/Sonar")
+	sonar = game.get_node("Interior/Stations/Sonar") as SonarStation
 
 
 func after_each() -> void:
@@ -24,72 +22,45 @@ func after_each() -> void:
 	game.free()
 
 
-## The panel mounts its parts one frame after ready.
-func _mounted() -> void:
-	await runner.get_tree().process_frame
+func _faces_seat(node: Node3D) -> bool:
+	var seat: Node3D = sonar.get_node("Seat") as Node3D
+	var to_seat: Vector3 = (seat.global_position + Vector3(0, 1.0, 0) - node.global_position).normalized()
+	return (node.global_transform.basis * Vector3(0, 0, 1)).normalized().dot(to_seat) > 0.6
 
 
-func _radius(part: MeshInstance3D) -> float:
-	return part.mesh.get_aabb().size.x
+func test_the_hull_has_no_old_panel_parts() -> void:
+	for n: String in ["Bezel", "Bezel2", "Bezel3", "HydrophoneWheel", "Display"]:
+		expect(model.part(n) == null, "%s is gone" % n)
+	expect(sonar.find_child("SonarPanel", true, false) == null, "no SonarPanel node")
+	expect(sonar.get_node_or_null("BearingScreen") == null, "no loose BearingScreen")
 
 
-func test_pinned_bezels_are_the_large_one_and_two_small_ones() -> void:
-	await _mounted()
-	var large: MeshInstance3D = model.part(SCREEN_PART)
-	expect(large != null, "large bezel exists")
-	for n: String in SMALL_PARTS:
-		var small: MeshInstance3D = model.part(n)
-		expect(small != null and large != null and _radius(small) < _radius(large) * 0.5, "%s is a small bezel" % n)
-	# All three are at the sonar panel, beside the hydrophone wheel.
-	var wheel: Node3D = model.part("HydrophoneWheel")
-	for n: String in [SCREEN_PART] + Array(SMALL_PARTS):
-		expect(model.part(n).position.distance_to(wheel.position) < 0.6, "%s is at the sonar panel" % n)
+func test_the_station_is_the_generated_console() -> void:
+	expect(sonar.scene_file_path == "res://assets/models/stations/sonar_console/sonar_console.tscn", "console instance")
+	expect(sonar.wheel is Trackball, "hydrophone is the trackball")
+	expect(sonar.headset != null, "headset wired")
+	for n: String in ["Seat", "Headset", "Controls/Trackball", "Controls/ActiveSonar"]:
+		expect(sonar.get_node_or_null(n) != null, "%s present" % n)
 
 
-func test_screen_is_a_viewport_quad_on_the_large_bezel() -> void:
-	await _mounted()
-	var screen: FlatChart = sonar.get_node_or_null("BearingScreen") as FlatChart
-	expect(screen == null, "no longer a Stations/Sonar child")
-	var large: MeshInstance3D = model.part(SCREEN_PART)
-	screen = large.get_node_or_null("BearingScreen") as FlatChart
-	expect(screen != null, "screen is a child of the large bezel")
+func test_screen_is_a_viewport_quad_facing_the_seat() -> void:
+	var screen: FlatChart = sonar.get_node_or_null("ScreenMount/Chart") as FlatChart
+	expect(screen != null, "chart is on the console's screen mount")
 	if screen == null:
 		return
 	expect(screen.mesh is QuadMesh, "flat quad")
 	var mat: StandardMaterial3D = screen.material_override as StandardMaterial3D
 	expect(mat != null and mat.albedo_texture is ViewportTexture, "SubViewport texture")
 	expect(screen.get_node_or_null("Viewport") is SubViewport, "has a SubViewport")
-	expect(screen.position.z < 0.0 and large.mesh.get_aabb().has_point(screen.position), "on the seat-facing face, inside the bezel bounds")
-	# Faces the seat (sub-local +Z), not away from it.
-	expect(screen.global_transform.basis * Vector3(0, 0, 1) != Vector3.ZERO)
-	var normal: Vector3 = model.global_transform.basis.inverse() * (screen.global_transform.basis * Vector3(0, 0, 1))
-	expect(normal.z < -0.9, "quad normal faces the seat (%s)" % normal)
+	expect(_faces_seat(screen), "quad faces the seat")
 
 
-func test_hologram_node_is_gone_and_gauges_left_the_station_root() -> void:
-	await _mounted()
-	expect(sonar.find_child("BearingDisplay", true, false) == null, "no BearingDisplay")
-	expect(sonar.find_child("BearingBezel", true, false) == null, "no placeholder bezel")
-	expect(sonar.get_node_or_null("SignalGauge") == null, "SIGNAL not a Sonar child")
-	expect(sonar.get_node_or_null("BearingRateGauge") == null, "BRG RATE not a Sonar child")
-	for n: String in ["NoiseGauge", "BearingGauge", "Seat", "Wheel", "Headset"]:
-		expect(sonar.get_node_or_null(n) != null, "%s stays" % n)
-
-
-func test_gauges_sit_in_the_small_bezels() -> void:
-	await _mounted()
-	var small_a: MeshInstance3D = model.part(SMALL_PARTS[0])
-	var small_b: MeshInstance3D = model.part(SMALL_PARTS[1])
-	var gauge_a: Gauge = small_a.get_node_or_null("SignalGauge") as Gauge
-	var gauge_b: Gauge = small_b.get_node_or_null("BearingRateGauge") as Gauge
-	expect(gauge_a != null, "SignalGauge in %s" % SMALL_PARTS[0])
-	expect(gauge_b != null, "BearingRateGauge in %s" % SMALL_PARTS[1])
-	for pair: Array in [[gauge_a, small_a], [gauge_b, small_b]]:
-		var g: Gauge = pair[0] as Gauge
-		var part: MeshInstance3D = pair[1] as MeshInstance3D
-		if g == null:
-			continue
-		expect(part.mesh.get_aabb().has_point(g.position), "%s inside its bezel bounds (%s)" % [g.name, g.position])
-		expect(g.radius <= _radius(part) * 0.5, "%s fits the bezel" % g.name)
-		var normal: Vector3 = model.global_transform.basis.inverse() * (g.global_transform.basis * Vector3(0, 0, 1))
-		expect(normal.z < -0.9, "%s faces the seat" % g.name)
+func test_gauges_face_the_seat_and_the_trackball_is_in_reach() -> void:
+	var eye: Vector3 = (sonar.get_node("Seat/Model/SitPoint") as Node3D).global_position + Vector3(0, 1.2, 0)
+	for n: String in ["SignalGauge", "BearingGauge", "NoiseGauge", "BearingRateGauge"]:
+		var g: Node3D = sonar.get_node_or_null("Gauges/" + n) as Node3D
+		expect(g != null, "%s present" % n)
+		if g != null:
+			expect(_faces_seat(g), "%s faces the seat" % n)
+	var ball: Node3D = sonar.wheel
+	expect(ball.global_position.distance_to(eye) < 0.75, "trackball within reach of the seated eye")

@@ -6,6 +6,13 @@ extends Node3D
 ## listening cone. Everything is clipped to an elliptic cylinder standing on
 ## this node (local +Y up).
 ##
+## Display model: a low terrain relief. With [member relief] on (the
+## default) the chart is a thin sheet of glowing [code]light_readout[/code]
+## contours on a dark base, [member height] is the relief's full height (a few
+## centimetres at most), and pins and contacts are small glowing dots. The
+## outline is a disc or a D ([member d_shaped]) of [member clip_rx] x
+## [member clip_rz]. Turn [member relief] off for the old tall volume.
+##
 ## Two layouts:
 ## - heading-up (pilot map): centred on the sub, map turns so the bow points
 ##   away from the pilot
@@ -16,6 +23,9 @@ const SONAR_CONE_RANGE_M: float = 300.0
 const SONAR_CONE_HALF_ANGLE_DEG: float = 30.0
 ## Vertical squash of the listening cone (a horizontal fan).
 const CONE_FLATTEN: float = 0.25
+## Room above the relief for dots, display metres.
+const RELIEF_MARGIN: float = 0.02
+const OUTLINE_SEGMENTS: int = 48
 
 @export var game: Game
 @export var heading_up: bool = true
@@ -25,11 +35,37 @@ const CONE_FLATTEN: float = 0.25
 @export var max_meters_per_unit: float = 1000.0
 @export var clip_rx: float = 0.48
 @export var clip_rz: float = 0.48
-@export var height: float = 0.7
+## Height of the display: the relief's full height, or the volume's.
+@export var height: float = 0.03
+## Draw a thin terrain relief on a dark base rather than a tall volume.
+@export var relief: bool = true
+## World metres of depth that [member height] spans (relief only).
+@export var relief_depth_m: float = 230.0
+## World Y that sits on the base of the relief.
+@export var relief_floor_y: float = -230.0
+## Contour lines per relief height.
+@export var contour_count: int = 10
+## Outline is a D (flat edge at the back, -Z) rather than a full disc/ellipse.
+@export var d_shaped: bool = false
+## Normalised Z (of [member clip_rz]) of the D's flat edge.
+@export var d_flat_z: float = -0.55
 ## Rotation of the chart on the table (degrees about +Y), table layout only.
 @export var table_rotation_deg: float = 0.0
 ## Centre on the sub; otherwise centre on [member focus].
 @export var follow_sub: bool = true
+## Stand a translucent curved panel of light along the back edge (table only).
+## Plain backdrop; instruments can later mount on [member BackPanel] "Surface".
+@export var back_panel: bool = false
+## Radius of the panel's curve (display metres); its centre lies toward the viewer.
+@export var panel_radius: float = 3.0
+## Chord width of the panel (display metres).
+@export var panel_width: float = 0.9
+## Height of the panel above the display's base (display metres).
+@export var panel_height: float = 0.4
+## Gap between the back edge of the outline and the panel's centre line.
+@export var panel_gap: float = 0.03
+## Opacity of the panel's glow.
+@export var panel_alpha: float = 0.12
 ## Scale of markers (display metres).
 @export var marker_size: float = 0.03
 ## Draw the fading sonar-mark blobs ([member MapModel.marks]).
@@ -50,6 +86,7 @@ var _sub_arrow: MeshInstance3D
 var _objective: MeshInstance3D
 var _cone: MeshInstance3D
 var _map_model: MapModel
+var _base: MeshInstance3D
 var _shader: Shader = preload("res://src/map/holo.gdshader")
 
 
@@ -70,6 +107,10 @@ func _ready() -> void:
 	_marks_root = Node3D.new()
 	_marks_root.name = "Marks"
 	_markers.add_child(_marks_root)
+	if relief:
+		_build_base()
+	if back_panel:
+		_build_back_panel()
 	_sub_arrow = _marker(_arrow_mesh(), readout_color().lightened(0.5), 0.5)
 	_objective = _marker(_diamond_mesh(), Palette.main().color(&"light_marker"), 0.45)
 	_cone = _marker(null, readout_color(), 0.05)
@@ -79,6 +120,95 @@ func _ready() -> void:
 ## Line and text colour of the chart: the palette's readout cyan.
 static func readout_color() -> Color:
 	return Palette.main().color(&"light_readout")
+
+
+## Highest point of the relief above the display's base (display metres).
+func relief_max_height() -> float:
+	return relief_depth_m * _vertical_scale() if relief else height
+
+
+func _vertical_scale() -> float:
+	return height / relief_depth_m if relief_depth_m > 0.0 else 0.0
+
+
+## Outline of the display in its local XZ plane, counter-clockwise from +X.
+## A D keeps the ellipse but flattens the back to [param flat_z] (normalised).
+static func outline(rx: float, rz: float, d: bool, flat_z: float, n: int = OUTLINE_SEGMENTS) -> PackedVector2Array:
+	var pts: PackedVector2Array = PackedVector2Array()
+	for i: int in range(n):
+		var a: float = TAU * float(i) / float(n)
+		var zn: float = sin(a)
+		if d:
+			zn = maxf(zn, flat_z)
+		pts.append(Vector2(cos(a) * rx, zn * rz))
+	return pts
+
+
+## The dark plate the contours sit on.
+func _build_base() -> void:
+	var pts: PackedVector2Array = outline(clip_rx, clip_rz, d_shaped, d_flat_z)
+	var st: SurfaceTool = SurfaceTool.new()
+	st.begin(Mesh.PRIMITIVE_TRIANGLES)
+	st.set_normal(Vector3.UP)
+	var centre: Vector3 = Vector3.ZERO
+	for i: int in range(pts.size()):
+		var a: Vector2 = pts[i]
+		var b: Vector2 = pts[(i + 1) % pts.size()]
+		st.add_vertex(centre)
+		st.add_vertex(Vector3(b.x, 0, b.y))
+		st.add_vertex(Vector3(a.x, 0, a.y))
+	var mat: StandardMaterial3D = StandardMaterial3D.new()
+	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	mat.albedo_color = Palette.main().color(&"info_black")
+	_base = MeshInstance3D.new()
+	_base.name = "Base"
+	_base.mesh = st.commit()
+	_base.material_override = mat
+	_base.position = Vector3(0, -0.001, 0)
+	_base.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	add_child(_base)
+
+
+## The back panel: a curved sheet of faint light standing behind the relief,
+## concave toward the viewer. Its "Surface" child is a clear mount point at the
+## panel's centre, facing the viewer (+Z), for content added later.
+func _build_back_panel() -> void:
+	var half: float = clampf(panel_width * 0.5, 0.01, panel_radius * 0.99)
+	var half_angle: float = asin(half / panel_radius)
+	var back_z: float = (d_flat_z if d_shaped else -1.0) * clip_rz - panel_gap
+	# Circle centre sits toward the viewer so the apex touches back_z.
+	var centre_z: float = back_z + panel_radius
+	var st: SurfaceTool = SurfaceTool.new()
+	st.begin(Mesh.PRIMITIVE_TRIANGLES)
+	var segs: int = 24
+	for i: int in range(segs):
+		var a0: float = lerpf(-half_angle, half_angle, float(i) / float(segs))
+		var a1: float = lerpf(-half_angle, half_angle, float(i + 1) / float(segs))
+		var p0: Vector3 = Vector3(sin(a0) * panel_radius, 0.0, centre_z - cos(a0) * panel_radius)
+		var p1: Vector3 = Vector3(sin(a1) * panel_radius, 0.0, centre_z - cos(a1) * panel_radius)
+		var up: Vector3 = Vector3(0, panel_height, 0)
+		st.set_normal(Vector3(0, 0, 1))
+		for v: Vector3 in [p0, p0 + up, p1, p1, p0 + up, p1 + up]:
+			st.add_vertex(v)
+	var mat: StandardMaterial3D = StandardMaterial3D.new()
+	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	mat.blend_mode = BaseMaterial3D.BLEND_MODE_ADD
+	mat.cull_mode = BaseMaterial3D.CULL_DISABLED
+	mat.depth_draw_mode = BaseMaterial3D.DEPTH_DRAW_DISABLED
+	var c: Color = readout_color()
+	c.a = panel_alpha
+	mat.albedo_color = c
+	var panel: MeshInstance3D = MeshInstance3D.new()
+	panel.name = "BackPanel"
+	panel.mesh = st.commit()
+	panel.material_override = mat
+	panel.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	add_child(panel)
+	var surface: Node3D = Node3D.new()
+	surface.name = "Surface"
+	surface.position = Vector3(0, panel_height * 0.5, back_z)
+	panel.add_child(surface)
 
 
 ## World metres represented by one display metre, clamped to the zoom range.
@@ -120,7 +250,13 @@ func _process(_delta: float) -> void:
 	var center: Vector3 = sub_pos if follow_sub else focus
 	var s: float = 1.0 / meters_per_unit
 	var b: Basis = display_basis()
-	_content.transform = Transform3D(b.scaled(Vector3.ONE * s), Vector3(0, height * 0.5, 0) - (b * center) * s)
+	if relief:
+		# Flatten depth into the thin relief: Y is (depth - floor) squeezed to height.
+		var vs: float = _vertical_scale()
+		var flat: Vector3 = Vector3(center.x, 0.0, center.z)
+		_content.transform = Transform3D(b.scaled(Vector3(s, vs, s)), Vector3(0, -relief_floor_y * vs, 0) - (b * flat) * s)
+	else:
+		_content.transform = Transform3D(b.scaled(Vector3.ONE * s), Vector3(0, height * 0.5, 0) - (b * center) * s)
 	_update_clip()
 	_update_markers(sub_pos)
 
@@ -215,7 +351,8 @@ func _update_clip() -> void:
 		m.set_shader_parameter(&"clip_axis_x", g.basis.x.normalized())
 		m.set_shader_parameter(&"clip_rx", clip_rx * g.basis.x.length())
 		m.set_shader_parameter(&"clip_rz", clip_rz * g.basis.z.length())
-		m.set_shader_parameter(&"clip_height", height * g.basis.y.length())
+		m.set_shader_parameter(&"clip_height", (height + (RELIEF_MARGIN if relief else 0.0)) * g.basis.y.length())
+		m.set_shader_parameter(&"clip_flat_z", d_flat_z if d_shaped else -1.0)
 
 
 ## Copies the dive site's visible geometry, plus a faint water surface.
@@ -224,7 +361,7 @@ func _build_terrain() -> void:
 	if site == null:
 		return
 	_terrain_built = true
-	var mat: ShaderMaterial = _holo_material(readout_color(), 0.025, 0.03)
+	var mat: ShaderMaterial = _terrain_material()
 	# The site offers a lighter surface for maps; the rest is copied as-is.
 	if site.has_method(&"map_meshes"):
 		for pair: Array in site.call(&"map_meshes"):
@@ -235,6 +372,8 @@ func _build_terrain() -> void:
 			mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 			_content.add_child(mi)
 	_copy_meshes(site, site.transform, mat)
+	if relief:
+		return
 	var water: MeshInstance3D = MeshInstance3D.new()
 	var plane: PlaneMesh = PlaneMesh.new()
 	plane.size = Vector2(800, 1200)
@@ -268,11 +407,11 @@ func _rebuild_pins() -> void:
 		return
 	for p: Dictionary in _map_model.pins:
 		var kind: int = int(p["kind"])
-		var mesh: Mesh = _ring_mesh() if kind == MapModel.Kind.CONTACT else _pin_mesh()
+		var mesh: Mesh = _dot_mesh() if relief else (_ring_mesh() if kind == MapModel.Kind.CONTACT else _pin_mesh())
 		var mi: MeshInstance3D = MeshInstance3D.new()
 		mi.mesh = mesh
 		mi.scale = Vector3.ONE * marker_size / 0.03
-		mi.material_override = _holo_material(MapModel.kind_color(kind), 0.55, 0.0)
+		mi.material_override = _holo_material(MapModel.kind_color(kind), 0.9 if relief else 0.55, 0.0)
 		mi.set_meta(&"world", p["pos"] as Vector3)
 		mi.set_meta(&"pin_id", int(p["id"]))
 		_pins_root.add_child(mi)
@@ -296,12 +435,22 @@ func _marker(mesh: Mesh, c: Color, a: float) -> MeshInstance3D:
 	return mi
 
 
+func _terrain_material() -> ShaderMaterial:
+	if not relief:
+		return _holo_material(readout_color(), 0.025, 0.03)
+	var m: ShaderMaterial = _holo_material(readout_color(), 0.0, height / float(maxi(contour_count, 1)))
+	m.set_shader_parameter(&"contour_strength", 0.9)
+	m.set_shader_parameter(&"edge_boost", 0.0)
+	return m
+
+
 func _holo_material(c: Color, a: float, contour: float) -> ShaderMaterial:
 	var m: ShaderMaterial = ShaderMaterial.new()
 	m.shader = _shader
 	m.set_shader_parameter(&"holo_color", c)
 	m.set_shader_parameter(&"alpha", a)
 	m.set_shader_parameter(&"contour_spacing", contour)
+	m.set_shader_parameter(&"top_fade", 0.0 if relief else 1.0)
 	_materials.append(m)
 	return m
 
@@ -341,6 +490,16 @@ static func _pin_mesh() -> Mesh:
 	head.height = 0.016
 	st.append_from(head, 0, Transform3D(Basis(), Vector3(0, 0.055, 0)))
 	return st.commit()
+
+
+## A small glowing dot: a pin or a contact on the relief.
+static func _dot_mesh() -> Mesh:
+	var m: SphereMesh = SphereMesh.new()
+	m.radius = 0.006
+	m.height = 0.012
+	m.radial_segments = 10
+	m.rings = 5
+	return m
 
 
 static func _ring_mesh() -> Mesh:

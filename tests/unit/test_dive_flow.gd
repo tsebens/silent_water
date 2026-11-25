@@ -35,6 +35,13 @@ func _frames(n: int) -> void:
 		await runner.get_tree().physics_frame
 
 
+## Height at which the hull floats at rest with its current load: the hull's top just breaks the surface.
+func _floating_y() -> float:
+	var m: SubPhysicsModel = controller.model
+	var height: float = SubPhysicsModel.hull_top() - SubPhysicsModel.hull_bottom()
+	return -SubPhysicsModel.hull_bottom() - m.total_mass_t() / m.displacement_t * height
+
+
 func _hover_over_array() -> void:
 	controller.model.position = CanyonSite.OBJECTIVE_POSITION + Vector3(0, 15, 0)
 	controller.model.velocity = Vector3.ZERO
@@ -82,7 +89,7 @@ func test_progress_drains_when_position_is_lost() -> void:
 
 func test_surfacing_after_scan_completes_the_dive_then_resets() -> void:
 	scan.complete = true
-	controller.model.position = Vector3(0, -0.2, 30)
+	controller.model.position = Vector3(0, _floating_y(), 30)
 	await _frames(int(60 * (DiveDirector.SURFACED_HOLD_SEC + 0.5)))
 	expect_eq(director.phase, DiveDirector.Phase.COMPLETE)
 	expect(director.status_text().contains("DIVE COMPLETE"))
@@ -92,7 +99,7 @@ func test_surfacing_after_scan_completes_the_dive_then_resets() -> void:
 
 
 func test_surfacing_without_scan_does_not_complete() -> void:
-	controller.model.position = Vector3(0, -0.2, 30)
+	controller.model.position = Vector3(0, _floating_y(), 30)
 	await _frames(60 * 5)
 	expect_eq(director.phase, DiveDirector.Phase.DIVING)
 
@@ -109,7 +116,7 @@ func test_cabin_dimmer_dims_cabin_but_not_headlight() -> void:
 	await _frames(2)
 	expect_near(fore.light_energy, bright * CabinLights.MIN_LEVEL, 0.001, "dimmed to near dark")
 	expect_eq(head.light_energy, head_before, "headlight untouched")
-	expect(cabin.cabin_lights().size() == 6, "six cabin lights (four room lights, two coves)")
+	expect(cabin.cabin_lights().size() == 8, "eight cabin lights (four room lights, two coves, scanner and status board spots)")
 
 
 func test_dev_overlay_stats_cover_sub_noise_and_apex() -> void:

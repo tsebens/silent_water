@@ -1,7 +1,7 @@
 [gd_scene format=3]
 
 [ext_resource type="Script" path="res://src/sub/sub_model.gd" id="1"]
-[ext_resource type="PackedScene" path="res://assets/sub/sub_model.glb" id="2"]
+[ext_resource type="PackedScene" path="res://assets/sub/sub_hull.glb" id="2"]
 
 [node name="SubModel" type="Node3D"]
 script = ExtResource("1")
