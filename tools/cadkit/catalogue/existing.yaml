@@ -48,3 +48,6 @@ behaviours:                           # scripts a generated scene may use, contr
   - {script: Wearable, file: res://src/interact/wearable.gd, does: picked up and worn}
   - {script: PushButton, file: res://src/interact/push_button.gd, does: "momentary press; springs back (#345)"}
   - {script: Trackball, file: res://src/sonar/trackball.gd, does: "drag sideways trains the hydrophone (#345)"}
+  - {script: PanBall, file: res://src/interact/pan_ball.gd, does: "trackball that emits a 2D roll delta (not a bearing)"}
+  - {script: ZoomLever, file: res://src/interact/zoom_lever.gd, does: "spring-centred lever emitting a -1..1 zoom rate"}
+  - {script: IndicatorLamp, file: res://src/interact/indicator_lamp.gd, does: "lit/unlit display lamp bound to a bool"}
