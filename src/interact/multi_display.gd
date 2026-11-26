@@ -57,11 +57,19 @@ var values: Array[float] = [0.0, 0.0, 0.0, 0.0]
 
 var viewport: SubViewport
 var canvas: MultiDisplayCanvas
+## False while the DISPLAYS circuit is unpowered: the face goes dark.
+var powered: bool = true
 var _quad: QuadMesh
 var _source: Node
 
 
+func set_powered(on: bool) -> void:
+	powered = on
+	visible = on
+
+
 func _ready() -> void:
+	PowerSink.bind(self, PowerSystem.Circuit.DISPLAYS, set_powered)
 	if preset != null:
 		apply_preset(preset)
 	viewport = SubViewport.new()

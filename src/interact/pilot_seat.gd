@@ -19,7 +19,21 @@ const ZOOM_STEP: float = 1.15
 ## The pilot hologram the mouse wheel zooms.
 @export var holo: HoloMap
 
+## False while the HELM circuit is unpowered: the ballast keys do nothing and
+## ballast falls back to the manual wheels. Steering and planes keep working.
+var helm_powered: bool = true
 var _has_ballast: bool = false
+
+
+func _ready() -> void:
+	super._ready()
+	PowerSink.bind(self, PowerSystem.Circuit.HELM, set_helm_powered)
+
+
+func set_helm_powered(on: bool) -> void:
+	helm_powered = on
+	if not on:
+		_release_ballast()
 
 
 func begin_interaction() -> void:
@@ -43,6 +57,8 @@ func drive(throttle_dir: float, rudder_dir: float, planes_dir: float, ballast_di
 	throttle.drive_input(throttle_dir, delta)
 	rudder.drive_input(rudder_dir, delta)
 	planes.drive_input(planes_dir, delta)
+	if not helm_powered:
+		ballast_dir = 0.0
 	_sync_ballast_hold(ballast_dir)
 	if _has_ballast:
 		var step: float = BALLAST_KEY_RATE * delta

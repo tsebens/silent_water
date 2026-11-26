@@ -6,6 +6,9 @@ extends Node
 
 signal co2_alarm_changed(level: LifeSupportAlarmLevels.Level)
 signal o2_alarm_changed(level: LifeSupportAlarmLevels.Level)
+## The FANS circuit gained or lost power. Life support reacts to this; there is
+## no CO2 simulation yet.
+signal fans_powered_changed(powered: bool)
 
 const GROUP: StringName = &"life_support_readouts"
 
@@ -21,6 +24,8 @@ var co2_ppm: float = 400.0:
 	set(v):
 		co2_ppm = maxf(v, 0.0)
 		_update_alarms()
+## False while the FANS circuit is unpowered: scrubbing has stopped.
+var fans_powered: bool = true
 var saturation_a: float = 0.0
 var saturation_b: float = 0.0
 
@@ -30,11 +35,21 @@ var _o2_alarm: LifeSupportAlarmLevels.Level = LifeSupportAlarmLevels.Level.OFF
 
 func _ready() -> void:
 	add_to_group(GROUP)
+	PowerSink.bind(self, PowerSystem.Circuit.FANS, set_fans_powered)
 	_update_alarms()
+
+
+func set_fans_powered(on: bool) -> void:
+	if fans_powered == on:
+		return
+	fans_powered = on
+	fans_powered_changed.emit(on)
 
 
 func readout(readout_name: StringName) -> float:
 	match readout_name:
+		&"fans_powered":
+			return 1.0 if fans_powered else 0.0
 		&"o2_level":
 			return o2_level
 		&"co2_level":
