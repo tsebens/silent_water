@@ -24,7 +24,7 @@ from cadkit.tscn import NodePath, Scene, SName, Xform
 
 SLUG, GROUP = "pilot_station", "stations"
 USES: list[str] = ["pilot_seat", "operator_seat", "joystick", "multidisplay", "navball", "depth_finder", "gauge",
-                   "guarded_toggle", "indicator_lamp"]
+                   "lit_guarded_toggle", "indicator_lamp"]
 TRIANGLE_BUDGET = 15000     # approved on #482 (the station comes to about 14,300): recorded in the entry
 
 # --- where the station sits in the hull (the program's pilot position and the cockpit floor), mm
@@ -58,7 +58,7 @@ TOGGLE_PITCH, LAMP_PITCH = 84.0, 50.0
 LAMP_PLATE_T = 8.0
 BORE_D, BORE_SIDES = 36.0, 24
 PLATE_W, PLATE_H, PLATE_T = 44.0, 12.0, 2.5       # engraved label plate
-PLATE_DROP_TOGGLE = 58.0 + 12.0     # centre of a toggle's plate below its origin: half its 116 mm base and a margin
+PLATE_DROP_TOGGLE = 88.0 + 12.0     # centre of a toggle's plate below its origin: half its 176 mm (1x3) plate and a margin
 PLATE_DROP_LAMP = 25.0 + 12.0       # below the lamps' 50 mm dark plate      # the navball's bore into the fascia: depth (keep_clear 34) and sides
 
 
@@ -88,7 +88,7 @@ def _facets() -> dict[str, list[tuple[str, float, str]]]:
     df = entry("depth_finder")["footprint_mm"][0]
     md = entry("multidisplay")["footprint_mm"][0]
     nb = entry("navball")["footprint_mm"][0]
-    sw = entry("guarded_toggle")["footprint_mm"][0]
+    sw = entry("lit_guarded_toggle")["footprint_mm"][0]
     m2 = 2 * MARGIN
     return {
         "left": [("DepthFinder", df + m2, "depth finder, with the hologram above it"),
@@ -337,7 +337,7 @@ def hologram_frame(w: Wing) -> tuple[np.ndarray, np.ndarray]:
 # ------------------------------------------------------------------------------------------------------------- anchors
 def anchors(wings: dict[str, Wing]) -> dict[str, dict]:
     """Every instrument anchor: name -> {wing, facet index, slug, along, up, out, size mm (w, h), settings}."""
-    sw, lamp = entry("guarded_toggle"), entry("indicator_lamp")
+    sw, lamp = entry("lit_guarded_toggle"), entry("indicator_lamp")
     out: dict[str, dict] = {}
 
     def add(name, side, facet, slug, w, h, along=0.0, up=0.0, o=0.0, y_range=None, **settings):
@@ -352,7 +352,7 @@ def anchors(wings: dict[str, Wing]) -> dict[str, dict]:
     add("SpeedGauge", "left", 3, "gauge", 2 * sp, _t + sb, up=(sb - _t) / 2, y_range=(-sb, _t), radius=SPEED_R)
     add("Navball", "right", 1, "navball", *entry("navball")["footprint_mm"])
     for k, name in enumerate(("ExternalLightSwitch", "ExternalColourSwitch", "CabinLightSwitch", "CabinColourSwitch")):
-        add(name, "right", 2, "guarded_toggle", *sw["footprint_mm"], along=(k - 1.5) * TOGGLE_PITCH)
+        add(name, "right", 2, "lit_guarded_toggle", *sw["footprint_mm"], along=(k - 1.5) * TOGGLE_PITCH)
     for k, name in enumerate(("BilgeLamp", "Co2Lamp", "LowO2Lamp")):
         add(name, "right", 3, "indicator_lamp", *lamp["footprint_mm"], along=(k - 1) * LAMP_PITCH, o=LAMP_PLATE_T)
     nb, nt, nbot = _gauge_extent(NOISE_R)
@@ -413,10 +413,10 @@ def solids() -> tuple[list[Solid], dict]:
     # engraved label plates under each toggle and lamp: shapes only, no text (art direction)
     an = anchors(wings)
     for name, a in an.items():
-        if a["slug"] not in ("guarded_toggle", "indicator_lamp"):
+        if a["slug"] not in ("lit_guarded_toggle", "indicator_lamp"):
             continue
         x, y, z, o = anchor_frame(wings, a)
-        drop = (PLATE_DROP_TOGGLE if a["slug"] == "guarded_toggle" else PLATE_DROP_LAMP)
+        drop = (PLATE_DROP_TOGGLE if a["slug"] == "lit_guarded_toggle" else PLATE_DROP_LAMP)
         centre = o - y * drop - z * a["out"]
         pl = label_plate()
         out.append(Solid(pl.moved(_loc(centre, x, z)), "interior_dark"))
@@ -617,7 +617,7 @@ def build() -> dict:
         x, y, z, o = anchor_frame(wings, a)
         props = {"transform": Xform.frame(x, y, z, tuple(o / 1000.0))}
         props.update(SETTINGS.get(name, {}))
-        if a["slug"] == "guarded_toggle":
+        if a["slug"] == "lit_guarded_toggle":
             props["label"] = TOGGLE_LABELS[name]
         if a["slug"] == "gauge":
             props["radius"] = a["settings"]["radius"]
