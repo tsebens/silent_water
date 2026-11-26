@@ -71,6 +71,8 @@ def fmt(v) -> str:
         b = v.basis
         nums = [b[r][c] for r in range(3) for c in range(3)] + list(v.origin)
         return "Transform3D(" + ", ".join(fmt(float(n)) for n in nums) + ")"
+    if isinstance(v, (list, tuple)) and v and all(isinstance(x, NodePath) for x in v):
+        return "[" + ", ".join(fmt(x) for x in v) + "]"
     if isinstance(v, (list, tuple)) and v and all(isinstance(x, str) for x in v):
         return "PackedStringArray(" + ", ".join(fmt(x) for x in v) + ")"
     if isinstance(v, (list, tuple)) and len(v) == 3:
@@ -122,7 +124,8 @@ class Scene:
             head += f' type="{n["type"]}"'
         if n["parent"] is not None:
             head += f' parent="{n["parent"]}"'
-        paths = [k for k, v in n["props"].items() if isinstance(v, NodePath)]
+        paths = [k for k, v in n["props"].items()
+                 if isinstance(v, NodePath) or (isinstance(v, (list, tuple)) and v and all(isinstance(x, NodePath) for x in v))]
         if paths:
             head += " node_paths=" + fmt(paths)
         if n["instance"] is not None:

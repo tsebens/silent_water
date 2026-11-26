@@ -1,0 +1,25 @@
+[gd_scene format=3]
+
+[ext_resource type="PackedScene" path="res://assets/models/kit/spares_drawer/spares_drawer.glb" id="1"]
+[ext_resource type="PackedScene" path="res://assets/models/kit/breaker_module/breaker_module_body.glb" id="2"]
+[ext_resource type="Script" path="res://src/interact/spares_drawer.gd" id="3"]
+
+[node name="SparesDrawer" type="Node3D"]
+
+[node name="Body" parent="." instance=ExtResource("1")]
+
+[node name="Spare1" parent="." instance=ExtResource("2")]
+transform = Transform3D(0, -1, 0, 1, 0, 0, 0, 0, 1, -0.24, 0, 0.01)
+
+[node name="Spare2" parent="." instance=ExtResource("2")]
+transform = Transform3D(0, -1, 0, 1, 0, 0, 0, 0, 1, -0.08, 0, 0.01)
+
+[node name="Spare3" parent="." instance=ExtResource("2")]
+transform = Transform3D(0, -1, 0, 1, 0, 0, 0, 0, 1, 0.08, 0, 0.01)
+
+[node name="Spare4" parent="." instance=ExtResource("2")]
+transform = Transform3D(0, -1, 0, 1, 0, 0, 0, 0, 1, 0.24, 0, 0.01)
+
+[node name="Drawer" type="Node" parent="." node_paths=PackedStringArray("slots")]
+script = ExtResource("3")
+slots = [NodePath("../Spare1"), NodePath("../Spare2"), NodePath("../Spare3"), NodePath("../Spare4")]
