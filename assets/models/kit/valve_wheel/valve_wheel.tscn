@@ -1,0 +1,35 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://src/interact/valve.gd" id="1"]
+[ext_resource type="Script" path="res://src/interact/noise_profile.gd" id="2"]
+[ext_resource type="PackedScene" path="res://assets/models/kit/valve_wheel/valve_wheel_body.glb" id="3"]
+[ext_resource type="PackedScene" path="res://assets/models/kit/valve_wheel/valve_wheel_wheel.glb" id="4"]
+
+[sub_resource type="Resource" id="noise"]
+script = ExtResource("2")
+idle_intensity = 0
+max_intensity = 0.1
+clank_rate = 1
+exponent = 2
+
+[sub_resource type="BoxShape3D" id="grab"]
+size = Vector3(0.132, 0.132, 0.13)
+
+[node name="ValveWheel" type="Node3D" node_paths=PackedStringArray("wheel")]
+script = ExtResource("1")
+noise_profile = SubResource("noise")
+wheel = NodePath("Wheel")
+turns_full_range = 3
+
+[node name="Body" parent="." instance=ExtResource("3")]
+
+[node name="Wheel" parent="." instance=ExtResource("4")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0.108)
+
+[node name="Grab" type="StaticBody3D" parent="."]
+collision_layer = 2
+collision_mask = 0
+
+[node name="Shape" type="CollisionShape3D" parent="Grab"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0.065)
+shape = SubResource("grab")

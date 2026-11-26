@@ -1,0 +1,34 @@
+slug: valve_wheel
+group: kit
+kind: element
+summary: 'Handwheel on a heavy valve body on a short pipe run; the orange wheel is its own GLB and turns about Z
+  (3 turns, clockwise opens). Valve behaviour: circle the mouse. Label set per instance.'
+tags:
+- valve
+- wheel
+- handwheel
+- pipe
+- ballast
+- flood
+- blow
+scene: res://assets/models/kit/valve_wheel/valve_wheel.tscn
+behaviour:
+  script: Valve
+  values: 0 closed .. 1 open
+  signal: value_changed
+  wiring: bind to SubController flood_valve / blow_valve
+footprint_mm:
+- 200.0
+- 120.0
+stand_out_mm: 130.0
+mount: back on Z=0 (the pipe rests on the wall), centred; the pipe runs along X; the wheel turns about Z
+set_on_instance:
+  label: FLOOD or BLOW
+  turns_full_range: full turns, min to max
+triangles: 644
+built_by: tools/cadkit/scenes/valve_wheel.py
+files:
+- component.yaml
+- valve_wheel.tscn
+- valve_wheel_body.glb
+- valve_wheel_wheel.glb
