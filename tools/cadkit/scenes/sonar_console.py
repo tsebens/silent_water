@@ -14,7 +14,7 @@ from cadkit.library import entry, note, out_dir, res, scene_path, write_entry
 from cadkit.tscn import NodePath, SName, Scene, Xform
 
 SLUG, GROUP = "sonar_console", "stations"
-USES: list[str] = ["gauge", "guarded_toggle", "trackball", "map_keypad", "operator_seat"]
+USES: list[str] = ["gauge", "lit_guarded_toggle", "trackball", "map_keypad", "operator_seat"]
 W = 600.0                                     # console body width (X), mm
 MAX_W = 650.0                                 # the program's sonar desk is 0.65 m across (brief constraint)
 FRAME_PROUD, HOOK_OUT = 5.0, 40.0             # the frame stands this far proud of the body side; the hook this far out of the frame
@@ -34,7 +34,7 @@ SEAT_Z = 980.0
 EYE_H = 1200.0
 
 # Layout on the control strip: x (mm, right of centre) and s (mm up the slope from the strip's middle).
-STRIP_LAYOUT = {"ActiveSonar": ("guarded_toggle", -190.0, 0.0, "active sonar"),
+STRIP_LAYOUT = {"ActiveSonar": ("lit_guarded_toggle", -190.0, 0.0, "active sonar"),
                 "Trackball": ("trackball", 0.0, 0.0, "hydrophone trackball"),
                 "MapKeys": ("map_keypad", 190.0, 0.0, None)}
 # Dials on the header: x (mm), radius (m), and the Gauge settings (from the game's sonar station).
