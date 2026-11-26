@@ -1,0 +1,51 @@
+[gd_scene format=3]
+
+[ext_resource type="PackedScene" path="res://assets/models/furniture/pilot_seat/pilot_seat.tscn" id="1"]
+[ext_resource type="PackedScene" path="res://assets/models/stations/pilot_station/pilot_station_strip.glb" id="2"]
+
+[node name="PilotStation" type="Node3D"]
+
+[node name="Seat" parent="." instance=ExtResource("1")]
+
+[node name="Strip" parent="." instance=ExtResource("2")]
+
+[node name="Anchors" type="Node3D" parent="."]
+
+[node name="DepthFinder" type="Node3D" parent="Anchors"]
+transform = Transform3D(0.600683, -0.513901, 0.612443, 0, 0.766044, 0.642788, -0.799487, -0.386112, 0.46015, -0.701048, 0.653603, -0.491802)
+
+[node name="Multidisplay" type="Node3D" parent="Anchors"]
+transform = Transform3D(0.473926, -0.566016, 0.674552, 0, 0.766044, 0.642788, -0.880565, -0.304634, 0.363048, -0.854191, 0.653603, -0.258344)
+
+[node name="SpeedGauge" type="Node3D" parent="Anchors"]
+transform = Transform3D(0.392831, -0.591114, 0.704463, 0, 0.766044, 0.642788, -0.919611, -0.252507, 0.300926, -0.978776, 0.670073, -0.0296577)
+
+[node name="Navball" type="Node3D" parent="Anchors"]
+transform = Transform3D(0.621545, 0.503546, -0.600103, 0, 0.766044, 0.642788, 0.783379, -0.399521, 0.476131, 0.679215, 0.653603, -0.526402)
+
+[node name="ExternalLightSwitch" type="Node3D" parent="Anchors"]
+transform = Transform3D(0.486104, 0.561733, -0.669447, 0, 0.766044, 0.642788, 0.873901, -0.312461, 0.372377, 0.777033, 0.653603, -0.389847)
+
+[node name="ExternalColourSwitch" type="Node3D" parent="Anchors"]
+transform = Transform3D(0.486104, 0.561733, -0.669447, 0, 0.766044, 0.642788, 0.873901, -0.312461, 0.372377, 0.817866, 0.653603, -0.316439)
+
+[node name="CabinLightSwitch" type="Node3D" parent="Anchors"]
+transform = Transform3D(0.486104, 0.561733, -0.669447, 0, 0.766044, 0.642788, 0.873901, -0.312461, 0.372377, 0.858698, 0.653603, -0.243032)
+
+[node name="CabinColourSwitch" type="Node3D" parent="Anchors"]
+transform = Transform3D(0.486104, 0.561733, -0.669447, 0, 0.766044, 0.642788, 0.873901, -0.312461, 0.372377, 0.899531, 0.653603, -0.169624)
+
+[node name="BilgeLamp" type="Node3D" parent="Anchors"]
+transform = Transform3D(0.397564, 0.589805, -0.702903, 0, 0.766044, 0.642788, 0.917574, -0.25555, 0.304552, 0.934321, 0.658745, -0.0872401)
+
+[node name="Co2Lamp" type="Node3D" parent="Anchors"]
+transform = Transform3D(0.397564, 0.589805, -0.702903, 0, 0.766044, 0.642788, 0.917574, -0.25555, 0.304552, 0.9542, 0.658745, -0.0413614)
+
+[node name="LowO2Lamp" type="Node3D" parent="Anchors"]
+transform = Transform3D(0.397564, 0.589805, -0.702903, 0, 0.766044, 0.642788, 0.917574, -0.25555, 0.304552, 0.974078, 0.658745, 0.00451733)
+
+[node name="NoiseRepeater" type="Node3D" parent="Anchors"]
+transform = Transform3D(0.334965, 0.605654, -0.72179, 0, 0.766044, 0.642788, 0.94223, -0.215312, 0.256598, 1.05923, 0.67172, 0.17291)
+
+[node name="HologramAnchor" type="Node3D" parent="Anchors"]
+transform = Transform3D(0.600683, 0, 0.799487, 0, 1, 0, -0.799487, 0, 0.600683, -0.797834, 0.802, -0.56452)

@@ -126,3 +126,15 @@ def test_verify_reports_a_scene_folder_with_no_build_script(tree):
     (scenes / "knob.py").unlink()
     out = build.run("verify", scenes, models)
     assert any("kit/knob/component.yaml: no build script" in p for p in out["problems"])
+
+
+def test_a_scene_may_carry_its_own_approved_budget(tree, monkeypatch):
+    import pytest
+    scenes, models = tree
+    monkeypatch.setitem(build.library.TRIANGLE_BUDGET, "kit", 10)
+    entry = {"triangles": 12, "triangle_budget": 20}
+    monkeypatch.setattr(build.library, "entry", lambda slug: entry)
+    build._check_budget("knob", "kit")
+    entry["triangles"] = 21
+    with pytest.raises(build.BuildFailed):
+        build._check_budget("knob", "kit")

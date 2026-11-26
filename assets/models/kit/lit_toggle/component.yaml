@@ -1,0 +1,38 @@
+slug: lit_toggle
+group: kit
+kind: control
+summary: Unguarded two-position toggle with an indicator lamp on the plate above it. The light grey bat swings +/-40
+  deg and snaps to on or off; the lamp is lit at on and dark at off, with nothing wired on the instance.
+tags:
+- toggle
+- switch
+- lit
+- lamp
+- on-off
+- indicator
+scene: res://assets/models/kit/lit_toggle/lit_toggle.tscn
+behaviour:
+  script: SwitchLever
+  values: 0 off (bat down, lamp dark), 1 on (bat up, lamp lit)
+  signal: value_changed
+  wiring: 'none: `indicator` is set to the IndicatorLamp node'
+base: 1x3
+footprint_mm:
+- 56.0
+- 176.0
+stand_out_mm: 56.0
+mount: back on Z=0, centred; front +Z; on is toward +Y; the lamp is above the switch (+Y)
+set_on_instance:
+  label: name at the aiming point
+uses:
+- control_base
+- indicator_lamp
+triangles: 280
+built_by: tools/cadkit/scenes/lit_toggle.py
+files:
+- component.yaml
+- lit_toggle.tscn
+- lit_toggle_bat.glb
+- lit_toggle_body.glb
+- review/.gdignore
+- review/cameras.json

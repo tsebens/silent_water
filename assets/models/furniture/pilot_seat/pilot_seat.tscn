@@ -1,0 +1,19 @@
+[gd_scene format=3]
+
+[ext_resource type="PackedScene" path="res://assets/models/furniture/operator_seat/operator_seat.tscn" id="1"]
+[ext_resource type="PackedScene" path="res://assets/models/furniture/pilot_seat/pilot_seat.glb" id="2"]
+[ext_resource type="PackedScene" path="res://assets/models/kit/joystick/joystick.tscn" id="3"]
+
+[node name="PilotSeat" type="Node3D"]
+
+[node name="Seat" parent="." instance=ExtResource("1")]
+
+[node name="Extras" parent="." instance=ExtResource("2")]
+
+[node name="SitPoint" type="Node3D" parent="."]
+
+[node name="ThrottleJoystick" parent="." instance=ExtResource("3")]
+transform = Transform3D(-1, 0, 0, 0, 0, 1, 0, 1, 0, -0.285, 0.66, 0.04)
+
+[node name="FlightJoystick" parent="." instance=ExtResource("3")]
+transform = Transform3D(-1, 0, 0, 0, 0, 1, 0, 1, 0, 0.285, 0.66, 0.04)

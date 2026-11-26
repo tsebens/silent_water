@@ -1,0 +1,49 @@
+slug: multidisplay
+group: kit
+kind: display
+summary: 'Round digital instrument: heavy matte black bezel with four hex bolts in a square grey plate, a thin orange
+  ring, a label plate and a recessed screen. The Screen node is a MultiDisplay with the pilot preset.'
+tags:
+- display
+- multidisplay
+- round
+- screen
+- instrument
+- pilot
+- depth
+scene: res://assets/models/kit/multidisplay/multidisplay.tscn
+behaviour:
+  script: MultiDisplay
+  node: Screen
+  reads: readout(name) on the first node in source_group
+footprint_mm:
+- 190.0
+- 190.0
+stand_out_mm: 24.0
+extent_radii:
+  plate_half_width: 1.3571
+  bezel: 1.2
+depth_mm:
+  behind_origin: 0.0
+  in_front_of_origin: 24.0
+mount: back on Z=0, centred on the origin; the screen faces +Z. Bolts to the plate's corners; no cutout needed
+set_on_instance:
+  Screen:screen_diameter: m; the quad. The housing is built for 0.14 (build parameter SCREEN_D_MM scales it for
+    every user)
+  Screen:slots, preset: the four widget slots (top, left, right, bottom), or a MultiDisplayPreset
+  Screen:source_group: where the readouts come from
+  Screen:chevrons_enabled, chevron_readout, chevron_count, chevron_step: the centre chevron column
+  Screen:ring_enabled, ring_readout, ring_segments, ring_warn_below, ring_alarm_below: the segmented ring
+limits:
+  max_plate_mm: 190.0
+  max_stand_out_mm: 26.0
+uses: []
+triangles: 884
+built_by: tools/cadkit/scenes/multidisplay.py
+files:
+- component.yaml
+- multidisplay.tscn
+- multidisplay_housing.glb
+- review/.gdignore
+- review/cameras.json
+- review/samples.json

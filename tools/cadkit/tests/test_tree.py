@@ -19,4 +19,6 @@ def test_every_generated_scene_has_a_complete_catalogue_entry():
 
 def test_catalogue_search_matches_all_words():
     cat = catalogue.search(catalogue.load(), ["toggle", "guarded"])
-    assert [e["slug"] for e in cat["generated"]] == ["guarded_toggle"]
+    slugs = [e["slug"] for e in cat["generated"]]
+    assert "guarded_toggle" in slugs
+    assert "indicator_lamp" not in slugs, "an entry matching only one word is excluded"

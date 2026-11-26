@@ -112,7 +112,8 @@ Refinements:
 - **A solid that needs more than a handful of CAD operations, or blows its triangle budget, is split.**
 
 Budgets (triangles, everything a scene instances included): kit 1,500; furniture 3,000; panels 4,000; stations
-12,000. `cadkit build` fails a scene over its group's budget.
+12,000. `cadkit build` fails a scene over its group's budget. A scene whose look gate approved a larger budget
+records it as `triangle_budget` in its catalogue entry (the life_support station: 24,000; the navball: 10,000, #467), and that replaces the group's.
 
 ## 4. When a part needs to differ: three tiers
 
@@ -154,6 +155,10 @@ commits a copy as `brief.yaml` beside the scene.
   is. Reach and sight lines are measured from the operator's eye: for a station with a seat, `seated_eye_height_m`
   above the seat; for a panel, `operator_eye_m`, the eye's position in the panel's own frame. Without one of these,
   reach and sight lines can't be checked.
+
+A bind that follows the sub's pose as drawn (a render-space bind) names `SubFrame.render_transform()`, the
+smoothed pose used for rendering this frame. `SubFrame.sub_transform` is the raw replicated pose and lags or leads what
+the player sees on a client, so a brief never names it for something that must line up with the rendered sub.
 
 Every `status:` and `binds:` in a brief is a claim about the game's code. The breakdown checks each against the code
 and reports what is wrong.

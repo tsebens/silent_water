@@ -3,7 +3,7 @@ extends Node3D
 ##   xvfb-run -a godot --path . --rendering-driver vulkan res://tests/scene_shot.tscn -- <scene.tscn> <out_dir> [cameras.json]
 ## Without cameras.json the scene is framed automatically: a three-quarter view, front, right side and top.
 ## cameras.json is a list of {name, pos: [x,y,z], look_at: [x,y,z], fov (deg) or ortho (m), light: "white"|"red"},
-## in the scene's own frame (metres). Lighting is neutral and dim, close to the sub's interior; red is the sub's red light.
+## in the scene's own frame (metres), plus optional "on": true, which drives a switch scene to its on end before the shot (put these last). Lighting is neutral and dim, close to the sub's interior; red is the sub's red light.
 
 var _env: WorldEnvironment
 var _key: DirectionalLight3D
@@ -19,6 +19,7 @@ func _ready() -> void:
 	get_window().size = Vector2i(1280, 800)
 	var scene: Node3D = (load(args[0]) as PackedScene).instantiate() as Node3D
 	add_child(scene)
+	_sample_source(args[0])
 	_lights()
 	var cams: Array = _auto_cameras(scene) if args.size() < 3 else JSON.parse_string(FileAccess.get_file_as_string(args[2])) as Array
 	DirAccess.make_dir_recursive_absolute(args[1])
@@ -27,6 +28,8 @@ func _ready() -> void:
 	cam.current = true
 	for spec: Dictionary in cams:
 		_set_light(String(spec.get("light", "white")))
+		if bool(spec.get("on", false)) and scene.has_method("host_set_value"):
+			scene.call("host_set_value", scene.get("max_value"))
 		var p: Array = spec["pos"]
 		var t: Array = spec["look_at"]
 		cam.position = Vector3(p[0], p[1], p[2])
@@ -109,3 +112,24 @@ func _aabb(node: Node) -> AABB:
 
 static func _arr(v: Vector3) -> Array:
 	return [v.x, v.y, v.z]
+
+
+class SampleSource:
+	extends Node
+	var vals: Dictionary = {}
+
+	func readout(n: StringName) -> float:
+		return float(vals.get(String(n), 0.0))
+
+
+## `<scene folder>/review/samples.json` ({"group": ..., "values": {readout: value}}) adds a source of sample readouts,
+## so a display's review render shows its face with values rather than blank.
+func _sample_source(scene_path: String) -> void:
+	var f: String = scene_path.get_base_dir().path_join("review/samples.json")
+	if not FileAccess.file_exists(f):
+		return
+	var d: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(f)) as Dictionary
+	var src: SampleSource = SampleSource.new()
+	src.vals = d.get("values", {})
+	src.add_to_group(StringName(d.get("group", "")))
+	add_child(src)

@@ -7,7 +7,7 @@
 - The redesigned sub's hull is generated from `assets/models/vehicles/sub_interior/program.yaml` by a parametric script (decision #395; hull arc under #396). `SubModel` loads it (#401); the old Onshape model and `tools/convert_sub.py` are gone. The hull is about 10 m × 4 m; the pilot floor is 0.2 m below the main deck.
 - `Game/Interior` sits at the origin with an identity transform, permanently. Players, controls, interior lights, and the sub's exterior lights (the headlight) live here. Everything inside the sub is in **sub-local space**.
 - `Game/World` holds everything outside the sub: terrain, creatures, objectives. Its children use **world space** as their local space.
-- `SubFrame` owns the sub's pose in the world (`sub_transform`, host-authoritative, replicated). Each frame it sets `World.transform = sub_transform.affine_inverse()`. In render space the sub is always at the origin, and the world moves past it.
+- `SubFrame` owns the sub's pose in the world (`sub_transform`, host-authoritative, replicated). Each frame it sets `World.transform = render_transform().affine_inverse()`, where `render_transform()` is the pose smoothed toward `sub_transform` on clients (and equal to it on the host). Anything that must line up with the rendered sub reads `render_transform()`, not `sub_transform`. In render space the sub is always at the origin, and the world moves past it.
 - Players sync `sync_position`, `sync_yaw` and `sync_pitch` in sub-local space. The sub's motion can't jitter, slide or desync the crew, because it never touches their transforms.
 
 ## Gravity and tilt
@@ -81,7 +81,7 @@ The hatch is 1.85 m high, not the draft program's 1.7 m: the player capsule is 1
 
 ## Pilot station and spawn points
 
-The pilot's seat, flight controls, gauge pods, cabin-light dimmer and the small elbow-rail hologram are placed by `StationPlacement` (`src/sub/station_placement.gd`, on `Interior/Stations/Pilot`): each part's position is `SubLayout.position(&"pilot")` plus a small offset, so the seat sits at x 0, z -3.8, on the cockpit floor 0.20 m below the main deck. Nothing in `interior.tscn` repeats those coordinates. `Game.SPAWN_POINTS` are in the midships aisle between the map table and the sonar desk; `tests/unit/test_spawn_points.gd` checks them against the footprints and `aisle_min_m`. `Player.INTERIOR_BOUNDS` reaches z -5.0 to cover the dome.
+The pilot's seat, flight controls, gauge pods, cabin-light dimmer and the small elbow-rail hologram are placed by `StationPlacement` (`src/sub/station_placement.gd`, on `Interior/Stations/Pilot`): each part's position is `SubLayout.position(&"pilot")` plus a small offset, so the seat sits at x 0, z -3.9, on the cockpit floor 0.20 m below the main deck. Nothing in `interior.tscn` repeats those coordinates. `Game.SPAWN_POINTS` are in the midships aisle between the map table and the sonar desk; `tests/unit/test_spawn_points.gd` checks them against the footprints and `aisle_min_m`. `Player.INTERIOR_BOUNDS` reaches z -5.0 to cover the dome.
 
 The sonar desk is the generated `sonar_console` station instanced at `Interior/Stations/Sonar`; a `StationPlacement` (`SonarPlacement`) puts its back edge at the program's sonar footprint (z -3.3) and its centre at the desk's x. `tests/unit/test_sonar_placement.gd` checks its footprint against the program.
 

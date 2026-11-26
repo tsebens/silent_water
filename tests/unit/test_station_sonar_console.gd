@@ -130,6 +130,17 @@ func test_toggle_bat_stays_inside_its_guard() -> void:
 	st.queue_free()
 
 
+func test_active_sonar_lamp_follows_the_switch() -> void:
+	var st: SonarStation = _make()
+	var sw: SwitchLever = st.get_node("Controls/ActiveSonar") as SwitchLever
+	expect(sw.indicator != null, "ActiveSonar has its indicator set")
+	sw.host_set_value(sw.min_value)
+	expect(not sw.indicator.is_lit(), "lamp dark at off")
+	sw.host_set_value(sw.max_value)
+	expect(sw.indicator.is_lit(), "lamp lit at on")
+	st.queue_free()
+
+
 ## The program's sonar desk is 0.65 m across (brief constraint footprint_m): the body, collision and the
 ## headset on its hook all stay inside it.
 func test_console_fits_the_sonar_desk_width() -> void:

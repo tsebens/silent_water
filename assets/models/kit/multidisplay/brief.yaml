@@ -1,0 +1,20 @@
+# Review brief for the multidisplay kit scene (concept #458, arc #464). Pairs each concept image with its render camera.
+station: multidisplay
+concept:
+  images:
+    - path: assets/models/cockpit/concept/multidisplay_housing_reference.png
+      role: primary
+      view: from the seated pilot's eye, about 0.7 m away and slightly above
+      camera: concept_housing
+    - path: assets/models/cockpit/concept/multidisplay_face_reference.png
+      role: primary
+      view: from the seated pilot's eye, straight on
+      camera: concept_face
+  doc: assets/models/cockpit/concept/cockpit_concept.md
+  compare_on:
+    - the housing: round bezel, square plate, orange ring, label plate, proportions
+    - the face: layout, chevron column, pie, bar meter, segmented ring
+    - colour blocking
+  ignore:
+    - the face's numbers and labels in the art
+    - lighting mood, the cockpit around it, people

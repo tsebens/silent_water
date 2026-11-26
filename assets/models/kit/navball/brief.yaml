@@ -1,0 +1,20 @@
+# Review brief for the navball kit scene (concept #459, arc #467). Pairs each concept image with its render camera.
+station: navball
+concept:
+  images:
+    - path: assets/models/cockpit/concept/navball_housing_reference.png
+      role: primary
+      view: from the seated pilot's eye, about 0.7 m away and slightly above
+      camera: navball_housing
+    - path: assets/models/cockpit/concept/navball_readouts_reference.png
+      role: primary
+      view: from the seated pilot's eye, straight on (the ball and reticle)
+      camera: navball_readouts
+  doc: assets/models/cockpit/concept/cockpit_concept.md
+  compare_on:
+    - the housing: round bezel, glass dome, square plate, orange ring, matching the multidisplay
+    - the ball: two contrasting hemispheres split by the horizon, the pitch ladder, heading marks round the horizon
+    - the reticle: two orange arms with a centre dot (about an eighth of the ball wide; it is smaller than the concept shows)
+  ignore:
+    - the exact numbers drawn on the ball and in the windows
+    - the attitude the art shows, lighting mood, the cockpit around it
