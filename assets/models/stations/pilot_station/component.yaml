@@ -29,8 +29,8 @@ behaviour:
       Drivers/<Lamp>Driver are ThresholdLamps; the four switches are not yet wired to the headlight and cabin lights
       (the placement arc does that)
 footprint_mm:
-- 2368
-- 1110
+- 1596
+- 1130
 mount: floor at Y=0, seat origin on the centreline at X=0, Z=0; the pilot faces -Z; the strip is ahead at -Z
 placement:
   hull_z_m: -3.9
@@ -50,37 +50,36 @@ uses:
 - gauge
 - lit_guarded_toggle
 - indicator_lamp
-triangles: 13916
+triangles: 13764
 triangle_budget: 15000
 triangles_by_part:
-  strip: 652
+  strip: 604
   pilot_seat: 1200
-  instruments: 12064
+  instruments: 11960
 checks:
   strip_top_mm: 780
   hologram_top_mm: 1002
-  glass_clearance_mm: 42
+  glass_clearance_mm: 40
   gap_mm: 600.0
   eye_to_anchor_mm:
-    DepthFinder: 990
-    Multidisplay: 1024
-    SpeedGauge: 1108
-    Navball: 991
-    ExternalLightSwitch: 1005
-    ExternalColourSwitch: 1013
-    CabinLightSwitch: 1028
-    CabinColourSwitch: 1050
-    BilgeLamp: 1066
-    Co2Lamp: 1082
-    LowO2Lamp: 1099
-    NoiseRepeater: 1180
+    Multidisplay: 900
+    SpeedGauge: 913
+    NoiseRepeater: 892
+    Navball: 902
+    ExternalLightSwitch: 894
+    ExternalColourSwitch: 887
+    CabinLightSwitch: 884
+    CabinColourSwitch: 886
+    BilgeLamp: 902
+    Co2Lamp: 899
+    LowO2Lamp: 898
   toggle_hand_reach_mm:
-    ExternalLightSwitch: 649
-    ExternalColourSwitch: 640
-    CabinLightSwitch: 642
-    CabinColourSwitch: 655
-  rim_ring_clear_mm: 126
-  stick_clearance_mm: 450
+    ExternalLightSwitch: 545
+    ExternalColourSwitch: 513
+    CabinLightSwitch: 488
+    CabinColourSwitch: 471
+  rim_ring_clear_mm: 101
+  stick_clearance_mm: 312
 built_by: tools/cadkit/scenes/pilot_station.py
 files:
 - component.yaml

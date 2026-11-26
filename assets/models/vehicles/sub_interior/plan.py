@@ -396,7 +396,7 @@ def export_layout(spec: dict, hull: Hull, out: Path) -> None:
         if "seat" in cam:  # seated eye over the seat's centre, looking along look_dir (sub-local)
             x0, x1, z0, z1 = place(by_id[cam["seat"]], hull)
             cx, cz = (x0 + x1) / 2, (z0 + z1) / 2
-            eye = hull.deck_y(cz) + 1.2
+            eye = hull.deck_y(cz) + (spec["dome"]["eye_height_m"] if cam["seat"] == spec["dome"].get("station", "pilot") else 1.2)
             dx, dy, dz = cam["look_dir"]
             cam["pos"] = [round(cx, 3), round(eye, 3), round(cz, 3)]
             cam["look"] = [round(cx + dx, 3), round(eye + dy, 3), round(cz + dz, 3)]

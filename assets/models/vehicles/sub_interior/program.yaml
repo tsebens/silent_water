@@ -27,8 +27,8 @@ hull:
 dome:
   diameter_m: 2.2
   station: pilot             # the seat whose z and floor fix the ring and the centre
-  eye_height_m: 1.2          # seated eye above the cockpit floor
-  centre_below_eye_m: 0.2
+  eye_height_m: 1.15         # seated eye above the cockpit floor (the pilot seat's eye_height)
+  centre_below_eye_m: 0.1    # Tristan on #605: the eye sits 0.1 m off the centre so the floor keeps a 0.33 m disc of glass
   segments_round: 60
   rings_to_apex: 30
   max_triangles: 20000

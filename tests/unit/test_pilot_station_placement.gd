@@ -35,7 +35,7 @@ func _pilot() -> Node3D:
 func test_one_of_each_and_no_old_pods() -> void:
 	var interior: Node = game.get_node("Interior")
 	expect_eq(_count(interior, &"PilotSeat"), 1, "one pilot seat")
-	expect_eq(_count(interior, &"DepthFinder"), 1, "one depth finder")
+	expect_eq(_count(interior, &"DepthFinder"), 0, "the depth finder is dropped from the strip (#605, restored by #633)")
 	expect_eq(_count(interior, &"MultiDisplay"), 1, "one multidisplay")
 	expect_eq(_count(interior, &"Navball"), 1, "one navball")
 	var warning_lamps: int = 0

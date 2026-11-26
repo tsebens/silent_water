@@ -6,9 +6,13 @@ extends TestCase
 const SCENE: String = "res://assets/models/stations/pilot_station/pilot_station.tscn"
 const GAP_M: float = 0.6
 const EYE: Vector3 = Vector3(0.0, 1.15, 0.0)
-const LEFT: Array[String] = ["DepthFinder", "Multidisplay", "SpeedGauge"]
-const RIGHT: Array[String] = ["Navball", "ExternalLightSwitch", "ExternalColourSwitch", "CabinLightSwitch",
-		"CabinColourSwitch", "BilgeLamp", "Co2Lamp", "LowO2Lamp", "NoiseRepeater"]
+## #605 stopgap: the depth finder is dropped, the two gauges share a facet and the lamps sit under the switches, so the
+## strip fits the true hemisphere. LEFT and RIGHT are the instrument that leads each facet, from the gap outward;
+## the others are listed in ALSO_LEFT and ALSO_RIGHT.
+const LEFT: Array[String] = ["Multidisplay", "SpeedGauge"]
+const RIGHT: Array[String] = ["Navball", "ExternalLightSwitch"]
+const ALSO_LEFT: Array[String] = ["NoiseRepeater"]
+const ALSO_RIGHT: Array[String] = ["ExternalColourSwitch", "CabinLightSwitch", "CabinColourSwitch", "BilgeLamp", "Co2Lamp", "LowO2Lamp"]
 
 
 func _make() -> Node3D:
@@ -42,7 +46,7 @@ func test_seat_resolves() -> void:
 
 func test_every_anchor_exists_and_faces_the_eye() -> void:
 	var st: Node3D = _make()
-	for name: String in LEFT + RIGHT + ["HologramAnchor"]:
+	for name: String in LEFT + RIGHT + ALSO_LEFT + ALSO_RIGHT + ["HologramAnchor"]:
 		var a: Node3D = _anchor(st, name)
 		if a == null:
 			continue
@@ -72,9 +76,10 @@ func test_wings_run_from_the_gap_outward_in_order() -> void:
 		expect(a.global_position.x > last - 0.0001, "%s is no nearer the gap than the one before" % name)
 		last = a.global_position.x
 	var holo: Node3D = _anchor(st, "HologramAnchor")
-	var df: Node3D = _anchor(st, "DepthFinder")
-	expect(holo.global_position.y > df.global_position.y + 0.1, "the hologram stands above the depth finder")
-	expect(absf(holo.global_position.x - df.global_position.x) < 0.15, "the hologram is over the depth finder")
+	var md: Node3D = _anchor(st, "Multidisplay")
+	expect(holo.global_position.y > md.global_position.y + 0.1, "the hologram stands above the multidisplay")
+	expect(absf(holo.global_position.x - md.global_position.x) < 0.15, "the hologram is over the multidisplay")
+	expect(st.get_node_or_null("Anchors/DepthFinder") == null, "the depth finder is dropped until the strip is redesigned (#633)")
 	st.queue_free()
 
 
@@ -109,7 +114,6 @@ const LAMPS: Array[String] = ["BilgeLamp", "Co2Lamp", "LowO2Lamp"]
 
 func test_instruments_resolve_with_their_behaviours() -> void:
 	var st: Node3D = _make()
-	expect(_anchor(st, "DepthFinder").get_node_or_null("DepthFinder") is MeshInstance3D, "the depth finder has its display")
 	expect(_anchor(st, "Multidisplay").get_node_or_null("Screen") is MultiDisplay, "the multidisplay's screen resolves")
 	expect(_anchor(st, "Navball") is Navball, "the navball is a Navball")
 	expect(_anchor(st, "SpeedGauge") is Gauge, "the speed gauge is a Gauge")
@@ -118,7 +122,6 @@ func test_instruments_resolve_with_their_behaviours() -> void:
 		expect(_anchor(st, name) is SwitchLever, "%s is a switch" % name)
 	for name: String in LAMPS:
 		expect(_anchor(st, name) is IndicatorLamp, "%s is a lamp" % name)
-	expect(st.get_node_or_null("Anchors/DepthFinder") != null, "the depth finder anchor stays")
 	st.queue_free()
 
 
