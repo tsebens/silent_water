@@ -89,6 +89,8 @@ func _ready() -> void:
 	_ray.collision_mask = LAYER_INTERACTABLE
 	var local: bool = is_multiplayer_authority()
 	_camera.current = local
+	if local:
+		_bind_fov()
 	_body_mesh.visible = not local
 	_tint_from_id(name.to_int())
 	if local:
@@ -97,6 +99,33 @@ func _ready() -> void:
 		position = sync_position
 	_last_position = position
 	add_to_group(&"noise_sources")
+
+
+func _bind_fov() -> void:
+	var settings: GameSettings = get_tree().get_first_node_in_group(GameSettings.GROUP) as GameSettings
+	if settings != null and not settings.changed.is_connected(_on_setting_changed):
+		settings.changed.connect(_on_setting_changed)
+	if not get_viewport().size_changed.is_connected(_apply_fov):
+		get_viewport().size_changed.connect(_apply_fov)
+	_apply_fov()
+
+
+func _on_setting_changed(key: StringName, _value: Variant) -> void:
+	if key == &"fov_horizontal":
+		_apply_fov()
+
+
+## Sets the camera's vertical FOV from the horizontal setting and the viewport's aspect.
+func _apply_fov() -> void:
+	var size: Vector2 = get_viewport().get_visible_rect().size
+	if size.y <= 0.0:
+		return
+	var settings: GameSettings = get_tree().get_first_node_in_group(GameSettings.GROUP) as GameSettings
+	if settings == null:
+		_camera.fov = GameSettings.FALLBACK_VERTICAL_FOV_DEG
+		return
+	var h: float = float(settings.get_value(&"fov_horizontal"))
+	_camera.fov = GameSettings.horizontal_to_vertical(h, size.x / size.y)
 
 
 func _unhandled_input(event: InputEvent) -> void:
