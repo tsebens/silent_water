@@ -35903,7 +35903,8 @@
    ],
    "display": {
     "size": "small",
-    "placement": "a crisp 20 cm cylinder of light low on the forward end of the elbow rail",
+    "placement": "a crisp 20 cm cylinder of light up and to the side of the apex gap",
+    "above the depth finder": null,
     "purpose": "chart locked centred on the sub; maybe a little zoom",
     "never pan or rotate": null
    },
@@ -36289,7 +36290,8 @@
     "dome"
    ],
    "notes": "The pilot's view out of the dome",
-   "rail and small hologram below the sightline.": null,
+   "the small hologram up and to the side of the apex gap": null,
+   "above the depth finder.": null,
    "pos": [
     0.0,
     0.05,
