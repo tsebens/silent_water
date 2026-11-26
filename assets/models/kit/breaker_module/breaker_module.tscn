@@ -1,0 +1,21 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://src/interact/breaker_switch.gd" id="1"]
+[ext_resource type="PackedScene" path="res://assets/models/kit/breaker_module/breaker_module_body.glb" id="2"]
+[ext_resource type="PackedScene" path="res://assets/models/kit/breaker_module/breaker_module_handle.glb" id="3"]
+[ext_resource type="PackedScene" path="res://assets/models/kit/indicator_lamp/indicator_lamp.tscn" id="4"]
+
+[node name="BreakerModule" type="Node3D" node_paths=PackedStringArray("handle", "lamp")]
+script = ExtResource("1")
+handle = NodePath("Hinge/Handle")
+lamp = NodePath("IndicatorLamp/Lens/IndicatorLampLens")
+
+[node name="Body" parent="." instance=ExtResource("2")]
+
+[node name="Hinge" type="Node3D" parent="."]
+transform = Transform3D(-1, 0, 0, 0, -1, 0, 0, 0, 1, 0, 0, 0.013)
+
+[node name="Handle" parent="Hinge" instance=ExtResource("3")]
+
+[node name="IndicatorLamp" parent="." instance=ExtResource("4")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.058, 0.006)
