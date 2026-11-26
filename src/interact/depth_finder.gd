@@ -32,6 +32,8 @@ var texture: ImageTexture
 ## Overrides the site lookup when set: `(x: float, z: float) -> float`.
 var height_source: Callable = Callable()
 
+## False while the DISPLAYS circuit is unpowered: the screen goes dark.
+var powered: bool = true
 var _quad: QuadMesh
 var _sub_frame: SubFrame
 var _site: Node
@@ -39,7 +41,13 @@ var _site: Node
 var _heading: Vector3 = Vector3(0, 0, -1)
 
 
+func set_powered(on: bool) -> void:
+	powered = on
+	visible = on
+
+
 func _ready() -> void:
+	PowerSink.bind(self, PowerSystem.Circuit.DISPLAYS, set_powered)
 	image = Image.create(resolution.x, resolution.y, false, Image.FORMAT_RGBA8)
 	texture = ImageTexture.create_from_image(image)
 	_quad = QuadMesh.new()

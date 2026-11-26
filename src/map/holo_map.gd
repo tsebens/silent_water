@@ -77,6 +77,8 @@ const OUTLINE_SEGMENTS: int = 48
 ## World position at the centre of the display when not following the sub.
 var focus: Vector3 = Vector3(0, -110, -200)
 
+## False while the DISPLAYS circuit is unpowered: the hologram goes dark.
+var powered: bool = true
 var _content: Node3D
 var _markers: Node3D
 var _pins_root: Node3D
@@ -91,7 +93,13 @@ var _base: MeshInstance3D
 var _shader: Shader = preload("res://src/map/holo.gdshader")
 
 
+func set_powered(on: bool) -> void:
+	powered = on
+	visible = on
+
+
 func _ready() -> void:
+	PowerSink.bind(self, PowerSystem.Circuit.DISPLAYS, set_powered)
 	if game == null:
 		var n: Node = get_parent()
 		while n != null and not (n is Game):

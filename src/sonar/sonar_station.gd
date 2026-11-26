@@ -26,6 +26,9 @@ const BEAM_POWER: float = 8.0
 @export var headset: Wearable
 @export var wheel: HydrophoneWheel
 
+## False while the SONAR circuit is unpowered: the screen reads zero and the
+## hydrophone goes silent.
+var powered: bool = true
 var signal_db: float = 0.0
 var bearing_rate: float = 0.0
 var _track_id: int = 0
@@ -36,12 +39,22 @@ var _accum: float = 0.0
 func _ready() -> void:
 	add_to_group(&"sonar")
 	add_to_group(&"sonar_readouts")
+	PowerSink.bind(self, PowerSystem.Circuit.SONAR, set_powered)
 	if headset != null:
 		headset.worn_changed.connect(func(on: bool) -> void: AudioBuses.set_headphones(on))
 
 
+## Power on or off. Off clears the readouts.
+func set_powered(on: bool) -> void:
+	powered = on
+	if not on:
+		signal_db = 0.0
+		bearing_rate = 0.0
+		_track_id = 0
+
+
 func is_local_operator() -> bool:
-	return headset != null and headset.is_held_locally()
+	return powered and headset != null and headset.is_held_locally()
 
 
 func bearing_deg() -> float:
@@ -50,6 +63,8 @@ func bearing_deg() -> float:
 
 ## Gauge hook.
 func readout(property: StringName) -> float:
+	if not powered:
+		return 0.0
 	if property == &"bearing":
 		return bearing_deg()
 	if property == &"signal":
@@ -61,6 +76,8 @@ func readout(property: StringName) -> float:
 
 func _physics_process(delta: float) -> void:
 	if Net.is_online() and not multiplayer.is_server():
+		return
+	if not powered:
 		return
 	_measure(delta)
 	if Net.is_online():
