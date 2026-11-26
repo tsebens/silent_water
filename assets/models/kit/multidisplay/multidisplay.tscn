@@ -10,7 +10,7 @@
 
 [node name="Screen" type="MeshInstance3D" parent="."]
 script = ExtResource("3")
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0.0123)
-screen_diameter = 0.14
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0.01744)
+screen_diameter = 0.2
 source_group = &"sub_readouts"
 preset = ExtResource("2")
