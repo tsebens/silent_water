@@ -605,6 +605,14 @@ func noise_intensity() -> float:
 	return n
 
 
+## Named parts of [method noise_intensity], for the session log.
+func noise_breakdown() -> Dictionary:
+	return {
+		"generator": config.generator_noise if _gen_running else 0.0,
+		"motor": config.motor_noise_full * motor_power() if is_powered(Circuit.MOTOR) else 0.0,
+	}
+
+
 func readout(readout_name: StringName) -> float:
 	match readout_name:
 		&"battery_charge":

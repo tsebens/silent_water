@@ -133,11 +133,14 @@ func test_bilge_water_makes_sub_heavier() -> void:
 	expect(controller.model.buoyancy_accel() < before - 0.2)
 
 
-func test_engine_noise_reaches_about_80_db_at_full() -> void:
+func test_generator_full_ahead_is_about_85_db() -> void:
+	var power: PowerSystem = game.get_node("Interior/PowerSystem") as PowerSystem
+	power.start_generator()
 	var throttle: SpringAxis = game.get_node("Interior/Stations/Pilot/Throttle") as SpringAxis
 	throttle.host_set_value(1.0)
-	await _frames(60 * 7)
-	expect_near(Acoustics.sub_db(), 80.0, 1.0)
+	await _frames(60 * 12)
+	# Generator 0.03 plus the motor at full 0.002: about 85 dB.
+	expect_near(Acoustics.sub_db(), 85.1, 1.0)
 	expect(not Acoustics.is_masked(), "full ahead is not masked")
 
 
