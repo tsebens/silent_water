@@ -33,16 +33,18 @@ func test_root_is_a_navball_with_a_separate_ball_node() -> void:
 	n.queue_free()
 
 
-func test_digit_labels_are_named_for_the_behaviour() -> void:
+func test_no_digit_windows_or_label_plate() -> void:
 	var n: Node3D = _make()
-	var nav: Navball = n as Navball
-	var hdg: Label3D = n.get_node_or_null(nav.heading_label_path) as Label3D
-	var pitch: Label3D = n.get_node_or_null(nav.pitch_label_path) as Label3D
-	expect(hdg != null and nav.heading_label_path == ^"HDG", "HDG label")
-	expect(pitch != null and nav.pitch_label_path == ^"PITCH", "PITCH label")
-	expect(hdg.position.x < 0.0 and pitch.position.x > 0.0, "HDG on the left, PITCH on the right")
-	expect(absf(hdg.position.y - pitch.position.y) < 1e-6, "the windows are level")
-	expect((n.get_node("LabelText") as Label3D).text == "ATTITUDE", "the label plate reads ATTITUDE")
+	expect(n.find_children("*", "Label3D", true, false).is_empty(), "no digit windows or label plate")
+	expect(n.get_node_or_null("HDG") == null and n.get_node_or_null("PITCH") == null, "no HDG or PITCH nodes")
+	n.queue_free()
+
+
+func test_mask_is_drawn_from_inside() -> void:
+	var n: Node3D = _make()
+	var ball: MeshInstance3D = n.get_node("Ball/NavballBall") as MeshInstance3D
+	var m: ShaderMaterial = ball.material_override as ShaderMaterial
+	expect(m.shader.code.contains("cull_front"), "the ball is seen from inside so the numerals are not mirrored")
 	n.queue_free()
 
 
@@ -67,6 +69,7 @@ func test_ball_is_inside_the_dome_and_the_reticle_between() -> void:
 	expect(dome.end.z > tip + 0.004, "the dome stands clear of the ball's front")
 	expect(dome.end.x > r and dome.position.x < -r, "the dome is wider than the ball")
 	expect(reticle.end.z > tip - 0.001 and reticle.end.z < dome.end.z, "the reticle is in front of the ball and behind the dome")
+	expect(reticle.size.x < 2.0 * r / 6.0 and reticle.size.x > 2.0 * r / 12.0, "the reticle is about an eighth of the ball wide")
 	n.queue_free()
 
 

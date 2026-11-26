@@ -1,8 +1,11 @@
 shader_type spatial;
-render_mode unshaded, cull_back;
+render_mode unshaded, cull_front;
 // Navball face. Samples the equirectangular marking mask (assets/textures/navball_mask.png) by the
 // object-space direction of each point, so the ball mesh needs no UVs.
 //   R upper hemisphere, G lower hemisphere, B markings.
+// Drawn from the inside: front faces are culled, so the far half of the ball is what shows, seen through the
+// near half as from within the sphere. That is the only view in which the mask reads unmirrored (east to the right,
+// numerals the right way round) with the sub's forward hemisphere in front of the pilot.
 // Object frame: +Y is the apex, -Z is north (heading 0), +X is east (heading 90).
 
 uniform sampler2D mask : source_color, filter_linear_mipmap, repeat_disable;

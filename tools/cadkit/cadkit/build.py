@@ -108,6 +108,9 @@ def _check_budget(slug: str, group: str) -> None:
     if not counts:
         raise BuildFailed(slug, "its catalogue entry has no `triangles`")
     budget = library.TRIANGLE_BUDGET[group]
+    override = (entry.get("limits") or {}).get("triangle_budget")     # a scene may carry a budget granted for it by a decision
+    if isinstance(override, int) and override > 0:
+        budget = override
     if max(counts) > budget:
         raise BuildFailed(slug, f"{max(counts)} triangles; the budget for {group} is {budget}")
 

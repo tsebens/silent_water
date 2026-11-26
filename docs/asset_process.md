@@ -112,7 +112,7 @@ Refinements:
 - **A solid that needs more than a handful of CAD operations, or blows its triangle budget, is split.**
 
 Budgets (triangles, everything a scene instances included): kit 1,500; furniture 3,000; panels 4,000; stations
-12,000. `cadkit build` fails a scene over its group's budget.
+12,000. `cadkit build` fails a scene over its group's budget. A scene may carry a larger budget granted by a decision (the navball: 10,000, #467), declared as `limits.triangle_budget` in its entry.
 
 ## 4. When a part needs to differ: three tiers
 

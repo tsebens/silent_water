@@ -2,8 +2,7 @@ slug: navball
 group: kit
 kind: display
 summary: 'Attitude ball: a 110 mm ball behind a glass dome in the multidisplay''s bezel, plate, orange ring and
-  label plate (ATTITUDE), with a fixed orange reticle and HDG and PITCH digit windows on the bezel''s sides. The
-  root is a Navball.'
+  with a small fixed orange reticle in front of the ball. The root is a Navball.'
 tags:
 - display
 - navball
@@ -19,9 +18,8 @@ behaviour:
   script: Navball
   node: .
   ball: Ball/NavballBall (a MeshInstance3D the script turns and gives the mask material)
-  reads: SubFrame.render_transform() from group sub_frame; heading_deg and pitch_deg readouts from group sub_readouts
-    into the HDG and PITCH Label3D children
-  wiring: 'none: put the sub''s SubFrame in group sub_frame and a readout source in sub_readouts'
+  reads: 'SubFrame.render_transform() from group sub_frame (no digit windows: the Label3D paths are unset)'
+  wiring: 'none: put the sub''s SubFrame in group sub_frame'
 footprint_mm:
 - 190.0
 - 190.0
@@ -40,12 +38,13 @@ depth_mm:
 set_on_instance:
   mount_rotation_deg: the ball's marking frame relative to its node
   upper_swatch, lower_swatch, mark_swatch: palette swatches of the ball
-  source_group, frame_group: where the readouts and the sub pose come from
+  frame_group: where the sub pose comes from
 limits:
   max_stand_out_mm: 90.0
+  triangle_budget: 10000
 uses:
 - multidisplay
-triangles: 1448
+triangles: 9702
 built_by: tools/cadkit/scenes/navball.py
 files:
 - component.yaml

@@ -9,8 +9,6 @@
 [node name="Navball" type="Node3D"]
 script = ExtResource("1")
 ball_path = "Ball/NavballBall"
-heading_label_path = "HDG"
-pitch_label_path = "PITCH"
 
 [node name="Housing" parent="." instance=ExtResource("2")]
 
@@ -23,43 +21,3 @@ transform = Transform3D(0.62589, -0.254887, 0.737085, 0.299185, 0.951251, 0.0748
 [node name="Reticle" parent="." instance=ExtResource("4")]
 
 [node name="Dome" parent="." instance=ExtResource("5")]
-
-[node name="HDG" type="Label3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.084, -0.0025, 0.03015)
-text = "000"
-font_size = 32
-pixel_size = 0.00028
-shaded = false
-double_sided = false
-
-[node name="HDGCaption" type="Label3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.084, 0.0048, 0.03015)
-text = "HDG"
-font_size = 20
-pixel_size = 0.00022
-shaded = false
-double_sided = false
-
-[node name="PITCH" type="Label3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.084, -0.0025, 0.03015)
-text = "0"
-font_size = 32
-pixel_size = 0.00028
-shaded = false
-double_sided = false
-
-[node name="PITCHCaption" type="Label3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.084, 0.0048, 0.03015)
-text = "PITCH"
-font_size = 20
-pixel_size = 0.00022
-shaded = false
-double_sided = false
-
-[node name="LabelText" type="Label3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.091, 0.00915)
-text = "ATTITUDE"
-font_size = 32
-pixel_size = 0.00014
-shaded = false
-double_sided = false

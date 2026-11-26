@@ -1,6 +1,6 @@
 [
  {
-  "name": "concept_housing",
+  "name": "navball_housing",
   "pos": [
    0.05,
    0.1,
@@ -14,7 +14,7 @@
   "fov": 28.0
  },
  {
-  "name": "concept_readouts",
+  "name": "navball_readouts",
   "pos": [
    0.0,
    0.0,
@@ -57,7 +57,7 @@
   "light": "red"
  },
  {
-  "name": "readouts_red",
+  "name": "navball_readouts_red",
   "pos": [
    0.0,
    0.0,
