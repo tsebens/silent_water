@@ -33,26 +33,26 @@ transform = Transform3D(1, 0, 0, 0, 0.707107, -0.707107, 0, 0.707107, 0.707107, 
 
 [node name="CradleA" type="Node3D" parent="."]
 script = ExtResource("2")
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.295, 1.488, 0.130174)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.17, 1.5, 0.120174)
 
 [node name="CanisterA" parent="." instance=ExtResource("3")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.295, 1.488, 0.130174)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.17, 1.5, 0.120174)
 
 [node name="SaturationA" parent="." instance=ExtResource("4")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.095, 1.56, 0.0301735)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.33, 1.534, 0.210174)
 source_group = &"life_support_readouts"
 readout = &"saturation_a"
 max_value = 1
 
 [node name="CradleB" type="Node3D" parent="."]
 script = ExtResource("2")
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.175, 1.488, 0.130174)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.17, 1.5, 0.120174)
 
 [node name="CanisterB" parent="." instance=ExtResource("3")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.175, 1.488, 0.130174)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.17, 1.5, 0.120174)
 
 [node name="SaturationB" parent="." instance=ExtResource("4")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.375, 1.56, 0.0301735)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.33, 1.534, 0.210174)
 source_group = &"life_support_readouts"
 readout = &"saturation_b"
 max_value = 1
@@ -94,7 +94,7 @@ script = ExtResource("2")
 transform = Transform3D(1, 0, 0, 0, 0.743145, -0.669131, 0, 0.669131, 0.743145, 0.2, 0.978305, 0.0811433)
 
 [node name="O2Gauge" parent="." instance=ExtResource("5")]
-transform = Transform3D(1, 0, 0, 0, 0.707107, -0.707107, 0, 0.707107, 0.707107, -0.31, 2.01698, 0.378465)
+transform = Transform3D(1, 0, 0, 0, 0.707107, -0.707107, 0, 0.707107, 0.707107, -0.31, 2.00991, 0.385536)
 radius = 0.055
 title = "O2"
 source_group = &"life_support_readouts"
@@ -103,7 +103,7 @@ min_value = 0
 max_value = 1
 
 [node name="Co2LevelGauge" parent="." instance=ExtResource("5")]
-transform = Transform3D(1, 0, 0, 0, 0.707107, -0.707107, 0, 0.707107, 0.707107, -0.105, 2.01698, 0.378465)
+transform = Transform3D(1, 0, 0, 0, 0.707107, -0.707107, 0, 0.707107, 0.707107, -0.105, 2.00991, 0.385536)
 radius = 0.055
 title = "CO2"
 source_group = &"life_support_readouts"
@@ -112,7 +112,7 @@ min_value = 0
 max_value = 1
 
 [node name="Co2RateGauge" parent="." instance=ExtResource("5")]
-transform = Transform3D(1, 0, 0, 0, 0.707107, -0.707107, 0, 0.707107, 0.707107, 0.105, 2.01698, 0.378465)
+transform = Transform3D(1, 0, 0, 0, 0.707107, -0.707107, 0, 0.707107, 0.707107, 0.105, 2.00991, 0.385536)
 radius = 0.055
 title = "CO2 RATE"
 source_group = &"life_support_readouts"
@@ -128,13 +128,13 @@ transform = Transform3D(1, 0, 0, 0, 0.707107, -0.707107, 0, 0.707107, 0.707107, 
 transform = Transform3D(1, 0, 0, 0, 0.707107, -0.707107, 0, 0.707107, 0.707107, -0.105, 1.90243, 0.263914)
 
 [node name="FanToggle" parent="." instance=ExtResource("7")]
-transform = Transform3D(1, 0, 0, 0, 0.707107, -0.707107, 0, 0.707107, 0.707107, 0.105, 1.90243, 0.263914)
+transform = Transform3D(1, 0, 0, 0, 0.669131, 0.743145, 0, -0.743145, 0.669131, 0.352, 1.22578, 0.277057)
 label = "FANS"
 initial_value = 1
 
 [node name="FanLamp" parent="." instance=ExtResource("6")]
-transform = Transform3D(1, 0, 0, 0, 0.707107, -0.707107, 0, 0.707107, 0.707107, 0.175, 1.90243, 0.263914)
+transform = Transform3D(1, 0, 0, 0, 0.669131, 0.743145, 0, -0.743145, 0.669131, 0.412, 1.22578, 0.277057)
 
 [node name="NoiseRepeater" parent="." instance=ExtResource("8")]
-transform = Transform3D(1, 0, 0, 0, 0.707107, -0.707107, 0, 0.707107, 0.707107, 0.31, 2.01698, 0.378465)
+transform = Transform3D(1, 0, 0, 0, 0.707107, -0.707107, 0, 0.707107, 0.707107, 0.31, 2.00991, 0.385536)
 radius = 0.055

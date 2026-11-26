@@ -96,6 +96,32 @@ func test_fan_toggle_and_storage_tops_within_reach() -> void:
 	st.queue_free()
 
 
+func test_saturation_bars_are_on_the_housing_beside_the_pockets() -> void:
+	var st: Node3D = _make()
+	var a: Node3D = st.get_node("SaturationA") as Node3D
+	var b: Node3D = st.get_node("SaturationB") as Node3D
+	var ca: Node3D = st.get_node("CanisterA") as Node3D
+	var cb: Node3D = st.get_node("CanisterB") as Node3D
+	expect(a.global_position.x < ca.global_position.x - 0.1, "bar A is outside canister A's pocket, on its own side")
+	expect(b.global_position.x > cb.global_position.x + 0.1, "bar B is outside canister B's pocket, on its own side")
+	expect_near(a.global_position.y + 0.116, 1.65, 0.01, "bar A is centred on eye level")
+	# The bars stand on the carriage face, in front of the pockets' back walls.
+	expect(a.global_position.z > ca.global_position.z, "bar A is in front of its canister's axis, on the face")
+	st.queue_free()
+
+
+func test_fan_toggle_is_in_the_shelf_corner_with_its_lamp() -> void:
+	var st: Node3D = _make()
+	var tog: Node3D = st.get_node("FanToggle") as Node3D
+	var lamp: Node3D = st.get_node("FanLamp") as Node3D
+	expect(tog.global_position.x > 0.25, "the toggle is on the right")
+	expect(lamp.global_position.x > tog.global_position.x, "the run lamp is beside it, outboard")
+	expect(tog.global_position.y < 1.4, "the toggle is on the shelf, below the carriage pockets")
+	expect(tog.global_transform.basis.z.dot(Vector3(0.0, cos(deg_to_rad(SHELF_DEG)), sin(deg_to_rad(SHELF_DEG)))) > 0.999,
+			"the toggle faces out of the shelf surface")
+	st.queue_free()
+
+
 func test_cradles_and_gauges_within_reach_of_the_standing_eye() -> void:
 	var st: Node3D = _make()
 	var eye: Vector3 = (st.get_node("OperatorEye") as Node3D).global_position

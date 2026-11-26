@@ -42,17 +42,18 @@ ZC = D - SHELF_L * math.cos(math.radians(SHELF_DEG))     # the carriage face
 YS1 = 1286.0                                              # where the shelf meets the carriage face (a riser below the pockets)
 YB0 = YS1 - SHELF_L * math.sin(math.radians(SHELF_DEG))   # the base's top front edge
 # The carriage face: two rectangular pockets cut into it at standing eye level (1650).
-CARR_Y0, CARR_Y1 = 1460.0, 1860.0
-POCKET_DEPTH = 180.0                        # each pocket is cut this far into the carriage face
-POCKET_Y1 = 1820.0                          # the pockets' tops: solid panel above and around them
+CARR_Y0, CARR_Y1 = 1472.0, 1860.0
+POCKET_DEPTH = 180.0                        # each pocket is cut this far into the carriage face (canister 150 wide: +20%)
+POCKET_Y1 = 1832.0                          # the pockets' tops (canister 300 tall: +20%): solid panel above and around
+POCKET_CHAMFER = 22.0                       # the pocket's corners, as in the concept's alcove
 ZP = ZC - POCKET_DEPTH                      # a pocket's back wall
-POCKET_CX = (-235.0, 235.0)                 # pocket centres
-POCKET_W = 380.0
-# Cradle: a low seat with a back guard, open at the front. Offsets are from the pocket centre.
-CRADLE_DX, CRADLE_R, CRADLE_H = -60.0, 98.0, 28.0
-CRADLE_Z = ZP + 20.0 + 80.0                 # the canister's axis: guard (20 mm) then its radius and a little
-GUARD_T, GUARD_H = 20.0, 170.0
-GAUGE_DX = 140.0                            # gauge beside its cradle, on the carriage face
+POCKET_CX = (-170.0, 170.0)                 # pocket centres
+POCKET_W = 180.0                            # canister 150 wide: +20%
+# Cradle: a low seat with a back guard, open at the front. Centred in the pocket.
+CRADLE_DX, CRADLE_R, CRADLE_H = 0.0, 82.0, 28.0
+CRADLE_Z = ZP + 12.0 + 78.0                 # the canister's axis: guard (12 mm) then its radius and a little
+GUARD_T, GUARD_H = 12.0, 150.0
+GAUGE_X = 330.0                             # saturation bars on the housing, outside each pocket (mirrored), on the carriage face
 # Rails: orange handles down the front edges of the cheeks, on stand-offs.
 RAIL_X, RAIL_W, RAIL_Y0, RAIL_Y1, RAIL_OUT = 468.0, 30.0, 320.0, 1700.0, 42.0
 # The upper panel: slopes down and back from the top block to the carriage face.
@@ -63,6 +64,7 @@ PANEL_T = np.array([0.0, _ps, _pc])                       # up the slope
 PANEL_N = np.array([0.0, -_pc, _ps])                      # outward (forward and down)
 YT = CARR_Y1 + PANEL_L * _ps                              # the underside of the top block
 PLATE_T = 8.0
+GAUGE_BACK = 10.0                           # a dial's back is this far behind its origin (gauge entry): the origin stands this far off the plate
 PANEL_HALF_W = W / 2 - CHEEK_T - 5.0
 # Storage holes: on the shelf, (u across, s up the slope from the base's edge).
 HOLE_R, HOLE_RING_R, HOLE_RING_H = 80.0, 88.0, 6.0        # bore, and the trim ring round its mouth
@@ -74,8 +76,9 @@ FILLED_HOLES = (0, 1, 2, 4)                 # holes (row-major) holding a canist
 ROW_A, ROW_B = 230.0, 68.0
 O2_AT, CO2_AT, RATE_AT, NOISE_AT = -310.0, -105.0, 105.0, 310.0
 GAUGE_R, NOISE_R = 0.055, 0.055            # dial radii (m)
-TOGGLE_AT, LAMP_AT = 105.0, 175.0
 O2_ALARM_AT, CO2_ALARM_AT = -310.0, -105.0
+# The fan switch: the upper-right corner of the storage shelf, (u across, s up the slope), with its run lamp beside it.
+TOGGLE_U, TOGGLE_S, LAMP_U = 352.0, 300.0, 412.0
 # The operator.
 EYE = np.array([0.0, 1650.0, D + 150.0])
 REACH_MM = 750.0
@@ -100,8 +103,8 @@ def _cradle_xyz(i: int) -> tuple[float, float, float]:
 
 
 def _gauge_xyz(i: int) -> tuple[float, float, float]:
-    """Origin of gauge i: the bar's bottom, on the carriage face."""
-    return (POCKET_CX[i] + GAUGE_DX, CARR_Y0 + 100.0, ZP)
+    """Origin of gauge i: the bar's bottom, on the carriage face beside pocket i, centred on eye level."""
+    return ((-1.0, 1.0)[i] * GAUGE_X, EYE[1] - entry("linear_gauge")["footprint_mm"][1] / 2, ZC)
 
 
 def _holes() -> list[tuple[float, float]]:
@@ -127,6 +130,12 @@ def _slot_xform(base: np.ndarray) -> Xform:
     """A slot's frame for a canister along the shelf normal: X stays X, Y is the normal, Z completes it."""
     c, sn = SHELF_N
     return Xform.frame((1, 0, 0), (0, c, sn), (0, -sn, c), tuple(float(v) / 1000.0 for v in base))
+
+
+def _shelf_xform(u: float, s: float, out: float = 0.0) -> Xform:
+    """A frame on the shelf: +Z out of its surface, +Y up the slope."""
+    o = _shelf_point(u, s) + _shelf_normal() * out
+    return Xform.frame((1, 0, 0), (0, SHELF_N[1], -SHELF_N[0]), tuple(_shelf_normal()), tuple(float(v) / 1000.0 for v in o))
 
 
 def _panel_xform(u: float, v: float, out: float = 0.0) -> Xform:
@@ -157,6 +166,13 @@ def _profile() -> list[tuple[float, float]]:
             (YT, D + OVERHANG), (H, D + OVERHANG), (H, 0.0)]
 
 
+def _pocket_cutter() -> bd.Part:
+    """A pocket's volume, from its back wall to a millimetre past the face, centred on X and Y, with chamfered corners."""
+    w, h, c = POCKET_W / 2, (POCKET_Y1 - CARR_Y0) / 2, POCKET_CHAMFER
+    pts = [(-w + c, -h), (w - c, -h), (w, -h + c), (w, h - c), (w - c, h), (-w + c, h), (-w, h - c), (-w, -h + c)]
+    return bd.extrude(bd.Plane.XY * bd.Polygon(*pts, align=None), amount=POCKET_DEPTH + 1.0)
+
+
 def solids() -> list[Solid]:
     shell = _yz_extrude(_profile(), -W / 2, W / 2)
     shell = bd.chamfer(shell.edges(), BODY_CHAMFER)
@@ -165,7 +181,7 @@ def solids() -> list[Solid]:
         shell = shell + at(box(CHEEK_T, YT - YB0, D, chamfer_mm=BODY_CHAMFER), x=sx * (W / 2 - CHEEK_T / 2), y=(YB0 + YT) / 2)
     # Two rectangular pockets, side by side, cut into the carriage face; solid panel between and around them.
     for cx in POCKET_CX:
-        shell = shell - at(box(POCKET_W, POCKET_Y1 - CARR_Y0, POCKET_DEPTH + 1.0), x=cx, y=(CARR_Y0 + POCKET_Y1) / 2, z=ZP + (POCKET_DEPTH + 1.0) / 2)
+        shell = shell - at(_pocket_cutter(), x=cx, y=(CARR_Y0 + POCKET_Y1) / 2, z=ZP)
     nrm = _shelf_normal()
     bore = 330.0
     for u, s in _holes():
@@ -186,7 +202,7 @@ def solids() -> list[Solid]:
         guard = at(box(2 * CRADLE_R - 20.0, GUARD_H, GUARD_T, chamfer_mm=3.0), x=cx, y=CARR_Y0 + GUARD_H / 2, z=ZP + GUARD_T / 2)
         out += [Solid(seat, "trim_black"), Solid(guard, "control_grey")]
     # The panel plate, on the sloping face.
-    plate = _along(box(2 * PANEL_HALF_W, PANEL_L - 4.0, PLATE_T, chamfer_mm=3.0), PANEL_O + PANEL_T * (PANEL_L / 2), PANEL_N)
+    plate = _along(box(2 * PANEL_HALF_W, PANEL_L - 4.0, PLATE_T, chamfer_mm=3.0), PANEL_O + PANEL_T * (PANEL_L / 2) + PANEL_N * (PLATE_T / 2), PANEL_N)
     out.append(Solid(plate, "control_grey"))
     # A trim ring round each hole's mouth.
     for u, s in _holes():
@@ -231,22 +247,29 @@ def _check(sol: list[Solid]) -> dict:
         gx, gy, gz = _gauge_xyz(i)
         px0, px1 = POCKET_CX[i] - POCKET_W / 2, POCKET_CX[i] + POCKET_W / 2
         expect(abs(cy + ch / 2 - EYE[1]) <= 50.0, f"canister {i}'s middle ({cy + ch / 2:.0f}) at crew eye level ({EYE[1]:.0f})")
-        expect(cx - cw / 2 >= px0 + 10.0 and gx + gw / 2 <= px1 - 10.0, f"cradle {i} and gauge {i} inside pocket {i}")
+        expect(cx - cw / 2 >= px0 + 5.0 and cx + cw / 2 <= px1 - 5.0, f"canister {i} inside pocket {i}")
+        expect(POCKET_W <= 1.25 * cw and POCKET_Y1 - CARR_Y0 <= 1.25 * ch and POCKET_DEPTH <= 1.25 * cw,
+               f"pocket {i} ({POCKET_W:.0f} x {POCKET_Y1 - CARR_Y0:.0f} x {POCKET_DEPTH:.0f}) about 20% larger than the {cw:.0f} x {ch:.0f} canister")
         expect(px0 >= -W / 2 + CHEEK_T and px1 <= W / 2 - CHEEK_T, f"pocket {i} between the cheeks")
         expect(cy + ch <= POCKET_Y1 - 30.0, f"canister {i} stands {cy + ch - CARR_Y0:.0f} mm in a pocket {POCKET_Y1 - CARR_Y0:.0f} mm tall, with room to lift")
         expect(cz + cw / 2 <= ZC, f"canister {i} sits wholly inside its pocket (front at {cz + cw / 2:.0f}, face at {ZC:.0f})")
         expect(cz + cw / 2 <= D - 60.0, f"canister {i} sits well back from the face (its front at {cz + cw / 2:.0f} of {D:.0f})")
         expect(cz + CRADLE_R <= ZC + 30.0, f"cradle {i}'s seat within its pocket")
         expect(cz - cw / 2 >= ZP + GUARD_T, f"canister {i} clear of the back guard")
-        expect(gy + gh <= POCKET_Y1 - 20.0 and gy >= CARR_Y0 + 20.0, f"gauge {i} inside the pocket's height")
-        gap = (gx - gw / 2) - (cx + cw / 2)
-        expect(gap >= 10.0, f"gauge {i} {gap:.0f} mm clear of its canister")
+        # the saturation bar is on the housing beside its pocket: the face, in view, between the pocket and the cheek
+        out_edge = abs(gx) - gw / 2
+        expect(abs(gz - ZC) < 0.01, f"saturation bar {i} on the carriage face, not in the pocket")
+        expect(out_edge >= abs(POCKET_CX[i]) + POCKET_W / 2 + 20.0, f"saturation bar {i} {out_edge - abs(POCKET_CX[i]) - POCKET_W / 2:.0f} mm outside pocket {i}")
+        expect(abs(gx) + gw / 2 <= W / 2 - CHEEK_T - 20.0, f"saturation bar {i} clear of the cheek")
+        expect(gy >= YS1 + 20.0 and gy + gh <= CARR_Y1 - 20.0, f"saturation bar {i} on the solid face, between the shelf and the panel")
+        expect(gx * POCKET_CX[i] > 0, f"saturation bar {i} on pocket {i}'s own side")
         expect(CRADLE_R * math.cos(math.pi / 12) >= cw / 2, f"cradle {i}'s seat holds the {cw:.0f} mm canister")
         pts = [np.array([cx + dx, cy + dy, cz + dz]) for dx in (-cw / 2, cw / 2) for dy in (0.0, ch) for dz in (-cw / 2, cw / 2)]
         pts += [np.array([gx + dx, gy + dy, gz + dz]) for dx in (-gw / 2, gw / 2) for dy in (0.0, gh) for dz in (0.0, gau["stand_out_mm"])]
         far = max(float(np.linalg.norm(q - EYE)) for q in pts)
         expect(far <= REACH_MM, f"cradle {i} and gauge {i} within {REACH_MM:.0f} mm of the standing eye ({far:.0f} mm)")
     expect(POCKET_CX[1] - POCKET_CX[0] - POCKET_W >= 60.0, "solid panel between the pockets")
+    expect(POCKET_CHAMFER >= 10.0 and 2 * POCKET_CHAMFER < POCKET_W, f"pocket corners chamfered {POCKET_CHAMFER:.0f} mm")
     expect(W / 2 - CHEEK_T - (POCKET_CX[1] + POCKET_W / 2) >= 10.0 and ZP >= 20.0 and CARR_Y1 - POCKET_Y1 >= 20.0, "solid panel around the pockets")
     figures = _check_panel(sol)
     for sx in (-1, 1):
@@ -299,11 +322,14 @@ def _check_panel(sol: list[Solid]) -> dict:
     expect(TOP_RECESS >= 5.0, "a stored canister shows its top just below the shelf surface")
     # The panel: plate bounds and dial layout, in plate coordinates (u, v up the slope).
     r, rn = GAUGE_R * 1000.0, NOISE_R * 1000.0
+    out_dial = PLATE_T + GAUGE_BACK
+    expect(out_dial - GAUGE_BACK >= PLATE_T, f"dials' backs ({out_dial - GAUGE_BACK:.0f} mm out) sit on the plate face ({PLATE_T:.0f} mm), not in it")
     dials = {"O2 dial": (O2_AT, ROW_A, bez * r), "CO2 level dial": (CO2_AT, ROW_A, bez * r),
              "CO2 rate dial": (RATE_AT, ROW_A, bez * r), "noise dial": (NOISE_AT, ROW_A, bez * rn)}
     tw, th = tog["footprint_mm"]
     lw = lamp["footprint_mm"][0] / 2
-    lamps = {"O2 alarm lamp": (O2_ALARM_AT, ROW_B, lw), "CO2 alarm lamp": (CO2_ALARM_AT, ROW_B, lw), "fan lamp": (LAMP_AT, ROW_B, lw)}
+    lamps = {"O2 alarm lamp": (O2_ALARM_AT, ROW_B, lw), "CO2 alarm lamp": (CO2_ALARM_AT, ROW_B, lw)}
+    expect(O2_ALARM_AT == O2_AT and CO2_ALARM_AT == CO2_AT, "each alarm lamp directly under its gauge")
     items = {**dials, **lamps}
     names = list(items)
     for i, a in enumerate(names):
@@ -312,9 +338,6 @@ def _check_panel(sol: list[Solid]) -> dict:
     for name, (x, y, rr) in dials.items():
         expect(-PANEL_HALF_W + 5.0 <= x - rr and x + rr <= PANEL_HALF_W - 5.0, f"{name} inside the panel plate")
         expect(y + rr <= PANEL_L - 8.0, f"{name} below the plate's top edge")
-        expect(abs(x - TOGGLE_AT) > ph * r + tw / 2 + 6.0 or y - pb * r >= ROW_B + th / 2 + 6.0, f"{name} clears the fan toggle")
-    expect(TOGGLE_AT - tw / 2 >= -PANEL_HALF_W + 5.0 and ROW_B - th / 2 >= 8.0, "fan toggle inside the plate")
-    expect((LAMP_AT - lw) - (TOGGLE_AT + tw / 2) >= 6.0, "toggle clear of its lamp")
     for name, (x, y, rr) in lamps.items():
         expect(-PANEL_HALF_W + 5.0 <= x - rr and x + rr <= PANEL_HALF_W - 5.0 and y - rr >= 8.0, f"{name} inside the plate")
     for name, (x, y, rr) in dials.items():
@@ -327,10 +350,16 @@ def _check_panel(sol: list[Solid]) -> dict:
     def at_panel(u: float, v: float, out: float) -> np.ndarray:
         return np.array([u, *(PANEL_O + PANEL_T * v + PANEL_N * (PLATE_T + out))[1:]])
 
-    far_tog = max(float(np.linalg.norm(at_panel(TOGGLE_AT + dx, ROW_B + dy, tog["stand_out_mm"]) - EYE))
+    # The fan toggle and its lamp on the shelf's upper-right corner: on the shelf, clear of the holes and the cheek.
+    expect(TOGGLE_U - tw / 2 >= max(c for c, _ in holes) + HOLE_RING_R + 10.0, "fan toggle clear of the storage holes")
+    expect(LAMP_U + lw <= W / 2 - CHEEK_T - 8.0 and (LAMP_U - lw) - (TOGGLE_U + tw / 2) >= 6.0, "run lamp beside the toggle, clear of the cheek")
+    expect(TOGGLE_S + th / 2 <= SHELF_L - 8.0 and TOGGLE_S - th / 2 >= max(s for _, s in holes) - HOLE_RING_R, "fan toggle in the shelf's upper corner")
+    expect(TOGGLE_S >= SHELF_L / 2 and TOGGLE_U > 0, "fan toggle in the upper-right corner of the shelf")
+    far_tog = max(float(np.linalg.norm(_shelf_point(TOGGLE_U + dx, TOGGLE_S + dy)
+                                       + _shelf_normal() * tog["stand_out_mm"] - EYE))
                   for dx in (-tw / 2, tw / 2) for dy in (-th / 2, th / 2))
     expect(far_tog <= REACH_MM, f"the fan toggle within {REACH_MM:.0f} mm of the standing eye ({far_tog:.0f} mm)")
-    far_dial = max(float(np.linalg.norm(at_panel(x + dx, y + dy, 0.0) - EYE)) for x, y, rr in dials.values() for dx in (-rr, rr) for dy in (-rr, rr))
+    far_dial = max(float(np.linalg.norm(at_panel(x + dx, y + dy, GAUGE_BACK) - EYE)) for x, y, rr in dials.values() for dx in (-rr, rr) for dy in (-rr, rr))
     expect(far_dial <= REACH_MM, f"every dial within {REACH_MM:.0f} mm of the standing eye ({far_dial:.0f} mm)")
     far_top = 0.0
     top_y = 0.0
@@ -376,7 +405,7 @@ def build() -> dict:
     # Instruments, on the sloping panel plate.
     ls = SName("life_support_readouts")
     def dial(name: str, u: float, title: str, r: float, **kw) -> None:
-        s.node(name, instance=scene_path("gauge"), props={"transform": _panel_xform(u, ROW_A, PLATE_T), "radius": r, "title": title,
+        s.node(name, instance=scene_path("gauge"), props={"transform": _panel_xform(u, ROW_A, PLATE_T + GAUGE_BACK), "radius": r, "title": title,
                                                           "source_group": ls, **kw})
     dial("O2Gauge", O2_AT, "O2", GAUGE_R, readout=SName("o2_level"), min_value=0.0, max_value=1.0)
     dial("Co2LevelGauge", CO2_AT, "CO2", GAUGE_R, readout=SName("co2_level"), min_value=0.0, max_value=1.0)
@@ -385,9 +414,10 @@ def build() -> dict:
     s.node("O2AlarmLamp", instance=scene_path("indicator_lamp"), props={"transform": _panel_xform(O2_ALARM_AT, ROW_B, PLATE_T)})
     s.node("Co2AlarmLamp", instance=scene_path("indicator_lamp"), props={"transform": _panel_xform(CO2_ALARM_AT, ROW_B, PLATE_T)})
     s.node("FanToggle", instance=scene_path("guarded_toggle"),
-           props={"transform": _panel_xform(TOGGLE_AT, ROW_B, PLATE_T), "label": "FANS", "initial_value": 1.0})
-    s.node("FanLamp", instance=scene_path("indicator_lamp"), props={"transform": _panel_xform(LAMP_AT, ROW_B, PLATE_T)})
-    s.node("NoiseRepeater", instance="res://src/noise/noise_gauge.tscn", props={"transform": _panel_xform(NOISE_AT, ROW_A, PLATE_T), "radius": NOISE_R})
+           props={"transform": _shelf_xform(TOGGLE_U, TOGGLE_S), "label": "FANS", "initial_value": 1.0})
+    s.node("FanLamp", instance=scene_path("indicator_lamp"), props={"transform": _shelf_xform(LAMP_U, TOGGLE_S)})
+    s.node("NoiseRepeater", instance="res://src/noise/noise_gauge.tscn",
+           props={"transform": _panel_xform(NOISE_AT, ROW_A, PLATE_T + GAUGE_BACK), "radius": NOISE_R})
     s.write(d / f"{SLUG}.tscn")
     _cameras(d)
     n_can = 2 + len(FILLED_HOLES)
@@ -397,20 +427,20 @@ def build() -> dict:
     write_entry(GROUP, SLUG, {
         "kind": "station",
         "summary": "Life-support wall unit shaped like an arcade cabinet: a top block overhanging the front, a sloping upper "
-                   "panel (O2, CO2 level, CO2 rate with two needles, noise repeater, O2 and CO2 alarm lamps, a guarded fan "
-                   "toggle on by default with its run lamp), a recessed carriage face at eye level with two cradles (each "
-                   "with a scrubber canister and a linear saturation gauge), a sloped console-desk shelf with six round "
-                   "storage holes (canisters inside, tops showing), and a vertical base on a hazard-striped plinth. The operator stands.",
+                   "panel (O2, CO2 level, CO2 rate with two needles, noise repeater, O2 and CO2 alarm lamps under their gauges), "
+                   "a recessed carriage face at eye level with two small chamfered pockets (each with a cradle and scrubber canister, "
+                   "a linear saturation gauge on the housing beside it), a sloped console-desk shelf with six round "
+                   "storage holes (canisters inside, tops showing) and the guarded fan toggle (on by default) with its run lamp in its upper-right corner, and a vertical base on a hazard-striped plinth. The operator stands.",
         "tags": ["station", "life support", "scrubber", "canister", "cradle", "storage", "o2", "co2", "wall unit", "standing"],
         "scene": res(d / f"{SLUG}.tscn"),
         "behaviour": {"wire": {"cradles": "CradleA, CradleB (CanisterSlot; call try_seat on CanisterA, CanisterB)",
-                               "gauges": "SaturationA, SaturationB read life_support_readouts: saturation_a, saturation_b (0..1)",
+                               "gauges": "SaturationA, SaturationB (on the housing beside each pocket) read life_support_readouts: saturation_a, saturation_b (0..1)",
                                "storage": "Storage1..Storage6 (CanisterSlot along the sloped shelf's normal, lower row then upper row; Stored1,2,3,5 hold a canister, 4 and 6 are empty)",
                                "o2": "O2Gauge reads life_support_readouts: o2_level (0..1)",
                                "co2_level": "Co2LevelGauge reads life_support_readouts: co2_level (0..1)",
                                "co2_rate": "Co2RateGauge reads life_support_readouts: co2_capacity_rate, co2_production_rate (0..1, needle B is production)",
                                "alarms": "O2AlarmLamp, Co2AlarmLamp (IndicatorLamp)",
-                               "fans": "FanToggle (SwitchLever, value_changed, initial_value 1: on) with FanLamp (IndicatorLamp)",
+                               "fans": "FanToggle (SwitchLever, value_changed, initial_value 1: on; on the shelf's upper-right corner) with FanLamp (IndicatorLamp) beside it",
                                "noise_repeater": "NoiseRepeater",
                                "upper_panel": "UpperPanelAnchor (bottom middle of the sloping panel plate, on its face; +Z out of the face, +Y up the slope)",
                                "standing_eye": "OperatorEye"}},
