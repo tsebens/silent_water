@@ -229,4 +229,8 @@ func altitude() -> float:
 func readout(property: StringName) -> float:
 	if property == &"altitude":
 		return altitude()
+	if property == &"top_speed":
+		return model.top_forward_speed()
+	if property == &"bilge_limit":
+		return model.max_surfaceable_bilge_t()
 	return float(get(property))

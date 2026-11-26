@@ -197,6 +197,10 @@ station's active ports. Each is a perforated cylinder full of absorbent beads.
 **O2** is one big tank. The crew can only watch its level and make sure there is enough for the dive.
 Refills may come later; low-O2 effects are not designed yet.
 
+**Alarm lamps.** The station's lamps have three levels: off, steady, flashing. CO2 goes steady at 7,000 ppm
+and flashes at 25,000 ppm. O2, as a fraction of the tank, goes steady at or below 0.25 and flashes at or
+below 0.10 (placeholders until depletion is modelled). Thresholds live in a `LifeSupportAlarmLevels` resource.
+
 **Air volume.** The hull is about 10 m by 3.8 m by 3.0 m; after walls, bilge and equipment the free air is
 roughly 40 m³, to be measured from the blockout. In that volume 1 kg of CO2 is about 1.3% (13,000 ppm),
 and four resting crew with no scrubbing add about 0.2% per real hour, which is why the game's rates will

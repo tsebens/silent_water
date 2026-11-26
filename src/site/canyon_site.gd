@@ -145,6 +145,7 @@ func _configure_noise() -> void:
 
 
 func _ready() -> void:
+	add_to_group(&"terrain_site")
 	_rng.seed = spec.seed
 	bake_erosion()
 	_build_terrain()

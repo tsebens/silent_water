@@ -1,0 +1,27 @@
+slug: joystick
+group: kit
+kind: display
+summary: 'Armrest joystick: black rubber boot and a stick with a grip and two thumb buttons. The stick is its own
+  GLB with its pivot at the origin under `Frame` (Y along the stick), so a JoystickIndicator with `stick` = Frame/Stick
+  can tilt it. No base.'
+tags:
+- joystick
+- stick
+- throttle
+- rudder
+- planes
+- armrest
+- pilot
+scene: res://assets/models/kit/joystick/joystick.tscn
+footprint_mm:
+- 52.0
+- 52.0
+stand_out_mm: 100.0
+mount: back on Z=0, centred; stick rises toward +Z; thumb buttons face -Y; tilt +/-20 deg
+triangles: 244
+built_by: tools/cadkit/scenes/joystick.py
+files:
+- component.yaml
+- joystick.tscn
+- joystick_boot.glb
+- joystick_stick.glb
