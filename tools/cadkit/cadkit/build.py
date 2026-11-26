@@ -23,7 +23,7 @@ from pathlib import Path
 
 import yaml
 
-from cadkit import library
+from cadkit import library, mount
 from cadkit.solids import GeometryError
 
 SCENES_DIR = Path(__file__).resolve().parents[1] / "scenes"
@@ -96,6 +96,7 @@ def stage(staging: Path, scenes_dir: Path = SCENES_DIR) -> dict:
                 raise BuildFailed(slug, str(e)) from e
             built[slug] = {"result": result, "files": library.take_written(), "group": modules[slug].GROUP}
             _check_budget(slug, modules[slug].GROUP)
+            _check_mounts(slug, modules[slug].GROUP)
     finally:
         library.set_root(library.MODELS)
     return built
@@ -110,6 +111,15 @@ def _check_budget(slug: str, group: str) -> None:
     budget = entry.get("triangle_budget", library.TRIANGLE_BUDGET[group])   # a scene may carry its own approved budget
     if max(counts) > budget:
         raise BuildFailed(slug, f"{max(counts)} triangles; the budget for {group} is {budget}")
+
+
+def _check_mounts(slug: str, group: str) -> None:
+    """A station that declares its mounts (`mounts` in its entry) sets no instanced kit face on its host face."""
+    if group != "stations":
+        return
+    found = mount.problems(slug, library.entry(slug), library.entry)
+    if found:
+        raise BuildFailed(slug, "; ".join(found))
 
 
 def _rel(built: dict, staging: Path) -> dict[str, list[str]]:
