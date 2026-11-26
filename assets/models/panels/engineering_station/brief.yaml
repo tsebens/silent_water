@@ -1,0 +1,63 @@
+# Station brief for the engineering station (concept #530), from the concept issue.
+station: engineering_station
+
+concept:
+  images:
+    - path: assets/models/engineering/concept/engineering_primary.png
+      role: primary            # the station to build
+      view: a standing crew member in the aisle, the station on the port hull to the left
+      camera: concept_primary
+  doc: assets/models/engineering/concept/engineering_concept.md
+  compare_on:
+    - overall massing: wheels on valve bodies on ballast pipework along the hull at chest height; a low console beneath; the pump lever out of the console's end
+    - where things sit: the gauge plate between the two wheels; the drop-weights guard, the bilge switch and lamp, the bilge level and noise gauges on the console top
+    - the drop-weights button reading as a serious, guarded emergency control (hinged hazard-striped flip guard)
+    - colour blocking, matching the life support unit and the electrical board
+  ignore:
+    - exact labels, numbers and gauge faces in the art
+    - the crew member, the corridor beyond, the floor grating and hose routing, lighting mood
+
+functions:
+  - id: flood_wheel
+    control: the FLOOD wheel on its valve body on the ballast pipe, turned with the mouse (a handwheel valve)
+    binds: Valve (src/interact/valve.gd), as the ballast station's FloodValve today; SubController.flood_valve. The pilot's Numpad 2 drives the same valve, so the wheel turns when the pilot floods
+    status: implemented (the Valve behaviour and the ballast model); the wheel scene on its pipe is new
+  - id: blow_wheel
+    control: the BLOW wheel, as above
+    binds: Valve; SubController.blow_valve; the pilot's Numpad 8
+    status: implemented; the wheel scene is new
+  - id: ballast_gauges
+    display: TANK LEVEL and AIR REMAINING gauges on a plate between the wheels
+    binds: SubController readouts tank_fraction and air_fraction (shared Gauge)
+    status: implemented
+  - id: drop_weights
+    control: one big DROP WEIGHTS - EMERGENCY button under a hinged hazard-striped flip guard; lift the guard, press; once per dive
+    binds: a new release that sheds the drop weights' mass, so the sub becomes strongly buoyant and rises fast
+    status: control only; the drop-weight release is new game code. Its COST is intent only for now (see Notes)
+  - id: electric_bilge_pump
+    control: the BILGE PUMP switch with a RUNNING lamp; deliberately not automatic; loud (about 78 dB); powered from the BILGE PUMP breaker
+    binds: LeakSystem.pump (today's bilge pump switch) and the power system's BILGE PUMP circuit (#545)
+    status: implemented (switch and pump); its circuit is being built in M14
+  - id: bilge_level
+    display: BILGE LEVEL gauge
+    binds: SubController readout bilge_water_t
+    status: implemented
+  - id: manual_bilge_pump
+    control: a long lever out of the console's end, worked by occupying it. Hold E for the down stroke; release and it springs back up; wait a beat for the cylinder to refill; hold again. A stroke cycle takes about 1.5 s. Nearly silent; needs no power
+    binds: a new manual pump in LeakSystem, removing about 0.035 t/s of bilge water while worked steadily (one leak floods at 0.04 t/s; the electric pump clears 0.06 t/s). One person slows an unpatched leak to a trickle; once it is patched, they clear a flooded sub fairly quickly
+    status: control only; new
+  - id: noise_repeater
+    display: the shared noise repeater gauge
+    status: implemented
+
+constraints:
+  kind: panel
+  frame: back on Z=0 against the port hull, centred on the station, controls toward +Z
+  operator_eye_m: [0.0, 0.55, 0.5]   # standing eye 1.65 m above the floor, the station centred at about 1.1 m, the crew member 0.5 m out
+  reach_m: 1.1                 # from the shoulder, 0.25 m below the eye (docs/asset_process.md)
+  size: about 1.2 m along the hull at most, at the program's ballast position (port, z 3.275), with the pump lever's end toward the bilge well (centre, z 4.1)
+  aisle: the pump lever's whole sweep, up and down, leaves the aisle at least program.yaml aisle_min_m (0.8 m) clear
+  gauges: the console's low gauges must read from the standing eye; tilt them up if needed
+  triangle_budget: 4000        # panel
+  palette: every colour a palette swatch; things that are touched follow the palette's interaction colour unless the look review keeps the art's dark-steel wheels; the drop-weights guard uses hazard_stripe
+  red_light: the RUNNING lamp and the gauges must read under the stealth red cabin light

@@ -1,0 +1,105 @@
+slug: engineering_station
+group: panels
+kind: panel
+summary: 'Engineering station: two ballast pipes in from the sides, each turning down into the top of a low raked
+  console as wide as the pipework, with the FLOOD and BLOW valve wheels inline on the horizontal runs and the TANK
+  LEVEL and AIR REMAINING gauges on a plate between the bends; on the console the guarded DROP WEIGHTS button, the
+  BILGE PUMP switch and RUNNING lamp, the BILGE LEVEL gauge and the noise repeater; the manual bilge pump on a pod
+  at the console''s end, its lever out toward the player. Aluminium label plates, matte grey body.'
+tags:
+- panel
+- engineering
+- ballast
+- flood
+- blow
+- valve
+- drop weights
+- bilge
+- pump
+- standing
+scene: res://assets/models/panels/engineering_station/engineering_station.tscn
+behaviour:
+  wire:
+    ballast: 'FloodWheel and BlowWheel (Valve): bind SubController.flood_valve and blow_valve (and PilotSeat''s)'
+    gauges: TankGauge (tank_fraction), AirGauge (air_fraction), BilgeGauge (bilge_water_t, 0..8), NoiseGauge (acoustics_readouts);
+      all default to the sub_readouts group
+    drop_weights: 'DropWeights (DropWeightsButton: guard and button set; finds the sub controller by group)'
+    bilge: 'BilgeSwitch (SwitchLever, its lamp follows it): bind to LeakSystem.pump; HandPump (HandPump, finds the
+      leak_system group)'
+    eye: OperatorEye (the standing eye, 0.5 m out, 0.55 m above the station's centre)
+footprint_mm:
+- 1190.0
+- 440.0
+stand_out_mm: 311.5
+mount: back on Z=0 against the port hull (X along the hull, Z out into the aisle); the station's centre stands 1.1
+  m above the floor (Y -1100 is the floor); the pump lever runs out toward the player from the console's +X end
+operator_eye_m:
+- 0.0
+- 0.55
+- 0.5
+reach_m: 1.1
+mounts:
+- anchor: FloodWheel
+  scene: valve_wheel
+  offset_mm: 2.0
+  host_face: wall plane z=0
+- anchor: BlowWheel
+  scene: valve_wheel
+  offset_mm: 2.0
+  host_face: wall plane z=0
+- anchor: TankGauge
+  scene: gauge
+  offset_mm: 12.0
+  host_face: wall plane z=16
+- anchor: AirGauge
+  scene: gauge
+  offset_mm: 12.0
+  host_face: wall plane z=16
+- anchor: DropWeights
+  scene: drop_weights_button
+  offset_mm: 2.0
+  host_face: console top
+- anchor: BilgeSwitch
+  scene: lit_toggle
+  offset_mm: 2.0
+  host_face: console top
+- anchor: BilgeGauge
+  scene: gauge
+  offset_mm: 12.0
+  host_face: console top
+- anchor: NoiseGauge
+  scene: gauge
+  offset_mm: 12.0
+  host_face: console top
+- anchor: HandPump
+  scene: hand_pump
+  offset_mm: 2.0
+  host_face: pump pod face z=148
+uses:
+- valve_wheel
+- gauge
+- lit_toggle
+- drop_weights_button
+- hand_pump
+triangles: 3912
+triangles_by_part:
+  body: 572
+checks:
+  reach_mm:
+    FloodWheel: 787.7
+    BlowWheel: 787.7
+    DropWeights: 780.6
+    BilgeSwitch: 730.3
+    HandPump: 663.0
+  sight_lines: 5
+  reach_limit_mm: 1100.0
+  along_hull_mm: 1190.0
+  aisle_free_m: 2.357
+  pump_sweep_depth_mm: 625.6
+built_by: tools/cadkit/scenes/engineering_station.py
+files:
+- component.yaml
+- engineering_station.tscn
+- engineering_station_body.glb
+- review/.gdignore
+- review/cameras.json
