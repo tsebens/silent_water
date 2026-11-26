@@ -50,6 +50,7 @@ var _pump_audio: AudioStreamPlayer3D
 
 func _ready() -> void:
 	add_to_group(&"noise_sources")
+	add_to_group(&"leak_system")
 	for child: Node in leaks_root.get_children():
 		var leak: Leak = child as Leak
 		if leak != null:
