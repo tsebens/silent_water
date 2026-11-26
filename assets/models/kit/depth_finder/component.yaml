@@ -1,0 +1,39 @@
+slug: depth_finder
+group: kit
+kind: display
+summary: 'Letterbox echo-sounder: low wide matte black bezel with an orange lip round a recessed screen. The DepthFinder
+  node is a DepthFinder quad drawing the sea floor along the heading.'
+tags:
+- display
+- depth
+- depth finder
+- echo sounder
+- sonar
+- letterbox
+- screen
+- pilot
+scene: res://assets/models/kit/depth_finder/depth_finder.tscn
+behaviour:
+  script: DepthFinder
+  node: DepthFinder
+  reads: height_at of the node in group terrain_site; SubFrame.render_transform()
+footprint_mm:
+- 276.0
+- 156.0
+stand_out_mm: 22.0
+depth_mm:
+  behind_origin: 0.0
+  in_front_of_origin: 22.0
+mount: back on Z=0, centred on the origin; the screen faces +Z. Sits on a flat face; no cutout needed
+set_on_instance:
+  DepthFinder:range_ahead, range_behind, depth_span, columns: the window of the trace
+  DepthFinder:trace_swatch, face_swatch: palette swatches
+limits:
+  max_stand_out_mm: 25.0
+uses: []
+triangles: 104
+built_by: tools/cadkit/scenes/depth_finder.py
+files:
+- component.yaml
+- depth_finder.tscn
+- depth_finder_housing.glb
