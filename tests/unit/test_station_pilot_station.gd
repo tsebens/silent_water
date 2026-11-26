@@ -118,6 +118,18 @@ func test_instruments_resolve_with_their_behaviours() -> void:
 	expect(_anchor(st, "Navball") is Navball, "the navball is a Navball")
 	expect(_anchor(st, "SpeedGauge") is Gauge, "the speed gauge is a Gauge")
 	expect(_anchor(st, "NoiseRepeater") is Gauge, "the noise repeater is a Gauge")
+	st.queue_free()
+
+
+func test_gauges_stand_off_their_facets() -> void:
+	# #596: the build declares each gauge 2 mm off its facet (the mount gap), so the dial face is not coplanar with it.
+	var yaml: String = FileAccess.get_file_as_string("res://assets/models/stations/pilot_station/component.yaml")
+	expect(yaml.contains("Anchors/NoiseRepeater") and yaml.contains("Anchors/SpeedGauge"), "both gauges are declared mounts")
+	expect(not yaml.contains("offset_mm: 0"), "no declared mount sits on its host face")
+
+
+func test_toggles_and_lamps_resolve() -> void:
+	var st: Node3D = _make()
 	for name: String in TOGGLES:
 		expect(_anchor(st, name) is SwitchLever, "%s is a switch" % name)
 	for name: String in LAMPS:

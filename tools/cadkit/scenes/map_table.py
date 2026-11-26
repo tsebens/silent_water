@@ -16,6 +16,7 @@ import build123d as bd
 import numpy as np
 import yaml
 
+from cadkit import mount
 from cadkit.solids import Solid, at, bbox_mm, box, expect, export_solids_glb, prism
 from cadkit.library import REPO, entry, note, out_dir, res, scene_path, write_entry
 from cadkit.tscn import NodePath, Scene, Xform
@@ -390,17 +391,23 @@ def build() -> dict:
     yc = (MOD_Y0 + MOD_Y1) / 2
     mx, _mw = MODULES["GaugeModule"]
     s.node("Shelf", props={"transform": Xform(origin=(mx / 1000, yc / 1000, 68 / 1000))})
+    gap = mount.stand_off() / 1000       # the dial's face is drawn on the anchor's Z=0: off the module's front plate by the gap
     s.node("NoiseRepeater", parent="Shelf", instance="res://src/noise/noise_gauge.tscn",
-           props={"transform": Xform(origin=(0, 10 / 1000, 0)), "radius": 0.075})
+           props={"transform": Xform(origin=(0, 10 / 1000, gap)), "radius": 0.075})
     for name, (gx_, gy, r) in DECOR_GAUGES.items():
         s.node(name, parent="Shelf", instance=scene_path("gauge"),
-               props={"transform": Xform(origin=(gx_ / 1000, gy / 1000, 0)), "radius": r, "title": "", "source_group": SName_none()})
+               props={"transform": Xform(origin=(gx_ / 1000, gy / 1000, gap)), "radius": r, "title": "", "source_group": SName_none()})
     s.write(d / f"{SLUG}.tscn")
     tris = (rep["triangles"] + sum(entry(sl)["triangles"] for sl, *_ in LAYOUT.values())
             + (1 + len(DECOR_GAUGES)) * entry("gauge")["triangles"])
     expect(tris <= 12000, f"station within the 12,000 triangle budget ({tris})")
     _cameras(d)
+    mounts = [mount.record(f"Shelf/{n}", "gauge", mount.stand_off(), "GaugeModule front plate")
+              for n in ("NoiseRepeater", *DECOR_GAUGES)]
+    expect(mounts[0]["offset_mm"] > mount.COPLANAR_TOL_MM and not mount.problems(SLUG, {"mounts": mounts}, entry),
+           f"no gauge face (back, dial face on Z=0, bezel front) within {mount.COPLANAR_TOL_MM} mm of the module's front plate")
     write_entry(GROUP, SLUG, {
+        "mounts": mounts,
         "kind": "station",
         "summary": "Crew map table: D-shaped table with orange edge rail, plinth and braces, a console jutting from the front "
                    "edge (pan trackball, zoom lever, decorative knob, follow switch, lamp), an orange-railed instrument shelf "
