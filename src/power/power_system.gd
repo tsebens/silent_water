@@ -20,6 +20,8 @@ signal generator_overheated
 signal breaker_tripped(circuit: Circuit)
 signal breaker_blown(circuit: Circuit)
 signal breaker_replaced(circuit: Circuit)
+## A junction box on a circuit's line is damaged (sparking) or repaired.
+signal box_damage_changed(circuit: Circuit, box: int, damaged: bool)
 
 enum Circuit { MOTOR, THRUSTERS, BILGE_PUMP, CABIN_LTS, EXT_LTS, SONAR, FANS, HELM, DISPLAYS }
 enum BreakerState { OFF, ON, TRIPPED, BLOWN }
@@ -55,6 +57,8 @@ var spares: int = 4
 var heat_locked: bool = false
 
 var _breakers: Dictionary = {}
+## Damaged junction boxes: key [method box_key] -> true.
+var _damaged: Dictionary = {}
 var _wear: Dictionary = {}
 var _powered: Dictionary = {}
 var _gen_running: bool = false
@@ -170,6 +174,20 @@ func _rpc_request_replace(circuit: int) -> void:
 		replace_breaker(circuit as Circuit)
 
 
+## Any peer: repair a damaged junction box.
+func request_repair(circuit: Circuit, box: int) -> void:
+	if _is_host():
+		repair_box(circuit, box)
+	elif _online():
+		_rpc_request_repair.rpc_id(1, int(circuit), box)
+
+
+@rpc("any_peer", "reliable")
+func _rpc_request_repair(circuit: int, box: int) -> void:
+	if _is_host() and CIRCUIT_NAMES.has(circuit):
+		repair_box(circuit as Circuit, box)
+
+
 ## The full replicated state as plain data.
 func snapshot() -> Dictionary:
 	var br: Dictionary = {}
@@ -183,6 +201,7 @@ func snapshot() -> Dictionary:
 		"gen_starting": _gen_starting, "start_left": _start_left,
 		"engine_output": _engine_output, "thruster_demand": _thruster_demand,
 		"bilge_running": _bilge_running, "draw": _draw_per_min,
+		"damaged": _damaged.keys(),
 	}
 
 
@@ -198,6 +217,17 @@ func apply_snapshot(snap: Dictionary) -> void:
 	_thruster_demand = float(snap["thruster_demand"])
 	_bilge_running = bool(snap["bilge_running"])
 	_draw_per_min = float(snap["draw"])
+	var dmg: Array = snap.get("damaged", [])
+	var box_changes: Array[Vector3i] = []
+	for k: int in _damaged.keys():
+		if not dmg.has(k):
+			box_changes.append(Vector3i(k / 16, k % 16, 0))
+	for k: int in dmg:
+		if not _damaged.has(k):
+			box_changes.append(Vector3i(k / 16, k % 16, 1))
+	_damaged.clear()
+	for k: int in dmg:
+		_damaged[k] = true
 	var wr: Dictionary = snap["wear"]
 	for c: int in wr:
 		_wear[c] = int(wr[c])
@@ -214,6 +244,8 @@ func apply_snapshot(snap: Dictionary) -> void:
 		breaker_changed.emit(c as Circuit, _breakers[c] as BreakerState)
 	if gen_changed:
 		generator_changed.emit(running)
+	for b: Vector3i in box_changes:
+		box_damage_changed.emit(b.x as Circuit, b.y, b.z == 1)
 	_refresh_power()
 
 
@@ -359,6 +391,9 @@ func set_breaker(circuit: Circuit, on: bool) -> BreakerState:
 	if s == BreakerState.BLOWN:
 		return s
 	set_breaker_state(circuit, BreakerState.ON if on else BreakerState.OFF)
+	# A damaged line trips again as soon as it is switched back on.
+	if on and line_damaged(circuit):
+		trip(circuit)
 	return breaker_state(circuit)
 
 
@@ -399,6 +434,52 @@ func on_hull_strike(speed: float) -> void:
 		var k: int = _rng.randi_range(0, live.size() - 1)
 		trip(live[k] as Circuit)
 		live.remove_at(k)
+	if speed >= config.damage_hit_threshold and _rng.randf() < config.damage_chance:
+		damage_box(
+			_rng.randi_range(0, CIRCUIT_NAMES.size() - 1) as Circuit,
+			_rng.randi_range(0, config.junction_boxes_per_line - 1))
+
+
+# -- Damaged lines ----------------------------------------------------------
+
+static func box_key(circuit: int, box: int) -> int:
+	return circuit * 16 + box
+
+
+func box_count(_circuit: Circuit) -> int:
+	return config.junction_boxes_per_line
+
+
+func box_damaged(circuit: Circuit, box: int) -> bool:
+	return _damaged.has(box_key(circuit, box))
+
+
+## True when any junction box on the circuit's line is damaged.
+func line_damaged(circuit: Circuit) -> bool:
+	for b: int in box_count(circuit):
+		if box_damaged(circuit, b):
+			return true
+	return false
+
+
+## Damage the line at a junction box; a live circuit trips at once. Host only.
+func damage_box(circuit: Circuit, box: int) -> void:
+	if not _is_host() or box < 0 or box >= box_count(circuit) or box_damaged(circuit, box):
+		return
+	_damaged[box_key(circuit, box)] = true
+	box_damage_changed.emit(circuit, box, true)
+	trip(circuit)
+	_broadcast()
+
+
+## Clear a box's damage; its sparking stops. Host only. False if not damaged.
+func repair_box(circuit: Circuit, box: int) -> bool:
+	if not _is_host() or not box_damaged(circuit, box):
+		return false
+	_damaged.erase(box_key(circuit, box))
+	box_damage_changed.emit(circuit, box, false)
+	_broadcast()
+	return true
 
 
 ## Bilge water in tonnes. Crossing above the flood threshold trips the MOTOR
