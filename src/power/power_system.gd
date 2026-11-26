@@ -3,6 +3,12 @@ extends Node
 ## The sub's power: battery, generator, motor draw and nine breakers. Not an
 ## autoload. Host-authoritative simulation; displays ask [method readout].
 ## Faults (tripped, blown) exist as breaker states but are driven by a later arc.
+##
+## Replication follows [MapModel]: the host simulates and owns the state; every
+## peer asks the host through [method request_breaker], [method request_generator]
+## and the engine-side setters on the host. The host sends a snapshot on every
+## discrete change and every [constant SNAPSHOT_INTERVAL] seconds (charge and
+## heat drift), and a full snapshot to each joining peer. Clients do not simulate.
 
 signal breaker_changed(circuit: Circuit, state: BreakerState)
 ## Emitted when a circuit gains or loses power (breaker, blackout).
@@ -14,6 +20,7 @@ signal generator_overheated
 enum Circuit { MOTOR, THRUSTERS, BILGE_PUMP, CABIN_LTS, EXT_LTS, SONAR, FANS, HELM, DISPLAYS }
 enum BreakerState { OFF, ON, TRIPPED, BLOWN }
 
+const SNAPSHOT_INTERVAL: float = 0.5
 const GROUP: StringName = &"power_system"
 const CIRCUIT_NAMES: Dictionary = {
 	Circuit.MOTOR: &"motor",
@@ -28,6 +35,12 @@ const CIRCUIT_NAMES: Dictionary = {
 }
 
 @export var config: PowerConfig = PowerConfig.new()
+## Dev flag: start with this battery charge (0-1). Negative keeps the default (full).
+@export var dev_start_charge: float = -1.0
+## Dev flag: start with the generator already running.
+@export var dev_generator_running: bool = false
+## Test seam: behave as a client even where the peer is offline (offline counts as host).
+var simulate_client: bool = false
 
 var charge: float = 1.0
 var heat: float = 0.0
@@ -46,6 +59,7 @@ var _engine_output: float = 0.0
 var _thruster_demand: float = 0.0
 var _bilge_running: bool = false
 var _draw_per_min: float = 0.0
+var _snapshot_timer: float = 0.0
 
 
 func _init() -> void:
@@ -59,11 +73,135 @@ func _ready() -> void:
 	add_to_group(GROUP)
 	add_to_group(&"noise_sources")
 	spares = config.spare_count
+	if dev_start_charge >= 0.0:
+		charge = clampf(dev_start_charge, 0.0, 1.0)
+	if dev_generator_running:
+		_gen_running = true
 	_refresh_power()
+	breaker_changed.connect(func(_c: Circuit, _s: BreakerState) -> void: _broadcast())
+	generator_changed.connect(func(_r: bool) -> void: _broadcast())
+	generator_overheated.connect(_broadcast)
+	blackout_changed.connect(func(_b: bool) -> void: _broadcast())
+	if is_inside_tree():
+		Net.peer_joined.connect(_on_peer_joined)
 
 
 func _physics_process(delta: float) -> void:
+	if not _is_host():
+		return
 	step(delta)
+	if _online():
+		_snapshot_timer += delta
+		if _snapshot_timer >= SNAPSHOT_INTERVAL:
+			_broadcast()
+
+
+# -- Replication -------------------------------------------------------------
+
+func _is_host() -> bool:
+	return not simulate_client and (not is_inside_tree() or multiplayer.is_server())
+
+
+func _online() -> bool:
+	return is_inside_tree() and Net.is_online()
+
+
+## Any peer: switch a breaker. The host applies it; clients ask the host.
+func request_breaker(circuit: Circuit, on: bool) -> void:
+	if _is_host():
+		set_breaker(circuit, on)
+	elif _online():
+		_rpc_request_breaker.rpc_id(1, int(circuit), on)
+
+
+## Any peer: start (true) or stop (false) the generator.
+func request_generator(run: bool) -> void:
+	if _is_host():
+		if run:
+			start_generator()
+		else:
+			stop_generator()
+	elif _online():
+		_rpc_request_generator.rpc_id(1, run)
+
+
+@rpc("any_peer", "reliable")
+func _rpc_request_breaker(circuit: int, on: bool) -> void:
+	if _is_host() and CIRCUIT_NAMES.has(circuit):
+		set_breaker(circuit as Circuit, on)
+
+
+@rpc("any_peer", "reliable")
+func _rpc_request_generator(run: bool) -> void:
+	if not _is_host():
+		return
+	if run:
+		start_generator()
+	else:
+		stop_generator()
+
+
+## The full replicated state as plain data.
+func snapshot() -> Dictionary:
+	var br: Dictionary = {}
+	var wr: Dictionary = {}
+	for c: int in CIRCUIT_NAMES:
+		br[c] = int(_breakers[c])
+		wr[c] = int(_wear[c])
+	return {
+		"breakers": br, "wear": wr, "charge": charge, "heat": heat,
+		"heat_locked": heat_locked, "spares": spares, "gen_running": _gen_running,
+		"gen_starting": _gen_starting, "start_left": _start_left,
+		"engine_output": _engine_output, "thruster_demand": _thruster_demand,
+		"bilge_running": _bilge_running, "draw": _draw_per_min,
+	}
+
+
+## Adopt a host snapshot, emitting the same signals a local change would.
+func apply_snapshot(snap: Dictionary) -> void:
+	charge = float(snap["charge"])
+	heat = float(snap["heat"])
+	heat_locked = bool(snap["heat_locked"])
+	spares = int(snap["spares"])
+	_start_left = float(snap["start_left"])
+	_gen_starting = bool(snap["gen_starting"])
+	_engine_output = float(snap["engine_output"])
+	_thruster_demand = float(snap["thruster_demand"])
+	_bilge_running = bool(snap["bilge_running"])
+	_draw_per_min = float(snap["draw"])
+	var wr: Dictionary = snap["wear"]
+	for c: int in wr:
+		_wear[c] = int(wr[c])
+	var changed: Array[int] = []
+	var br: Dictionary = snap["breakers"]
+	for c: int in br:
+		if _breakers.get(c) != int(br[c]):
+			_breakers[c] = int(br[c])
+			changed.append(c)
+	var running: bool = bool(snap["gen_running"])
+	var gen_changed: bool = running != _gen_running
+	_gen_running = running
+	for c: int in changed:
+		breaker_changed.emit(c as Circuit, _breakers[c] as BreakerState)
+	if gen_changed:
+		generator_changed.emit(running)
+	_refresh_power()
+
+
+func _broadcast() -> void:
+	_snapshot_timer = 0.0
+	if _is_host() and _online():
+		_rpc_snapshot.rpc(snapshot())
+
+
+@rpc("authority", "call_remote", "reliable")
+func _rpc_snapshot(snap: Dictionary) -> void:
+	apply_snapshot(snap)
+
+
+func _on_peer_joined(peer_id: int) -> void:
+	if _is_host():
+		_rpc_snapshot.rpc_id(peer_id, snapshot())
 
 
 ## Advance the simulation by [param delta] seconds.
