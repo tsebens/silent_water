@@ -63,8 +63,8 @@ checks:
   gap_mm: 600.0
   eye_to_anchor_mm:
     DepthFinder: 990
-    Multidisplay: 1021
-    SpeedGauge: 1091
+    Multidisplay: 1027
+    SpeedGauge: 1118
     Navball: 992
     ExternalLightSwitch: 1001
     ExternalColourSwitch: 1008

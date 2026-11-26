@@ -2,7 +2,7 @@
 
 A heavy matte black round bezel with four hex bolts in a square powder-coated grey plate, a thin safety-orange ring
 round the bezel, an engraved label plate and a recessed screen disc. The face is the `MultiDisplay` script with the
-pilot preset. The build parameter SCREEN_D_MM (default 140) scales the whole housing; the plate's size limit is
+pilot preset. The build parameter SCREEN_D_MM (default 200) scales the whole housing; the plate's size limit is
 MAX_PLATE_MM (the pilot strip, #446, does not exist yet, so the limit is a named figure to adjust).
 
 `housing(screen_d_mm)` is the shared housing family: the navball's script (#459) imports it with
@@ -17,9 +17,9 @@ import json
 
 SLUG, GROUP = "multidisplay", "kit"
 USES: list[str] = []
-SCREEN_D_MM = 140.0                 # the build parameter: diameter of the screen
+SCREEN_D_MM = 200.0                 # the build parameter: diameter of the screen (matches the gauge dial)
 REF_D_MM = 140.0                    # every figure below is for this diameter and scales with SCREEN_D_MM
-MAX_PLATE_MM = 190.0                # the largest plate that fits the strip (placeholder until #446)
+MAX_PLATE_MM = 280.0                # the largest plate that fits the strip (a named figure to adjust)
 MAX_STAND_OUT_MM = 26.0
 SIDES = 32
 PILOT_PRESET = "res://assets/models/cockpit/pilot_multidisplay.tres"
@@ -75,6 +75,7 @@ def build() -> dict:
     h = housing()
     rep = export_solids_glb(h["solids"], d / f"{SLUG}_housing.glb", "MultiDisplayHousing")
     tris = rep["triangles"]
+    expect(abs(SCREEN_D_MM - 200.0) < 0.01, f"the screen is {SCREEN_D_MM:.0f} mm; the gauge dial is 200")
     expect(tris <= 1500, f"{tris} triangles; kit budget 1500")
     s = Scene("MultiDisplayKit")
     s.node("Housing", instance=rep["glb"])
@@ -100,7 +101,7 @@ def build() -> dict:
         "depth_mm": {"behind_origin": 0.0, "in_front_of_origin": round(h["stand_out_mm"], 2)},
         "mount": "back on Z=0, centred on the origin; the screen faces +Z. Bolts to the plate's corners; no cutout needed",
         "set_on_instance": {
-            "Screen:screen_diameter": "m; the quad. The housing is built for 0.14 (build parameter SCREEN_D_MM scales it for every user)",
+            "Screen:screen_diameter": "m; the quad. The housing is built for 0.2 (build parameter SCREEN_D_MM scales it for every user)",
             "Screen:slots, preset": "the four widget slots (top, left, right, bottom), or a MultiDisplayPreset",
             "Screen:source_group": "where the readouts come from",
             "Screen:chevrons_enabled, chevron_readout, chevron_count, chevron_step": "the centre chevron column",
@@ -123,6 +124,12 @@ def _review(d) -> None:
         {"name": "face_red", "pos": [0.0, 0.0, 0.7], "look_at": [0.0, 0.0, 0.012], "fov": 16.0, "light": "red"},
         {"name": "profile", "pos": [0.6, 0.0, 0.015], "look_at": [0.0, 0.0, 0.015], "ortho": 0.26},
     ]
+    k = SCREEN_D_MM / REF_D_MM
+    for c in cams:                      # the cameras were framed for REF_D_MM; scale them with the screen
+        c["pos"] = [round(v * k, 4) for v in c["pos"]]
+        c["look_at"] = [round(v * k, 4) for v in c["look_at"]]
+        if "ortho" in c:
+            c["ortho"] = round(c["ortho"] * k, 4)
     review = d / "review"
     review.mkdir(parents=True, exist_ok=True)
     (review / ".gdignore").touch()
