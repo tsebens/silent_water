@@ -7,6 +7,10 @@ extends ScienceModule
 ## The objective this module drives. Found in group [code]scan_objectives[/code] when not set.
 @export var objective: ScanObjective
 
+## The arm switch on the face, if any: thrown on arms the scan, thrown off stops it, and the module's own state
+## drives the switch back (a power loss throws it off).
+@export var arm_switch: SwitchLever
+
 var powered: bool = true
 
 
@@ -17,6 +21,31 @@ func _init() -> void:
 func _ready() -> void:
 	PowerSink.bind(self, PowerSystem.Circuit.DISPLAYS, set_powered)
 	_link()
+	if arm_switch != null:
+		arm_switch.value_changed.connect(_on_switch_changed)
+		armed_changed.connect(_on_armed_changed)
+
+
+func _switch_on() -> bool:
+	return arm_switch.get_value() >= (arm_switch.min_value + arm_switch.max_value) * 0.5
+
+
+func _set_switch(on: bool) -> void:
+	if multiplayer.is_server():
+		arm_switch.host_set_value(arm_switch.max_value if on else arm_switch.min_value)
+
+
+func _on_switch_changed(_value: float) -> void:
+	var on: bool = _switch_on()
+	if on and not powered:
+		_set_switch(false)
+	elif on != armed:
+		armed = on
+
+
+func _on_armed_changed(on: bool) -> void:
+	if arm_switch != null and _switch_on() != on:
+		_set_switch(on)
 
 
 func set_powered(on: bool) -> void:
