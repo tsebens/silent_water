@@ -40,9 +40,17 @@ extends Resource
 @export var heat_restart_threshold: float = 0.5
 @export var heat_load_power: float = 0.6
 
-## Fault tuning, driven by a later arc but held here with the rest.
+## Fault tuning.
+## Hull strike speed (m/s) at or above which one or two random circuits trip.
 @export var trip_hit_threshold: float = 1.0
+## Bilge water (tonnes) above which the MOTOR and BILGE PUMP trip.
 @export var trip_flood_threshold: float = 1.0
+## Overload: engine output moving this far within [member overload_window] s
+## (full astern to full ahead is 2.0) trips the MOTOR.
+@export var overload_output_jump: float = 1.5
+@export var overload_window: float = 1.0
+## Overload: the pump starting while motor power is at or above this trips it.
+@export var overload_pump_motor_power: float = 0.8
 @export var wear_limit: int = 3
 @export var spare_count: int = 4
 
