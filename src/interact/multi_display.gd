@@ -227,7 +227,12 @@ class MultiDisplayCanvas:
 		var col: Color = display.colour_for(i)
 		var px: int = int(h * 0.6)
 		if not s.label.is_empty():
-			_text(at + Vector2(0, -h * 0.72), s.label, int(h * 0.3), Palette.main().color(s.swatch))
+			# The bottom slot sits under the rate chevrons, so its label goes
+			# below the value instead of above it.
+			var label_y: float = -h * 0.72
+			if i == MultiDisplay.Slot.BOTTOM:
+				label_y = px * 0.3 + h * 0.4
+			_text(at + Vector2(0, label_y), s.label, int(h * 0.3), Palette.main().color(s.swatch))
 		var mark: String = s.marker_for(v)
 		match s.kind:
 			MultiDisplaySlot.Kind.NUMBER:

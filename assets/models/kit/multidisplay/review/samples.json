@@ -1,0 +1,11 @@
+{
+ "group": "sub_readouts",
+ "values": {
+  "depth": 142.0,
+  "tank_fraction": 0.8,
+  "buoyancy": -0.12,
+  "altitude": 6.4,
+  "vertical_speed": -1.2,
+  "air_fraction": 0.7
+ }
+}

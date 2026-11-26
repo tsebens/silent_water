@@ -19,6 +19,7 @@ func _ready() -> void:
 	get_window().size = Vector2i(1280, 800)
 	var scene: Node3D = (load(args[0]) as PackedScene).instantiate() as Node3D
 	add_child(scene)
+	_sample_source(args[0])
 	_lights()
 	var cams: Array = _auto_cameras(scene) if args.size() < 3 else JSON.parse_string(FileAccess.get_file_as_string(args[2])) as Array
 	DirAccess.make_dir_recursive_absolute(args[1])
@@ -109,3 +110,24 @@ func _aabb(node: Node) -> AABB:
 
 static func _arr(v: Vector3) -> Array:
 	return [v.x, v.y, v.z]
+
+
+class SampleSource:
+	extends Node
+	var vals: Dictionary = {}
+
+	func readout(n: StringName) -> float:
+		return float(vals.get(String(n), 0.0))
+
+
+## `<scene folder>/review/samples.json` ({"group": ..., "values": {readout: value}}) adds a source of sample readouts,
+## so a display's review render shows its face with values rather than blank.
+func _sample_source(scene_path: String) -> void:
+	var f: String = scene_path.get_base_dir().path_join("review/samples.json")
+	if not FileAccess.file_exists(f):
+		return
+	var d: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(f)) as Dictionary
+	var src: SampleSource = SampleSource.new()
+	src.vals = d.get("values", {})
+	src.add_to_group(StringName(d.get("group", "")))
+	add_child(src)
