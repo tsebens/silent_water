@@ -1,5 +1,6 @@
 [gd_scene format=3]
 
+[ext_resource type="Script" path="res://src/power/power_system.gd" id="power_system"]
 [ext_resource type="PackedScene" path="res://src/sub/sub_model.tscn" id="1"]
 [ext_resource type="PackedScene" path="res://src/interact/valve.tscn" id="2"]
 [ext_resource type="Script" path="res://src/interact/gauge.gd" id="3"]
@@ -532,3 +533,6 @@ script = ExtResource("ls_readouts")
 
 [node name="LifeSupportAlarmDriver" type="Node" parent="."]
 script = ExtResource("ls_driver")
+
+[node name="PowerSystem" type="Node" parent="."]
+script = ExtResource("power_system")
