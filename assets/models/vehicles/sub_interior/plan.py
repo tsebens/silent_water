@@ -331,6 +331,23 @@ def draw_front(spec: dict, hull: Hull, out: Path) -> None:
     img.save(out)
 
 
+def dome_block(spec: dict, hull: Hull, rings: list) -> dict:
+    """The cockpit's spherical dome, resolved: centre, radius, the ring plane (hull-centre frame) and the mesh counts."""
+    d = spec["dome"]
+    pilot = next(i for i in spec["stations"] if i["id"] == d.get("station", "pilot"))
+    # the ring plane is the hull ring nearest the pilot's z, so the hull aft of it is the unchanged loft
+    ring_z = min(rings, key=lambda r: abs(r["z"] - pilot["z"]))["z"]
+    floor_y = hull.deck_y(pilot["z"])
+    radius = d["diameter_m"] / 2
+    cy = floor_y + d["eye_height_m"] - d["centre_below_eye_m"]
+    floor_r2 = radius ** 2 - (cy - floor_y) ** 2
+    return {"centre": [round(pilot.get("x", 0.0), 4), round(cy, 4), ring_z], "radius_m": radius,
+            "ring_z": ring_z, "ring_normal": [0.0, 0.0, 1.0], "forward": [0.0, 0.0, -1.0],
+            "floor_y": floor_y, "floor_radius_m": round(max(floor_r2, 0.0) ** 0.5, 4),
+            "segments_round": d["segments_round"], "rings_to_apex": d["rings_to_apex"],
+            "max_triangles": d["max_triangles"]}
+
+
 def export_layout(spec: dict, hull: Hull, out: Path) -> None:
     """Write layout.json: everything the Blender blockout needs, resolved, so the geometry has one source.
 
@@ -388,6 +405,7 @@ def export_layout(spec: dict, hull: Hull, out: Path) -> None:
                      "wall_m": hull.wall, "plan_exponent": hull.pp, "profile_exponent": hull.pz,
                      "section_exponent": hull.ps, "rings": rings},
             "main_deck_y": hull.deck_y(), "floors": floors, "items": items,
+            "dome": dome_block(spec, hull, rings),
             "clearances": spec["clearances"], "compartments": spec["compartments"], "cameras": cams}
     out.write_text(json.dumps(data, indent=1), encoding="utf-8")
 

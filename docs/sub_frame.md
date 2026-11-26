@@ -68,8 +68,8 @@ So the main deck is y = 0, the sunken cockpit floor (`floor_offset_m: -0.20`) is
 | Part | What it is | Role |
 | --- | --- | --- |
 | `hull_shell-col` | The cabin wall from the cockpit rim to the stern, seen from inside | `hull_metal` |
-| `dome_glass-col` | The cockpit bubble, bow to the rim ring, glass underfoot beyond the cockpit floor | `glass` |
-| `dome_rim` | The steel ring where the dome meets the cabin | `trim_black` |
+| `dome_glass-col` | The cockpit bubble: a true 2.2 m hemisphere (`layout.json` `dome`, built from `program.yaml`'s `dome` block), about 60 x 30 quads with a radial normal on every vertex, bulging forward of the ring; the hull's bow ends at the ring. The cockpit floor plane cuts its lower part, so glass rises round a floor disc (`tests/unit/test_dome_sphere.gd`) | `glass` |
+| `dome_rim` | The steel ring at the dome's edge, out to the cabin wall, its lip hiding the glass's edge | `trim_black` |
 | `deck_cockpit-col` | The pilot's floor, 0.2 m below the main deck, narrowing toward the bow | `interior_dark` |
 | `cockpit_step-col` | A 0.25 m ramp up from the cockpit floor to the main deck (a vertical 0.2 m riser would stop the capsule) | `interior_dark` |
 | `deck_midships-col`, `deck_bulkhead-col`, `deck_engineering-col` | The main deck, one slab per compartment; `deck_bulkhead` is the hatch sill | `interior_dark` |

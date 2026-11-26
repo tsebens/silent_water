@@ -182,3 +182,19 @@ static func compartment_span(compartment: StringName) -> Vector2:
 			return Vector2(float(c["z"][0]), float(c["z"][1]))
 	assert(false, "SubLayout: no compartment '%s'" % compartment)
 	return Vector2.ZERO
+
+
+## The cockpit dome's sphere (#594), in the interior frame: `centre` (Vector3), `radius` (float), `ring_z` (the ring's plane,
+## the cockpit's forward boundary), `floor_y` and `floor_radius` (the disc where the cockpit floor cuts the glass).
+static func dome() -> Dictionary:
+	_load()
+	var d: Dictionary = _data["dome"]
+	var c: Array = d["centre"]
+	return {
+		"centre": to_interior(Vector3(float(c[0]), float(c[1]), float(c[2]))),
+		"radius": float(d["radius_m"]),
+		"ring_z": float(d["ring_z"]),
+		"floor_y": float(d["floor_y"]) - main_deck_y(),
+		"floor_radius": float(d["floor_radius_m"]),
+		"max_triangles": int(d["max_triangles"]),
+	}

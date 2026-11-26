@@ -19,6 +19,20 @@ hull:
   deck_above_bottom_m: 0.55  # bilge, piping and the lock-out trunk's chamber sit below the deck plates
   crew: 4
 
+# The cockpit's bow bubble (#594): a true hemisphere of smooth clear acrylic bulging forward of a steel ring. The ring's
+# plane is the cockpit's forward boundary (the hull envelope ends there) and sits at the pilot's z (snapped to the
+# nearest hull ring); the sphere's centre is on the centreline, centre_below_eye_m under the seated eye, so the cockpit
+# floor plane cuts the lower part of the glass and the walkable floor is a disc inside the sphere with glass rising round it.
+# max_triangles is the ceiling for the dome part: segments_round x rings_to_apex gives about 3,600.
+dome:
+  diameter_m: 2.2
+  station: pilot             # the seat whose z and floor fix the ring and the centre
+  eye_height_m: 1.2          # seated eye above the cockpit floor
+  centre_below_eye_m: 0.2
+  segments_round: 60
+  rings_to_apex: 30
+  max_triangles: 20000
+
 clearances:                  # from the player capsule (radius 0.3, height 1.75)
   aisle_min_m: 0.8           # one person passes; two must squeeze (deliberate)
   walk_around_m: 0.8         # gap needed on each side of a centre item you walk round (the map table)

@@ -36231,6 +36231,30 @@
    "floor_y": -0.95
   }
  ],
+ "dome": {
+  "centre": [
+   0.0,
+   -0.15,
+   -3.901
+  ],
+  "radius_m": 1.1,
+  "ring_z": -3.901,
+  "ring_normal": [
+   0.0,
+   0.0,
+   1.0
+  ],
+  "forward": [
+   0.0,
+   0.0,
+   -1.0
+  ],
+  "floor_y": -1.15,
+  "floor_radius_m": 0.4583,
+  "segments_round": 60,
+  "rings_to_apex": 30,
+  "max_triangles": 20000
+ },
  "clearances": {
   "aisle_min_m": 0.8,
   "walk_around_m": 0.8,
