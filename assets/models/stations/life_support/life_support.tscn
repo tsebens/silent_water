@@ -41,8 +41,11 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.17, 1.5, 0.120174)
 [node name="SaturationA" parent="." instance=ExtResource("4")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.33, 1.534, 0.210174)
 source_group = &"life_support_readouts"
-readout = &"saturation_a"
+readout = &"capacity_a"
 max_value = 1
+descending = true
+warn_at = 0.5
+alarm_at = 0.15
 
 [node name="CradleB" type="Node3D" parent="."]
 script = ExtResource("2")
@@ -54,8 +57,11 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.17, 1.5, 0.120174)
 [node name="SaturationB" parent="." instance=ExtResource("4")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.33, 1.534, 0.210174)
 source_group = &"life_support_readouts"
-readout = &"saturation_b"
+readout = &"capacity_b"
 max_value = 1
+descending = true
+warn_at = 0.5
+alarm_at = 0.15
 
 [node name="Storage1" type="Node3D" parent="."]
 script = ExtResource("2")

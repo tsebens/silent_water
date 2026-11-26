@@ -110,6 +110,21 @@ func test_saturation_bars_are_on_the_housing_beside_the_pockets() -> void:
 	st.queue_free()
 
 
+func test_saturation_bars_read_remaining_capacity_descending() -> void:
+	var st: Node3D = _make()
+	for n: String in ["SaturationA", "SaturationB"]:
+		var bar: Node = st.get_node(n)
+		var want: StringName = &"capacity_a" if n == "SaturationA" else &"capacity_b"
+		expect_eq(bar.get("readout"), want, "%s reads %s" % [n, want])
+		expect(bar.get("descending") as bool, "%s is descending" % n)
+		expect_near(bar.get("warn_at") as float, 0.5, 0.0001, "%s warn_at" % n)
+		expect_near(bar.get("alarm_at") as float, 0.15, 0.0001, "%s alarm_at" % n)
+		expect_eq(bar.call("swatch_for", 1.0), &"light_ok", "%s: a fresh canister is green" % n)
+		expect_eq(bar.call("swatch_for", 0.3), &"light_warn", "%s: half spent is amber" % n)
+		expect_eq(bar.call("swatch_for", 0.1), &"light_alarm", "%s: nearly spent is red" % n)
+	st.queue_free()
+
+
 func test_fan_toggle_is_in_the_shelf_corner_with_its_lamp() -> void:
 	var st: Node3D = _make()
 	var tog: Node3D = st.get_node("FanToggle") as Node3D
