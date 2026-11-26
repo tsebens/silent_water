@@ -10,7 +10,7 @@ from cadkit.library import PLATE_T_MM, base_size_mm, out_dir, write_entry
 
 SLUG, GROUP = "control_base", "kit"
 USES: list[str] = []
-SIZES = [(1, 1), (1, 2), (2, 2)]
+SIZES = [(1, 1), (1, 2), (1, 3), (2, 2)]
 CHAMFER = 3.0
 BOLT_R, BOLT_H, BOLT_INSET = 3.5, 2.5, 8.0
 

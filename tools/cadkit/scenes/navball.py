@@ -166,7 +166,8 @@ def build() -> dict:
         "set_on_instance": {"mount_rotation_deg": "the ball's marking frame relative to its node",
                             "upper_swatch, lower_swatch, mark_swatch": "palette swatches of the ball",
                             "frame_group": "where the sub pose comes from"},
-        "limits": {"max_stand_out_mm": MAX_STAND_OUT_MM, "triangle_budget": BUDGET},
+        "limits": {"max_stand_out_mm": MAX_STAND_OUT_MM},
+        "triangle_budget": BUDGET,      # approved by Tristan at look review round 1 (#467), replaces the kit's 1,500
         "uses": list(USES),
         "triangles": tris,
     })

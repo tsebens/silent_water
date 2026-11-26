@@ -44,7 +44,7 @@ enum Slot { TOP, LEFT, RIGHT, BOTTOM }
 @export var ring_ok_swatch: StringName = &"light_ok"
 @export var ring_warn_swatch: StringName = &"light_warn"
 @export var ring_alarm_swatch: StringName = &"light_alarm"
-@export var ring_unlit_swatch: StringName = &"interior_dark"
+@export var ring_unlit_swatch: StringName = &"sub_grey_dark"
 ## Optional configuration copied onto this display in [method _ready].
 @export var preset: MultiDisplayPreset
 
