@@ -3,6 +3,7 @@ ok   sonar            z=-2.95  deck 2.36 m  widest free aisle 1.89 m (need 0.8) 
 ok   sonar_seat       z=-2.30  deck 2.62 m  widest free aisle 1.47 m (need 0.8)  headroom 2.32 m
 ok   countermeasures  z=-1.35  deck 2.77 m  widest free aisle 1.70 m (need 0.8)  headroom 2.33 m
 ok   map_table        z=-1.25  deck 2.68 m  widest free aisle 1.47 m (need 0.8); hologram 0.70 m of 1.25 m available  headroom 2.33 m
+ok   science          z=+0.45  deck 2.85 m  widest free aisle 0.97 m (need 0.8)  headroom 2.33 m
 ok   engineering      z=+2.30  deck 2.52 m  widest free aisle 1.46 m (need 0.8)  headroom 2.32 m
 ok   life_support     z=+2.30  deck 2.56 m  widest free aisle 1.59 m (need 0.8)  headroom 2.32 m
 ok   ballast          z=+3.27  deck 2.09 m  widest free aisle 1.29 m (need 0.8)  headroom 2.29 m
