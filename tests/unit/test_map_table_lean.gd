@@ -125,3 +125,13 @@ func test_observer_cannot_drive_the_camera() -> void:
 	expect_eq(table.holo.table_rotation_deg, rot)
 	expect_eq(table.holo.focus, focus)
 	obs_a.end_interaction()
+
+
+func test_lean_view_looks_at_the_tall_relief() -> void:
+	var holo: HoloMap = table.holo
+	var eye: Vector3 = obs_a.seat_transform().origin + Vector3.UP * obs_a.eye_height
+	var t: Transform3D = table.view_transform_from(eye)
+	var look: Vector3 = holo.global_position + holo.global_basis * Vector3(0, holo.relief_max_height() * 0.3, holo.clip_rz * 0.4)
+	var fwd: Vector3 = (t.basis * Vector3.FORWARD).normalized()
+	var want: Vector3 = (look - t.origin).normalized()
+	expect(fwd.dot(want) > 0.999, "the view points at a spot up the relief, not at its base")
