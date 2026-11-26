@@ -41,7 +41,7 @@ set_on_instance:
   frame_group: where the sub pose comes from
 limits:
   max_stand_out_mm: 90.0
-  triangle_budget: 10000
+triangle_budget: 10000
 uses:
 - multidisplay
 triangles: 9702
