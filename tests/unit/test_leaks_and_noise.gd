@@ -202,9 +202,9 @@ func test_ballast_station_is_at_the_program_panel() -> void:
 		expect(p.y > SubLayout.position(&"ballast").y, "%s above the floor" % n)
 
 
-func test_engineering_gauge_is_at_the_program_panel() -> void:
-	var p: Vector3 = _station_node("Stations/Engineering/EngineGauge").position
-	expect(SubLayout.footprint(&"engineering").grow(0.3).has_point(Vector2(p.x, p.z)), "engine gauge at the engineering panel (%s)" % p)
+func test_engineering_panel_is_at_the_program_panel() -> void:
+	var p: Vector3 = _station_node("Stations/Engineering/Panel").position
+	expect(SubLayout.footprint(&"engineering").grow(0.3).has_point(Vector2(p.x, p.z)), "engine hum source at the engineering panel (%s)" % p)
 
 
 func test_bilge_controls_are_beside_the_program_bilge_well() -> void:
