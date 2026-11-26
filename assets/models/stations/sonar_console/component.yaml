@@ -27,10 +27,10 @@ uses:
 - noise_gauge
 - flat_chart
 - headset
-triangles: 3094
+triangles: 3282
 triangles_by_part:
   body: 252
-  ActiveSonar: 320
+  ActiveSonar: 508
   Trackball: 386
   MapKeys: 480
   gauges: 1280

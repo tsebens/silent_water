@@ -160,3 +160,21 @@ func test_pilot_strip_switch_flips_on_a_click() -> void:
 	power.queue_free()
 	drv.queue_free()
 	sw.queue_free()
+
+
+func test_guarded_switch_needs_two_clicks_to_flip() -> void:
+	var sw: GuardedSwitch = (load("res://assets/models/kit/guarded_toggle/guarded_toggle.tscn") as PackedScene).instantiate() as GuardedSwitch
+	runner.add_child(sw)
+	var drv: CabinSwitch = CabinSwitch.new()
+	drv.power = sw
+	runner.add_child(drv)
+	sw.begin_interaction()
+	sw.click_action()
+	expect_eq(sw.get_value(), sw.min_value, "first click lifts the cap, the value is unchanged")
+	expect(sw.cap_open, "cap lifted")
+	sw.click_action()
+	sw.end_interaction()
+	expect_eq(sw.get_value(), sw.max_value, "second click sets it on")
+	expect_eq(drv.power.get_value(), sw.max_value, "the listener reads the new value")
+	drv.queue_free()
+	sw.queue_free()

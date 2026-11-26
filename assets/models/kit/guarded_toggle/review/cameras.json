@@ -1,0 +1,136 @@
+[
+ {
+  "name": "closed_three_quarter",
+  "pos": [
+   0.12,
+   0.11,
+   0.2
+  ],
+  "look_at": [
+   0,
+   0.01,
+   0.03
+  ],
+  "fov": 45.0
+ },
+ {
+  "name": "closed_operator_eye",
+  "pos": [
+   0,
+   0.56,
+   0.5
+  ],
+  "look_at": [
+   0,
+   0.01,
+   0.03
+  ],
+  "fov": 14.0
+ },
+ {
+  "name": "closed_side",
+  "pos": [
+   0.35,
+   0.01,
+   0.03
+  ],
+  "look_at": [
+   0,
+   0.01,
+   0.03
+  ],
+  "fov": 45.0
+ },
+ {
+  "name": "closed_red",
+  "pos": [
+   0.12,
+   0.11,
+   0.2
+  ],
+  "look_at": [
+   0,
+   0.01,
+   0.03
+  ],
+  "fov": 45.0,
+  "light": "red"
+ },
+ {
+  "name": "lifted_three_quarter",
+  "pos": [
+   0.12,
+   0.11,
+   0.2
+  ],
+  "look_at": [
+   0,
+   0.01,
+   0.03
+  ],
+  "fov": 45.0,
+  "cap_open": true
+ },
+ {
+  "name": "lifted_operator_eye",
+  "pos": [
+   0,
+   0.56,
+   0.5
+  ],
+  "look_at": [
+   0,
+   0.01,
+   0.03
+  ],
+  "fov": 14.0,
+  "cap_open": true
+ },
+ {
+  "name": "lifted_side",
+  "pos": [
+   0.35,
+   0.01,
+   0.06
+  ],
+  "look_at": [
+   0,
+   0.01,
+   0.06
+  ],
+  "fov": 45.0,
+  "cap_open": true
+ },
+ {
+  "name": "on_three_quarter",
+  "pos": [
+   0.12,
+   0.11,
+   0.2
+  ],
+  "look_at": [
+   0,
+   0.01,
+   0.03
+  ],
+  "fov": 45.0,
+  "on": true,
+  "cap_open": true
+ },
+ {
+  "name": "on_side",
+  "pos": [
+   0.35,
+   0.01,
+   0.06
+  ],
+  "look_at": [
+   0,
+   0.01,
+   0.06
+  ],
+  "fov": 45.0,
+  "on": true,
+  "cap_open": true
+ }
+]

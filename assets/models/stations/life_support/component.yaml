@@ -49,13 +49,13 @@ uses:
 - gauge
 - lit_guarded_toggle
 - indicator_lamp
-triangles: 13140
+triangles: 13328
 triangle_budget: 24000
 triangles_by_part:
   body: 2436
 checks:
   aisle_m: 0.849
-  toggle_reach_mm: 643
+  toggle_reach_mm: 631
   storage_reach_mm: 688
   dial_reach_mm: 591
 built_by: tools/cadkit/scenes/life_support.py
