@@ -14,6 +14,8 @@
 [ext_resource type="Script" path="res://src/map/map_table.gd" id="16"]
 [ext_resource type="PackedScene" path="res://src/sub/bilge_water.tscn" id="17"]
 [ext_resource type="Script" path="res://src/sub/palette_light.gd" id="palette_light"]
+[ext_resource type="Script" path="res://src/life_support/life_support_readouts.gd" id="ls_readouts"]
+[ext_resource type="Script" path="res://src/life_support/life_support_alarm_driver.gd" id="ls_driver"]
 [ext_resource type="Script" path="res://src/sub/station_placement.gd" id="station_placement"]
 [ext_resource type="PackedScene" path="res://assets/models/stations/sonar_console/sonar_console.tscn" id="sonar_console"]
 [ext_resource type="PackedScene" path="res://assets/models/stations/map_table/map_table.tscn" id="map_table"]
@@ -524,3 +526,9 @@ panel_gap = 0.0
 panel_width = 1.3
 table_rotation_deg = 90.0
 marker_size = 0.022
+
+[node name="LifeSupportReadouts" type="Node" parent="."]
+script = ExtResource("ls_readouts")
+
+[node name="LifeSupportAlarmDriver" type="Node" parent="."]
+script = ExtResource("ls_driver")
