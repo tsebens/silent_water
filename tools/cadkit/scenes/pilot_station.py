@@ -28,7 +28,8 @@ USES: list[str] = ["pilot_seat", "operator_seat", "joystick", "multidisplay", "n
 TRIANGLE_BUDGET = 12000
 
 # --- where the station sits in the hull (the program's pilot position and the cockpit floor), mm
-HULL_Z0 = -3800.0          # program.yaml `pilot` z: the seat's origin
+HULL_Z0 = -3900.0          # program.yaml `pilot` z: the seat's origin
+REACH_MM = 750.0           # brief reach_m 0.75, measured from the seated hand (resting on the joystick) to the toggles
 HULL_Y0 = -1150.0          # layout.json cockpit floor y
 LAYOUT = library.REPO / "assets/models/vehicles/sub_interior/layout.json"
 RIM_HALF_MM = 60.0         # build_sub_hull.py RIM_HALF
@@ -492,6 +493,16 @@ def _check(wings: dict[str, Wing], shapes: dict[str, bd.Shape], holo: np.ndarray
         to_eye /= np.linalg.norm(to_eye)
         expect(float(z @ to_eye) >= 0.55, f"{name}'s face is within 57 degrees of the line to the eye")
         reach[name] = round(float(np.linalg.norm(o - EYE_MM)))
+    # the four guarded toggles are reached by the seated hand resting on its armrest, at the joystick (#482, #528)
+    pm_ = scene_module("pilot_seat")
+    arm_x_ = scene_module("operator_seat").ARM_X
+    hands = [np.array([sx * arm_x_, pm_.ARM_TOP, pm_.JOY_Z]) for sx in (-1, 1)]
+    toggles = ["ExternalLightSwitch", "ExternalColourSwitch", "CabinLightSwitch", "CabinColourSwitch"]
+    hand_reach = {}
+    for name in toggles:
+        o = anchor_frame(wings, an[name])[3]
+        hand_reach[name] = round(min(float(np.linalg.norm(o - h)) for h in hands))
+        expect(hand_reach[name] <= REACH_MM, f"{name} is {hand_reach[name]} mm from the nearer resting hand (reach {REACH_MM:.0f} mm)")
     order = {"left": ["DepthFinder", "Multidisplay", "SpeedGauge"],
              "right": ["Navball", "ExternalLightSwitch", "BilgeLamp", "NoiseRepeater"]}
     for side, names in order.items():
@@ -503,7 +514,7 @@ def _check(wings: dict[str, Wing], shapes: dict[str, bd.Shape], holo: np.ndarray
     expect(BORE_D >= nb["keep_clear_mm"]["behind_face"], f"the bore ({BORE_D:.0f} mm) holds the ball's {nb['keep_clear_mm']['behind_face']:.0f} mm behind the face")
     expect(math.isclose(nb["panel_cutout"]["diameter_mm"], 115.0), "the bore is the navball's 115 mm cutout")
     return {"strip_top_mm": round(top), "hologram_top_mm": round(holo_top), "glass_clearance_mm": round(near),
-            "gap_mm": GAP, "eye_to_anchor_mm": reach, "rim_ring_clear_mm": round(rim_near - zmax),
+            "gap_mm": GAP, "eye_to_anchor_mm": reach, "toggle_hand_reach_mm": hand_reach, "rim_ring_clear_mm": round(rim_near - zmax),
             "stick_clearance_mm": round(jdist)}
 
 
@@ -548,7 +559,7 @@ def build() -> dict:
         "footprint_mm": [round(float(2 * max(abs(w.joints[-1][0]) for w in wings.values()))), round(float(-min(w.joints[0][1] for w in wings.values()) + 400))],
         "mount": "floor at Y=0, seat origin on the centreline at X=0, Z=0; the pilot faces -Z; the strip is ahead at -Z",
         "placement": {"hull_z_m": HULL_Z0 / 1000.0, "hull_floor_y_m": HULL_Y0 / 1000.0,
-                      "note": "the dome check assumes the seat origin at the program's pilot z (-3.8 m) and the cockpit floor (y -1.15 m)"},
+                      "note": "the dome check assumes the seat origin at the program's pilot z (-3.9 m) and the cockpit floor (y -1.15 m)"},
         "seated_eye_height_m": float(EYE_MM[1] / 1000.0),
         "context": ["dome glass and rim ring of assets/models/vehicles/sub_interior (checked against, not built)"],
         "uses": list(USES),

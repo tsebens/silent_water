@@ -31,7 +31,7 @@ func test_every_station_and_feature_present() -> void:
 func test_pilot_position() -> void:
 	var p: Vector3 = SubLayout.position(&"pilot")
 	expect_near(p.x, 0.0)
-	expect_near(p.z, -3.8)
+	expect_near(p.z, -3.9)
 	expect_near(p.y, -0.20, 0.0001, "the cockpit floor is one step down")
 
 
