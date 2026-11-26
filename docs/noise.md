@@ -24,7 +24,8 @@ Noise is the core system. Everything the crew does feeds one number: how loud th
 | Walking (2.6 m/s) | `Player.FOOTSTEP_INTENSITY` | 75 dB |
 | Side thrusters, full turn | `SubController.THRUSTER_INTENSITY` | 73 dB (∝ rudder input) |
 | Bilge pump running | `LeakSystem.PUMP_INTENSITY` | 78 dB |
-| Engine, full ahead | `SubController.ENGINE_FULL_INTENSITY` | 80 dB (∝ output²) |
+| Electric motor, full output | `SubController.ENGINE_FULL_INTENSITY` | 73 dB (∝ output²; see Power) |
+| Generator running | `PowerConfig.generator_noise` | 85 dB, constant |
 | Shout (RMS ≈ 0.3) | `VoiceLoudness` | ~87 dB |
 | Blowing ballast, valve fully open | `SubController.BLOW_INTENSITY` | 90 dB |
 | Hull strike at 1 m/s | `SubController.STRIKE_INTENSITY` | 95 dB, decays over 1.5 s (∝ speed²) |
@@ -45,6 +46,14 @@ Decision [#8](https://github.com/tsebens/silent_water/issues/8): each player's m
 Debug: hold **F3** to simulate normal speech, **Shift+F3** for a shout. `--fake-voice-db <dB>` reports a constant level.
 
 The reports travel unreliable-ordered, and the host counts a peer's voice as silence once its last report is older than `Acoustics.VOICE_TIMEOUT` (0.5 s), so a voice stops adding noise promptly when a player goes quiet or drops. The three-instance autotest therefore holds its snapshot until every peer's report is fresh (`Autotest.report_due`, bounded by a short grace), rather than reading a timed-out zero as a failure ([#86](https://github.com/tsebens/silent_water/issues/86)).
+
+## Power
+
+Noise follows the power system (`docs/` Power and electrics, `PowerSystem`):
+
+- The engine's throttle noise is the **motor's**: about 0.002 at full (73 dB), down from 0.01. `PowerSystem` reports it with the generator's constant 0.03 (85 dB) while running; `SubController` leaves its own engine term out when a `PowerSystem` exists, so nothing counts twice. The breakdown names `motor` and `generator`.
+- The engine output limit comes from `PowerSystem`: 40% motor power on the battery alone (output about 0.54), full on the generator, 0 with MOTOR out or the battery empty.
+- With THRUSTERS unpowered the side thrusters stop turning the sub in place and stop their noise.
 
 ## Hearing at a distance (for creatures)
 
