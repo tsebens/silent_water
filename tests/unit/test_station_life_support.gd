@@ -30,7 +30,7 @@ func test_scene_loads_and_every_instance_resolves() -> void:
 		expect(st.get_node_or_null(n) is Gauge, "%s is a Gauge" % n)
 	expect((st.get_node("Co2RateGauge") as Gauge).readout_b != &"", "the CO2 rate gauge has a second needle")
 	expect(st.get_node_or_null("FanToggle") is SwitchLever, "FanToggle is a SwitchLever")
-	expect(st.get_node_or_null("FanLamp") is IndicatorLamp, "FanLamp is an IndicatorLamp")
+	expect(st.get_node_or_null("FanLamp") == null, "there is no separate fan run lamp")
 	for n: String in ["O2AlarmLamp", "Co2AlarmLamp"]:
 		expect(st.get_node_or_null(n) is IndicatorLamp, "%s is an IndicatorLamp" % n)
 	expect_near((st.get_node("FanToggle") as SwitchLever).initial_value, 1.0, 1e-6, "the fan toggle is on by default")
@@ -125,12 +125,14 @@ func test_saturation_bars_read_remaining_capacity_descending() -> void:
 	st.queue_free()
 
 
-func test_fan_toggle_is_in_the_shelf_corner_with_its_lamp() -> void:
+func test_fan_toggle_is_in_the_shelf_corner_and_lit() -> void:
 	var st: Node3D = _make()
 	var tog: Node3D = st.get_node("FanToggle") as Node3D
-	var lamp: Node3D = st.get_node("FanLamp") as Node3D
 	expect(tog.global_position.x > 0.25, "the toggle is on the right")
-	expect(lamp.global_position.x > tog.global_position.x, "the run lamp is beside it, outboard")
+	expect(tog.scene_file_path.ends_with("lit_guarded_toggle.tscn"), "the fan switch is the lit guarded toggle")
+	expect(tog.find_children("*", "IndicatorLamp", true, false).size() == 1, "it carries its own lamp")
+	var lamp: IndicatorLamp = tog.find_children("*", "IndicatorLamp", true, false)[0] as IndicatorLamp
+	expect(lamp.is_lit(), "its lamp is lit while the fan is on by default")
 	expect(tog.global_position.y < 1.4, "the toggle is on the shelf, below the carriage pockets")
 	expect(tog.global_transform.basis.z.dot(Vector3(0.0, cos(deg_to_rad(SHELF_DEG)), sin(deg_to_rad(SHELF_DEG)))) > 0.999,
 			"the toggle faces out of the shelf surface")
