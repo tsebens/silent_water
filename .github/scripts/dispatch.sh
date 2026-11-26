@@ -3,7 +3,7 @@
 #
 # Each run:
 #   0. exit if PIPELINE_PAUSED=true
-#   1. mirror board Status=Ready onto the `ready` label (so Tristan can promote from the board)
+#   1. mirror board Status=Ready onto the `ready` label (so Tristan can promote from the board), unless the arc has open blockers
 #   2. unblock: `blocked` arcs whose blockers are all closed become `ready`
 #   2b. recover: a `claimed` arc whose build run died (no live run, no open arc PR, past the grace period) goes back to
 #      `ready` once; orphaned again, it gets `needs-human`
@@ -109,6 +109,24 @@ blockers_of() {
     arc_body "$1" | grep -i -m1 -E '^\**blocked by:?\**:?' | grep -oE '#[0-9]+' | tr -d '#' || true
     gh api "repos/$REPO/issues/$1/dependencies/blocked_by" --jq '.[].number' 2>/dev/null || true
   } | sort -un
+}
+
+# Open blockers of an arc, one token per line, read FRESH from the API (not the ARCS snapshot): "#<n>" for an open
+# blocker, "?<why>" when the read cannot be trusted. Anything printed means "not promotable". A blocker read must
+# never fail open: an arc created a moment ago can show an empty body or no dependencies (incident #564: #560 and
+# #561 were promoted with open blockers), so the arc must carry an explicit, non-blank `Blocked by:` line ("none"
+# is explicit) and the dependency read must succeed. Prints nothing only when every blocker is closed.
+open_blockers_of() { # number
+  local body line rest deps b
+  body=$(gh api "repos/$REPO/issues/$1" --jq '.body // ""' 2>/dev/null) || { echo "?body-unreadable"; return 0; }
+  line=$(grep -i -m1 -E '^\**blocked by:?\**:?' <<<"$body" || true)
+  if [ -z "$line" ]; then echo "?no-blocked-by-line"; return 0; fi
+  rest=$(sed -E 's/^\**[Bb]locked by:?\**:?//; s/[*[:space:]]+//g' <<<"$line")
+  if [ -z "$rest" ]; then echo "?blank-blocked-by-line"; return 0; fi
+  deps=$(gh api "repos/$REPO/issues/$1/dependencies/blocked_by" --jq '.[].number' 2>/dev/null) || { echo "?dependencies-unreadable"; return 0; }
+  for b in $( { grep -oE '#[0-9]+' <<<"$line" | tr -d '#' || true; echo "$deps"; } | grep -E '^[0-9]+$' | sort -un); do
+    issue_is_closed "$b" || echo "#$b"
+  done
 }
 
 # An arc never carries `ready` together with `claimed` or `in-review`: drop the stray `ready`.
@@ -345,6 +363,41 @@ close_finished_milestones() { # same arguments as closable_milestones
 # Run.
 # ---------------------------------------------------------------------------
 
+# Step 1. A board Status of Ready puts an arc on the radar but never overrides open blockers, whoever set it.
+mirror_board_ready() {
+  local n open
+  for n in $(board_numbers_with_status "Ready"); do
+    arc_has "$n" arc || continue   # not an open arc (closed, or not labeled arc)
+    if arc_has "$n" needs-human || arc_has "$n" claimed || arc_has "$n" in-review || arc_has "$n" ready; then continue; fi
+    open=$(open_blockers_of "$n" | tr '\n' ' ')
+    if [ -n "$open" ]; then
+      log "  #$n is Ready on the board but has open blockers (${open% }); not promoting, leaving it blocked"
+      arc_has "$n" blocked || add_label "$n" blocked
+      continue
+    fi
+    log "  #$n is Ready on the board; promoting"
+    arc_has "$n" blocked && remove_label "$n" blocked
+    add_label "$n" ready
+  done
+}
+
+# Step 2. `blocked` arcs whose blockers are all closed (and readable) become ready.
+unblock_arcs() {
+  local n open
+  for n in $(arcs_with blocked); do
+    arc_has "$n" needs-human && continue
+    open=$(open_blockers_of "$n" | tr '\n' ' ')
+    if [ -z "$open" ]; then
+      log "  #$n: all blockers closed"
+      remove_label "$n" blocked
+      add_label "$n" ready
+      set_board_status "$n" "Ready"
+    else
+      log "  #$n: waiting on ${open% }"
+    fi
+  done
+}
+
 # Tests source this file with DISPATCH_LIB_ONLY=1 to get the functions without running.
 if [ "${DISPATCH_LIB_ONLY:-}" = "1" ]; then return 0; fi
 
@@ -353,31 +406,11 @@ load_arcs
 load_board
 
 log "1. Mirror board Ready -> label ready"
-for n in $(board_numbers_with_status "Ready"); do
-  arc_has "$n" arc || continue   # not an open arc (closed, or not labeled arc)
-  if arc_has "$n" needs-human || arc_has "$n" claimed || arc_has "$n" in-review || arc_has "$n" ready; then continue; fi
-  log "  #$n is Ready on the board; promoting"
-  arc_has "$n" blocked && remove_label "$n" blocked
-  add_label "$n" ready
-done
+mirror_board_ready
 load_arcs
 
 log "2. Unblock"
-for n in $(arcs_with blocked); do
-  arc_has "$n" needs-human && continue
-  open_blockers=""
-  for b in $(blockers_of "$n"); do
-    issue_is_closed "$b" || open_blockers="$open_blockers #$b"
-  done
-  if [ -z "$open_blockers" ]; then
-    log "  #$n: all blockers closed"
-    remove_label "$n" blocked
-    add_label "$n" ready
-    set_board_status "$n" "Ready"
-  else
-    log "  #$n: waiting on$open_blockers"
-  fi
-done
+unblock_arcs
 load_arcs
 
 log "2b. Recover orphaned claims"
@@ -411,6 +444,8 @@ for n in $(arcs_with ready); do
   drop_stray_ready "$n" && continue
   [ "$in_flight_count" -lt "$WORKER_CAP" ] || continue
   arc_has "$n" needs-human && continue
+  open=$(open_blockers_of "$n" | tr '\n' ' ')
+  if [ -n "$open" ]; then log "  #$n is ready but has open blockers (${open% }); not claiming"; continue; fi
   t=$(touches_of "$n")
   if [ -z "$t" ]; then log "  #$n has no Touches: line; treating as touching everything"; t="."; fi
   # "." means "touches everything": it blocks, and is blocked by, every other arc.
