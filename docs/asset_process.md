@@ -113,7 +113,7 @@ Refinements:
 
 Budgets (triangles, everything a scene instances included): kit 1,500; furniture 3,000; panels 4,000; stations
 12,000. `cadkit build` fails a scene over its group's budget. A scene whose look gate approved a larger budget
-records it as `triangle_budget` in its catalogue entry (the life_support station: 24,000), and that replaces the group's.
+records it as `triangle_budget` in its catalogue entry (the life_support station: 24,000; the navball: 10,000, #467), and that replaces the group's.
 
 ## 4. When a part needs to differ: three tiers
 
