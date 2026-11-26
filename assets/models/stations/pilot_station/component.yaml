@@ -1,5 +1,14 @@
 slug: pilot_station
 group: stations
+mounts:
+- anchor: Anchors/SpeedGauge
+  scene: gauge
+  offset_mm: 2.0
+  host_face: left wing facet 2
+- anchor: Anchors/NoiseRepeater
+  scene: gauge
+  offset_mm: 2.0
+  host_face: left wing facet 2
 kind: station
 summary: 'Pilot''s station: the pilot seat on the centreline facing -Z, and one knee-height instrument strip low
   against the dome in two faceted wings with orange end caps either side of a clear gap (600 mm). Marked anchors
@@ -63,8 +72,8 @@ checks:
   gap_mm: 600.0
   eye_to_anchor_mm:
     Multidisplay: 900
-    SpeedGauge: 913
-    NoiseRepeater: 892
+    SpeedGauge: 911
+    NoiseRepeater: 890
     Navball: 902
     ExternalLightSwitch: 894
     ExternalColourSwitch: 887
