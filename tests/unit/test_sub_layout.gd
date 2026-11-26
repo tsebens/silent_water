@@ -2,7 +2,7 @@ extends TestCase
 ## SubLayout: the program's layout in the interior frame, and the one frame conversion.
 
 const STATIONS: Array[StringName] = [
-	&"pilot", &"sonar", &"sonar_seat", &"countermeasures", &"map_table",
+	&"pilot", &"sonar", &"sonar_seat", &"countermeasures", &"map_table", &"science",
 	&"engineering", &"life_support", &"ballast", &"bilge", &"scanner",
 ]
 const FEATURES: Array[StringName] = [&"lock_out_trunk", &"tower_ladder", &"lockers", &"drop_weights", &"status_board"]

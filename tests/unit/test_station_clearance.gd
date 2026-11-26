@@ -7,6 +7,7 @@ const INTERIOR_SCENE: PackedScene = preload("res://src/sub/interior.tscn")
 ## Floor space the program reserves for stations and features that other arcs build (the map table is M12.8).
 const RESERVED: Array[StringName] = [
 	&"countermeasures", &"life_support", &"lock_out_trunk", &"tower_ladder", &"lockers", &"drop_weights", &"map_table",
+	&"science",
 ]
 
 var interior: Node3D
@@ -46,6 +47,13 @@ func test_the_map_tables_footprint_is_reserved_and_empty() -> void:
 	expect(fp.size.x > 0.8 and fp.size.y > 2.0, "the map table's reservation is the program's (%s)" % fp)
 	for id: StringName in [&"sonar", &"scanner", &"engineering", &"ballast", &"bilge"]:
 		expect(not SubLayout.footprint(id).grow(-0.001).intersects(fp), "%s does not overlap the map table" % id)
+
+
+func test_the_science_stations_footprint_is_reserved_and_empty() -> void:
+	var fp: Rect2 = SubLayout.top_footprint(&"science")
+	expect(fp.size.x > 0.4 and fp.size.y > 0.8, "the science reservation is the program's (%s)" % fp)
+	for id: StringName in [&"map_table", &"lock_out_trunk", &"tower_ladder", &"sonar", &"countermeasures", &"lockers"]:
+		expect(not SubLayout.footprint(id).grow(-0.001).intersects(fp), "%s does not overlap the science station" % id)
 
 
 func test_program_footprints_do_not_overlap_each_other() -> void:
