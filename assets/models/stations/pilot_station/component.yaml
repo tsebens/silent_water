@@ -26,12 +26,12 @@ behaviour:
       Co2Lamp, LowO2Lamp (on a dark plate, 8 mm proud: mount their lamps at the anchor), NoiseRepeater'
 footprint_mm:
 - 2364
-- 1210
+- 1110
 mount: floor at Y=0, seat origin on the centreline at X=0, Z=0; the pilot faces -Z; the strip is ahead at -Z
 placement:
-  hull_z_m: -3.8
+  hull_z_m: -3.9
   hull_floor_y_m: -1.15
-  note: the dome check assumes the seat origin at the program's pilot z (-3.8 m) and the cockpit floor (y -1.15
+  note: the dome check assumes the seat origin at the program's pilot z (-3.9 m) and the cockpit floor (y -1.15
     m)
 seated_eye_height_m: 1.15
 context:
@@ -57,20 +57,25 @@ checks:
   glass_clearance_mm: 42
   gap_mm: 600.0
   eye_to_anchor_mm:
-    DepthFinder: 1043
-    Multidisplay: 1051
-    SpeedGauge: 1098
-    Navball: 1049
-    ExternalLightSwitch: 1044
-    ExternalColourSwitch: 1043
-    CabinLightSwitch: 1049
-    CabinColourSwitch: 1062
-    BilgeLamp: 1072
-    Co2Lamp: 1083
-    LowO2Lamp: 1095
-    NoiseRepeater: 1164
+    DepthFinder: 990
+    Multidisplay: 1021
+    SpeedGauge: 1091
+    Navball: 992
+    ExternalLightSwitch: 1001
+    ExternalColourSwitch: 1008
+    CabinLightSwitch: 1021
+    CabinColourSwitch: 1041
+    BilgeLamp: 1059
+    Co2Lamp: 1074
+    LowO2Lamp: 1091
+    NoiseRepeater: 1175
+  toggle_hand_reach_mm:
+    ExternalLightSwitch: 653
+    ExternalColourSwitch: 641
+    CabinLightSwitch: 640
+    CabinColourSwitch: 649
   rim_ring_clear_mm: 132
-  stick_clearance_mm: 496
+  stick_clearance_mm: 449
 built_by: tools/cadkit/scenes/pilot_station.py
 files:
 - component.yaml
