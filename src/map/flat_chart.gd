@@ -16,11 +16,19 @@ extends MeshInstance3D
 @export var range_m: float = 320.0
 @export var game: Game
 
+## False while the SONAR circuit is unpowered: the screen goes dark.
+var powered: bool = true
 var viewport: SubViewport
 var canvas: FlatChartCanvas
 
 
+func set_powered(on: bool) -> void:
+	powered = on
+	visible = on
+
+
 func _ready() -> void:
+	PowerSink.bind(self, PowerSystem.Circuit.SONAR, set_powered)
 	if game == null:
 		var n: Node = get_parent()
 		while n != null and not (n is Game):
