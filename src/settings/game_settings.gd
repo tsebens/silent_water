@@ -16,7 +16,7 @@ const REFERENCE_ASPECT: float = 16.0 / 9.0
 ## Entry: tab, key, label, type (TYPE_FLOAT / TYPE_INT / TYPE_BOOL), min, max, default.
 const DEFAULT_SCHEMA: Array[Dictionary] = [
 	{
-		"tab": "Video",
+		"tab": "Game",
 		"key": &"fov_horizontal",
 		"label": "Field of view",
 		"type": TYPE_FLOAT,
