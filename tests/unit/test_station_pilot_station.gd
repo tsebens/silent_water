@@ -98,3 +98,62 @@ func test_nothing_crosses_the_gap_or_rises_above_the_hologram() -> void:
 				var p: Vector3 = m.global_transform * v
 				expect(absf(p.x) >= GAP_M * 0.5 - 0.001, "no strip vertex inside the gap (%.3f)" % p.x)
 	st.queue_free()
+
+
+# ---- the instruments (#482): every anchor is the instrument's own scene ----
+
+const REACH_M: float = 0.75
+const TOGGLES: Array[String] = ["ExternalLightSwitch", "ExternalColourSwitch", "CabinLightSwitch", "CabinColourSwitch"]
+const LAMPS: Array[String] = ["BilgeLamp", "Co2Lamp", "LowO2Lamp"]
+
+
+func test_instruments_resolve_with_their_behaviours() -> void:
+	var st: Node3D = _make()
+	expect(_anchor(st, "DepthFinder").get_node_or_null("DepthFinder") is MeshInstance3D, "the depth finder has its display")
+	expect(_anchor(st, "Multidisplay").get_node_or_null("Screen") is MultiDisplay, "the multidisplay's screen resolves")
+	expect(_anchor(st, "Navball") is Navball, "the navball is a Navball")
+	expect(_anchor(st, "SpeedGauge") is Gauge, "the speed gauge is a Gauge")
+	expect(_anchor(st, "NoiseRepeater") is Gauge, "the noise repeater is a Gauge")
+	for name: String in TOGGLES:
+		expect(_anchor(st, name) is SwitchLever, "%s is a switch" % name)
+	for name: String in LAMPS:
+		expect(_anchor(st, name) is IndicatorLamp, "%s is a lamp" % name)
+	expect(st.get_node_or_null("Anchors/DepthFinder") != null, "the depth finder anchor stays")
+	st.queue_free()
+
+
+func test_speed_gauge_scale_follows_the_physics_model() -> void:
+	var st: Node3D = _make()
+	var g: Gauge = _anchor(st, "SpeedGauge") as Gauge
+	expect(g.scale_readout == &"top_speed", "the speed scale comes from top_speed")
+	expect(g.readout == &"speed" and g.readout_b == &"engine_output", "speed and throttle needles")
+	st.queue_free()
+
+
+func test_toggles_and_lamps_are_distinct_and_in_reach() -> void:
+	var st: Node3D = _make()
+	var seat: Node3D = st.get_node("Seat") as Node3D
+	var joys: Array[Node3D] = [seat.get_node("ThrottleJoystick") as Node3D, seat.get_node("FlightJoystick") as Node3D]
+	for name: String in TOGGLES:
+		var a: Node3D = _anchor(st, name)
+		var nearest: float = INF
+		for j: Node3D in joys:
+			nearest = minf(nearest, a.global_position.distance_to(j.global_position))
+		expect(nearest <= REACH_M, "%s is within reach of the nearer joystick hand (%.2f m)" % [name, nearest])
+		expect((a as SwitchLever).label != "", "%s carries a label" % name)
+	for i: int in LAMPS.size():
+		for k: int in range(i + 1, LAMPS.size()):
+			expect(_anchor(st, LAMPS[i]).global_position.distance_to(_anchor(st, LAMPS[k]).global_position) > 0.03, "the lamps are apart")
+	st.queue_free()
+
+
+func test_lamp_drivers_light_the_lamps() -> void:
+	var st: Node3D = _make()
+	var bilge: ThresholdLamp = st.get_node("Drivers/BilgeLampDriver") as ThresholdLamp
+	expect(bilge.lamp == _anchor(st, "BilgeLamp"), "the bilge driver is bound to its lamp")
+	expect(bilge.readout == &"bilge_water_t" and bilge.threshold_of == &"bilge_limit", "bilge reads a quarter of the limit")
+	for d: String in ["Co2LampDriver", "LowO2LampDriver"]:
+		var drv: ThresholdLamp = st.get_node("Drivers/" + d) as ThresholdLamp
+		expect(drv != null and drv.readout == &"", "%s is unwired and never lights" % d)
+		expect(not drv.is_alarm(), "%s stays dark" % d)
+	st.queue_free()

@@ -4,8 +4,9 @@ kind: station
 summary: 'Pilot''s station: the pilot seat on the centreline facing -Z, and one knee-height instrument strip low
   against the dome in two faceted wings with orange end caps either side of a clear gap (600 mm). Marked anchors
   for every instrument (left wing from the gap outward: depth finder with the hologram above it, multidisplay, speed
-  gauge; right wing: navball, four light switches, three warning lamps, noise repeater). Shell and seat only: the
-  instruments are placed by the next arc.'
+  gauge; right wing: navball, four light switches, three warning lamps, noise repeater). Every instrument is placed:
+  the scenes sit at the anchors, the lamps have ThresholdLamp drivers (bilge wired; CO2 and O2 unwired), the speed
+  gauge''s scale follows the sub''s top speed, and each toggle and lamp has an engraved label plate.'
 tags:
 - station
 - pilot
@@ -22,8 +23,11 @@ behaviour:
       right)'
     left_wing: DepthFinder, Multidisplay, SpeedGauge (from the gap outward); HologramAnchor above the depth finder,
       standing up
-    right_wing: 'Navball, ExternalLightSwitch, ExternalColourSwitch, CabinLightSwitch, CabinColourSwitch, BilgeLamp,
-      Co2Lamp, LowO2Lamp (on a dark plate, 8 mm proud: mount their lamps at the anchor), NoiseRepeater'
+    right_wing: Navball, ExternalLightSwitch, ExternalColourSwitch, CabinLightSwitch, CabinColourSwitch, BilgeLamp,
+      Co2Lamp, LowO2Lamp (on a dark plate, 8 mm proud), NoiseRepeater
+    instances: each Anchors/<name> is the instrument's scene (lamps, switches, gauges, navball, depth finder, multidisplay);
+      Drivers/<Lamp>Driver are ThresholdLamps; the four switches are not yet wired to the headlight and cabin lights
+      (the placement arc does that)
 footprint_mm:
 - 2364
 - 1110
@@ -46,11 +50,12 @@ uses:
 - gauge
 - guarded_toggle
 - indicator_lamp
-triangles: 1544
+triangles: 14626
+triangle_budget: 15000
 triangles_by_part:
-  strip: 344
+  strip: 652
   pilot_seat: 1200
-triangles_with_instruments: 14318
+  instruments: 12774
 checks:
   strip_top_mm: 780
   hologram_top_mm: 1002
