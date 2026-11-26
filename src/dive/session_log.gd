@@ -22,6 +22,9 @@ const NOISE_LOG_MIN_GAP_SEC: float = 1.0
 ## Names to print instead of peer ids (filled from launch names if known).
 var crew_names: Dictionary = {}
 
+## Drop-weight releases recorded this dive (the dive's results).
+var drops_recorded: int = 0
+
 var _file: FileAccess
 var _t: float = 0.0
 var _loud_cooldown: float = 0.0
@@ -33,6 +36,7 @@ var _apex_active: bool = true
 
 
 func _ready() -> void:
+	add_to_group(&"session_log")
 	apex.state_changed.connect(_on_apex_state)
 	apex.near_miss.connect(func(d: float) -> void: write("NEAR MISS  apex passed %.0f m away" % d))
 	controller.hull_strike.connect(func(speed: float) -> void: write("HULL STRIKE  %.1f m/s at %.0f m" % [speed, controller.depth]))
@@ -42,7 +46,9 @@ func _ready() -> void:
 	scan.scan_completed.connect(func() -> void: write("ARRAY SCANNED"))
 	director.dive_lost.connect(func() -> void: write("SUB LOST  after %s, max depth %.0f m" % [_clock(director.dive_time), director.max_depth]))
 	director.dive_complete.connect(func() -> void: write("DIVE COMPLETE  in %s, max depth %.0f m" % [_clock(director.dive_time), director.max_depth]))
-	director.dive_reset.connect(func() -> void: write("---- NEW DIVE ----"))
+	director.dive_reset.connect(func() -> void:
+		drops_recorded = 0
+		write("---- NEW DIVE ----"))
 
 
 ## Host: opens the log file. Called when a session starts.
@@ -63,12 +69,18 @@ func close_log() -> void:
 		_file = null
 
 
+## Records a drop-weights release (the hook a cost can attach to later).
+func record_drop_weights(mass_t: float, depth_m: float) -> void:
+	drops_recorded += 1
+	write("DROP WEIGHTS  released %.1f t at %.0f m" % [mass_t, depth_m])
+
+
 func log_path() -> String:
 	return _path
 
 
 func write(line: String) -> void:
-	if not multiplayer.is_server():
+	if not is_inside_tree() or not multiplayer.is_server():
 		return
 	var entry: String = "[%s] %s" % [_clock(_t), line]
 	print("[log] " + entry)

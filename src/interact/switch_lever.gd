@@ -1,6 +1,6 @@
 class_name SwitchLever
 extends Lever
-## An on/off lever (bilge pump). Snaps to the nearer end when released.
+## An on/off lever. A click (press and release) throws it to the other end; dragging does nothing.
 ## Optionally drives an [IndicatorLamp]: lit while the lever is nearer its on
 ## (max) end.
 
@@ -14,9 +14,14 @@ func _apply_visual(v: float) -> void:
 		indicator.set_lit(v >= (min_value + max_value) * 0.5)
 
 
-func _release_value(current: float) -> float:
-	return max_value if current >= (min_value + max_value) * 0.5 else min_value
+func _drag_to_value(current: float, _relative: Vector2) -> float:
+	return current
+
+
+func click_action() -> void:
+	var on: bool = get_value() >= (min_value + max_value) * 0.5
+	drive_to(min_value if on else max_value)
 
 
 func interaction_hint() -> String:
-	return "hold click, drag up or down to switch"
+	return "click to switch"

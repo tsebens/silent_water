@@ -143,3 +143,20 @@ func test_unwired_lamp_stays_unlit() -> void:
 	drv.readout = &"co2"
 	drv.update()
 	expect(not lamp.is_lit(), "no source")
+
+
+func test_pilot_strip_switch_flips_on_a_click() -> void:
+	var sw: SwitchLever = SwitchLever.new()
+	runner.add_child(sw)
+	var power: Interactable = _switch(false)
+	var drv: CabinSwitch = CabinSwitch.new()
+	drv.power = sw
+	runner.add_child(drv)
+	sw.begin_interaction()
+	sw.click_action()
+	sw.end_interaction()
+	expect_eq(sw.get_value(), sw.max_value, "clicked on")
+	expect_eq(drv.power.get_value(), sw.max_value, "the listener reads the new value")
+	power.queue_free()
+	drv.queue_free()
+	sw.queue_free()

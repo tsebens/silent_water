@@ -122,12 +122,9 @@ func _unhandled_input(event: InputEvent) -> void:
 		_activate()
 		return
 	if event.is_action_pressed(&"interact"):
-		_interact_down = true
-		if _seat == null or _seat.allows_grabbing:
-			_try_grab()
+		press_interact(aim_target())
 	elif event.is_action_released(&"interact"):
-		_interact_down = false
-		_release_held()
+		release_interact()
 	var motion: InputEventMouseMotion = event as InputEventMouseMotion
 	if motion != null:
 		if _held != null:
@@ -346,8 +343,24 @@ func _activate() -> void:
 		take_off()
 
 
-func _try_grab() -> void:
-	var node: Interactable = aim_target()
+## The interact button went down on [param node] (what the player aims at).
+## Grabs it unless a seat forbids grabbing.
+func press_interact(node: Interactable) -> void:
+	_interact_down = true
+	if _seat == null or _seat.allows_grabbing:
+		_try_grab(node)
+
+
+## The interact button came up: a click action on the held control (a switch
+## flipping) runs while the player still holds it, then the control is let go.
+func release_interact() -> void:
+	_interact_down = false
+	if _held != null:
+		_held.click_action()
+	_release_held()
+
+
+func _try_grab(node: Interactable) -> void:
 	if node == null or node is StationSeat or node is Wearable:
 		return  # Stations are taken with E, not grabbed.
 	_held = node

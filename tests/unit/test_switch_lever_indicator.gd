@@ -41,3 +41,20 @@ func test_unset_indicator_changes_nothing() -> void:
 	s.host_set_value(1.0)
 	expect(is_equal_approx(s.get_value(), 1.0), "moves normally with no lamp")
 	s.queue_free()
+
+
+func _click(s: SwitchLever) -> void:
+	s.begin_interaction()
+	s.click_action()
+	s.end_interaction()
+
+
+func test_click_lights_and_darkens_the_lamp() -> void:
+	var lamp: IndicatorLamp = _lamp()
+	var s: SwitchLever = _lever(lamp, 0.0)
+	_click(s)
+	expect(lamp.is_lit(), "click: lit")
+	_click(s)
+	expect(not lamp.is_lit(), "second click: dark")
+	s.queue_free()
+	lamp.queue_free()
