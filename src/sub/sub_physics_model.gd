@@ -61,6 +61,8 @@ var rudder_authority: float = 0.02
 ## They turn the sub even when stopped (~8.6°/s at full, steady state);
 ## the rudder adds more once there's way on.
 var thruster_yaw_accel: float = 0.09
+## False when the THRUSTERS circuit is unpowered: no turning in place.
+var thrusters_powered: bool = true
 ## Pitch acceleration per unit planes per m/s of forward speed (rad/s²).
 var planes_authority: float = 0.02
 ## Righting (metacentric) stiffness for pitch and roll (1/s²).
@@ -190,7 +192,8 @@ func step(delta: float, ordered_engine: float, rudder: float, planes: float, flo
 	# Angular: control surfaces need water flowing over them.
 	var flow: float = absf(fwd_speed)
 	var flow_sign: float = signf(fwd_speed) if fwd_speed != 0.0 else 1.0
-	var yaw_acc: float = -rudder * (rudder_authority * flow * flow_sign + thruster_yaw_accel)
+	var thruster_acc: float = thruster_yaw_accel if thrusters_powered else 0.0
+	var yaw_acc: float = -rudder * (rudder_authority * flow * flow_sign + thruster_acc)
 	var pitch_acc: float = -planes * planes_authority * flow * flow_sign - righting * sin(angles.x)
 	var roll_acc: float = -righting * sin(angles.z) - heel_factor * angular_velocity.y * fwd_speed
 	angular_velocity += Vector3(pitch_acc, yaw_acc, roll_acc) * delta

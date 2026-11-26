@@ -69,6 +69,8 @@ var _engine_output: float = 0.0
 var _thruster_demand: float = 0.0
 var _bilge_running: bool = false
 var _draw_per_min: float = 0.0
+## Instrument loads (no breaker): id -> draw per minute, while running.
+var _instrument_loads: Dictionary = {}
 var _snapshot_timer: float = 0.0
 var _clock: float = 0.0
 var _output_history: Array[Vector2] = []
@@ -564,8 +566,40 @@ func _compute_draw() -> float:
 		total += config.thruster_full_draw * _thruster_demand
 	if breaker_state(Circuit.BILGE_PUMP) == BreakerState.ON and _bilge_running:
 		total += config.bilge_pump_draw
+	total += instrument_draw()
 	# A dead battery draws nothing, so the generator can bring it back.
 	return 0.0 if _blackout else total
+
+
+## Register (or update) a running instrument's load, [param draw] per minute.
+## Host only; clients get the total through the snapshot. Unbreakered.
+func set_instrument_load(id: StringName, draw: float) -> void:
+	if not _is_host():
+		return
+	if draw > 0.0:
+		_instrument_loads[id] = draw
+	else:
+		_instrument_loads.erase(id)
+
+
+## Remove an instrument's load (it stopped running).
+func clear_instrument_load(id: StringName) -> void:
+	set_instrument_load(id, 0.0)
+
+
+## True while the instrument has a registered load and the sub has power.
+func instrument_running(id: StringName) -> bool:
+	return _instrument_loads.has(id) and not _blackout
+
+
+## Total instrument draw per minute; nothing during blackout.
+func instrument_draw() -> float:
+	if _blackout:
+		return 0.0
+	var total: float = 0.0
+	for id: StringName in _instrument_loads:
+		total += _instrument_loads[id] as float
+	return total
 
 
 func draw_per_minute() -> float:
@@ -603,6 +637,14 @@ func noise_intensity() -> float:
 	if is_powered(Circuit.MOTOR):
 		n += config.motor_noise_full * motor_power()
 	return n
+
+
+## Named parts of [method noise_intensity], for the session log.
+func noise_breakdown() -> Dictionary:
+	return {
+		"generator": config.generator_noise if _gen_running else 0.0,
+		"motor": config.motor_noise_full * motor_power() if is_powered(Circuit.MOTOR) else 0.0,
+	}
 
 
 func readout(readout_name: StringName) -> float:
