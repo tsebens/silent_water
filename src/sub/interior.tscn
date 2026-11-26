@@ -17,6 +17,9 @@
 [ext_resource type="Script" path="res://src/sub/station_placement.gd" id="station_placement"]
 [ext_resource type="PackedScene" path="res://assets/models/stations/sonar_console/sonar_console.tscn" id="sonar_console"]
 [ext_resource type="PackedScene" path="res://assets/models/stations/map_table/map_table.tscn" id="map_table"]
+[ext_resource type="PackedScene" path="res://assets/models/stations/pilot_station/pilot_station.tscn" id="pilot_station"]
+[ext_resource type="Script" path="res://src/interact/joystick_indicator.gd" id="joy_ind"]
+[ext_resource type="Script" path="res://src/sub/headlight_switch.gd" id="headlight_switch"]
 
 [sub_resource type="BoxMesh" id="fascia_mesh"]
 size = Vector3(0.06, 0.22, 3.2)
@@ -34,25 +37,6 @@ emission_energy_multiplier = 1.4
 [sub_resource type="BoxMesh" id="strip_long"]
 material = SubResource("strip")
 size = Vector3(0.03, 0.015, 1.9)
-
-[sub_resource type="BoxMesh" id="pod_plate"]
-material = SubResource("fitting")
-size = Vector3(0.8, 0.34, 0.03)
-
-[sub_resource type="BoxMesh" id="pod_plate_small"]
-material = SubResource("fitting")
-size = Vector3(0.56, 0.34, 0.03)
-
-[sub_resource type="CylinderMesh" id="throttle_shaft"]
-material = SubResource("fitting")
-top_radius = 0.025
-bottom_radius = 0.025
-height = 0.3
-
-[sub_resource type="SphereMesh" id="throttle_knob"]
-material = SubResource("fitting")
-radius = 0.045
-height = 0.09
 
 [sub_resource type="BoxShape3D" id="pilot_seat_grab"]
 size = Vector3(1.0, 1.1, 1.0)
@@ -199,33 +183,27 @@ swatch = &"light_work_white"
 
 [node name="Stations" type="Node3D" parent="."]
 
-[node name="Pilot" type="Node3D" parent="Stations"]
+[node name="Pilot" parent="Stations" instance=ExtResource("pilot_station")]
 script = ExtResource("station_placement")
 station_id = &"pilot"
 placements = {
-"../Maps/PilotHolo": Vector3(0, 0.2, -0.85),
-"CenterPod": Vector3(0, 0.45, -0.7),
-"Dimmer": Vector3(-0.62, 0.3, 0.1),
-"LeftPod": Vector3(-0.6, 0.75, -0.55),
-"Planes": Vector3(0, 0.2, -0.6),
-"RightPod": Vector3(0.6, 0.75, -0.55),
-"Rudder": Vector3(0, 0.2, -0.6),
-"Seat": Vector3(0, 0, 0),
-"Throttle": Vector3(0.58, 0.5, -0.05)
+".": Vector3(0, 0, 0)
+}
+follow = {
+"../Maps/PilotHolo": "Anchors/HologramAnchor"
 }
 
-[node name="Seat" type="Node3D" parent="Stations/Pilot" node_paths=PackedStringArray("throttle", "rudder", "planes", "flood_valve", "blow_valve", "sit_point")]
+[node name="Seat" parent="Stations/Pilot" node_paths=PackedStringArray("throttle", "rudder", "planes", "flood_valve", "blow_valve", "holo", "sit_point")]
 script = ExtResource("4")
 throttle = NodePath("../Throttle")
 rudder = NodePath("../Rudder")
 planes = NodePath("../Planes")
 flood_valve = NodePath("../../Ballast/FloodValve")
 blow_valve = NodePath("../../Ballast/BlowValve")
+holo = NodePath("../../Maps/PilotHolo")
 sit_point = NodePath("SitPoint")
 eye_height = 1.15
 label = "pilot seat"
-
-[node name="SitPoint" type="Node3D" parent="Stations/Pilot/Seat"]
 
 [node name="Grab" type="StaticBody3D" parent="Stations/Pilot/Seat"]
 collision_layer = 2
@@ -235,25 +213,23 @@ collision_mask = 0
 position = Vector3(0, 0.55, 0)
 shape = SubResource("pilot_seat_grab")
 
-[node name="Throttle" type="Node3D" parent="Stations/Pilot" node_paths=PackedStringArray("indicator")]
+[node name="ThrottleIndicator" type="Node3D" parent="Stations/Pilot/Seat" node_paths=PackedStringArray("stick", "fore_aft")]
+script = ExtResource("joy_ind")
+stick = NodePath("../ThrottleJoystick/Frame/Stick")
+fore_aft = NodePath("../../Throttle")
+
+[node name="FlightIndicator" type="Node3D" parent="Stations/Pilot/Seat" node_paths=PackedStringArray("stick", "fore_aft", "side")]
+script = ExtResource("joy_ind")
+stick = NodePath("../FlightJoystick/Frame/Stick")
+fore_aft = NodePath("../../Planes")
+side = NodePath("../../Rudder")
+
+[node name="Throttle" type="Node3D" parent="Stations/Pilot"]
 script = ExtResource("5")
-indicator = NodePath("Lever")
-indicator_axis = Vector3(-1, 0, 0)
-indicator_max_deg = 40.0
 actuator_rate = 0.6
 return_rate = 0.0
 center_detent = 0.06
 label = "throttle"
-
-[node name="Lever" type="Node3D" parent="Stations/Pilot/Throttle"]
-
-[node name="Shaft" type="MeshInstance3D" parent="Stations/Pilot/Throttle/Lever"]
-position = Vector3(0, 0.15, 0)
-mesh = SubResource("throttle_shaft")
-
-[node name="Knob" type="MeshInstance3D" parent="Stations/Pilot/Throttle/Lever"]
-position = Vector3(0, 0.3, 0)
-mesh = SubResource("throttle_knob")
 
 [node name="Rudder" type="Node3D" parent="Stations/Pilot"]
 script = ExtResource("5")
@@ -264,101 +240,21 @@ script = ExtResource("5")
 label = "dive planes"
 
 [node name="Dimmer" parent="Stations/Pilot" instance=ExtResource("12")]
+position = Vector3(-0.62, 0.3, 0.1)
 initial_value = 1.0
 label = "cabin lights"
 
-[node name="LeftPod" type="Node3D" parent="Stations/Pilot"]
-rotation = Vector3(-0.28, 0.55, 0)
-scale = Vector3(0.85, 0.85, 0.85)
+[node name="ExternalLightSwitch" parent="Stations/Pilot/Anchors"]
+initial_value = 1.0
 
-[node name="Plate" type="MeshInstance3D" parent="Stations/Pilot/LeftPod"]
-position = Vector3(0, 0, -0.03)
-mesh = SubResource("pod_plate")
+[node name="CabinLightSwitch" parent="Stations/Pilot/Anchors"]
+initial_value = 1.0
 
-[node name="DepthGauge" type="Node3D" parent="Stations/Pilot/LeftPod"]
-position = Vector3(-0.25, 0, 0)
-script = ExtResource("3")
-readout = &"depth"
-title = "DEPTH m"
-max_value = 250.0
-radius = 0.1
-
-[node name="PitchGauge" type="Node3D" parent="Stations/Pilot/LeftPod"]
-script = ExtResource("3")
-readout = &"pitch_deg"
-title = "PITCH"
-min_value = -30.0
-max_value = 30.0
-sweep_deg = 120.0
-radius = 0.1
-
-[node name="NoiseGauge" parent="Stations/Pilot/LeftPod" instance=ExtResource("6")]
-position = Vector3(0.25, 0, 0)
-radius = 0.1
-
-[node name="RightPod" type="Node3D" parent="Stations/Pilot"]
-rotation = Vector3(-0.28, -0.55, 0)
-scale = Vector3(0.85, 0.85, 0.85)
-
-[node name="Plate" type="MeshInstance3D" parent="Stations/Pilot/RightPod"]
-position = Vector3(0, 0, -0.03)
-mesh = SubResource("pod_plate_small")
-
-[node name="HeadingGauge" type="Node3D" parent="Stations/Pilot/RightPod"]
-position = Vector3(-0.13, 0, 0)
-script = ExtResource("3")
-readout = &"heading_deg"
-title = "HEADING"
-max_value = 360.0
-wraps = true
-radius = 0.1
-
-[node name="SpeedGauge" type="Node3D" parent="Stations/Pilot/RightPod"]
-position = Vector3(0.13, 0, 0)
-script = ExtResource("3")
-readout = &"speed"
-title = "SPEED m/s"
-min_value = -1.5
-max_value = 3.0
-sweep_deg = 240.0
-radius = 0.1
-
-[node name="CenterPod" type="Node3D" parent="Stations/Pilot"]
-rotation = Vector3(-0.28, 0, 0)
-scale = Vector3(0.85, 0.85, 0.85)
-
-[node name="Plate" type="MeshInstance3D" parent="Stations/Pilot/CenterPod"]
-position = Vector3(0, 0, -0.03)
-mesh = SubResource("pod_plate_small")
-
-[node name="BuoyancyGauge" type="Node3D" parent="Stations/Pilot/CenterPod"]
-position = Vector3(-0.19, 0, 0)
-script = ExtResource("3")
-readout = &"buoyancy"
-title = "BUOYANCY"
-min_value = -0.5
-max_value = 0.5
-sweep_deg = 180.0
-radius = 0.08
-
-[node name="VertSpeedGauge" type="Node3D" parent="Stations/Pilot/CenterPod"]
-script = ExtResource("3")
-readout = &"vertical_speed"
-title = "VERT SPEED"
-min_value = -3.0
-max_value = 3.0
-sweep_deg = 180.0
-radius = 0.08
-
-[node name="ThrottleGauge" type="Node3D" parent="Stations/Pilot/CenterPod"]
-position = Vector3(0.19, 0, 0)
-script = ExtResource("3")
-readout = &"engine_output"
-title = "THROTTLE"
-min_value = -1.0
-max_value = 1.0
-sweep_deg = 180.0
-radius = 0.08
+[node name="HeadlightSwitch" type="Node" parent="Stations/Pilot" node_paths=PackedStringArray("light", "power", "colour")]
+script = ExtResource("headlight_switch")
+light = NodePath("../../../Lights/Headlight")
+power = NodePath("../Anchors/ExternalLightSwitch")
+colour = NodePath("../Anchors/ExternalColourSwitch")
 
 [node name="SonarPlacement" type="Node3D" parent="Stations"]
 script = ExtResource("station_placement")

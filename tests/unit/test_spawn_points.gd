@@ -95,7 +95,7 @@ func test_players_spawn_where_expected_and_stay_on_the_deck() -> void:
 func test_pilot_controls_are_placed_from_the_program() -> void:
 	var origin: Vector3 = SubLayout.position(&"pilot")
 	var seat: Node3D = game.get_node("Interior/Stations/Pilot/Seat") as Node3D
-	expect(seat.position.is_equal_approx(origin), "the seat is at the program's pilot position, got %s" % seat.position)
+	expect(seat.global_position.is_equal_approx(origin), "the seat is at the program's pilot position, got %s" % seat.global_position)
 	expect_near(origin.z, -3.9)
 	expect_near(origin.y, -0.20)
 	var sit: Node3D = game.get_node("Interior/Stations/Pilot/Seat/SitPoint") as Node3D
