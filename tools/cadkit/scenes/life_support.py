@@ -53,6 +53,7 @@ POCKET_W = 180.0                            # canister 150 wide: +20%
 CRADLE_DX, CRADLE_R, CRADLE_H = 0.0, 82.0, 28.0
 CRADLE_Z = ZP + 12.0 + 78.0                 # the canister's axis: guard (12 mm) then its radius and a little
 GUARD_T, GUARD_H = 12.0, 150.0
+SAT_WARN_AT, SAT_ALARM_AT = 0.5, 0.15       # remaining-capacity bands on the bars (descending: green above warn, amber to alarm, red below)
 GAUGE_X = 330.0                             # saturation bars on the housing, outside each pocket (mirrored), on the carriage face
 # Rails: orange handles down the front edges of the cheeks, on stand-offs.
 RAIL_X, RAIL_W, RAIL_Y0, RAIL_Y1, RAIL_OUT = 468.0, 30.0, 320.0, 1700.0, 42.0
@@ -241,6 +242,7 @@ def _check(sol: list[Solid]) -> dict:
     cw, ch = can["footprint_mm"][0], can["stand_out_mm"]
     gw, gh = gau["footprint_mm"]
     expect(gau["track_mm"]["bottom_y"] == 0.0, "linear_gauge's origin is its bar bottom")
+    expect(0.0 < SAT_ALARM_AT < SAT_WARN_AT < 1.0, f"saturation bars read capacity_a/b, descending, warn_at {SAT_WARN_AT}, alarm_at {SAT_ALARM_AT}")
     # The carriages are at crew eye level: the canister's middle within 50 mm of 1650.
     for i in range(2):
         cx, cy, cz = _cradle_xyz(i)
@@ -395,7 +397,8 @@ def build() -> dict:
         gx, gy, gz = (v / 1000 for v in _gauge_xyz(i))
         s.node(f"Saturation{n}", instance=scene_path("linear_gauge"),
                props={"transform": Xform(origin=(gx, gy, gz)), "source_group": SName("life_support_readouts"),
-                      "readout": SName(f"saturation_{n.lower()}"), "max_value": 1.0})
+                      "readout": SName(f"capacity_{n.lower()}"), "max_value": 1.0,
+                      "descending": True, "warn_at": SAT_WARN_AT, "alarm_at": SAT_ALARM_AT})
     # Storage: a slot per hole, along the shelf normal, a canister in the filled ones.
     for k, (u, sl) in enumerate(_holes()):
         xf = _slot_xform(_hole_base(u, sl))
@@ -434,7 +437,7 @@ def build() -> dict:
         "tags": ["station", "life support", "scrubber", "canister", "cradle", "storage", "o2", "co2", "wall unit", "standing"],
         "scene": res(d / f"{SLUG}.tscn"),
         "behaviour": {"wire": {"cradles": "CradleA, CradleB (CanisterSlot; call try_seat on CanisterA, CanisterB)",
-                               "gauges": "SaturationA, SaturationB (on the housing beside each pocket) read life_support_readouts: saturation_a, saturation_b (0..1)",
+                               "gauges": "SaturationA, SaturationB (on the housing beside each pocket) read life_support_readouts: capacity_a, capacity_b (remaining capacity, 0..1; descending bands: green above 0.5, amber to 0.15, red below, so a fresh canister is a full green bar)",
                                "storage": "Storage1..Storage6 (CanisterSlot along the sloped shelf's normal, lower row then upper row; Stored1,2,3,5 hold a canister, 4 and 6 are empty)",
                                "o2": "O2Gauge reads life_support_readouts: o2_level (0..1)",
                                "co2_level": "Co2LevelGauge reads life_support_readouts: co2_level (0..1)",

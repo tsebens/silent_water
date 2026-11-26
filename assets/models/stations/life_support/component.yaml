@@ -22,8 +22,9 @@ scene: res://assets/models/stations/life_support/life_support.tscn
 behaviour:
   wire:
     cradles: CradleA, CradleB (CanisterSlot; call try_seat on CanisterA, CanisterB)
-    gauges: 'SaturationA, SaturationB (on the housing beside each pocket) read life_support_readouts: saturation_a,
-      saturation_b (0..1)'
+    gauges: 'SaturationA, SaturationB (on the housing beside each pocket) read life_support_readouts: capacity_a,
+      capacity_b (remaining capacity, 0..1; descending bands: green above 0.5, amber to 0.15, red below, so a fresh
+      canister is a full green bar)'
     storage: Storage1..Storage6 (CanisterSlot along the sloped shelf's normal, lower row then upper row; Stored1,2,3,5
       hold a canister, 4 and 6 are empty)
     o2: 'O2Gauge reads life_support_readouts: o2_level (0..1)'
