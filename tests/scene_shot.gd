@@ -2,7 +2,8 @@ extends Node3D
 ## Renders a scene from several cameras to PNGs, for asset review (needs a display server):
 ##   xvfb-run -a godot --path . --rendering-driver vulkan res://tests/scene_shot.tscn -- <scene.tscn> <out_dir> [cameras.json]
 ## Without cameras.json the scene is framed automatically: a three-quarter view, front, right side and top.
-## cameras.json is a list of {name, pos: [x,y,z], look_at: [x,y,z], fov (deg) or ortho (m), light: "white"|"red"},
+## cameras.json is a list of {name, pos: [x,y,z], look_at: [x,y,z], fov (deg) or ortho (m), light: "white"|"red",
+## on: true to throw every SwitchLever in the scene to its on end for that shot (default off)},
 ## in the scene's own frame (metres). Lighting is neutral and dim, close to the sub's interior; red is the sub's red light.
 
 var _env: WorldEnvironment
@@ -28,6 +29,7 @@ func _ready() -> void:
 	cam.current = true
 	for spec: Dictionary in cams:
 		_set_light(String(spec.get("light", "white")))
+		_set_switches(scene, bool(spec.get("on", false)))
 		var p: Array = spec["pos"]
 		var t: Array = spec["look_at"]
 		cam.position = Vector3(p[0], p[1], p[2])
@@ -68,6 +70,16 @@ func _lights() -> void:
 	_fill.position = Vector3(1.5, 2.2, 2.5)
 	_fill.omni_range = 8.0
 	add_child(_fill)
+
+
+func _set_switches(root: Node, on: bool) -> void:
+	var stack: Array[Node] = [root]
+	while not stack.is_empty():
+		var n: Node = stack.pop_back()
+		var sw: SwitchLever = n as SwitchLever
+		if sw != null:
+			sw.host_set_value(sw.max_value if on else sw.min_value)
+		stack.append_array(n.get_children())
 
 
 func _set_light(kind: String) -> void:
