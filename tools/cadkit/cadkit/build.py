@@ -101,6 +101,13 @@ def stage(staging: Path, scenes_dir: Path = SCENES_DIR) -> dict:
     return built
 
 
+# Per-scene triangle budgets granted by a decision on record. Not a general escape hatch: a scene is added here only
+# with a decision from Tristan, and a `limits.triangle_budget` in a catalogue entry has no effect by itself.
+BUDGET_GRANTS: dict[str, int] = {
+    "navball": 10000,   # #467: the ball is the pilot's main attitude cue and a small part of it is ever visible
+}
+
+
 def _check_budget(slug: str, group: str) -> None:
     """A scene's triangles, everything it instances included, against its group's budget (library.TRIANGLE_BUDGET)."""
     entry = library.entry(slug)
@@ -108,9 +115,7 @@ def _check_budget(slug: str, group: str) -> None:
     if not counts:
         raise BuildFailed(slug, "its catalogue entry has no `triangles`")
     budget = library.TRIANGLE_BUDGET[group]
-    override = (entry.get("limits") or {}).get("triangle_budget")     # a scene may carry a budget granted for it by a decision
-    if isinstance(override, int) and override > 0:
-        budget = override
+    budget = BUDGET_GRANTS.get(slug, budget)
     if max(counts) > budget:
         raise BuildFailed(slug, f"{max(counts)} triangles; the budget for {group} is {budget}")
 

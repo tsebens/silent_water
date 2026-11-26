@@ -128,13 +128,16 @@ def test_verify_reports_a_scene_folder_with_no_build_script(tree):
     assert any("kit/knob/component.yaml: no build script" in p for p in out["problems"])
 
 
-def test_a_scene_may_carry_a_larger_budget_in_its_limits(tree, monkeypatch):
+def test_only_a_granted_scene_gets_a_larger_budget(tree, monkeypatch):
+    import pytest
     scenes, models = tree
     monkeypatch.setitem(build.library.TRIANGLE_BUDGET, "kit", 10)
     entry = {"triangles": 12, "limits": {"triangle_budget": 20}}
     monkeypatch.setattr(build.library, "entry", lambda slug: entry)
+    with pytest.raises(build.BuildFailed):      # the entry alone grants nothing
+        build._check_budget("knob", "kit")
+    monkeypatch.setitem(build.BUDGET_GRANTS, "knob", 20)
     build._check_budget("knob", "kit")
-    entry["limits"]["triangle_budget"] = 11
-    import pytest
+    entry["triangles"] = 21
     with pytest.raises(build.BuildFailed):
         build._check_budget("knob", "kit")

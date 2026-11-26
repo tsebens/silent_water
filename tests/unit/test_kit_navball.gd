@@ -40,11 +40,11 @@ func test_no_digit_windows_or_label_plate() -> void:
 	n.queue_free()
 
 
-func test_mask_is_drawn_from_inside() -> void:
+func test_mask_is_drawn_from_outside() -> void:
 	var n: Node3D = _make()
 	var ball: MeshInstance3D = n.get_node("Ball/NavballBall") as MeshInstance3D
 	var m: ShaderMaterial = ball.material_override as ShaderMaterial
-	expect(m.shader.code.contains("cull_front"), "the ball is seen from inside so the numerals are not mirrored")
+	expect(m.shader.code.contains("cull_back") and not m.shader.code.contains("cull_front"), "the ball is drawn from outside")
 	n.queue_free()
 
 
