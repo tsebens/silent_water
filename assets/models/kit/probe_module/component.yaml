@@ -1,0 +1,45 @@
+slug: probe_module
+group: kit
+kind: display
+summary: 'PROBE science module (winch): the shared module chassis with a cable reel (its own GLB under ReelPivot,
+  turns about Z), a mechanical depth-counter window, a sample-point list screen and a lit winch switch. The root
+  is a ProbeModule. Connect WinchSwitch''s value_changed to toggle_armed; the station sets ReelPivot.rotation.z
+  from reel_angle() and draws the counter and list.'
+tags:
+- science
+- module
+- probe
+- winch
+- reel
+- cable
+- depth
+- counter
+- sample
+- switch
+scene: res://assets/models/kit/probe_module/probe_module.tscn
+behaviour:
+  script: ProbeModule
+  values: armed off/on; counter_m() metres of line; reel_angle() radians
+  signal: WinchSwitch (SwitchLever) value_changed
+  wiring: station connects WinchSwitch.value_changed to toggle_armed and turns ReelPivot (rotation.z) by reel_angle();
+    `objective` is found by group
+footprint_mm:
+- 340.0
+- 280.0
+stand_out_mm: 114.0
+depth_mm:
+  behind_origin: 0.0
+  in_front_of_origin: 114.0
+mount: 'as science_module_frame: back on Z=0, centred; faces +Z; the rear body slides into a bay about 0.35 m wide'
+uses:
+- science_module_frame
+- lit_toggle
+triangles: 1068
+built_by: tools/cadkit/scenes/probe_module.py
+files:
+- component.yaml
+- probe_module.tscn
+- probe_module_face.glb
+- probe_module_reel.glb
+- review/.gdignore
+- review/cameras.json
