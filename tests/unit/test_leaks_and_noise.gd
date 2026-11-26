@@ -120,6 +120,9 @@ func test_dev_switch_stops_spontaneous_but_not_strikes() -> void:
 
 func test_pump_empties_bilge_noisily() -> void:
 	controller.model.bilge_water_t = 2.0
+	# Flooding trips the BILGE PUMP breaker (M14); reset it, as a crew member would.
+	await _frames(2)
+	(game.get_node("Interior/PowerSystem") as PowerSystem).set_breaker(PowerSystem.Circuit.BILGE_PUMP, true)
 	var pump: Lever = game.get_node("Interior/Stations/Bilge/Pump") as Lever
 	pump.host_set_value(1.0)
 	await _frames(60)

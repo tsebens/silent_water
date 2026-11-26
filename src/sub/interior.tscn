@@ -185,6 +185,27 @@ spot_angle = 30.0
 script = ExtResource("palette_light")
 swatch = &"light_work_white"
 
+[node name="EmergencyLights" type="Node3D" parent="."]
+visible = false
+
+[node name="EmergencyFore" type="OmniLight3D" parent="EmergencyLights"]
+position = Vector3(0, 2.1, -1.5)
+light_energy = 0.12
+omni_range = 2.5
+
+[node name="PaletteLight" type="Node" parent="EmergencyLights/EmergencyFore"]
+script = ExtResource("palette_light")
+swatch = &"light_alarm"
+
+[node name="EmergencyAft" type="OmniLight3D" parent="EmergencyLights"]
+position = Vector3(0, 2.1, 1.5)
+light_energy = 0.12
+omni_range = 2.5
+
+[node name="PaletteLight" type="Node" parent="EmergencyLights/EmergencyAft"]
+script = ExtResource("palette_light")
+swatch = &"light_alarm"
+
 [node name="Stations" type="Node3D" parent="."]
 
 [node name="Pilot" parent="Stations" instance=ExtResource("pilot_station")]
