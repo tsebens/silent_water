@@ -17,6 +17,9 @@ var flicker: Dictionary = {}
 
 var _base: Dictionary = {}
 
+## Master switch: off, every cabin light is dark whatever the dimmer says.
+var enabled: bool = true
+
 ## Stealth (red light) mode: cabin lights take `light_stealth_red` instead of `light_cabin`.
 var stealth: bool = false:
 	set(v):
@@ -53,7 +56,7 @@ func level() -> float:
 
 
 func _process(_delta: float) -> void:
-	var lvl: float = level()
+	var lvl: float = level() if enabled else 0.0
 	for l: Light3D in cabin_lights():
 		var id: int = l.get_instance_id()
 		l.light_energy = float(_base.get(id, l.light_energy)) * lvl * float(flicker.get(id, 1.0))
