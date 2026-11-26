@@ -34,6 +34,10 @@ The screen shows where the passive array is pointed.
 - **The dome** is a single unbroken acrylic hemisphere, about 2.2 m across, with one heavy bolted
   steel ring at its rim and no mullions, bars or panes. Its floor is sunk one step below the main
   deck so a seated head sits near the dome's centre and crew standing behind can see out over it.
+  **As built (#605):** a true sphere of radius 1.1 m, its ring plane at the pilot's z, its centre on the
+  centreline 0.10 m under the seated eye (eye height 1.15 m above the cockpit floor, so the eye sits 0.10 m
+  above the centre). The floor plane cuts the glass 0.05 m above the sphere's bottom, leaving a floor disc
+  of glass 0.328 m in radius under the seat; the floor is 0.20 m below the main deck.
 - **The pilot sits alone in the bubble**, seat on the centreline, well forward, glass all round
   and below. The bubble is small: a hand's width between the seat's armrests and the glass.
 - **The sonar operator sits outside the dome**, just aft of the rim ring on the starboard side,
@@ -90,6 +94,12 @@ full specification is on #446.
 - **Right wing, from the gap outward:** the **navball**; the **noise repeater**; three **warning lamps**
   (BILGE, CO2, LOW O2); the four **light switches** (external on/off, external colour halogen or red, cabin
   on/off, cabin colour standard or red).
+- **As built against the true hemisphere (#605, a stopgap until #633):** each wing has about 520 mm of facet
+  along the glass, so the strip is shorter than drawn. Dropped: the **depth finder** (the hologram now stands
+  above the multidisplay). Shrunk: the speed and noise gauges (radius 0.055 m, was 0.10 and 0.11 m), the
+  switch pitch (66 mm, was 84 mm) and the facet margins (20 mm, was 30 mm). Stacked: the speed gauge over the
+  noise repeater on one facet of the left wing, and the three lamps over the four switches on one facet of
+  the right wing. The noise repeater therefore moved from the right wing to the left.
 - **Speed / throttle:** two needles, centred, the speed scale at plus and minus the sub's top forward speed,
   computed from the physics model so it follows tuning.
 - **Multidisplay (#458):** a configurable round display, with four widget slots, rate chevrons and a

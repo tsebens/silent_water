@@ -54,7 +54,7 @@ functions:
   # Left wing, from the gap outward.
   - id: depth_finder
     display: a small digital 2D trace of the sea floor under and ahead of the sub, like a modern echo sounder, in a letterbox bezel
-    status: control only; new display behaviour
+    status: control only; new display behaviour. DROPPED from the strip by #605 (the true hemisphere leaves each wing about 520 mm; #633 restores it). Also in #605 (stopgap, restored by #633): the speed and noise gauges shrink to radius 0.055 m and stack on one left-wing facet (the noise repeater moves left), the switch pitch is 66 mm, and the three lamps sit over the four switches on one right-wing facet.
   - id: hologram
     display: the pilot's small hologram, immediately above the depth finder, up and to the side of the gap; the map table's display model, always centred on the sub, about 20 cm
     binds: HoloMap (PilotHolo); zoom on the mouse wheel while seated at the helm
