@@ -174,8 +174,7 @@ func test_no_visible_strip_meshes_under_the_lights() -> void:
 	expect(stray.is_empty(), "no strip meshes under Lights (%s)" % str(stray))
 
 
-func test_single_player_helm_runs_the_ballast() -> void:
-	DevSettings.single_player = true
+func test_helm_runs_the_ballast() -> void:
 	var me: Player = game.local_player()
 	var helm: PilotSeat = game.get_node("Interior/Stations/Pilot/Seat") as PilotSeat
 	var blow: Interactable = game.get_node("Interior/Stations/Ballast/BlowValve") as Interactable
@@ -191,16 +190,4 @@ func test_single_player_helm_runs_the_ballast() -> void:
 	me.bot_ballast = 0.0
 	await _frames(40)
 	expect(flood.get_normalized() < 0.1, "releasing closes it")
-	me.stand_up()
-	DevSettings.single_player = false
-
-
-func test_crew_mode_helm_leaves_the_ballast_alone() -> void:
-	DevSettings.single_player = false
-	var me: Player = game.local_player()
-	me.sit_in(game.get_node("Interior/Stations/Pilot/Seat") as PilotSeat)
-	me.bot_ballast = 1.0
-	await _frames(30)
-	expect_near((game.get_node("Interior/Stations/Ballast/BlowValve") as Interactable).get_normalized(), 0.0, 0.001)
-	me.bot_ballast = 0.0
 	me.stand_up()
