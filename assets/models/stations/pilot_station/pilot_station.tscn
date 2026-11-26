@@ -24,7 +24,7 @@
 transform = Transform3D(0.653938, -0.4863, 0.57955, 0, 0.766044, 0.642788, -0.756548, -0.420343, 0.500945, -0.529265, 0.653603, -0.531952)
 
 [node name="SpeedGauge" parent="Anchors" instance=ExtResource("4")]
-transform = Transform3D(0.448366, -0.574556, 0.684729, 0, 0.766044, 0.642788, -0.89385, -0.288204, 0.343468, -0.705285, 0.728675, -0.397416)
+transform = Transform3D(0.448366, -0.574556, 0.684729, 0, 0.766044, 0.642788, -0.89385, -0.288204, 0.343468, -0.703915, 0.729961, -0.396729)
 title = "SPEED m/s"
 readout = &"speed"
 readout_b = &"engine_output"
@@ -36,7 +36,7 @@ major_divisions = 6
 radius = 0.055
 
 [node name="NoiseRepeater" parent="Anchors" instance=ExtResource("5")]
-transform = Transform3D(0.448366, -0.574556, 0.684729, 0, 0.766044, 0.642788, -0.89385, -0.288204, 0.343468, -0.614505, 0.60764, -0.35188)
+transform = Transform3D(0.448366, -0.574556, 0.684729, 0, 0.766044, 0.642788, -0.89385, -0.288204, 0.343468, -0.613135, 0.608926, -0.351193)
 radius = 0.055
 
 [node name="Navball" parent="Anchors" instance=ExtResource("6")]

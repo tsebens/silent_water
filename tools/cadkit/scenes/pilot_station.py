@@ -17,7 +17,7 @@ import math
 import build123d as bd
 import numpy as np
 
-from cadkit import library
+from cadkit import library, mount
 from cadkit.solids import Solid, at, expect, export_solids_glb, prism
 from cadkit.library import entry, note, out_dir, res, scene_module, scene_path, write_entry
 from cadkit.tscn import NodePath, Scene, SName, Xform
@@ -312,6 +312,8 @@ def anchors(wings: dict[str, Wing]) -> dict[str, dict]:
     out: dict[str, dict] = {}
 
     def add(name, side, facet, slug, w, h, along=0.0, up=0.0, o=0.0, y_range=None, **settings):
+        if slug == "gauge":
+            o = mount.stand_off(o)      # the dial's face is drawn on the anchor's Z=0: off the facet by the mount gap
         out[name] = {"wing": side, "facet": facet, "slug": slug, "along": along, "up": up, "out": o, "size": (w, h),
                      "y_range": y_range or (-h / 2, h / 2),
                      "stand_out": entry(slug).get("stand_out_mm") or entry(slug)["depth_mm"]["in_front_of_origin"], "settings": settings}
@@ -611,7 +613,13 @@ def build() -> dict:
            props={"transform": Xform.frame(hx, (0, 1, 0), np.cross(hx, (0, 1, 0)), tuple(ho / 1000.0))})
     s.write(d / f"{SLUG}.tscn")
     _cameras(d)
+    mounts = [mount.record(f"Anchors/{n}", a["slug"], a["out"], f"{a['wing']} wing facet {a['facet']}")
+              for n, a in an.items() if a["slug"] == "gauge"]
+    stand = {m["offset_mm"] for m in mounts}
+    expect(mounts and min(stand) > mount.COPLANAR_TOL_MM and not mount.problems(SLUG, {"mounts": mounts}, entry),
+           f"no gauge face (back, dial face on Z=0, bezel front) within {mount.COPLANAR_TOL_MM} mm of its facet; gap {sorted(stand)} mm")
     write_entry(GROUP, SLUG, {
+        "mounts": mounts,
         "kind": "station",
         "summary": "Pilot's station: the pilot seat on the centreline facing -Z, and one knee-height instrument strip low against the "
                    "dome in two faceted wings with orange end caps either side of a clear gap (600 mm). Marked anchors for every "

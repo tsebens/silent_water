@@ -178,8 +178,8 @@ host_face)]`, where `offset_mm` is the anchor's offset out of the host face. `ca
 the station when the instanced scene's declared `depth_mm.behind_origin` or `in_front_of_origin` (from its
 `component.yaml`; the GLB is not read) puts a face **within 0.5 mm (`COPLANAR_TOL_MM`)** of the host face; the message
 names the station, anchor and depths. A station with no `mounts` key has not opted in and is not checked. Stations
-not yet converted (pilot_station, map_table, life_support, sonar_console) are exactly those; the conversion arc
-adds `mounts` to each, so there is no allow-list to empty.
+not yet converted (life_support, sonar_console) are exactly those; pilot_station and map_table have converted (#596); the
+conversion arcs add `mounts` to each, so there is no allow-list to empty.
 
 ## 6. The loop, stage by stage
 
