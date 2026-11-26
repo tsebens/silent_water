@@ -37,6 +37,9 @@ func _process(_delta: float) -> void:
 
 ## The breaker's state now (ON when there is no power system to ask).
 func current_state() -> int:
+	if power == null and is_inside_tree():
+		# A power system later in the tree has not joined its group yet when this node's _ready ran.
+		power = get_tree().get_first_node_in_group(PowerSystem.GROUP)
 	if power == null or not power.has_method(&"readout"):
 		return B.ON
 	return int(power.call(&"readout", StringName("breaker_" + String(PowerSystem.CIRCUIT_NAMES[circuit]))))
