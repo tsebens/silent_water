@@ -102,7 +102,15 @@ func test_module_input_winches() -> void:
 	down.button_index = MOUSE_BUTTON_WHEEL_DOWN
 	down.pressed = true
 	expect(mod.work(down), "wheel used")
-	expect_eq(obj.winch_dir, 1, "lowering")
+	expect_eq(obj.winch_dir, 0, "a wheel notch leaves no winch running")
+	expect_eq(obj.lowered, ProbeObjective.WHEEL_STEP_M, "one notch lowers one step")
+	obj.step_winch(5.0)
+	expect_eq(obj.lowered, ProbeObjective.WHEEL_STEP_M, "line holds after the notch")
+	var wheel_up: InputEventMouseButton = InputEventMouseButton.new()
+	wheel_up.button_index = MOUSE_BUTTON_WHEEL_UP
+	wheel_up.pressed = true
+	mod.work(wheel_up)
+	expect_eq(obj.lowered, 0.0, "one notch raises one step")
 	var up: InputEventKey = InputEventKey.new()
 	up.keycode = KEY_UP
 	up.pressed = true

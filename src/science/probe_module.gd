@@ -50,7 +50,7 @@ func toggle_armed() -> void:
 				o.winch_dir = 0
 
 
-## Wheel or Up/Down: lower or raise the probe. Releasing the key stops the winch.
+## Wheel or Up/Down: lower or raise the probe. A wheel notch moves the line a fixed step; the keys run the winch until released.
 func work(event: InputEvent) -> bool:
 	var o: ProbeObjective = _objective()
 	if o == null or not armed:
@@ -58,10 +58,10 @@ func work(event: InputEvent) -> bool:
 	if event is InputEventMouseButton and (event as InputEventMouseButton).pressed:
 		match (event as InputEventMouseButton).button_index:
 			MOUSE_BUTTON_WHEEL_DOWN:
-				o.winch_dir = 1
+				o.nudge(1)
 				return true
 			MOUSE_BUTTON_WHEEL_UP:
-				o.winch_dir = -1
+				o.nudge(-1)
 				return true
 	if event is InputEventKey:
 		var k: InputEventKey = event as InputEventKey

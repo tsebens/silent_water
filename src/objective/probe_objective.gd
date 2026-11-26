@@ -15,6 +15,8 @@ signal probe_completed
 const MAX_LOWER_M: float = 60.0
 ## Winch speed, metres per second.
 const LOWER_SPEED: float = 6.0
+## One mouse-wheel notch moves the line this far, in metres.
+const WHEEL_STEP_M: float = 2.0
 const RADIUS_M: float = 12.0
 const DEPTH_BAND_M: float = 5.0
 ## At or under this speed the sub counts as still.
@@ -145,6 +147,13 @@ func step_winch(delta: float) -> void:
 	if probe_on() or winch_dir < 0:
 		lowered = clampf(lowered + float(winch_dir) * LOWER_SPEED * delta, 0.0, MAX_LOWER_M)
 	_moving = not is_equal_approx(before, lowered)
+
+
+## One wheel notch: moves the line [param steps] x [constant WHEEL_STEP_M] (positive lowers) and stops.
+func nudge(steps: int) -> void:
+	if steps > 0 and not probe_on():
+		return
+	lowered = clampf(lowered + float(steps) * WHEEL_STEP_M, 0.0, MAX_LOWER_M)
 
 
 ## Advances the hold for [param delta] seconds; logs the reading when it completes.
