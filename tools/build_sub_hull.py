@@ -10,10 +10,10 @@ palette roles (docs/palette.md); the import script gives them the shared role ma
 
 Parts (node names; "-col" nodes become StaticBody3D trimesh collision on import):
 
-    hull_shell-col      the cabin wall, midships to the stern cap, seen from inside   (hull_metal)
-    dome_glass-col      the cockpit bubble, bow to the rim ring, with its cap          (glass)
+    hull_shell-col      the cabin wall, from the dome's ring to the stern cap, from inside (hull_metal)
+    dome_glass-col      the cockpit bubble: a true sphere (layout.json "dome"), smooth normals (glass)
     dome_rim            the steel ring where the dome meets the cabin                  (trim_black)
-    deck_cockpit-col    the pilot's floor, one step down, narrowing to glass underfoot (interior_dark)
+    deck_cockpit-col    the pilot's floor, one step down: a disc inside the dome, then the cabin floor (interior_dark)
     deck_midships-col   the main deck from the step to the bulkhead                    (interior_dark)
     deck_bulkhead-col   the deck through the bulkhead's thickness, the hatch sill      (interior_dark)
     deck_engineering-col  the deck aft of the bulkhead                                (interior_dark)
@@ -41,7 +41,8 @@ DEFAULT_OUT = ROOT / "assets/sub/sub_hull.glb"
 LOFT_STRIDE = 2
 DECK_THICKNESS = 0.06
 STEP_RUN = 0.25            # fore-and-aft length of the ramp from the cockpit floor up to the main deck
-RIM_HALF = 0.06            # the dome ring's half-section, along and across the wall
+RIM_HALF = 0.06            # the dome ring's half-section along the hull
+RIM_LIP = 0.05             # how far the ring's lip reaches in past the glass's edge, hiding it
 TOWER_RADIUS = 0.6
 TOWER_HEIGHT = 1.0
 TOWER_SINK = 0.25          # how far the tower's skirt sinks into the roof
@@ -54,6 +55,7 @@ class Part:
     def __init__(self, name: str, role: str) -> None:
         self.name, self.role = name, role
         self.tris: list[tuple[tuple[float, float, float], ...]] = []
+        self.vnormals: list[tuple] | None = None     # per-vertex normals, three per triangle, for a smooth part
 
     def tri(self, a, b, c) -> None:
         a, b, c = (tuple(float(v) for v in p) for p in (a, b, c))
@@ -152,45 +154,42 @@ def build(layout: dict) -> list[Part]:
     n = len(rings[0]["points"])
     parts: list[Part] = []
 
-    # --- the cabin wall and the dome: the rings' lofted inner surface, wound to face the inside -----------
+    # --- the cabin wall: the rings' lofted inner surface from the dome's ring aft, wound to face the inside -----
+    dome_spec = layout["dome"]
+    ring_z = float(dome_spec["ring_z"])
+    first = min(all_rings, key=lambda r: abs(r["z"] - ring_z))
+    rings = [first] + [r for r in rings if r["z"] > first["z"] + 1e-6]
     shell = Part("hull_shell-col", "hull_metal")
-    dome = Part("dome_glass-col", "glass")
     for i in range(len(rings) - 1):
         a, b = rings[i], rings[i + 1]
-        target = dome if 0.5 * (a["z"] + b["z"]) < cockpit_end else shell
         for k in range(n):
             k2 = (k + 1) % n
             # rings run counter-clockwise in (x, y) as z increases; this winding faces the axis
-            target.quad(
+            shell.quad(
                 (*a["points"][k], a["z"]), (*b["points"][k], b["z"]),
                 (*b["points"][k2], b["z"]), (*a["points"][k2], a["z"]),
             )
-    for part in (shell, dome):
-        _face_axis(part)
-    dome.poly([(x, y, rings[0]["z"]) for x, y in rings[0]["points"]])               # the bow cap faces aft
+    _face_axis(shell)
     shell.poly([(x, y, rings[-1]["z"]) for x, y in rings[-1]["points"]], flip=True)  # the stern cap faces forward
-    parts += [shell, dome]
+    parts.append(shell)
+    parts.append(dome_sphere(dome_spec))
 
-    # --- the dome's rim ring, a square-section band on the wall at the cockpit's end ----------------------
-    ring = min(rings, key=lambda r: abs(r["z"] - cockpit_end))
+    # --- the dome's rim ring: a steel band round the sphere's edge, out to the cabin wall ---------------
+    cx, cy, _ = (float(v) for v in dome_spec["centre"])
+    r_in = float(dome_spec["radius_m"]) - RIM_LIP
+    z0, z1 = ring_z, ring_z + 2 * RIM_HALF
+    outer_ring = min(all_rings, key=lambda r: abs(r["z"] - z1))["points"]      # the wall, just aft of the ring
+    m = len(outer_ring)
+    inner = [(cx + r_in * math.cos(2 * math.pi * k / m), cy + r_in * math.sin(2 * math.pi * k / m)) for k in range(m)]
     rim = Part("dome_rim", "trim_black")
-    pts = ring["points"]
-    cx = 0.0
-    cy = sum(p[1] for p in pts) / n
-    inner = []
-    for x, y in pts:
-        d = np.array([cx - x, cy - y])
-        d /= np.linalg.norm(d)
-        inner.append((x + d[0] * 0.08, y + d[1] * 0.08))
-    z0, z1 = cockpit_end - RIM_HALF, cockpit_end + RIM_HALF
-    for k in range(n):
-        k2 = (k + 1) % n
-        pa, pb, ia, ib = pts[k], pts[k2], inner[k], inner[k2]
-        mx, my = (pa[0] + pb[0]) / 2 - cx, (pa[1] + pb[1]) / 2 - cy
+    for k in range(m):
+        k2 = (k + 1) % m
+        pa, pb, ia, ib = outer_ring[k], outer_ring[k2], inner[k], inner[k2]
+        mx, my = (pa[0] + pb[0]) / 2, (pa[1] + pb[1]) / 2
         rim.quad_dir((*pa, z0), (*pb, z0), (*pb, z1), (*pa, z1), (mx, my, 0))        # against the wall
-        rim.quad_dir((*ia, z1), (*ib, z1), (*ib, z0), (*ia, z0), (-mx, -my, 0))      # facing the cabin
-        rim.quad_dir((*pa, z0), (*ia, z0), (*ib, z0), (*pb, z0), (0, 0, -1))         # forward face
-        rim.quad_dir((*pb, z1), (*ib, z1), (*ia, z1), (*pa, z1), (0, 0, 1))          # aft face
+        rim.quad_dir((*ia, z1), (*ib, z1), (*ib, z0), (*ia, z0), (cx - (ia[0] + ib[0]) / 2, cy - (ia[1] + ib[1]) / 2, 0))   # the aperture
+        rim.quad_dir((*pa, z0), (*ia, z0), (*ib, z0), (*pb, z0), (0, 0, -1))         # forward face, under the glass
+        rim.quad_dir((*pb, z1), (*ib, z1), (*ia, z1), (*pa, z1), (0, 0, 1))          # aft face, toward the cabin
     parts.append(rim)
 
     # --- deck plates: floors from layout.json, each a slab DECK_THICKNESS thick -------------------------
@@ -204,6 +203,7 @@ def build(layout: dict) -> list[Part]:
         if fid == "cockpit":
             z_hi = z_hi - STEP_RUN       # the ramp takes the aft quarter metre
             out = [(z, hw) for z, hw in out if z <= z_hi + 1e-9] + [(z_hi, _hw_at(out, z_hi))]
+            out = _cockpit_outline(out, layout["dome"])
         _slab(plate, out, y, DECK_THICKNESS)
         parts.append(plate)
 
@@ -275,6 +275,48 @@ def build(layout: dict) -> list[Part]:
     for part in parts:
         part.tris = [tuple((x, y - deck_y, z) for x, y, z in t) for t in part.tris]
     return parts
+
+
+def _cockpit_outline(out: list[tuple[float, float]], dome: dict) -> list[tuple[float, float]]:
+    """The cockpit floor: forward of the dome's ring only the disc where the floor plane cuts the sphere (glass rises
+    round it); from the ring aft, the cabin floor's own outline."""
+    cz, fr = float(dome["ring_z"]), float(dome["floor_radius_m"])
+    disc = [(cz - fr * math.cos(t), fr * math.sin(t)) for t in (math.pi / 2 * j / 12 for j in range(13))]
+    return disc + [(cz, _hw_at(out, cz))] + [(z, hw) for z, hw in out if z > cz + 1e-6]
+
+
+def dome_sphere(dome: dict) -> Part:
+    """The dome: a hemisphere of `segments_round` x `rings_to_apex` quads, bulging toward the bow from the ring plane,
+    wound to face its centre (we look at it from inside) with a radial normal at every vertex."""
+    cx, cy, cz = (float(v) for v in dome["centre"])
+    r = float(dome["radius_m"])
+    n_seg, n_ring = int(dome["segments_round"]), int(dome["rings_to_apex"])
+
+    def vert(j: int, k: int) -> np.ndarray:
+        alpha, phi = 0.5 * math.pi * j / n_ring, 2 * math.pi * k / n_seg      # alpha from the apex, phi round the axis
+        return np.array([cx + r * math.sin(alpha) * math.cos(phi), cy + r * math.sin(alpha) * math.sin(phi), cz - r * math.cos(alpha)])
+
+    part = Part("dome_glass-col", "glass")
+    part.vnormals = []
+    centre = np.array([cx, cy, cz])
+
+    def add(a: np.ndarray, b: np.ndarray, c: np.ndarray) -> None:
+        if np.linalg.norm(np.cross(b - a, c - a)) < 1e-12:
+            return
+        if np.dot(np.cross(b - a, c - a), (a + b + c) / 3 - centre) > 0:       # face the centre
+            b, c = c, b
+        part.tri(a, b, c)
+        part.vnormals.append(tuple(tuple((centre - v) / r) for v in (a, b, c)))
+
+    for j in range(n_ring):
+        for k in range(n_seg):
+            a, b, c, d = vert(j, k), vert(j, k + 1), vert(j + 1, k + 1), vert(j + 1, k)
+            if j == 0:
+                add(a, c, d)             # the apex is one point: a fan
+            else:
+                add(a, b, c)
+                add(a, c, d)
+    return part
 
 
 def _face_axis(part: Part, ring_part: bool = False) -> None:
@@ -388,6 +430,9 @@ def write_glb(parts: list[Part], path: Path) -> None:
         nrm /= np.linalg.norm(nrm, axis=1)[:, None]
         pos = tris.reshape(-1, 3)
         normals = np.repeat(nrm, 3, axis=0).astype(np.float32)
+        if part.vnormals is not None:
+            assert len(part.vnormals) == len(part.tris), f"{part.name}: normals out of step with triangles"
+            normals = np.array(part.vnormals, dtype=np.float32).reshape(-1, 3)
         idx = np.arange(len(pos), dtype=np.uint32)
         if part.role not in mat_index:
             mat_index[part.role] = len(materials)
@@ -431,6 +476,10 @@ def main() -> None:
     out = Path(sys.argv[1]) if len(sys.argv) > 1 else DEFAULT_OUT
     layout = json.loads(LAYOUT.read_text(encoding="utf-8"))
     parts = build(layout)
+    dome = next(p for p in parts if p.name == "dome_glass-col")
+    ceiling = int(layout["dome"]["max_triangles"])
+    if len(dome.tris) > ceiling:
+        raise SystemExit(f"the dome has {len(dome.tris)} triangles, over its ceiling of {ceiling}")
     write_glb(parts, out)
     print(f"wrote {out} ({sum(len(p.tris) for p in parts)} triangles)")
     for p in parts:
