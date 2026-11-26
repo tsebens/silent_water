@@ -35,6 +35,13 @@ func test_readout_names() -> void:
 	expect_near(src.readout(&"bogus"), 0.0)
 
 
+func test_capacity_is_one_minus_saturation() -> void:
+	src.saturation_a = 0.3
+	src.saturation_b = 0.7
+	expect_near(src.readout(&"capacity_a"), 0.7)
+	expect_near(src.readout(&"capacity_b"), 0.3)
+
+
 func test_co2_level_mapping() -> void:
 	for pair: Array in [[0.0, 0.0], [7000.0, 0.175], [25000.0, 0.625], [40000.0, 1.0], [80000.0, 1.0]]:
 		src.co2_ppm = pair[0]

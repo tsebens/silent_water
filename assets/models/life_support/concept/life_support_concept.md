@@ -31,9 +31,10 @@ panel arrangement are what is locked. Build it on the curved side hull.
 - **Alcove** at chest height, chamfered, holding the **two active ports** side by side. Each port is a
   minimal open cradle: a shallow socket the canister stands in with a yellow handle, lifted straight
   out and dropped back in. No door, no pivot.
-- Beside each port a **vertical linear gauge**, a slim backlit window whose bar rises from the bottom:
-  green to 50%, yellow to 85%, red at the top. Left port in the primary is red (spent, being removed),
-  right port green and low (fresh).
+- Beside each port a **vertical linear gauge**, a slim backlit window whose bar shows remaining capacity,
+  full when fresh and draining: green above 50% remaining, yellow from 50% to 15%, red below 15%. (The
+  primary image drew it filling with saturation; the design now reads it the other way.) Left port in the
+  primary is spent (being removed), right port fresh.
 - **Not in the primary image, added to the design after the lock:** a **double-needle rate gauge** on the
   panel. Capacity needle: the scrubbers' maximum achievable CO2 removal rate at their current saturation.
   Production needle: the crew's current CO2 production rate. Production above capacity means CO2 is rising.

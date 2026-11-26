@@ -167,8 +167,9 @@ station's active ports. Each is a perforated cylinder full of absorbent beads.
   `assets/models/life_support/concept/`.
 - **Two active ports** side by side in a chamfered alcove at chest height. Each is a **minimal open
   cradle**: a shallow socket the canister stands in, lifted straight out and dropped back in, with no door and
-  no pivot. Each port has its own **vertical linear gauge** that fills from the bottom as the canister
-  saturates: green to 50%, yellow to 85%, red to 100% (colour coding collapses under stealth red, so the
+  no pivot. Each port has its own **vertical linear gauge** that shows the canister's remaining
+  capacity: a fresh canister is a full green bar that drains, green above 50% remaining, yellow from 50% to 15%,
+  red below 15% (colour coding collapses under stealth red, so the
   gauge and the canister rings still need the red-light check noted in `docs/palette.md`). The gauge is a
   new base asset. A pivoting carriage that tilts the canister out toward the player (Tristan's diagrams in
   the concept folder) is a possible future upgrade to the swap's feel, not part of the design.

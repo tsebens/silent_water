@@ -81,6 +81,8 @@ def build() -> dict:
         "set_on_instance": {
             "readout, source_group, min_value, max_value": "what it shows and the scale",
             "warn_at, alarm_at": "where the colour steps (fractions)",
+            "descending": "flip the bands so low values are the alarm end: ok above warn_at, warn down to alarm_at, "
+                          "alarm below (for a remaining-capacity readout, e.g. warn_at 0.5, alarm_at 0.15)",
         },
         "triangles": tris,
     })
