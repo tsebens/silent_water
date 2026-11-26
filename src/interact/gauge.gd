@@ -22,6 +22,9 @@ const NEEDLE: PackedScene = preload("res://assets/models/kit/gauge/gauge_needle.
 @export var title: String = "DEPTH"
 @export var min_value: float = 0.0
 @export var max_value: float = 100.0
+## When set, the scale is symmetric about zero and its ends come from this
+## readout (e.g. `top_speed`), so it follows tuning. Empty keeps min/max as set.
+@export var scale_readout: StringName = &""
 @export var sweep_deg: float = 270.0
 ## Where the middle of the scale points, in degrees clockwise from straight up.
 ## 0 keeps the scale symmetric about the top; 90 puts its middle at 3 o'clock.
@@ -51,9 +54,11 @@ var _needle_b: Node3D
 var _source: Node
 var _shown: float = 0.0
 var _shown_b: float = 0.0
+var _scale_applied: bool = false
 
 
 func _ready() -> void:
+	_scale_applied = _apply_scale_readout()
 	_build()
 	Palette.main().changed.connect(_recolor_labels)
 
@@ -63,6 +68,9 @@ func _process(delta: float) -> void:
 		_source = get_tree().get_first_node_in_group(source_group)
 		if _source == null:
 			return
+	if scale_readout != &"" and not _scale_applied and _apply_scale_readout():
+		_scale_applied = true
+		_rebuild()
 	var w: float = 1.0 - exp(-needle_response * delta)
 	var v: float = float(_source.call(&"readout", readout))
 	if wraps:
@@ -75,6 +83,26 @@ func _process(delta: float) -> void:
 	if _needle_b != null:
 		_shown_b = lerpf(_shown_b, _fraction(float(_source.call(&"readout", readout_b))), w)
 		_needle_b.rotation.z = _angle_for(_shown_b)
+
+
+## Takes the symmetric scale from [member scale_readout]. False if no source yet.
+func _apply_scale_readout() -> bool:
+	if scale_readout == &"":
+		return true
+	var src: Node = get_tree().get_first_node_in_group(source_group)
+	if src == null:
+		return false
+	var top: float = absf(float(src.call(&"readout", scale_readout)))
+	min_value = -top
+	max_value = top
+	return true
+
+
+func _rebuild() -> void:
+	for child: Node in get_children():
+		remove_child(child)
+		child.queue_free()
+	_build()
 
 
 ## Label text is drawn here rather than by a role material, so it follows the palette by hand.

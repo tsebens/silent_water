@@ -148,6 +148,12 @@ func forward_speed() -> float:
 	return (basis().inverse() * velocity).dot(Vector3.FORWARD)
 
 
+## Terminal forward speed at full ahead (m/s): thrust balances quadratic drag
+## along the bow, so sqrt(thrust_accel / drag.z). About 3.0 m/s by default.
+func top_forward_speed() -> float:
+	return sqrt(thrust_accel / drag.z)
+
+
 ## Maps the throttle lever position (-1..1) to the ordered engine (-1..1).
 ## Inside ±[param dead_zone] of centre the order is exactly 0; beyond it the
 ## order ramps linearly to ±1 at full travel, so there is no jump at the edge.
