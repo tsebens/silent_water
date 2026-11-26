@@ -47,7 +47,7 @@ constraints:
   kind: station               # station = floor-standing with a seat; panel = a board that mounts on something
   frame: floor at Y=0, back on Z=0, operator at +Z facing -Z      # panel: back on Z=0, centred, controls face +Z
   seated_eye_height_m: 1.2    # station. For a panel give operator_eye_m: [x, y, z], the eye in the panel's frame
-  reach_m: 0.75               # every control within this of the eye
+  reach_m: 1.1                # every control within this of the shoulder, 0.25 m below the eye (sight lines from the eye)
   triangle_budget: 12000      # panel: about 4000
   # size: <limits, if any>    context: <a piece of surrounding structure to include, if the review needs it>
 ```
