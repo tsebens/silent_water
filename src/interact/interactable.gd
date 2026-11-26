@@ -124,6 +124,12 @@ func drive_to(target: float, silent: bool = false) -> void:
 		_host_apply(Net.local_id(), clamped, silent)
 
 
+## Runs when the holder releases the button, while still holding. A control
+## that acts on a plain click (a switch) overrides this and calls [method drive_to].
+func click_action() -> void:
+	pass
+
+
 func end_interaction() -> void:
 	if not _local_grabbing:
 		return
