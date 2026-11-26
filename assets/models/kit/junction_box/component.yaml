@@ -1,0 +1,27 @@
+slug: junction_box
+group: kit
+kind: element
+summary: 'Bolted steel junction box for a cable run: grey body, closed hinged lid with a latch and corner bolts,
+  hazard stripe on the lid, four cable glands (two top, two bottom). Static; no script. The SparkAnchor Marker3D
+  on the lid is where sparks spawn (#543).'
+tags:
+- junction box
+- cable
+- electrical
+- spark
+- hazard
+- static
+scene: res://assets/models/kit/junction_box/junction_box.tscn
+footprint_mm:
+- 220.0
+- 232.0
+stand_out_mm: 102.0
+mount: back on Z=0, centred; faces +Z; cable glands leave the top and bottom faces
+anchor: SparkAnchor (Marker3D) on the lid face, upper right; sparks spawn there
+uses: []
+triangles: 440
+built_by: tools/cadkit/scenes/junction_box.py
+files:
+- component.yaml
+- junction_box.glb
+- junction_box.tscn
