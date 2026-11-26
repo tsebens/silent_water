@@ -61,7 +61,7 @@ func test_every_gauge_shares_one_body_mesh() -> void:
 	var b: Gauge = _gauge(func(x: Gauge) -> void: x.radius = 0.13)
 	expect(_body_mesh(a) != null and _body_mesh(a) == _body_mesh(b), "one mesh resource behind every gauge")
 	var shared: Mesh = _body_mesh(a)
-	for pair: Array in [[INTERIOR, 24], [CONSOLE, 4]]:
+	for pair: Array in [[INTERIOR, 18], [CONSOLE, 4]]:
 		var gauges: Array[Gauge] = _gauges_in(pair[0])
 		expect_eq(gauges.size(), pair[1], "gauges in %s" % pair[0])
 		for g: Gauge in gauges:

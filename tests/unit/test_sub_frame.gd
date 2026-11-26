@@ -68,10 +68,11 @@ func test_player_moves_with_input_in_sub_frame() -> void:
 	var start: Vector3 = me.position
 	await _physics_frames(30)
 	expect((me.position - start).length() < 0.02, "sub motion moved the player")
-	me.bot_move = Vector2(0, -1)
+	# Aft: the pilot's seat now stands solid a metre ahead of the spawn.
+	me.bot_move = Vector2(0, 1)
 	await _physics_frames(60)
 	me.bot_move = Vector2.ZERO
-	expect(start.z - me.position.z > 1.5, "walked forward %f m" % (start.z - me.position.z))
+	expect(me.position.z - start.z > 1.5, "walked aft %f m" % (me.position.z - start.z))
 
 
 func test_player_slides_on_steep_deck() -> void:
