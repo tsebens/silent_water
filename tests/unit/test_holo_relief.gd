@@ -30,11 +30,11 @@ func _frames(n: int) -> void:
 		await runner.get_tree().process_frame
 
 
-func test_relief_heights_are_low() -> void:
+func test_relief_heights() -> void:
 	await _frames(3)
 	expect(table_holo.relief and pilot_holo.relief, "both use the relief")
-	expect(table_holo.relief_max_height() <= 0.03, "table relief at most 3 cm (%s)" % table_holo.relief_max_height())
-	expect(pilot_holo.relief_max_height() <= 0.01, "pilot relief at most 1 cm (%s)" % pilot_holo.relief_max_height())
+	expect(table_holo.relief_max_height() >= 0.6 and table_holo.relief_max_height() <= 0.7, "table relief about 0.7 m (%s)" % table_holo.relief_max_height())
+	expect(pilot_holo.relief_max_height() >= 0.05 and pilot_holo.relief_max_height() <= 0.07, "pilot relief about 6 cm (%s)" % pilot_holo.relief_max_height())
 	# The deepest and shallowest world points land inside that height.
 	for h: HoloMap in [table_holo, pilot_holo]:
 		var top: float = h.to_display(Vector3(0, h.relief_floor_y + h.relief_depth_m, 0)).y
@@ -70,3 +70,42 @@ func test_outlines() -> void:
 		min_z = minf(min_z, p.y)
 	expect(absf(min_z - (-0.55 * 0.36)) < 0.0001, "D is flat at the back")
 	expect(table_holo.d_shaped and not pilot_holo.d_shaped, "table is D, pilot is a disc")
+
+
+func test_dot_over_high_terrain_sits_above_dot_over_low() -> void:
+	chart.add_pin(Vector3(0, -40, -100), MapModel.Kind.WAYPOINT)
+	chart.add_pin(Vector3(0, -200, -100), MapModel.Kind.NOTE)
+	await _frames(3)
+	for h: HoloMap in [table_holo, pilot_holo]:
+		var ys: Array[float] = []
+		for n: Node3D in h.pin_markers():
+			ys.append(n.position.y)
+		expect_eq(ys.size(), 2, "two markers")
+		expect(absf(ys[0] - ys[1]) > h.relief_max_height() * 0.5, "high terrain dot is clearly above low one (%s)" % [ys])
+		expect(ys[0] > ys[1], "the shallower pin sits higher")
+
+
+func test_table_hologram_fits_program_height_and_overhead() -> void:
+	await _frames(3)
+	var top: float = table_holo.relief_max_height() + HoloMap.RELIEF_MARGIN
+	var cap: float = float(SubLayout.record(&"map_table")["hologram_height_m"])
+	expect(top <= cap + 0.0001, "hologram top %s within hologram_height_m %s" % [top, cap])
+	var interior: Node3D = game.get_node("Interior") as Node3D
+	var base: Vector3 = interior.to_local(table_holo.global_position)
+	var margin: float = SubLayout.clearance("overhead_margin_m")
+	# Every corner of the hologram's footprint, at its top plus the margin, is inside the hull.
+	for sx: float in [-1.0, 0.0, 1.0]:
+		for sz: float in [table_holo.d_flat_z, 1.0]:
+			var p: Vector3 = base + table_holo.global_basis * Vector3(sx * table_holo.clip_rx, 0, sz * table_holo.clip_rz)
+			var r: Vector3 = SubLayout.to_program(Vector3(p.x, p.y + top + margin, p.z))
+			expect(SubLayout.inside_hull(r.x, r.y, r.z), "clear of the overhead at %s" % p)
+
+
+func test_back_panel_is_at_least_as_tall_as_the_relief() -> void:
+	expect(table_holo.back_panel, "table has the panel")
+	expect(table_holo.panel_height >= table_holo.relief_max_height(), "panel %s covers relief %s" % [table_holo.panel_height, table_holo.relief_max_height()])
+
+
+func test_pilot_relief_inside_station_hologram_envelope() -> void:
+	const HOLO_H_M: float = 0.2  # tools/cadkit/scenes/pilot_station.py HOLO_H (200 mm)
+	expect(pilot_holo.relief_max_height() + HoloMap.RELIEF_MARGIN <= HOLO_H_M, "disc relief plus margin inside the 200 mm envelope")

@@ -25,13 +25,14 @@ func test_panel_on_the_table_and_not_the_pilot_disc() -> void:
 	expect(pilot.get_node_or_null("BackPanel") == null, "pilot has none")
 
 
-func test_panel_fits_the_back_edge_and_is_low() -> void:
+func test_panel_fits_the_back_edge_and_within_the_hologram_height() -> void:
 	var table: HoloMap = game.get_node("Interior/Stations/Maps/MapTable/TableHolo") as HoloMap
 	var panel: MeshInstance3D = table.get_node("BackPanel") as MeshInstance3D
 	var box: AABB = panel.get_aabb()
 	var edge_half: float = sqrt(1.0 - table.d_flat_z * table.d_flat_z) * table.clip_rx
 	expect(box.size.x <= edge_half * 2.0 + 0.0001, "width %s within back edge %s" % [box.size.x, edge_half * 2.0])
-	expect(box.size.y <= 0.6, "height %s at most 0.6 m" % box.size.y)
+	var cap: float = float(SubLayout.record(&"map_table")["hologram_height_m"])
+	expect(box.size.y <= cap + 0.0001, "height %s within the hologram height %s" % [box.size.y, cap])
 	expect(box.size.y > 0.0 and box.size.x > 0.0, "panel has size")
 	expect(box.position.z + box.size.z <= 0.0, "panel stands at the back, not over the relief centre")
 	expect(panel.get_node_or_null("Surface") != null, "has a content mount point")
