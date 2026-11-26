@@ -18,3 +18,7 @@ The pump sits strictly between 1× and 2× the leak: `leak_flow < pump_flow < 2 
 ## Time to flood
 
 One unattended leak, no pump: 10.0 t ÷ 0.04 t/s = **250 s** (inside the 3–5 minute design window). Leak inflow is not depth-scaled; #132 scales only the spontaneous opening rate.
+
+## Hand pump (M12.70)
+
+`HandPump` (`src/interact/hand_pump.gd`) is a lever that works the bilge by hand and needs no power. Holding it is the 0.6 s down stroke, releasing springs it back in 0.4 s, and a 0.5 s refill beat follows (1.5 s per cycle). A full stroke bails 0.0525 t through `LeakSystem.manual_bail`, so steady work removes about 0.035 t/s. It makes no noise, and the electric pump's path is unchanged. The host runs the cycle and streams the lever value.
