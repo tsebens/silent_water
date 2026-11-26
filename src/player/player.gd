@@ -131,11 +131,20 @@ func _apply_fov() -> void:
 func _unhandled_input(event: InputEvent) -> void:
 	if not is_multiplayer_authority():
 		return
+	var menu: PauseMenu = get_tree().get_first_node_in_group(PauseMenu.GROUP) as PauseMenu
+	if menu != null and menu.is_open():
+		# The menu owns input: Escape steps back, everything else is ignored.
+		if event.is_action_pressed(&"release_mouse"):
+			menu.back()
+		return
 	if event.is_action_pressed(&"release_mouse"):
+		var busy: bool = _seat != null or _held != null
 		_interact_down = false
 		_release_held()
 		stand_up()
 		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+		if not busy and menu != null:
+			menu.open()
 		return
 	if _seat != null and _seat.has_table_view():
 		# The table handles its own mouse and keys; only E leaves it.
@@ -186,7 +195,9 @@ func _simulate(delta: float) -> void:
 	if _sub_frame != null:
 		gravity = _sub_frame.gravity_in_sub()
 	var input: Vector2 = bot_move
-	if input == Vector2.ZERO and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
+	var menu: PauseMenu = get_tree().get_first_node_in_group(PauseMenu.GROUP) as PauseMenu
+	var menu_open: bool = menu != null and menu.is_open()
+	if input == Vector2.ZERO and not menu_open and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
 		input = Input.get_vector(&"move_left", &"move_right", &"move_forward", &"move_back")
 	if _seat != null and not (_seat is PilotSeat):
 		position = _seat.seat_transform().origin
@@ -197,7 +208,7 @@ func _simulate(delta: float) -> void:
 		# single-player mode Numpad 8/2 blow and flood.
 		var planes: float = 0.0
 		var ballast: float = 0.0
-		if Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
+		if not menu_open and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
 			planes = Input.get_axis(&"pilot_planes_rise", &"pilot_planes_dive")
 			ballast = Input.get_axis(&"pilot_flood", &"pilot_blow")
 		planes += bot_planes
@@ -221,7 +232,7 @@ func _simulate(delta: float) -> void:
 	horizontal = horizontal.lerp(wish, 1.0 - exp(-ACCEL * delta))
 	velocity = Vector3(horizontal.x, velocity.y, horizontal.z)
 	var jump_pressed: bool = bot_jump or (
-		Input.mouse_mode == Input.MOUSE_MODE_CAPTURED and Input.is_action_just_pressed(&"jump")
+		not menu_open and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED and Input.is_action_just_pressed(&"jump")
 	)
 	bot_jump = false
 	if is_on_floor():

@@ -26,6 +26,9 @@ func _ready() -> void:
 		_open_terrain_lab.call_deferred()
 		return
 
+	if not OS.get_cmdline_user_args().has("--autotest"):
+		_add_pause_menu()
+
 	if OS.get_cmdline_user_args().has("--autotest"):
 		var autotest: Autotest = Autotest.new()
 		autotest.name = "Autotest"
@@ -44,6 +47,13 @@ func _ready() -> void:
 		_report(Net.join(args.address, args.port), "join")
 	else:
 		_show_menu()
+
+
+func _add_pause_menu() -> void:
+	var pause: PauseMenu = PauseMenu.new()
+	pause.name = "PauseMenu"
+	add_child(pause)
+	pause.build_tabs($GameSettings as GameSettings)
 
 
 func _show_menu() -> void:
