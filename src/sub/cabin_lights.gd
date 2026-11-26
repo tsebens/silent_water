@@ -9,6 +9,8 @@ const MIN_LEVEL: float = 0.03
 
 @export var lights_root: Node3D
 @export var dimmer: Interactable
+## Small emergency lights: on at blackout and whenever CABIN LTS is unpowered.
+@export var emergency_root: Node3D
 ## Lights the dimmer doesn't touch (the headlight).
 @export var excluded: Array[Light3D] = []
 
@@ -55,8 +57,20 @@ func level() -> float:
 	return lerpf(MIN_LEVEL, 1.0, v)
 
 
+## True when CABIN LTS has power (no [PowerSystem] counts as powered).
+func cabin_powered() -> bool:
+	var ps: PowerSystem = get_tree().get_first_node_in_group(PowerSystem.GROUP) as PowerSystem if is_inside_tree() else null
+	return ps == null or ps.is_powered(PowerSystem.Circuit.CABIN_LTS)
+
+
+func emergency_on() -> bool:
+	return not cabin_powered()
+
+
 func _process(_delta: float) -> void:
-	var lvl: float = level() if enabled else 0.0
+	if emergency_root != null:
+		emergency_root.visible = emergency_on()
+	var lvl: float = level() if enabled and cabin_powered() else 0.0
 	for l: Light3D in cabin_lights():
 		var id: int = l.get_instance_id()
 		l.light_energy = float(_base.get(id, l.light_energy)) * lvl * float(flicker.get(id, 1.0))

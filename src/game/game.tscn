@@ -191,11 +191,12 @@ leaks = NodePath("../LeakSystem")
 scan = NodePath("../ScanObjective")
 director = NodePath("../DiveDirector")
 
-[node name="CabinLights" type="Node" parent="." node_paths=PackedStringArray("lights_root", "dimmer", "excluded")]
+[node name="CabinLights" type="Node" parent="." node_paths=PackedStringArray("lights_root", "dimmer", "excluded", "emergency_root")]
 script = ExtResource("17")
 lights_root = NodePath("../Interior/Lights")
 dimmer = NodePath("../Interior/Stations/Pilot/Dimmer")
 excluded = [NodePath("../Interior/Lights/Headlight")]
+emergency_root = NodePath("../Interior/EmergencyLights")
 
 [node name="CabinSwitch" type="Node" parent="." node_paths=PackedStringArray("lights", "power", "stealth_switch")]
 script = ExtResource("cabin_switch")

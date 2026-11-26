@@ -69,8 +69,30 @@ func _ready() -> void:
 	(pump_point if pump_point != null else self as Node).add_child(_pump_audio)
 
 
+## True when the electric pump runs: its switch is on and the BILGE PUMP
+## circuit has power (no [PowerSystem] counts as powered).
 func pump_on() -> bool:
+	return pump_switched_on() and pump_powered()
+
+
+func pump_switched_on() -> bool:
 	return pump != null and pump.get_value() > 0.5
+
+
+func pump_powered() -> bool:
+	var power: PowerSystem = get_tree().get_first_node_in_group(PowerSystem.GROUP) as PowerSystem if is_inside_tree() else null
+	return power == null or power.is_powered(PowerSystem.Circuit.BILGE_PUMP)
+
+
+## Tonnes/s the electric pump removes now: 0 when unpowered.
+func current_pump_flow() -> float:
+	return pump_flow if pump_on() else 0.0
+
+
+## Host: the manual lever pump bails `tonnes`, whatever the power.
+func manual_bail(tonnes: float) -> void:
+	if multiplayer.is_server() and controller != null:
+		controller.model.change_bilge(-absf(tonnes))
 
 
 func noise_intensity() -> float:
@@ -97,12 +119,14 @@ func _process(_delta: float) -> void:
 
 
 func _physics_process(delta: float) -> void:
+	var power: PowerSystem = get_tree().get_first_node_in_group(PowerSystem.GROUP) as PowerSystem
+	if power != null:
+		power.set_bilge_pump_running(pump_switched_on())
 	if not multiplayer.is_server() or controller == null or not controller.enabled:
 		return
 	if open_index != -1:
 		controller.model.change_bilge(leak_flow * delta)
-	if pump_on():
-		controller.model.change_bilge(-pump_flow * delta)
+	controller.model.change_bilge(-current_pump_flow() * delta)
 	_timer -= delta
 	if _timer <= 0.0 and open_index == -1 and spontaneous_roll(delta, controller.depth):
 		open_random_leak()
