@@ -1,0 +1,23 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://src/science/scan_module.gd" id="1"]
+[ext_resource type="PackedScene" path="res://assets/models/kit/science_module_frame/science_module_frame.tscn" id="2"]
+[ext_resource type="PackedScene" path="res://assets/models/kit/scan_module/scan_module_bezel.glb" id="3"]
+[ext_resource type="Script" path="res://src/science/scan_screen.gd" id="4"]
+[ext_resource type="PackedScene" path="res://assets/models/kit/lit_toggle/lit_toggle.tscn" id="5"]
+
+[node name="ScanModule" type="Node3D" node_paths=PackedStringArray("arm_switch")]
+script = ExtResource("1")
+arm_switch = NodePath("ArmSwitch")
+
+[node name="Frame" parent="." instance=ExtResource("2")]
+
+[node name="Bezel" parent="." instance=ExtResource("3")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.045, 0, 0.056)
+
+[node name="Screen" type="MeshInstance3D" parent="."]
+script = ExtResource("4")
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.045, 0, 0.0583)
+
+[node name="ArmSwitch" parent="." instance=ExtResource("5")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.095, 0, 0.056)
