@@ -1,0 +1,93 @@
+station: pilot_station
+
+concept:
+  # The primary image is listed last of the three that share a camera: `cadkit sheet` keeps the last sheet written per camera.
+  images:
+    - path: assets/models/cockpit/concept/pilot_strip_reference.png
+      role: context            # the hologram up and to the side, beside a letterbox depth finder; its rail across the apex is NOT built
+      view: the seated pilot's eye
+      camera: concept_pilot_view
+    - path: assets/models/cockpit/concept/cockpit_pilot_view_reference.png
+      role: context            # the joysticks, pedals on grating and the seat's place; its elbow rail and switch boards are superseded
+      view: the seated pilot's eye
+      camera: concept_pilot_view
+    - path: assets/models/cockpit/concept/pilot_strip_primary.png
+      role: primary            # the strip's structure: tilted fascia, orange-edged end caps either side of the gap; NOT its gauge layout
+      view: the seated pilot's eye, looking forward into the dome
+      camera: concept_pilot_view
+    - path: assets/models/cockpit/concept/cockpit_primary.png
+      role: context            # where the pilot sits: alone, centred in the dome, the sonar station aft and to starboard
+      view: from behind the pilot
+      camera: concept_behind
+  doc: assets/models/cockpit/concept/cockpit_concept.md
+  compare_on:
+    - the strip's massing: knee height, low against the glass, two wings, a clear gap at the apex, the tilted fascia and its orange end caps
+    - what sits where on the strip, wing by wing (functions below give the order)
+    - the hologram's place, up and to the side of the gap above the depth finder
+    - the seat: operator seat with headrest, armrest joysticks, pedals on an open grating footrest
+    - colour blocking
+  ignore:
+    - the number, type and labels of gauges and switches drawn in the art (functions decide those)
+    - screen and display content, lighting mood, the sea, people
+
+functions:
+  # Seat and inputs. The keys stay; the visible controls move with them.
+  - id: seat
+    furniture: pilot_seat, a new scene building on the generated operator_seat (its backrest fixed in #434), adding a headrest, a joystick on each armrest, and decorative pedals on an open grating footrest; a hand's width from the armrests to the glass
+    binds: PilotSeat (the parent binds it, as furniture carries no behaviour)
+    status: implemented (PilotSeat, sit point, eye height 1.15)
+  - id: throttle
+    control: left armrest joystick, tilting fore and aft with the W/S throttle
+    binds: PilotSeat.throttle (SpringAxis; its indicator drives the stick)
+    status: implemented (today a lever on a stalk); the stick is new
+  - id: planes_and_rudder
+    control: right armrest joystick, fore and aft with R/F planes, side to side with A/D rudder
+    binds: PilotSeat.planes and PilotSeat.rudder (two SpringAxis, one stick)
+    status: implemented as keys with no visible control; the stick is new
+  - id: pedals
+    furniture: decorative pedals; they do nothing
+    status: decoration
+  - id: ballast
+    control: keyboard, Numpad 8 blows and Numpad 2 floods, as normal helm controls (Decision #445)
+    binds: PilotSeat ballast keys (flood_valve, blow_valve)
+    status: implemented in single-player developer mode only; drop the DevSettings.single_player gate
+  # Left wing, from the gap outward.
+  - id: depth_finder
+    display: a small digital 2D trace of the sea floor under and ahead of the sub, like a modern echo sounder, in a letterbox bezel
+    status: control only; new display behaviour
+  - id: hologram
+    display: the pilot's small hologram, immediately above the depth finder, up and to the side of the gap; the map table's display model, always centred on the sub, about 20 cm
+    binds: HoloMap (PilotHolo); zoom on the mouse wheel while seated at the helm
+    status: implemented (display model #384); the wheel zoom is new. Terrain cut-away and the astern flip are NOT in scope (#455)
+  - id: multidisplay
+    display: the multidisplay scene (#464) with its pilot preset (depth, ballast pie, buoyancy bar, height above the sea floor, rate chevrons, air ring)
+    status: built by #464; this station instances it
+  - id: speed_throttle
+    display: the shared two-needle gauge; speed (primary, m/s) and throttle (secondary, -1..+1), centred, the speed scale at plus and minus the sub's top forward speed computed from the physics model (terminal speed at full ahead, sqrt(thrust_accel / drag.z), about 3.0 m/s), so it follows tuning
+    binds: SubController readouts speed and throttle
+    status: the gauge exists; the computed scale is new
+  # Right wing, from the gap outward.
+  - id: navball
+    display: the navball scene (#467)
+    status: built by #467; this station instances it
+  - id: noise_repeater
+    display: the existing noise repeater gauge
+    status: implemented
+  - id: warning_lamps
+    display: three indicator lamps in a row beside the switches, each lit when its condition holds; BILGE above a quarter of SubPhysicsModel.max_surfaceable_bilge_t() (about 2.5 t); CO2 at 0.75% (half the 1.5% first-impairment level in the design doc's Life support table); LOW O2 below 20% of the O2 tank
+    binds: bilge from SubController.bilge_water_t; CO2 and O2 from the life support model
+    status: bilge can be wired now; CO2 and O2 are designed but not simulated (build and place their lamps, unwired)
+  - id: light_switches
+    control: four toggles at the right wing's end; external lights on/off; external light colour, halogen or red; cabin lights on/off; cabin light colour, standard or red
+    binds: the Headlight (SpotLight3D with a PaletteLight) and CabinLights (its stealth property swaps cabin lights to light_stealth_red)
+    status: CabinLights.stealth exists but nothing switches it; headlight on/off and colour are new; the cabin dimmer lever stays as it is (it sets the level, the switch turns them on and off)
+
+constraints:
+  kind: station
+  frame: floor at Y=0 (the cockpit floor, one step below the main deck), seat on the centreline, pilot facing -Z (forward, toward the dome)
+  seated_eye_height_m: 1.15   # PilotSeat's eye height today
+  reach_m: 0.75
+  sight_line: nothing crosses the gap at the apex, and nothing on the strip rises into the forward view above the hologram's top
+  context: the dome glass and rim ring from the hull (assets/models/vehicles/sub_interior), so the strip is checked against the glass it sits against
+  triangle_budget: 12000
+  palette: every colour a palette swatch; the cyan information band is reserved for light_readout
