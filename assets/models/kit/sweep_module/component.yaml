@@ -1,0 +1,41 @@
+slug: sweep_module
+group: kit
+kind: display
+summary: 'SWEEP science module (bathymetry sounder): the shared module chassis with an 8 x 8 coverage-grid screen
+  in a black bezel and a lit arm switch beside it. The root is a SweepModule. Connect ArmSwitch''s value_changed
+  to toggle_armed on the instance.'
+tags:
+- science
+- module
+- sweep
+- bathymetry
+- sounder
+- screen
+- grid
+- arm
+- switch
+scene: res://assets/models/kit/sweep_module/sweep_module.tscn
+behaviour:
+  script: SweepModule
+  values: armed off/on; coverage 0..1
+  signal: ArmSwitch (SwitchLever) value_changed
+  wiring: station connects ArmSwitch.value_changed to toggle_armed; `objective` is found by group
+footprint_mm:
+- 340.0
+- 280.0
+stand_out_mm: 114.0
+depth_mm:
+  behind_origin: 0.0
+  in_front_of_origin: 114.0
+mount: 'as science_module_frame: back on Z=0, centred; faces +Z; the rear body slides into a bay about 0.35 m wide'
+uses:
+- science_module_frame
+- lit_toggle
+triangles: 928
+built_by: tools/cadkit/scenes/sweep_module.py
+files:
+- component.yaml
+- review/.gdignore
+- review/cameras.json
+- sweep_module.tscn
+- sweep_module_screen.glb
