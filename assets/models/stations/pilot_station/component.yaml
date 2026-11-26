@@ -1,0 +1,80 @@
+slug: pilot_station
+group: stations
+kind: station
+summary: 'Pilot''s station: the pilot seat on the centreline facing -Z, and one knee-height instrument strip low
+  against the dome in two faceted wings with orange end caps either side of a clear gap (600 mm). Marked anchors
+  for every instrument (left wing from the gap outward: depth finder with the hologram above it, multidisplay, speed
+  gauge; right wing: navball, four light switches, three warning lamps, noise repeater). Shell and seat only: the
+  instruments are placed by the next arc.'
+tags:
+- station
+- pilot
+- strip
+- dome
+- helm
+- seat
+scene: res://assets/models/stations/pilot_station/pilot_station.tscn
+behaviour:
+  script: null
+  wire:
+    seat: Seat/SitPoint (PilotSeat binds it; Seat/ThrottleJoystick and Seat/FlightJoystick take a JoystickIndicator)
+    anchors: 'Anchors/<name> (Node3D; mount frame: +Z out of the fascia, +Y up the slope, +X toward the pilot''s
+      right)'
+    left_wing: DepthFinder, Multidisplay, SpeedGauge (from the gap outward); HologramAnchor above the depth finder,
+      standing up
+    right_wing: 'Navball, ExternalLightSwitch, ExternalColourSwitch, CabinLightSwitch, CabinColourSwitch, BilgeLamp,
+      Co2Lamp, LowO2Lamp (on a dark plate, 8 mm proud: mount their lamps at the anchor), NoiseRepeater'
+footprint_mm:
+- 2364
+- 1210
+mount: floor at Y=0, seat origin on the centreline at X=0, Z=0; the pilot faces -Z; the strip is ahead at -Z
+placement:
+  hull_z_m: -3.8
+  hull_floor_y_m: -1.15
+  note: the dome check assumes the seat origin at the program's pilot z (-3.8 m) and the cockpit floor (y -1.15
+    m)
+seated_eye_height_m: 1.15
+context:
+- dome glass and rim ring of assets/models/vehicles/sub_interior (checked against, not built)
+uses:
+- pilot_seat
+- operator_seat
+- joystick
+- multidisplay
+- navball
+- depth_finder
+- gauge
+- guarded_toggle
+- indicator_lamp
+triangles: 1544
+triangles_by_part:
+  strip: 344
+  pilot_seat: 1200
+triangles_with_instruments: 14318
+checks:
+  strip_top_mm: 780
+  hologram_top_mm: 1002
+  glass_clearance_mm: 42
+  gap_mm: 600.0
+  eye_to_anchor_mm:
+    DepthFinder: 1043
+    Multidisplay: 1051
+    SpeedGauge: 1098
+    Navball: 1049
+    ExternalLightSwitch: 1044
+    ExternalColourSwitch: 1043
+    CabinLightSwitch: 1049
+    CabinColourSwitch: 1062
+    BilgeLamp: 1072
+    Co2Lamp: 1083
+    LowO2Lamp: 1095
+    NoiseRepeater: 1164
+  rim_ring_clear_mm: 132
+  stick_clearance_mm: 496
+built_by: tools/cadkit/scenes/pilot_station.py
+files:
+- component.yaml
+- pilot_station.tscn
+- pilot_station_strip.glb
+- review/.gdignore
+- review/cameras.json
