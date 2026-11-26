@@ -19,7 +19,15 @@ func fit(t: int) -> ScienceModule:
 		module.queue_free()
 		module = null
 	if t != ModuleLoadout.Type.NONE:
-		module = ScienceModule.new()
+		match t:
+			ModuleLoadout.Type.SCAN:
+				module = ScanModule.new()
+			ModuleLoadout.Type.SWEEP:
+				module = SweepModule.new()
+			ModuleLoadout.Type.CAMERA:
+				module = CameraModule.new()
+			_:
+				module = ScienceModule.new()
 		module.module_type = t
 		module.name = ModuleLoadout.type_name(t).capitalize()
 		add_child(module)

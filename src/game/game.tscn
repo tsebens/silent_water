@@ -142,7 +142,7 @@ spawn_path = NodePath("../Players")
 script = ExtResource("7")
 controller = NodePath("../SubController")
 players = NodePath("../Players")
-engine_point = NodePath("../Interior/Stations/Engineering/EngineGauge")
+engine_point = NodePath("../Interior/Stations/Engineering/Panel")
 blow_point = NodePath("../Interior/Stations/Ballast/BlowValve")
 flood_point = NodePath("../Interior/Stations/Ballast/FloodValve")
 
