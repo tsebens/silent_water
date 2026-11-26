@@ -25,6 +25,7 @@ Report every item below that has evidence in the window; say "none" for the rest
 - An arc with two build runs, or `claimed` with no run, or a run with no `claimed`.
 - `in-review` arcs with no open PR; closed arcs still carrying `ready`/`claimed`/`in-review`/`blocked`; open concepts whose arcs are all closed.
 - PRs carrying `changes-requested` for more than 30 minutes with no rework run; PRs with `ci-green` and no review run.
+- Anomalous arc state: an open arc with a merged PR whose body says `Closes #n`, or an arc closed then reopened within a minute.
 - Arcs or concepts missing from the board (the dispatcher's "adding" lines tell you it caught them; a missing one it did not catch is a defect).
 
 **Loops and churn**
