@@ -40,6 +40,7 @@ behaviours:                           # scripts a generated scene may use, contr
   - {script: FlatChart, file: res://src/map/flat_chart.gd, does: "square chart screen; draws the sonar bearing chart"}
   - {script: Lever, file: res://src/interact/lever.gd, does: pivots about local X by mouse drag}
   - {script: SwitchLever, file: res://src/interact/switch_lever.gd, does: Lever that snaps to its two ends}
+  - {script: GuardedSwitch, file: res://src/interact/guarded_switch.gd, does: "SwitchLever under a hinged cap, posed on a child node named `Cap` (or the `cap` export; rotated about X by `cap_open_deg`, default -100): click one lifts the cap, click two sets on and the cap stays open, click from on sets off and closes it; a cap over an off switch drops after `drop_timeout` (default 5 s); hints click to lift the cap / click to switch; cap state host-run and replicated"}
   - {script: Valve, file: res://src/interact/valve.gd, does: handwheel turned by circling the mouse}
   - {script: HydrophoneWheel, file: res://src/sonar/hydrophone_wheel.gd, does: Valve that trains the hydrophone}
   - {script: SpringAxis, file: res://src/interact/spring_axis.gd, does: key-driven -1..1 axis that springs back}
