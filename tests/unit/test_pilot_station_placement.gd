@@ -38,7 +38,11 @@ func test_one_of_each_and_no_old_pods() -> void:
 	expect_eq(_count(interior, &"DepthFinder"), 1, "one depth finder")
 	expect_eq(_count(interior, &"MultiDisplay"), 1, "one multidisplay")
 	expect_eq(_count(interior, &"Navball"), 1, "one navball")
-	expect_eq(_count(_pilot().get_node("Anchors"), &"IndicatorLamp"), 3, "three warning lamps")
+	var warning_lamps: int = 0
+	for a: Node in _pilot().get_node("Anchors").get_children():
+		if a is IndicatorLamp:
+			warning_lamps += 1
+	expect_eq(warning_lamps, 3, "three warning lamps (the lit toggles' own lamps sit inside them)")
 	expect_eq(_count(interior.get_node("Stations/Maps/PilotHolo").get_parent(), &"HoloMap"), 2, "pilot and table holograms")
 	for gone: String in ["LeftPod", "RightPod", "CenterPod"]:
 		expect(_pilot().get_node_or_null(gone) == null, "%s is gone" % gone)
