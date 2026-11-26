@@ -17,6 +17,8 @@ const DRAIN_PER_SEC: float = 1.0 / 60.0
 
 @export var controller: SubController
 @export var switch: Lever
+## A SCAN science module that may arm the scan instead of the switch (set by the module).
+var module: ScienceModule
 @export var target: Node3D
 @export var scanner_point: Node3D
 
@@ -31,6 +33,7 @@ var _was_on: bool = false
 func _ready() -> void:
 	add_to_group(&"noise_sources")
 	add_to_group(&"scan_readouts")
+	add_to_group(&"scan_objectives")
 	_audio = AudioStreamPlayer3D.new()
 	_audio.stream = ProceduralSounds.scanner()
 	_audio.bus = AudioBuses.INSIDE
@@ -39,7 +42,16 @@ func _ready() -> void:
 
 
 func scanner_on() -> bool:
-	return switch != null and switch.get_value() > 0.5 and not complete
+	if complete:
+		return false
+	return (switch != null and switch.get_value() > 0.5) or (module != null and module.armed)
+
+
+## Distance from the sub to the array, metres (-1 when unknown).
+func range_to_target() -> float:
+	if controller == null or target == null:
+		return -1.0
+	return controller.model.position.distance_to(target.position)
 
 
 ## True when the sub is placed to make progress.
@@ -66,6 +78,8 @@ func reset() -> void:
 	progress = 0.0
 	complete = false
 	_was_on = false
+	if module != null:
+		module.armed = false
 	if switch != null and multiplayer.is_server():
 		switch.host_set_value(0.0)
 
@@ -92,5 +106,8 @@ func _physics_process(delta: float) -> void:
 		progress = maxf(progress - DRAIN_PER_SEC * delta, 0.0)
 	if progress >= 1.0:
 		complete = true
-		switch.host_set_value(0.0)
+		if switch != null:
+			switch.host_set_value(0.0)
+		if module != null:
+			module.armed = false
 		scan_completed.emit()

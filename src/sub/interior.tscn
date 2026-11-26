@@ -22,6 +22,7 @@
 [ext_resource type="PackedScene" path="res://assets/models/stations/sonar_console/sonar_console.tscn" id="sonar_console"]
 [ext_resource type="PackedScene" path="res://assets/models/stations/map_table/map_table.tscn" id="map_table"]
 [ext_resource type="PackedScene" path="res://assets/models/stations/pilot_station/pilot_station.tscn" id="pilot_station"]
+[ext_resource type="PackedScene" path="res://assets/models/panels/electrical_station/electrical_station.tscn" id="electrical_station"]
 [ext_resource type="Script" path="res://src/interact/joystick_indicator.gd" id="joy_ind"]
 [ext_resource type="Script" path="res://src/sub/headlight_switch.gd" id="headlight_switch"]
 
@@ -369,17 +370,11 @@ sweep_deg = 180.0
 script = ExtResource("station_placement")
 station_id = &"engineering"
 placements = {
-"EngineGauge": Vector3(0.2, 1.55, 0)
+"Panel": Vector3(0.225, 1.1, 0)
 }
 
-[node name="EngineGauge" type="Node3D" parent="Stations/Engineering"]
+[node name="Panel" parent="Stations/Engineering" instance=ExtResource("electrical_station")]
 rotation = Vector3(0, -1.5708, 0)
-script = ExtResource("3")
-readout = &"engine_output"
-title = "ENGINE"
-min_value = -1.0
-max_value = 1.0
-sweep_deg = 180.0
 
 [node name="Bilge" type="Node3D" parent="Stations"]
 script = ExtResource("station_placement")
