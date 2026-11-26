@@ -1,0 +1,13 @@
+[gd_scene format=3]
+
+[ext_resource type="PackedScene" path="res://assets/models/kit/joystick/joystick_boot.glb" id="1"]
+[ext_resource type="PackedScene" path="res://assets/models/kit/joystick/joystick_stick.glb" id="2"]
+
+[node name="Joystick" type="Node3D"]
+
+[node name="Boot" parent="." instance=ExtResource("1")]
+
+[node name="Frame" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 0, -1, 0, 1, 0, 0, 0, 0)
+
+[node name="Stick" parent="Frame" instance=ExtResource("2")]
