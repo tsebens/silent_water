@@ -24,7 +24,7 @@ footprint_mm:
 - 56.0
 - 116.0
 stand_out_mm: 71.0
-stand_out_open_mm: 135.9
+stand_out_open_mm: 138.0
 mount: back on Z=0, centred; front +Z; on is toward +Y; the cap's hinge is along its top edge, +Y
 set_on_instance:
   label: name at the aiming point

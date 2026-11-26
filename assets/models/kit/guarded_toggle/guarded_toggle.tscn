@@ -23,7 +23,7 @@ swing_deg = 80
 noise_profile = SubResource("noise")
 pivot = NodePath("Pivot")
 cap = NodePath("Cap")
-cap_open_deg = -100
+cap_open_deg = -103
 
 [node name="Base" parent="." instance=ExtResource("3")]
 
