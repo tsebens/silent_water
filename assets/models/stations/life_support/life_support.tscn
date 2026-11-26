@@ -6,7 +6,7 @@
 [ext_resource type="PackedScene" path="res://assets/models/kit/linear_gauge/linear_gauge.tscn" id="4"]
 [ext_resource type="PackedScene" path="res://assets/models/kit/gauge/gauge.tscn" id="5"]
 [ext_resource type="PackedScene" path="res://assets/models/kit/indicator_lamp/indicator_lamp.tscn" id="6"]
-[ext_resource type="PackedScene" path="res://assets/models/kit/guarded_toggle/guarded_toggle.tscn" id="7"]
+[ext_resource type="PackedScene" path="res://assets/models/kit/lit_guarded_toggle/lit_guarded_toggle.tscn" id="7"]
 [ext_resource type="PackedScene" path="res://src/noise/noise_gauge.tscn" id="8"]
 
 [sub_resource type="BoxShape3D" id="unit"]
@@ -134,12 +134,9 @@ transform = Transform3D(1, 0, 0, 0, 0.707107, -0.707107, 0, 0.707107, 0.707107, 
 transform = Transform3D(1, 0, 0, 0, 0.707107, -0.707107, 0, 0.707107, 0.707107, -0.105, 1.90243, 0.263914)
 
 [node name="FanToggle" parent="." instance=ExtResource("7")]
-transform = Transform3D(1, 0, 0, 0, 0.669131, 0.743145, 0, -0.743145, 0.669131, 0.352, 1.22578, 0.277057)
+transform = Transform3D(1, 0, 0, 0, 0.669131, 0.743145, 0, -0.743145, 0.669131, 0.352, 1.22176, 0.281515)
 label = "FANS"
 initial_value = 1
-
-[node name="FanLamp" parent="." instance=ExtResource("6")]
-transform = Transform3D(1, 0, 0, 0, 0.669131, 0.743145, 0, -0.743145, 0.669131, 0.412, 1.22578, 0.277057)
 
 [node name="NoiseRepeater" parent="." instance=ExtResource("8")]
 transform = Transform3D(1, 0, 0, 0, 0.707107, -0.707107, 0, 0.707107, 0.707107, 0.31, 2.00991, 0.385536)

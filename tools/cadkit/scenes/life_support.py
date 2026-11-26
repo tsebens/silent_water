@@ -10,7 +10,7 @@ stands at +Z, back of the unit on Z=0.
 
 Station-local solids (no behaviour, used once): the profile shell and cheeks, plinth, hazard band, rails,
 cradles, the panel plate and hole rings. Everything lit, read or carried is a catalogue scene: scrubber_canister,
-linear_gauge, gauge, guarded_toggle, indicator_lamp and the existing noise_gauge.
+linear_gauge, gauge, lit_guarded_toggle, indicator_lamp and the existing noise_gauge.
 """
 import json
 import math
@@ -24,7 +24,7 @@ from cadkit.library import REPO, entry, note, out_dir, res, scene_path, write_en
 from cadkit.tscn import SName, Scene, Xform
 
 SLUG, GROUP = "life_support", "stations"
-USES: list[str] = ["scrubber_canister", "linear_gauge", "gauge", "guarded_toggle", "indicator_lamp"]
+USES: list[str] = ["scrubber_canister", "linear_gauge", "gauge", "lit_guarded_toggle", "indicator_lamp"]
 PROGRAM = REPO / "assets/models/vehicles/sub_interior/program.yaml"
 TRIANGLE_BUDGET = 24000
 
@@ -78,8 +78,8 @@ ROW_A, ROW_B = 230.0, 68.0
 O2_AT, CO2_AT, RATE_AT, NOISE_AT = -310.0, -105.0, 105.0, 310.0
 GAUGE_R, NOISE_R = 0.055, 0.055            # dial radii (m)
 O2_ALARM_AT, CO2_ALARM_AT = -310.0, -105.0
-# The fan switch: the upper-right corner of the storage shelf, (u across, s up the slope), with its run lamp beside it.
-TOGGLE_U, TOGGLE_S, LAMP_U = 352.0, 300.0, 412.0
+# The fan switch: the upper-right corner of the storage shelf, (u across, s up the slope), (its run lamp is part of the scene).
+TOGGLE_U, TOGGLE_S = 352.0, 294.0
 # The operator.
 EYE = np.array([0.0, 1650.0, D + 150.0])
 REACH_MM = 750.0
@@ -290,7 +290,7 @@ def _disc_clear(a: tuple[float, float, float], b: tuple[float, float, float], wh
 def _check_panel(sol: list[Solid]) -> dict:
     """The shelf's holes and the upper panel's instruments fit, do not overlap, and are in reach."""
     gau, can = entry("gauge"), entry("scrubber_canister")
-    tog, lamp = entry("guarded_toggle"), entry("indicator_lamp")
+    tog, lamp = entry("lit_guarded_toggle"), entry("indicator_lamp")
     bez, pb, ph = gau["extent_radii"]["bezel"], gau["extent_radii"]["plate_bottom"], gau["extent_radii"]["plate_half_width"]
     # Storage: six holes in two rows of three, inside the shelf, clear of each other and of the cheeks.
     holes = _holes()
@@ -354,7 +354,7 @@ def _check_panel(sol: list[Solid]) -> dict:
 
     # The fan toggle and its lamp on the shelf's upper-right corner: on the shelf, clear of the holes and the cheek.
     expect(TOGGLE_U - tw / 2 >= max(c for c, _ in holes) + HOLE_RING_R + 10.0, "fan toggle clear of the storage holes")
-    expect(LAMP_U + lw <= W / 2 - CHEEK_T - 8.0 and (LAMP_U - lw) - (TOGGLE_U + tw / 2) >= 6.0, "run lamp beside the toggle, clear of the cheek")
+    expect(TOGGLE_U + tw / 2 <= W / 2 - CHEEK_T - 8.0, "fan toggle plate clear of the cheek and rails")
     expect(TOGGLE_S + th / 2 <= SHELF_L - 8.0 and TOGGLE_S - th / 2 >= max(s for _, s in holes) - HOLE_RING_R, "fan toggle in the shelf's upper corner")
     expect(TOGGLE_S >= SHELF_L / 2 and TOGGLE_U > 0, "fan toggle in the upper-right corner of the shelf")
     far_tog = max(float(np.linalg.norm(_shelf_point(TOGGLE_U + dx, TOGGLE_S + dy)
@@ -416,16 +416,15 @@ def build() -> dict:
          min_value=0.0, max_value=1.0)
     s.node("O2AlarmLamp", instance=scene_path("indicator_lamp"), props={"transform": _panel_xform(O2_ALARM_AT, ROW_B, PLATE_T)})
     s.node("Co2AlarmLamp", instance=scene_path("indicator_lamp"), props={"transform": _panel_xform(CO2_ALARM_AT, ROW_B, PLATE_T)})
-    s.node("FanToggle", instance=scene_path("guarded_toggle"),
+    s.node("FanToggle", instance=scene_path("lit_guarded_toggle"),
            props={"transform": _shelf_xform(TOGGLE_U, TOGGLE_S), "label": "FANS", "initial_value": 1.0})
-    s.node("FanLamp", instance=scene_path("indicator_lamp"), props={"transform": _shelf_xform(LAMP_U, TOGGLE_S)})
     s.node("NoiseRepeater", instance="res://src/noise/noise_gauge.tscn",
            props={"transform": _panel_xform(NOISE_AT, ROW_A, PLATE_T + GAUGE_BACK), "radius": NOISE_R})
     s.write(d / f"{SLUG}.tscn")
     _cameras(d)
     n_can = 2 + len(FILLED_HOLES)
     tris = (rep["triangles"] + n_can * entry("scrubber_canister")["triangles"] + 2 * entry("linear_gauge")["triangles"]
-            + 4 * entry("gauge")["triangles"] + entry("guarded_toggle")["triangles"] + 3 * entry("indicator_lamp")["triangles"])
+            + 4 * entry("gauge")["triangles"] + entry("lit_guarded_toggle")["triangles"] + 2 * entry("indicator_lamp")["triangles"])
     expect(tris <= TRIANGLE_BUDGET, f"station within the {TRIANGLE_BUDGET:,} triangle budget ({tris})")
     write_entry(GROUP, SLUG, {
         "kind": "station",
@@ -433,7 +432,7 @@ def build() -> dict:
                    "panel (O2, CO2 level, CO2 rate with two needles, noise repeater, O2 and CO2 alarm lamps under their gauges), "
                    "a recessed carriage face at eye level with two small chamfered pockets (each with a cradle and scrubber canister, "
                    "a linear saturation gauge on the housing beside it), a sloped console-desk shelf with six round "
-                   "storage holes (canisters inside, tops showing) and the guarded fan toggle (on by default) with its run lamp in its upper-right corner, and a vertical base on a hazard-striped plinth. The operator stands.",
+                   "storage holes (canisters inside, tops showing) and the lit guarded fan toggle (on by default, its lamp lit) in its upper-right corner, and a vertical base on a hazard-striped plinth. The operator stands.",
         "tags": ["station", "life support", "scrubber", "canister", "cradle", "storage", "o2", "co2", "wall unit", "standing"],
         "scene": res(d / f"{SLUG}.tscn"),
         "behaviour": {"wire": {"cradles": "CradleA, CradleB (CanisterSlot; call try_seat on CanisterA, CanisterB)",
@@ -443,7 +442,7 @@ def build() -> dict:
                                "co2_level": "Co2LevelGauge reads life_support_readouts: co2_level (0..1)",
                                "co2_rate": "Co2RateGauge reads life_support_readouts: co2_capacity_rate, co2_production_rate (0..1, needle B is production)",
                                "alarms": "O2AlarmLamp, Co2AlarmLamp (IndicatorLamp)",
-                               "fans": "FanToggle (SwitchLever, value_changed, initial_value 1: on; on the shelf's upper-right corner) with FanLamp (IndicatorLamp) beside it",
+                               "fans": "FanToggle (SwitchLever, value_changed, initial_value 1: on; lamp lit while on; on the shelf's upper-right corner)",
                                "noise_repeater": "NoiseRepeater",
                                "upper_panel": "UpperPanelAnchor (bottom middle of the sloping panel plate, on its face; +Z out of the face, +Y up the slope)",
                                "standing_eye": "OperatorEye"}},

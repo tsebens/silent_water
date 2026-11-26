@@ -5,7 +5,7 @@ summary: 'Life-support wall unit shaped like an arcade cabinet: a top block over
   panel (O2, CO2 level, CO2 rate with two needles, noise repeater, O2 and CO2 alarm lamps under their gauges), a
   recessed carriage face at eye level with two small chamfered pockets (each with a cradle and scrubber canister,
   a linear saturation gauge on the housing beside it), a sloped console-desk shelf with six round storage holes
-  (canisters inside, tops showing) and the guarded fan toggle (on by default) with its run lamp in its upper-right
+  (canisters inside, tops showing) and the lit guarded fan toggle (on by default, its lamp lit) in its upper-right
   corner, and a vertical base on a hazard-striped plinth. The operator stands.'
 tags:
 - station
@@ -32,8 +32,8 @@ behaviour:
     co2_rate: 'Co2RateGauge reads life_support_readouts: co2_capacity_rate, co2_production_rate (0..1, needle B
       is production)'
     alarms: O2AlarmLamp, Co2AlarmLamp (IndicatorLamp)
-    fans: 'FanToggle (SwitchLever, value_changed, initial_value 1: on; on the shelf''s upper-right corner) with
-      FanLamp (IndicatorLamp) beside it'
+    fans: 'FanToggle (SwitchLever, value_changed, initial_value 1: on; lamp lit while on; on the shelf''s upper-right
+      corner)'
     noise_repeater: NoiseRepeater
     upper_panel: UpperPanelAnchor (bottom middle of the sloping panel plate, on its face; +Z out of the face, +Y
       up the slope)
@@ -47,15 +47,15 @@ uses:
 - scrubber_canister
 - linear_gauge
 - gauge
-- guarded_toggle
+- lit_guarded_toggle
 - indicator_lamp
-triangles: 13212
+triangles: 13140
 triangle_budget: 24000
 triangles_by_part:
   body: 2436
 checks:
   aisle_m: 0.849
-  toggle_reach_mm: 638
+  toggle_reach_mm: 643
   storage_reach_mm: 688
   dial_reach_mm: 591
 built_by: tools/cadkit/scenes/life_support.py
