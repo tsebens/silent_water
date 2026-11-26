@@ -60,9 +60,9 @@ the sphere, not the hull rings. Each wing has about 520 mm of facet between the 
 
 - **Dropped:** the depth finder (anchor and facet). The hologram now stands above the multidisplay.
 - **Shrunk:** the speed and noise gauges to radius 0.055 m (were 0.10 and 0.11 m); the switch pitch to 66 mm (was 84 mm);
-  the facet margin to 20 mm (was 30 mm).
+  the facet margin to 14 mm (was 30 mm).
 - **Stacked:** speed over noise on one left-wing facet; the three lamps above the four switches on one right-wing facet.
   The noise repeater moved from the right wing to the left.
 
-#633 restores these in a proper redesign. The checks hold: `rim_ring_clear_mm` 123, glass clearance 40 mm, the toggles
+#633 restores these in a proper redesign. The checks hold: `rim_ring_clear_mm` 101 (100 needed), glass clearance 40 mm, the toggles
 within 560 mm of the resting hand (reach 750).

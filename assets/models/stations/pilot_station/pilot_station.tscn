@@ -21,10 +21,10 @@
 [node name="Drivers" type="Node3D" parent="."]
 
 [node name="Multidisplay" parent="Anchors" instance=ExtResource("3")]
-transform = Transform3D(0.649101, -0.48897, 0.582732, 0, 0.766044, 0.642788, -0.760702, -0.417234, 0.49724, -0.531896, 0.653603, -0.527393)
+transform = Transform3D(0.653938, -0.4863, 0.57955, 0, 0.766044, 0.642788, -0.756548, -0.420343, 0.500945, -0.529265, 0.653603, -0.531952)
 
 [node name="SpeedGauge" parent="Anchors" instance=ExtResource("4")]
-transform = Transform3D(0.431069, -0.58, 0.691217, 0, 0.766044, 0.642788, -0.902319, -0.277086, 0.330218, -0.712308, 0.728675, -0.381901)
+transform = Transform3D(0.448366, -0.574556, 0.684729, 0, 0.766044, 0.642788, -0.89385, -0.288204, 0.343468, -0.705285, 0.728675, -0.397416)
 title = "SPEED m/s"
 readout = &"speed"
 readout_b = &"engine_output"
@@ -36,36 +36,36 @@ major_divisions = 6
 radius = 0.055
 
 [node name="NoiseRepeater" parent="Anchors" instance=ExtResource("5")]
-transform = Transform3D(0.431069, -0.58, 0.691217, 0, 0.766044, 0.642788, -0.902319, -0.277086, 0.330218, -0.620668, 0.60764, -0.338122)
+transform = Transform3D(0.448366, -0.574556, 0.684729, 0, 0.766044, 0.642788, -0.89385, -0.288204, 0.343468, -0.614505, 0.60764, -0.35188)
 radius = 0.055
 
 [node name="Navball" parent="Anchors" instance=ExtResource("6")]
-transform = Transform3D(0.682236, 0.469962, -0.560079, 0, 0.766044, 0.642788, 0.731132, -0.438533, 0.522623, 0.512323, 0.653603, -0.558376)
+transform = Transform3D(0.665105, 0.480002, -0.572044, 0, 0.766044, 0.642788, 0.74675, -0.427521, 0.5095, 0.522899, 0.653603, -0.542436)
 
 [node name="ExternalLightSwitch" parent="Anchors" instance=ExtResource("7")]
-transform = Transform3D(0.446088, 0.575288, -0.685601, 0, 0.766044, 0.642788, 0.894989, -0.28674, 0.341723, 0.569116, 0.6153, -0.437646)
+transform = Transform3D(0.410229, 0.586211, -0.698619, 0, 0.766044, 0.642788, 0.911983, -0.26369, 0.314253, 0.586805, 0.6153, -0.411746)
 label = "external light"
 
 [node name="ExternalColourSwitch" parent="Anchors" instance=ExtResource("7")]
-transform = Transform3D(0.446088, 0.575288, -0.685601, 0, 0.766044, 0.642788, 0.894989, -0.28674, 0.341723, 0.598558, 0.6153, -0.378577)
+transform = Transform3D(0.410229, 0.586211, -0.698619, 0, 0.766044, 0.642788, 0.911983, -0.26369, 0.314253, 0.61388, 0.6153, -0.351556)
 label = "external light colour"
 
 [node name="CabinLightSwitch" parent="Anchors" instance=ExtResource("7")]
-transform = Transform3D(0.446088, 0.575288, -0.685601, 0, 0.766044, 0.642788, 0.894989, -0.28674, 0.341723, 0.628, 0.6153, -0.319508)
+transform = Transform3D(0.410229, 0.586211, -0.698619, 0, 0.766044, 0.642788, 0.911983, -0.26369, 0.314253, 0.640955, 0.6153, -0.291365)
 label = "cabin light"
 
 [node name="CabinColourSwitch" parent="Anchors" instance=ExtResource("7")]
-transform = Transform3D(0.446088, 0.575288, -0.685601, 0, 0.766044, 0.642788, 0.894989, -0.28674, 0.341723, 0.657442, 0.6153, -0.260438)
+transform = Transform3D(0.410229, 0.586211, -0.698619, 0, 0.766044, 0.642788, 0.911983, -0.26369, 0.314253, 0.66803, 0.6153, -0.231174)
 label = "cabin light colour"
 
 [node name="BilgeLamp" parent="Anchors" instance=ExtResource("8")]
-transform = Transform3D(0.446088, 0.575288, -0.685601, 0, 0.766044, 0.642788, 0.894989, -0.28674, 0.341723, 0.677536, 0.74301, -0.436936)
+transform = Transform3D(0.410229, 0.586211, -0.698619, 0, 0.766044, 0.642788, 0.911983, -0.26369, 0.314253, 0.695111, 0.74301, -0.406736)
 
 [node name="Co2Lamp" parent="Anchors" instance=ExtResource("8")]
-transform = Transform3D(0.446088, 0.575288, -0.685601, 0, 0.766044, 0.642788, 0.894989, -0.28674, 0.341723, 0.69984, 0.74301, -0.392187)
+transform = Transform3D(0.410229, 0.586211, -0.698619, 0, 0.766044, 0.642788, 0.911983, -0.26369, 0.314253, 0.715622, 0.74301, -0.361136)
 
 [node name="LowO2Lamp" parent="Anchors" instance=ExtResource("8")]
-transform = Transform3D(0.446088, 0.575288, -0.685601, 0, 0.766044, 0.642788, 0.894989, -0.28674, 0.341723, 0.722144, 0.74301, -0.347437)
+transform = Transform3D(0.410229, 0.586211, -0.698619, 0, 0.766044, 0.642788, 0.911983, -0.26369, 0.314253, 0.736134, 0.74301, -0.315537)
 
 [node name="BilgeLampDriver" type="Node" parent="Drivers" node_paths=PackedStringArray("lamp")]
 script = ExtResource("9")
@@ -86,4 +86,4 @@ lamp = NodePath("../../Anchors/LowO2Lamp")
 above = false
 
 [node name="HologramAnchor" type="Node3D" parent="Anchors"]
-transform = Transform3D(0.649101, 0, 0.760702, 0, 1, 0, -0.760702, 0, 0.649101, -0.623987, 0.802, -0.605973)
+transform = Transform3D(0.653938, 0, 0.756548, 0, 1, 0, -0.756548, 0, 0.653938, -0.620853, 0.802, -0.611118)

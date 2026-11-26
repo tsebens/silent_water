@@ -97,7 +97,7 @@ full specification is on #446.
 - **As built against the true hemisphere (#605, a stopgap until #633):** each wing has about 520 mm of facet
   along the glass, so the strip is shorter than drawn. Dropped: the **depth finder** (the hologram now stands
   above the multidisplay). Shrunk: the speed and noise gauges (radius 0.055 m, was 0.10 and 0.11 m), the
-  switch pitch (66 mm, was 84 mm) and the facet margins (20 mm, was 30 mm). Stacked: the speed gauge over the
+  switch pitch (66 mm, was 84 mm) and the facet margins (14 mm, was 30 mm). Stacked: the speed gauge over the
   noise repeater on one facet of the left wing, and the three lamps over the four switches on one facet of
   the right wing. The noise repeater therefore moved from the right wing to the left.
 - **Speed / throttle:** two needles, centred, the speed scale at plus and minus the sub's top forward speed,
