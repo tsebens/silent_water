@@ -245,4 +245,110 @@ check "orphan dry run: plans revert to ready" 1 "$(grep -c '^    #40 +ready' <<<
 DRY_RUN=false
 rm -f "$CALLS"
 
+# ---------------------------------------------------------------------------
+# Never promote an arc with open blockers (#575; incident #564: #560 and #561 were promoted while blocked).
+# A stateful stub: ISSUES maps number -> state; BODY_OF maps arc -> body; DEPS_OF maps arc -> native blockers.
+# ---------------------------------------------------------------------------
+CALLS=$(mktemp)
+declare -A ISSUE_STATE BODY_OF DEPS_OF
+FAIL_BODY="" FAIL_DEPS="" FAIL_ISSUE=""
+gh() {
+  case "$*" in
+    api\ repos/*/issues/*/dependencies/blocked_by*)
+      n=${2##*issues/}; n=${n%%/*}
+      [ "$n" = "$FAIL_DEPS" ] && return 1
+      [ -n "${DEPS_OF[$n]:-}" ] && tr ' ' '\n' <<<"${DEPS_OF[$n]}"; return 0 ;;
+    api\ repos/*/issues/*)
+      n=${2##*issues/}
+      if [[ "$*" == *--jq\ .state* ]]; then
+        [ "$n" = "$FAIL_ISSUE" ] && return 1
+        echo "${ISSUE_STATE[$n]:-open}"
+      else
+        [ "$n" = "$FAIL_BODY" ] && return 1
+        printf '%s\n' "${BODY_OF[$n]:-}"
+      fi ;;
+    *) echo "gh $*" >>"$CALLS" ;;
+  esac
+}
+reset_incident() {
+  : >"$CALLS"; FAIL_BODY="" FAIL_DEPS="" FAIL_ISSUE=""
+  ISSUE_STATE=([557]=open [558]=open [560]=open [9]=closed); BODY_OF=(); DEPS_OF=()
+  BODY_OF[560]=$'Touches: x\nBlocked by: #557\n'
+  BODY_OF[561]=$'Blocked by: #558, #560\n'
+  BODY_OF[570]=$'Blocked by: none\n'
+  BODY_OF[571]=$'Blocked by: #9\n'
+  PROJECT_ITEMS='[{"item_id":"I560","number":560,"state":"OPEN","status":"Ready"},{"item_id":"I570","number":570,"state":"OPEN","status":"Ready"}]'
+  STATUS_OPTIONS='[{"id":"OPT_READY","name":"Ready"},{"id":"OPT_BACKLOG","name":"Backlog"}]'
+  PROJECT_ID=P; STATUS_FIELD_ID=F
+}
+promoted() { grep -c -- "--add-label \(ready\|claimed\)" "$CALLS"; }
+
+# 1. The incident: blocked arc, open blocker, board Status Ready -> neither ready nor claimed.
+reset_incident
+ARCS='[{"number":560,"created_at":"2026-11-26T04:13:13Z","labels":["arc","blocked"],"body":""}]'
+PROJECT_ITEMS='[{"item_id":"I560","number":560,"state":"OPEN","status":"Ready"}]'
+out=$(mirror_board_ready)
+check "incident: open blocker + board Ready is not promoted" 0 "$(promoted)"
+check "incident: blocked label kept" 0 "$(grep -c -- '--remove-label blocked' "$CALLS")"
+check "incident: skip is logged" 1 "$(grep -c '#560 is Ready on the board but has open blockers (#557)' <<<"$out")"
+# Same arc with no `blocked` label (automation put it in Ready): it gets `blocked`, never `ready`.
+ARCS='[{"number":560,"created_at":"2026-11-26T04:13:13Z","labels":["arc"],"body":""}]'
+: >"$CALLS"; mirror_board_ready >/dev/null
+check "incident: unlabelled arc gets blocked, not ready" "gh issue edit 560 -R $REPO --add-label blocked" "$(cat "$CALLS")"
+
+# 2. No open blockers + board Ready: still promoted.
+reset_incident
+ARCS='[{"number":570,"created_at":"2026-11-26T04:13:13Z","labels":["arc"],"body":""}]'
+PROJECT_ITEMS='[{"item_id":"I570","number":570,"state":"OPEN","status":"Ready"}]'
+mirror_board_ready >/dev/null
+check "promote: no open blockers, board Ready -> ready" "gh issue edit 570 -R $REPO --add-label ready" "$(cat "$CALLS")"
+reset_incident
+ARCS='[{"number":571,"created_at":"2026-11-26T04:13:13Z","labels":["arc","blocked"],"body":""}]'
+PROJECT_ITEMS='[{"item_id":"I571","number":571,"state":"OPEN","status":"Ready"}]'
+mirror_board_ready >/dev/null
+check "promote: closed blockers, blocked arc on board Ready -> blocked off, ready on" $'gh issue edit 571 -R '"$REPO"$' --remove-label blocked\ngh issue edit 571 -R '"$REPO"' --add-label ready' "$(cat "$CALLS")"
+
+# 3. A failed or untrustworthy blocker read is an open blocker, in both steps.
+for case in "body:560" "deps:560" "issue:557"; do
+  reset_incident
+  ARCS='[{"number":560,"created_at":"2026-11-26T04:13:13Z","labels":["arc","blocked"],"body":""}]'
+  PROJECT_ITEMS='[{"item_id":"I560","number":560,"state":"OPEN","status":"Ready"}]'
+  case "${case%%:*}" in
+    body) FAIL_BODY=560 ;;
+    deps) FAIL_DEPS=560; ISSUE_STATE[557]=closed ;;
+    issue) FAIL_ISSUE=557 ;;
+  esac
+  mirror_board_ready >/dev/null; unblock_arcs >/dev/null
+  check "failed read (${case%%:*}): neither step promotes" 0 "$(promoted)"
+done
+for pair in "empty body|" "no Blocked by line|Scope: only" "blank Blocked by line|Blocked by:" "blank bold line|**Blocked by:** "; do
+  reset_incident; BODY_OF[560]="${pair#*|}"; ISSUE_STATE[557]=closed
+  ARCS='[{"number":560,"created_at":"2026-11-26T04:13:13Z","labels":["arc","blocked"],"body":""}]'
+  PROJECT_ITEMS='[{"item_id":"I560","number":560,"state":"OPEN","status":"Ready"}]'
+  mirror_board_ready >/dev/null; unblock_arcs >/dev/null
+  check "untrustworthy read (${pair%%|*}): neither step promotes" 0 "$(promoted)"
+done
+# The snapshot body in ARCS is never trusted: a stale empty snapshot with a fresh open blocker stays blocked.
+reset_incident
+ARCS='[{"number":560,"created_at":"2026-11-26T04:13:13Z","labels":["arc","blocked"],"body":"Blocked by: none"}]'
+unblock_arcs >/dev/null
+check "step 2 reads the body fresh, not from the snapshot" 0 "$(promoted)"
+
+# 4. A blocked arc left by step 1 is promoted by the Unblock step once its blockers close.
+reset_incident
+ARCS='[{"number":560,"created_at":"2026-11-26T04:13:13Z","labels":["arc","blocked"],"body":""}]'
+PROJECT_ITEMS='[{"item_id":"I560","number":560,"state":"OPEN","status":"Ready"}]'
+mirror_board_ready >/dev/null; unblock_arcs >/dev/null
+check "left blocked: still not promoted while open" 0 "$(promoted)"
+ISSUE_STATE[557]=closed; : >"$CALLS"
+out=$(unblock_arcs)
+check "unblock: once blockers close, blocked -> ready and board Ready" \
+  $'gh issue edit 560 -R '"$REPO"$' --remove-label blocked\ngh issue edit 560 -R '"$REPO"$' --add-label ready\ngh api graphql -f project=P -f item=I560 -f field=F -f option=OPT_READY -f query=\n    mutation($project: ID!, $item: ID!, $field: ID!, $option: String!) {\n      updateProjectV2ItemFieldValue(input: {projectId: $project, itemId: $item, fieldId: $field,\n        value: {singleSelectOptionId: $option}}) { projectV2Item { id } }\n    }' "$(cat "$CALLS")"
+# Native dependencies count too.
+reset_incident; DEPS_OF[560]="558"
+ARCS='[{"number":560,"created_at":"2026-11-26T04:13:13Z","labels":["arc","blocked"],"body":""}]'
+ISSUE_STATE[557]=closed; unblock_arcs >/dev/null
+check "native open dependency blocks" 0 "$(promoted)"
+rm -f "$CALLS"
+
 exit $fails
