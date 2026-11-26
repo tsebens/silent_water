@@ -8,6 +8,7 @@
 [ext_resource type="Script" path="res://src/interact/spring_axis.gd" id="5"]
 [ext_resource type="PackedScene" path="res://src/noise/noise_gauge.tscn" id="6"]
 [ext_resource type="PackedScene" path="res://src/damage/leak.tscn" id="7"]
+[ext_resource type="PackedScene" path="res://src/power/junction_box.tscn" id="junction_box"]
 [ext_resource type="PackedScene" path="res://src/interact/bilge_pump.tscn" id="8"]
 [ext_resource type="PackedScene" path="res://src/interact/lever.tscn" id="12"]
 [ext_resource type="Script" path="res://src/map/holo_map.gd" id="15"]
@@ -537,3 +538,95 @@ script = ExtResource("ls_driver")
 
 [node name="PowerSystem" type="Node" parent="."]
 script = ExtResource("power_system")
+
+[node name="JunctionBoxes" type="Node3D" parent="."]
+
+[node name="Motor0" parent="JunctionBoxes" instance=ExtResource("junction_box")]
+position = Vector3(-1.2, 2.1, -1.6)
+circuit = 0
+box_index = 0
+
+[node name="Motor1" parent="JunctionBoxes" instance=ExtResource("junction_box")]
+position = Vector3(1.2, 2.1, -1.6)
+circuit = 0
+box_index = 1
+
+[node name="Thrusters0" parent="JunctionBoxes" instance=ExtResource("junction_box")]
+position = Vector3(-1.2, 2.1, -1.2)
+circuit = 1
+box_index = 0
+
+[node name="Thrusters1" parent="JunctionBoxes" instance=ExtResource("junction_box")]
+position = Vector3(1.2, 2.1, -1.2)
+circuit = 1
+box_index = 1
+
+[node name="BilgePump0" parent="JunctionBoxes" instance=ExtResource("junction_box")]
+position = Vector3(-1.2, 2.1, -0.8)
+circuit = 2
+box_index = 0
+
+[node name="BilgePump1" parent="JunctionBoxes" instance=ExtResource("junction_box")]
+position = Vector3(1.2, 2.1, -0.8)
+circuit = 2
+box_index = 1
+
+[node name="CabinLts0" parent="JunctionBoxes" instance=ExtResource("junction_box")]
+position = Vector3(-1.2, 2.1, -0.4)
+circuit = 3
+box_index = 0
+
+[node name="CabinLts1" parent="JunctionBoxes" instance=ExtResource("junction_box")]
+position = Vector3(1.2, 2.1, -0.4)
+circuit = 3
+box_index = 1
+
+[node name="ExtLts0" parent="JunctionBoxes" instance=ExtResource("junction_box")]
+position = Vector3(-1.2, 2.1, 0.0)
+circuit = 4
+box_index = 0
+
+[node name="ExtLts1" parent="JunctionBoxes" instance=ExtResource("junction_box")]
+position = Vector3(1.2, 2.1, 0.0)
+circuit = 4
+box_index = 1
+
+[node name="Sonar0" parent="JunctionBoxes" instance=ExtResource("junction_box")]
+position = Vector3(-1.2, 2.1, 0.4)
+circuit = 5
+box_index = 0
+
+[node name="Sonar1" parent="JunctionBoxes" instance=ExtResource("junction_box")]
+position = Vector3(1.2, 2.1, 0.4)
+circuit = 5
+box_index = 1
+
+[node name="Fans0" parent="JunctionBoxes" instance=ExtResource("junction_box")]
+position = Vector3(-1.2, 2.1, 0.8)
+circuit = 6
+box_index = 0
+
+[node name="Fans1" parent="JunctionBoxes" instance=ExtResource("junction_box")]
+position = Vector3(1.2, 2.1, 0.8)
+circuit = 6
+box_index = 1
+
+[node name="Helm0" parent="JunctionBoxes" instance=ExtResource("junction_box")]
+position = Vector3(-1.2, 2.1, 1.2)
+circuit = 7
+box_index = 0
+
+[node name="Helm1" parent="JunctionBoxes" instance=ExtResource("junction_box")]
+position = Vector3(1.2, 2.1, 1.2)
+circuit = 7
+box_index = 1
+
+[node name="Displays0" parent="JunctionBoxes" instance=ExtResource("junction_box")]
+position = Vector3(-1.2, 2.1, 1.6)
+circuit = 8
+box_index = 0
+
+[node name="Displays1" parent="JunctionBoxes" instance=ExtResource("junction_box")]
+position = Vector3(1.2, 2.1, 1.6)
+circuit = 8
+box_index = 1

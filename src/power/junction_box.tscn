@@ -1,0 +1,45 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://src/power/junction_box.gd" id="1"]
+
+[sub_resource type="BoxShape3D" id="grab"]
+size = Vector3(0.3, 0.3, 0.2)
+
+[sub_resource type="BoxMesh" id="body"]
+size = Vector3(0.2, 0.2, 0.1)
+
+[sub_resource type="SphereMesh" id="spark"]
+radius = 0.006
+height = 0.012
+radial_segments = 4
+rings = 2
+
+[node name="JunctionBox" type="Node3D" node_paths=PackedStringArray("sparks", "grab_shape")]
+script = ExtResource("1")
+sparks = NodePath("Sparks")
+grab_shape = NodePath("Grab/Shape")
+label = "junction box"
+
+[node name="Body" type="MeshInstance3D" parent="."]
+mesh = SubResource("body")
+
+[node name="Sparks" type="CPUParticles3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0.06)
+emitting = false
+amount = 24
+lifetime = 0.4
+explosiveness = 0.3
+mesh = SubResource("spark")
+direction = Vector3(0, 0, 1)
+spread = 60.0
+initial_velocity_min = 0.8
+initial_velocity_max = 2.0
+gravity = Vector3(0, -4, 0)
+
+[node name="Grab" type="StaticBody3D" parent="."]
+collision_layer = 2
+collision_mask = 0
+
+[node name="Shape" type="CollisionShape3D" parent="Grab"]
+shape = SubResource("grab")
+disabled = true

@@ -51,6 +51,15 @@ extends Resource
 @export var overload_window: float = 1.0
 ## Overload: the pump starting while motor power is at or above this trips it.
 @export var overload_pump_motor_power: float = 0.8
+## Junction boxes on each circuit's line (two or three; positions are the
+## [JunctionBox] nodes in the interior).
+@export_range(1, 3) var junction_boxes_per_line: int = 2
+## Hull strike speed (m/s) at or above which a line may be damaged at a box.
+@export var damage_hit_threshold: float = 2.0
+## Chance that a strong hit damages one box.
+@export_range(0.0, 1.0) var damage_chance: float = 0.6
+## Seconds a crew member holds to repair a damaged box.
+@export var repair_time: float = 4.0
 @export var wear_limit: int = 3
 @export var spare_count: int = 4
 
