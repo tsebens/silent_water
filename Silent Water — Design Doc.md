@@ -75,19 +75,19 @@ There are more jobs than people, so the crew keeps moving between stations, and 
 | --- | --- | --- |
 | Constant | Pilot | Steering, diving planes, engine speed (throttle) and ballast; rarely leaves the seat |
 | Dominant | Sonar | Hands-on listening and pinging; the only person on the hydrophone |
-| Midway | Engineering | Engine upkeep and power; no longer sets speed (decided in M7) |
-| Rounds | Ballast | The manual backup: valves in engineering that flood and blow the tanks when the pilot's control is lost (the pilot runs ballast directly, #445) |
+| Midway | Electrical | The breaker panel: power management and silent running, the battery and the generator, resetting trips, replacing blown breakers, repairing damaged lines (see *Power and electrics*, #533) |
+| Rounds | Engineering | Staying afloat by hand: the manual ballast backup (flood and blow wheels, for when the pilot's control is lost; the pilot runs ballast directly, #445), the emergency drop-weight release, and the bilge: an electric pump switch and a quiet manual lever pump |
 | Rounds | Life support | Swapping CO2 scrubber canisters, watching O2 (see *Life support* below) |
-| Rounds | Bilge and leaks | Pumps and patching |
+| Rounds | Leaks | Finding leaks by ear and patching them |
 | Rounds | Countermeasures | Decoys and noisemakers; replaces the original concept's weapons station |
 
 The original concept also had a charts station. It became the **map table** (M7): a holographic terrain display built into the port wall of midships, with a standing operator who moves the camera and standing observers who drop pins. Everyone at the table stands; whoever steps up leans over it, about 0.25 m below the standing eye and 0.15 m further over the table, the same for everyone, and the hologram is tuned for that leaning eye height. Only the operator's console and keys drive the camera; observers step up at two points either side of the operator and place and remove pins (concept in `assets/models/map_table/concept/`). The hologram is a low relief of contour lines lying on the tabletop, with a curved panel of light along the back edge as a backdrop (round 6, #380). The operator pans with a trackball, zooms with a lever and follows the sub with a toggle; rotation is on mouse and keyboard, and the console's knob is decoration. Countermeasures stands against the starboard wall just aft of the sonar station, across the aisle from the table, so its operator can watch their decoys on the hologram. The pilot has a smaller heading-up hologram of the same shared chart, in the same display model.
 
 ### Controls
 
-- **Physical by default:** valves, levers, switches and sliders worked with the mouse.
-- **Keys only for continuous fine control** that a mouse would make clunky. That covers the pilot's steering, diving planes and throttle.
-- **Discrete, occasional actions stay physical** where a station owns them. The pilot's own driving is not split across the crew: engine speed moved to the pilot's throttle in M7, because an order telegraph made driving feel sluggish, and ballast followed (#445, 2026-11-25): calling every depth change back to the engineer was too clunky. The pilot blows and floods the tanks from the keyboard; the ballast valves in engineering stay as the manual backup. Side thrusters let the sub turn in place, at a noise cost.
+- **Mapped keys for active stations; physical controls mirror them** (#532, 2026-11-26). "Physical by default" felt clunky and disruptive in practice. A station that needs a lot of active input (the pilot) is driven from mapped keys, and its physical controls stay for texture and feel but move with the input rather than carry it: the pilot's joysticks follow W/S, A/D and R/F.
+- **Discrete controls stay physical**, worked with the mouse: switches and breakers are clicked, levers are moved, the ballast valves stay wheels. **Deliberate slow work** is done by occupying a station with a simple held or repeated key (the manual bilge pump), not by fiddly manipulation.
+- **Discrete, occasional actions stay with the station that owns them.** The pilot's own driving is not split across the crew: engine speed moved to the pilot's throttle in M7, because an order telegraph made driving feel sluggish, and ballast followed (#445, 2026-11-25): calling every depth change back to the engineer was too clunky. The pilot blows and floods the tanks from the keyboard; the ballast valves in engineering stay as the manual backup. Side thrusters let the sub turn in place, at a noise cost.
 - **Speed of movement sets noise.** Easing a lever is quiet; slamming it clanks.
 - **No HUD by default.** In-world screens the camera zooms into, like Helldivers 2's map table, are fine where a physical version is impractical. Prefer handling cargo physically over grid inventories.
 
@@ -95,7 +95,7 @@ The original concept also had a charts station. It became the **map table** (M7)
 
 - Everything has weight: the sub, its loadout, cargo, salvage, crew and rescued survivors.
 - Weight limits buoyancy and climb rate. A failed ballast tank can leave an overloaded sub unable to rise.
-- Ways out: ditch salvage, or release emergency drop weights once, as real deep-sea subs like Alvin can.
+- Ways out: ditch salvage, or release emergency drop weights once, as real deep-sea subs like Alvin can. The release is a guarded emergency button at the engineering station, and it **costs** something real, so it is not the default way to end every dive (what it costs is open).
 - Optional: crew position shifts the sub's trim, and the pilot has to correct.
 
 ### Damage and repair
@@ -105,6 +105,23 @@ The original concept also had a charts station. It became the **map table** (M7)
 - **Instant patch:** a strong consumable that takes cargo space.
 - **Welded plate:** a permanent fix, but heavy cargo, and welding is loud, so it has to be timed.
 - Hull damage lowers the sub's safe depth, and breakdowns grow more frequent with pressure.
+
+### Power and electrics
+
+Decided 2026-11-26 (#533). The electrical station's design is #534.
+
+- **One electric motor** always drives the propeller. **A battery** (0 to 100%) powers everything; it holds a good charge, but not a whole mission's.
+- **A generator** charges the battery. It is **loud**, an attractant though not map-wide. On the generator the motor has full power. **On the battery alone** the motor's power is capped: drag rises steeply with speed, so a cap near 40% of power still gives about 75% of top speed. That is very quiet, slower, and limited in range. It is a starting model, to be retuned in play.
+- **Noise:** the motor still makes noise, much less than the old engine, so staying still still pays. The generator is the loud part.
+- **Battery empty:** everything electrical stops (motor, ventilation and scrubber fans, lights, the electric bilge pump) until power is back. Small **emergency lights** stay on.
+- **Refills:** O2, ballast air and charge are refilled when docked at powered stations. There is no air compressor: underwater there is no air to compress.
+- **Breakers:** one per powered system, on the electrical station's panel. Switching a breaker off saves power **and** noise, so silent running is working down the panel (see *Hiding*).
+- **Faults:**
+  - Hits, flooding and **overloading a circuit** trip breakers, and the engineer resets them. What an overload looks like in play is still to be designed.
+  - Repeated trips wear a breaker out until it **blows**; it is pulled and replaced from a **spare supply** (a consumable).
+  - A **damaged line** keeps tripping until it is repaired at the break, which sparks and sputters so it can be found.
+  - Tuning must keep this from becoming a chore.
+- **Upkeep:** the only "engine upkeep" is **generator heat**: run hard, it heats and must rest. It is mild, not a recurring chore. The motor needs none.
 
 ### Life support: CO2 and O2
 
@@ -228,7 +245,7 @@ Two needles: one for the sub's noise, one for the ocean's background noise. When
 - **Masking:** vents, currents, whale calls and rockslides, natural or triggered. Noise works both ways: it hides you and blinds your sonar.
 - **Bottom and walls:** hugging the seafloor or a canyon wall hides the sub from sonar; open water exposes it.
 - **Thermocline (candidate):** temperature layers bend sound, so a sub can hide below one. It can act as a quiet boundary between depth zones.
-- **Silent running:** systems shut down in stages. The scrubber fans are among the last to go; without them, CO2 builds up, so silence has a clock.
+- **Silent running:** systems shut down in stages, breaker by breaker on the electrical panel (see *Power and electrics*). Turning the generator off and running on the battery is the first step. The scrubber fans are among the last to go; without them, CO2 builds up, so silence has a clock.
 
 ### Sonar
 
@@ -452,6 +469,9 @@ Steam integration and in-game voice, expeditions, cargo, divers, facilities, upg
 - Whether recoveries get a hard cap, or the sub's condition alone ends an expedition
 - Whether the thermocline and rhythmic-detection mechanics make the cut
 - The field patch mini-game
+- **Fuel** (#533): whether the generator burns fuel in dives, as a fourth resource beside air, O2 and scrubbers. Not modelled for now; the hub's soft limits already name fuel for range.
+- Electrics: what an overload trip looks like in play; where lines run and where they can break (one idea: visible cable trays that break only at a few junction boxes); which systems get breakers
+- What the drop-weight release costs
 - ~~Whether charts stays its own station~~ Decided in M7: the map table is a shared holographic chart anyone can use; the pilot has a heading-up copy.
 - Whether to lock out crews of two. The lean is no lock, but no design effort goes toward two-person crews: target four, keep three viable.
 - Distinct sub types and hardware variants
