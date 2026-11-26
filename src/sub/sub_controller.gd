@@ -71,6 +71,7 @@ func _ready() -> void:
 	model.tank_water_t = start_tank_t
 	_hull_shape.size = HULL_SIZE
 	add_to_group(&"sub_readouts")
+	add_to_group(&"sub_controller")
 	add_to_group(&"noise_sources")
 
 

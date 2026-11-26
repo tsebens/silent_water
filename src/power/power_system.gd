@@ -2,7 +2,8 @@ class_name PowerSystem
 extends Node
 ## The sub's power: battery, generator, motor draw and nine breakers. Not an
 ## autoload. Host-authoritative simulation; displays ask [method readout].
-## Faults (tripped, blown) exist as breaker states but are driven by a later arc.
+## Faults: hits, flooding and overload trip breakers; each trip wears one and
+## the third blows it. A blown breaker is replaced from [member spares].
 ##
 ## Replication follows [MapModel]: the host simulates and owns the state; every
 ## peer asks the host through [method request_breaker], [method request_generator]
@@ -16,6 +17,9 @@ signal circuit_powered(circuit: Circuit, powered: bool)
 signal blackout_changed(blackout: bool)
 signal generator_changed(running: bool)
 signal generator_overheated
+signal breaker_tripped(circuit: Circuit)
+signal breaker_blown(circuit: Circuit)
+signal breaker_replaced(circuit: Circuit)
 
 enum Circuit { MOTOR, THRUSTERS, BILGE_PUMP, CABIN_LTS, EXT_LTS, SONAR, FANS, HELM, DISPLAYS }
 enum BreakerState { OFF, ON, TRIPPED, BLOWN }
@@ -39,6 +43,8 @@ const CIRCUIT_NAMES: Dictionary = {
 @export var dev_start_charge: float = -1.0
 ## Dev flag: start with the generator already running.
 @export var dev_generator_running: bool = false
+## Optional: the sub's controller. Only its hull_strike signal is used.
+@export var controller: SubController
 ## Test seam: behave as a client even where the peer is offline (offline counts as host).
 var simulate_client: bool = false
 
@@ -60,6 +66,10 @@ var _thruster_demand: float = 0.0
 var _bilge_running: bool = false
 var _draw_per_min: float = 0.0
 var _snapshot_timer: float = 0.0
+var _clock: float = 0.0
+var _output_history: Array[Vector2] = []
+var _flooded: bool = false
+var _rng: RandomNumberGenerator = RandomNumberGenerator.new()
 
 
 func _init() -> void:
@@ -73,6 +83,11 @@ func _ready() -> void:
 	add_to_group(GROUP)
 	add_to_group(&"noise_sources")
 	spares = config.spare_count
+	_rng.randomize()
+	if controller == null and is_inside_tree():
+		controller = get_tree().get_first_node_in_group(&"sub_controller") as SubController
+	if controller != null:
+		controller.hull_strike.connect(on_hull_strike)
 	if dev_start_charge >= 0.0:
 		charge = clampf(dev_start_charge, 0.0, 1.0)
 	if dev_generator_running:
@@ -141,6 +156,20 @@ func _rpc_request_generator(run: bool) -> void:
 		stop_generator()
 
 
+## Any peer: replace a blown breaker from the spares.
+func request_replace(circuit: Circuit) -> void:
+	if _is_host():
+		replace_breaker(circuit)
+	elif _online():
+		_rpc_request_replace.rpc_id(1, int(circuit))
+
+
+@rpc("any_peer", "reliable")
+func _rpc_request_replace(circuit: int) -> void:
+	if _is_host() and CIRCUIT_NAMES.has(circuit):
+		replace_breaker(circuit as Circuit)
+
+
 ## The full replicated state as plain data.
 func snapshot() -> Dictionary:
 	var br: Dictionary = {}
@@ -206,6 +235,9 @@ func _on_peer_joined(peer_id: int) -> void:
 
 ## Advance the simulation by [param delta] seconds.
 func step(delta: float) -> void:
+	_clock += delta
+	if controller != null and controller.model != null:
+		set_bilge_water(controller.model.bilge_water_t)
 	if _gen_starting:
 		_start_left -= delta
 		if _start_left <= 0.0:
@@ -273,7 +305,10 @@ func _update_heat(delta: float) -> void:
 
 ## The pilot's requested engine output, -1..1.
 func set_engine_output(output: float) -> void:
-	_engine_output = clampf(output, -1.0, 1.0)
+	var out: float = clampf(output, -1.0, 1.0)
+	if _is_host():
+		_check_output_overload(out)
+	_engine_output = out
 
 
 func set_thruster_demand(demand: float) -> void:
@@ -281,7 +316,11 @@ func set_thruster_demand(demand: float) -> void:
 
 
 func set_bilge_pump_running(on: bool) -> void:
+	var starting: bool = on and not _bilge_running
 	_bilge_running = on
+	if starting and _is_host() and is_powered(Circuit.BILGE_PUMP) \
+			and motor_power() >= config.overload_pump_motor_power:
+		trip(Circuit.BILGE_PUMP)
 
 
 ## Highest engine output the motor allows now (0 with the MOTOR breaker out or
@@ -330,6 +369,74 @@ func set_breaker_state(circuit: Circuit, state: BreakerState) -> void:
 	_breakers[circuit] = state
 	breaker_changed.emit(circuit, state)
 	_refresh_power()
+
+
+## Trip a breaker that is on: it cuts out and wears; the wear limit blows it.
+## Host only. Breakers already off, tripped or blown are unaffected.
+func trip(circuit: Circuit) -> void:
+	if not _is_host() or breaker_state(circuit) != BreakerState.ON:
+		return
+	_wear[circuit] = wear(circuit) + 1
+	if wear(circuit) >= config.wear_limit:
+		set_breaker_state(circuit, BreakerState.BLOWN)
+		breaker_blown.emit(circuit)
+	else:
+		set_breaker_state(circuit, BreakerState.TRIPPED)
+	breaker_tripped.emit(circuit)
+
+
+## A hull strike of [param speed] m/s: at or above the threshold, one or two
+## random circuits that are on trip. Wired to [signal SubController.hull_strike].
+func on_hull_strike(speed: float) -> void:
+	if not _is_host() or speed < config.trip_hit_threshold:
+		return
+	var live: Array[int] = []
+	for c: int in CIRCUIT_NAMES:
+		if breaker_state(c as Circuit) == BreakerState.ON:
+			live.append(c)
+	var count: int = mini(_rng.randi_range(1, 2), live.size())
+	for i: int in count:
+		var k: int = _rng.randi_range(0, live.size() - 1)
+		trip(live[k] as Circuit)
+		live.remove_at(k)
+
+
+## Bilge water in tonnes. Crossing above the flood threshold trips the MOTOR
+## and the BILGE PUMP once; it re-arms when the water falls back below it.
+func set_bilge_water(tonnes: float) -> void:
+	if not _is_host():
+		return
+	if tonnes > config.trip_flood_threshold:
+		if not _flooded:
+			_flooded = true
+			trip(Circuit.MOTOR)
+			trip(Circuit.BILGE_PUMP)
+	else:
+		_flooded = false
+
+
+func _check_output_overload(new_output: float) -> void:
+	_output_history.append(Vector2(_clock, new_output))
+	while not _output_history.is_empty() and _clock - _output_history[0].x > config.overload_window:
+		_output_history.remove_at(0)
+	for h: Vector2 in _output_history:
+		if absf(new_output - h.y) >= config.overload_output_jump:
+			_output_history.clear()
+			trip(Circuit.MOTOR)
+			return
+
+
+## Replace a blown breaker from the spares: it comes back off with no wear.
+## Refused (false) with no spares or when the breaker is not blown.
+func replace_breaker(circuit: Circuit) -> bool:
+	if not _is_host() or breaker_state(circuit) != BreakerState.BLOWN or spares <= 0:
+		return false
+	spares -= 1
+	_wear[circuit] = 0
+	set_breaker_state(circuit, BreakerState.OFF)
+	breaker_replaced.emit(circuit)
+	_broadcast()
+	return true
 
 
 func wear(circuit: Circuit) -> int:
