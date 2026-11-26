@@ -141,6 +141,10 @@ func test_toggles_and_lamps_are_distinct_and_in_reach() -> void:
 			nearest = minf(nearest, a.global_position.distance_to(j.global_position))
 		expect(nearest <= REACH_M, "%s is within reach of the nearer joystick hand (%.2f m)" % [name, nearest])
 		expect((a as SwitchLever).label != "", "%s carries a label" % name)
+		expect((a as SwitchLever).indicator != null, "%s is the lit guarded toggle (its indicator is set)" % name)
+	for lamp_name: String in LAMPS:
+		var lamp: Node3D = _anchor(st, lamp_name)
+		expect(lamp is IndicatorLamp and not (lamp is SwitchLever), "%s stays a plain warning lamp" % lamp_name)
 	for i: int in LAMPS.size():
 		for k: int in range(i + 1, LAMPS.size()):
 			expect(_anchor(st, LAMPS[i]).global_position.distance_to(_anchor(st, LAMPS[k]).global_position) > 0.03, "the lamps are apart")

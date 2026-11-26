@@ -48,14 +48,14 @@ uses:
 - navball
 - depth_finder
 - gauge
-- guarded_toggle
+- lit_guarded_toggle
 - indicator_lamp
-triangles: 14626
+triangles: 14834
 triangle_budget: 15000
 triangles_by_part:
   strip: 652
   pilot_seat: 1200
-  instruments: 12774
+  instruments: 12982
 checks:
   strip_top_mm: 780
   hologram_top_mm: 1002
