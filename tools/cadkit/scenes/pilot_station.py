@@ -46,7 +46,7 @@ LIP = 60.0                 # depth of the front's edge face under the fascia
 STANDOFF = 85.0            # the foot of the back stands this far off the glass
 GAP = 600.0                # the clear gap at the apex, X
 CAP_T, CAP_PROUD = 40.0, 10.0    # the orange end cap's thickness along the wing, and how far it stands proud
-MARGIN = 30.0              # space between an instrument and its facet's edge, each side
+MARGIN = 24.0              # space between an instrument and its facet's edge, each side
 
 # --- the hologram: the map table's display model, about 20 cm, above the depth finder on the strip's top
 HOLO_H, HOLO_R = 200.0, 100.0
@@ -56,7 +56,7 @@ HOLO_BASE_R, HOLO_BASE_H, HOLO_BASE_D = 75.0, 22.0, -30.0    # projector pad: ra
 SPEED_R, NOISE_R = 0.10, 0.11      # gauge radii, m
 TOGGLE_PITCH, LAMP_PITCH = 84.0, 50.0
 LAMP_PLATE_T = 8.0
-BORE_D, BORE_SIDES = 36.0, 24
+BORE_D, BORE_SIDES = 60.0, 24
 PLATE_W, PLATE_H, PLATE_T = 44.0, 12.0, 2.5       # engraved label plate
 PLATE_DROP_TOGGLE = 88.0 + 12.0     # centre of a toggle's plate below its origin: half its 176 mm (1x3) plate and a margin
 PLATE_DROP_LAMP = 25.0 + 12.0       # below the lamps' 50 mm dark plate      # the navball's bore into the fascia: depth (keep_clear 34) and sides
@@ -395,7 +395,7 @@ def solids() -> tuple[list[Solid], dict]:
             f = w.facet_solid(i)
             if w.names[i] == "Navball":
                 x, y, z, o = w.frame(i)
-                rb = 115.0 / 2 / math.cos(math.pi / BORE_SIDES)
+                rb = entry("navball")["panel_cutout"]["diameter_mm"] / 2 / math.cos(math.pi / BORE_SIDES)
                 bore = prism(BORE_SIDES, rb, BORE_D + 8.0).moved(_loc(o - z * BORE_D, x, z))
                 inner = prism(BORE_SIDES, rb, BORE_D).moved(_loc(o - z * BORE_D, x, z))
                 expect((inner - f).volume < 1.0, f"the navball's bore ({BORE_D:.0f} mm deep) stays inside its facet ({(bore - f).volume:.0f} mm3 outside)")
@@ -591,7 +591,7 @@ def _check(wings: dict[str, Wing], shapes: dict[str, bd.Shape], holo: np.ndarray
     # the navball's keep-clear behind its face
     nb = entry("navball")
     expect(BORE_D >= nb["keep_clear_mm"]["behind_face"], f"the bore ({BORE_D:.0f} mm) holds the ball's {nb['keep_clear_mm']['behind_face']:.0f} mm behind the face")
-    expect(math.isclose(nb["panel_cutout"]["diameter_mm"], 115.0), "the bore is the navball's 115 mm cutout")
+    expect(nb["panel_cutout"]["shape"] == "round", f"the bore is the navball's {nb['panel_cutout']['diameter_mm']:.0f} mm round cutout")
     return {"strip_top_mm": round(top), "hologram_top_mm": round(holo_top), "glass_clearance_mm": round(near),
             "gap_mm": GAP, "eye_to_anchor_mm": reach, "toggle_hand_reach_mm": hand_reach, "rim_ring_clear_mm": round(rim_near - zmax),
             "stick_clearance_mm": round(jdist)}
