@@ -57,11 +57,11 @@ Thinking that is not final lives in GitHub issues, labelled `design`: a draft `C
 
 ### Organization agent
 
-Reads the concept, the design doc, the open milestones and the open arcs. Decides whether the concept is one arc or several. For each proposed arc it writes a title as `M<n>.? · <name>` under an existing milestone (the `<k>` is left for plan review to assign; if no milestone fits it proposes one and escalates), a scope, headless acceptance criteria, `Touches:` (its blast radius) and `Blocked by:` (dependencies, including chaining any two arcs whose `Touches:` overlap). Posts the breakdown as a comment and applies `plan-proposed` (removing `plan-rejected` on a retry). Creates no issues. Two rejections on one concept escalate instead of a third proposal.
+Reads the concept, the design doc, the open milestones and the open arcs. Decides whether the concept is one arc or several. For each proposed arc it writes a title as `M<n>.? · <name>` under an existing milestone (the `<k>` is left for plan review to assign; if no milestone fits it proposes one, numbered as the highest `M<n>` among open and closed issues plus one, and escalates), a scope, headless acceptance criteria, `Touches:` (its blast radius) and `Blocked by:` (dependencies, including chaining any two arcs whose `Touches:` overlap). Posts the breakdown as a comment and applies `plan-proposed` (removing `plan-rejected` on a retry). Creates no issues. Two rejections on one concept escalate instead of a third proposal.
 
 ### Plan-review agent
 
-Checks the proposal against the concept and the design doc: fidelity, design consistency, size (one development job each), verifiability, dependencies, naming (only that the milestone exists and is open; arc numbers are never a rejection reason). On approval it assigns each arc's `<k>` (next free under the milestone, open and closed sub-issues counted; plan review is serialised so this cannot race), creates the arcs as sub-issues of their milestones with `arc` and `blocked` and stops (the dispatcher's Unblock step promotes unblocked arcs to `ready`; the approval comment lists which are ready now), and applies `plan-approved`. On rejection it comments objections and swaps `plan-proposed` for `plan-rejected`, which starts another organization job. A second rejection escalates to `needs-human` instead.
+Checks the proposal against the concept and the design doc: fidelity, design consistency, size (one development job each), verifiability, dependencies, naming (only that the milestone exists and is open and its number is unique, or for a new milestone, unused; arc numbers are never a rejection reason). On approval it assigns each arc's `<k>` (next free under the milestone, open and closed sub-issues counted; plan review is serialised so this cannot race), creates the arcs as sub-issues of their milestones with `arc` and `blocked` and stops (the dispatcher's Unblock step promotes unblocked arcs to `ready`; the approval comment lists which are ready now), and applies `plan-approved`. On rejection it comments objections and swaps `plan-proposed` for `plan-rejected`, which starts another organization job. A second rejection escalates to `needs-human` instead.
 
 ### Dispatcher
 
@@ -130,6 +130,8 @@ Mechanical assets (controls, panels, furniture, stations) are built by the same 
 | Design note | `Design: …` | `design` | Head developer | None |
 | Decision | `Decision: …` | `decision` | Anyone | None |
 | Discovered work | Free-form | `arc` once scoped | Any agent that finds it | Its milestone |
+
+Milestone numbers are unique and never reused. The next one is the highest `n` among all `M<n> ·` issues, open and closed, plus one (`gh issue list --state all --search 'M in:title'`). Plan review checks a proposed new number is unused and that no two issues hold the target milestone's number; a duplicate escalates to `needs-human`.
 
 ### Labels that drive automation
 
