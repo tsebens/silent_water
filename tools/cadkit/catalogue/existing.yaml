@@ -36,7 +36,7 @@ scenes:
     summary: Onshape-modelled guarded toggle (4,606 triangles, over the kit budget).
     tags: [toggle, switch, guarded]
 behaviours:                           # scripts a generated scene may use, controls and displays alike; a new one is a development arc
-  - {script: Gauge, file: res://src/interact/gauge.gd, does: "dial display; reads a readout from a source group (see the generated `gauge` entry); optional `scale_readout` export (default empty) takes min_value/max_value as -/+ that readout (e.g. `top_speed`, the sub model's terminal forward speed) so the scale follows tuning"}
+  - {script: Gauge, file: res://src/interact/gauge.gd, does: "dial display; reads a readout from a source group (see the generated `gauge` entry); optional `scale_readout` export (default empty) takes min_value/max_value as -/+ that readout (e.g. `top_speed`, the sub model's terminal forward speed) so the scale follows tuning; optional `zone_from` (default NAN, none), `zone_to` (default max_value) and `zone_swatch` (default light_alarm) draw a coloured band along the scale, e.g. a red zone at the top"}
   - {script: FlatChart, file: res://src/map/flat_chart.gd, does: "square chart screen; draws the sonar bearing chart"}
   - {script: Lever, file: res://src/interact/lever.gd, does: pivots about local X by mouse drag}
   - {script: SwitchLever, file: res://src/interact/switch_lever.gd, does: Lever that snaps to its two ends}
