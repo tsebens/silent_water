@@ -59,7 +59,7 @@ stations:
   # z -3.9 (was -3.8): 0.1 m toward the bow so the strip's four toggles sit within the brief's reach_m 0.75 of the seated
   # hand (now 640 to 650 mm, was 690 to 720); the seat stays inside the cockpit (z -4.9 to -3.35). Tristan's decision on #482, arc #528.
   - {id: pilot,           compartment: cockpit,     kind: seat,  x: 0.0,  z: -3.9, footprint: [0.8, 0.7],
-     display: {size: small, placement: a crisp 20 cm cylinder of light low on the forward end of the elbow rail, purpose: chart locked centred on the sub; maybe a little zoom, never pan or rotate}}
+     display: {size: small, placement: a crisp 20 cm cylinder of light up and to the side of the apex gap, above the depth finder, purpose: chart locked centred on the sub; maybe a little zoom, never pan or rotate}}
   - {id: sonar,           compartment: midships,    kind: desk,  side: starboard, z: -2.95, footprint: [0.7, 0.65], mount_height_m: 0.75, faces: aft,
      display: {size: large, placement: a 55 cm screen in a deep bezel on a steeply raked desk, purpose: the operator's own sub-centred view with zoom, pan and rotate; points the passive array; active sonar on and off}}
   - {id: sonar_seat,      compartment: midships,    kind: chair, side: starboard, z: -2.3, footprint: [0.6, 0.6], aft_of: sonar, faces: forward}
@@ -100,7 +100,7 @@ features:
 
 displays:
   # Two charts, not one shared view: the pilot's small locked hologram and sonar's own screen, plus the map table.
-  - The pilot has a 20 cm hologram locked centred on the sub, low and out of the dome view.
+  - The pilot has a 20 cm hologram locked centred on the sub, up and to the side of the apex gap, above the depth finder, clear of the forward view.
   - Sonar has its own 2D screen, sub-centred by default but free to zoom, pan and rotate; it is not shared with the pilot.
   - The map table covers every scale for the crew to plan around; its hologram is capped at 0.7 m to fit the headroom.
   - Everyone at the map table stands to the table and leans over it (MapTable.lean_eye, 0.25 m down and 0.15 m toward the
@@ -127,7 +127,7 @@ cameras:
   - {id: midships_forward, pos: [0.25, 0.70, 1.05], look: [0.0, 0.05, -4.6], lens_mm: 16, hide: [crew, dome],
      notes: "Hero. Standing by the lockers looking forward: trunk, map table (port), countermeasures and sonar (starboard), the pilot in the dome."}
   - {id: pilot_view, seat: pilot, look_dir: [0.0, -0.15, -1.0], lens_mm: 18, hide: [crew, dome],
-     notes: The pilot's view out of the dome, rail and small hologram below the sightline.}
+     notes: The pilot's view out of the dome, the small hologram up and to the side of the apex gap, above the depth finder.}
   - {id: sonar_view, seat: sonar_seat, look_dir: [-0.35, -0.35, -1.0], lens_mm: 18, hide: [crew, dome],
      notes: Seated at the sonar desk, the screen ahead and the pilot's seat past it to the left.}
   - {id: map_operator_view, pos: [0.05, 0.75, -0.7], look: [-1.25, -0.15, -1.4], lens_mm: 20, hide: [crew, dome],

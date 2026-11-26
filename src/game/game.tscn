@@ -20,6 +20,7 @@
 [ext_resource type="Script" path="res://src/debug/dev_overlay.gd" id="18"]
 [ext_resource type="Script" path="res://src/map/map_model.gd" id="19"]
 [ext_resource type="PackedScene" path="res://src/sub/interior.tscn" id="4"]
+[ext_resource type="Script" path="res://src/sub/cabin_switch.gd" id="cabin_switch"]
 [ext_resource type="PackedScene" path="res://src/site/canyon_site.tscn" id="5"]
 
 [sub_resource type="SceneReplicationConfig" id="sub_repl"]
@@ -195,6 +196,12 @@ script = ExtResource("17")
 lights_root = NodePath("../Interior/Lights")
 dimmer = NodePath("../Interior/Stations/Pilot/Dimmer")
 excluded = [NodePath("../Interior/Lights/Headlight")]
+
+[node name="CabinSwitch" type="Node" parent="." node_paths=PackedStringArray("lights", "power", "stealth_switch")]
+script = ExtResource("cabin_switch")
+lights = NodePath("../CabinLights")
+power = NodePath("../Interior/Stations/Pilot/Anchors/CabinLightSwitch")
+stealth_switch = NodePath("../Interior/Stations/Pilot/Anchors/CabinColourSwitch")
 
 [node name="MapModel" type="Node" parent="."]
 script = ExtResource("19")
