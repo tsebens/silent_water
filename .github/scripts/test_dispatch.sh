@@ -349,6 +349,63 @@ reset_incident; DEPS_OF[560]="558"
 ARCS='[{"number":560,"created_at":"2026-11-26T04:13:13Z","labels":["arc","blocked"],"body":""}]'
 ISSUE_STATE[557]=closed; unblock_arcs >/dev/null
 check "native open dependency blocks" 0 "$(promoted)"
+
+# ---------------------------------------------------------------------------
+# #643: an open status is never written onto a closed issue; step 5 logs reopen and merged-close anomalies.
+# ---------------------------------------------------------------------------
+writes() { grep -c '^gh api graphql -f project' "$CALLS"; }
+PR_LABELS='[]'
+ALL_OPTIONS='[{"id":"OPT_INPROG","name":"In progress"},{"id":"OPT_REVIEW","name":"In review"},{"id":"OPT_DONE","name":"Done"}]'
+
+# Closed item (snapshot) with a stale in-review label: no open-status write.
+reset_incident
+ARCS='[{"number":600,"created_at":"2026-11-26T04:13:13Z","labels":["arc","in-review"],"body":""}]'
+PROJECT_ITEMS='[{"item_id":"I600","number":600,"state":"CLOSED","status":"Done"}]'
+ISSUE_STATE[600]=closed; STATUS_OPTIONS="$ALL_OPTIONS"
+out=$(project_arc_labels)
+check "closed + stale in-review: no board write" 0 "$(writes)"
+check "closed + stale in-review: skip logged" 1 "$(grep -c "#600 is closed" <<<"$out")"
+# Even if Status somehow reads differently, the snapshot guard holds.
+PROJECT_ITEMS='[{"item_id":"I600","number":600,"state":"CLOSED","status":"In progress"}]'
+: >"$CALLS"; project_arc_labels >/dev/null
+check "closed (snapshot) with another status: no board write" 0 "$(writes)"
+
+# Snapshot says open, fresh REST read says closed: no write.
+reset_incident
+ARCS='[{"number":601,"created_at":"2026-11-26T04:13:13Z","labels":["arc","in-review"],"body":""}]'
+PROJECT_ITEMS='[{"item_id":"I601","number":601,"state":"OPEN","status":"In progress"}]'
+ISSUE_STATE[601]=closed; STATUS_OPTIONS="$ALL_OPTIONS"
+out=$(project_arc_labels)
+check "fresh read closed, snapshot open: no write" 0 "$(writes)"
+check "fresh read closed: skip logged" 1 "$(grep -c "#601 is closed (fresh read)" <<<"$out")"
+# A failed fresh read skips too; an open one writes.
+reset_incident; FAIL_ISSUE=601; STATUS_OPTIONS="$ALL_OPTIONS"
+ARCS='[{"number":601,"created_at":"2026-11-26T04:13:13Z","labels":["arc","in-review"],"body":""}]'
+PROJECT_ITEMS='[{"item_id":"I601","number":601,"state":"OPEN","status":"In progress"}]'
+project_arc_labels >/dev/null
+check "fresh read fails: no write" 0 "$(writes)"
+reset_incident; STATUS_OPTIONS="$ALL_OPTIONS"
+ARCS='[{"number":601,"created_at":"2026-11-26T04:13:13Z","labels":["arc","in-review"],"body":""}]'
+PROJECT_ITEMS='[{"item_id":"I601","number":601,"state":"OPEN","status":"In progress"}]'
+project_arc_labels >/dev/null
+check "fresh read open: write happens" 1 "$(writes)"
+# Done is still written for a closed issue.
+reset_incident; STATUS_OPTIONS="$ALL_OPTIONS"
+PROJECT_ITEMS='[{"item_id":"I602","number":602,"state":"CLOSED","status":"In progress"}]'
+ISSUE_STATE[602]=closed
+set_board_status 602 Done >/dev/null
+check "Done is written to a closed issue" 1 "$(writes)"
+
+# Step 5 anomalies.
+T_REOPEN='[{"event":"closed","created_at":"2026-11-26T10:00:00Z"},{"event":"reopened","created_at":"2026-11-26T10:00:30Z"}]'
+T_SLOW='[{"event":"closed","created_at":"2026-11-26T10:00:00Z"},{"event":"reopened","created_at":"2026-11-26T11:00:00Z"}]'
+T_MERGED='[{"event":"cross-referenced","created_at":"2026-11-26T10:00:00Z","merged_at":"2026-11-26T10:00:00Z","body":"Closes #650\n"}]'
+T_MENTION='[{"event":"cross-referenced","created_at":"2026-11-26T10:00:00Z","merged_at":"2026-11-26T10:00:00Z","body":"Refs #650\n"},{"event":"cross-referenced","created_at":"2026-11-26T10:00:00Z","merged_at":null,"body":"Closes #650"}]'
+check "anomaly: closed then reopened within a minute" "  anomaly: open arc #650 was closed then reopened within a minute" "$(log_arc_anomalies 650 "$T_REOPEN")"
+check "anomaly: slow reopen is normal" "" "$(log_arc_anomalies 650 "$T_SLOW")"
+check "anomaly: merged PR with Closes" "  anomaly: open arc #650 has a PR merged at 2026-11-26T10:00:00Z with Closes #650" "$(log_arc_anomalies 650 "$T_MERGED")"
+check "anomaly: Refs or unmerged PR is not one" "" "$(log_arc_anomalies 650 "$T_MENTION")"
+check "anomaly: Closes #65 does not match #650" "" "$(log_arc_anomalies 65 "$T_MERGED")"
 rm -f "$CALLS"
 
 exit $fails
