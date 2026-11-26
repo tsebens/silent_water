@@ -1,84 +1,73 @@
-"""lit_guarded_toggle: guarded_toggle's switch on a 1x3 base with a real indicator_lamp above the guard, lit by the switch. Base 1x3.
+"""lit_guarded_toggle: guarded_toggle's switch and hinged cap on a 1x3 base with a real indicator_lamp above the cap, lit by the switch. Base 1x3.
 
-Brief: the bat swings +/-40 degrees about a hinge on X above a 12-gon collar; guard walls either side stop side bumps;
-the bat tip stays inside the guard's height at both ends. Behaviour: SwitchLever (snaps to on/off).
+Brief (#603): as guarded_toggle (the cap's solids and checks are that script's); the lamp stays visible with the cap
+closed and is not covered by it lifted. Behaviour: GuardedSwitch (#602).
 """
-import math
-
 import build123d as bd
 
-from cadkit.solids import Solid, expect_in_front, at, box, prism, expect, export_solids_glb
+from cadkit.solids import Solid, expect_in_front, at, expect, export_solids_glb, prism
 from cadkit.library import entry, scene_path, PLATE_T_MM, base_glb, base_size_mm, out_dir, quiet_noise, res, write_entry, scene_module
 from cadkit.tscn import NodePath, Scene, Xform, grab_box
 
 SLUG, GROUP = "lit_guarded_toggle", "kit"
-USES: list[str] = ["control_base", "indicator_lamp"]
+USES: list[str] = ["control_base", "indicator_lamp", "guarded_toggle"]
 BASE = (1, 3)
-COLLAR_R, COLLAR_H = 11.0, 8.0
-HINGE_Z = PLATE_T_MM + COLLAR_H + 2.0
-GUARD_T, GUARD_H, GUARD_DEPTH, GUARD_GAP = 5.0, 64.0, 40.0, 17.0   # wall thickness, height (Y), stand-out, half gap
-BAT_R, BAT_LEN, KNOB_R, KNOB_H = 3.5, 30.0, 6.5, 10.0
-SWING_DEG = 80.0
+MAX_TRIS = 1500
 LAMP_Y = 56.0   # the indicator_lamp instance sits at (0, LAMP_Y) on the plate
 
 
-def solids() -> tuple[list[Solid], list[Solid]]:
-    w, h = base_size_mm(*BASE)
-    collar = at(prism(12, COLLAR_R, COLLAR_H), z=PLATE_T_MM)
-    walls = [at(box(GUARD_T, GUARD_H, GUARD_DEPTH), sx * (GUARD_GAP + GUARD_T / 2), 0, PLATE_T_MM) for sx in (-1, 1)]
-    walls = [bd.chamfer(wl.edges().filter_by(bd.Axis.X).group_by(bd.Axis.Z)[-1], 5.0) for wl in walls]
-    bat = prism(8, BAT_R, BAT_LEN) + at(prism(8, KNOB_R, KNOB_H, chamfer_top=2.5), z=BAT_LEN)
-    barrel = bd.extrude(bd.Plane.YZ * bd.RegularPolygon(BAT_R + 1.5, 8), amount=6.0, both=True)
-    bat = bat + barrel
-    # Checks against the brief.
-    tip = BAT_LEN + KNOB_H
-    half = math.radians(SWING_DEG / 2)
-    expect(tip * math.sin(half) + KNOB_R * math.cos(half) <= GUARD_H / 2 + 2.0, "bat tip stays within the guard height at full swing")
-    expect(KNOB_R < GUARD_GAP, "knob clears the guard walls")
-    expect(HINGE_Z + tip > PLATE_T_MM + GUARD_DEPTH, "bat stands proud of the guard so it can be grabbed")
-    for bx, by in scene_module("control_base").bolt_positions(*BASE):
-        expect(abs(by) - 3.5 > GUARD_H / 2 or abs(bx) + 3.5 < GUARD_GAP, f"bolt at {bx},{by} clear of the guard")
+def solids() -> tuple[list[Solid], list[Solid], list[Solid], dict]:
+    g = scene_module("guarded_toggle")
     lamp_out = entry("indicator_lamp")["footprint_mm"][0] / 2
-    expect(LAMP_Y + lamp_out < h / 2 - 2.0, "lamp inside the plate")
-    expect(LAMP_Y - lamp_out > GUARD_H / 2, "lamp above the guard walls")
+    collar = at(prism(12, g.COLLAR_R, g.COLLAR_H), z=PLATE_T_MM)
+    bat, cap, posts = g.bat_solid(), g.cap_solid(), g.post_solids()
+    stand = g.check_cap(BASE, bat, cap, posts, LAMP_Y - lamp_out, LAMP_Y + lamp_out)
     for bx, by in scene_module("control_base").bolt_positions(*BASE):
         expect(((bx) ** 2 + (LAMP_Y - by) ** 2) ** 0.5 > lamp_out + 3.5, f"lamp clear of bolt {bx},{by}")
-    expect(len(bat.solids()) == 1, "bat is one solid")
-    body = [Solid(collar, "interior_dark")] + [Solid(wl, "control_interface") for wl in walls]
-    bat = [Solid(bat, "control_grey")]
-    expect_in_front(body + [Solid(at(bat[0].shape, z=HINGE_Z), "control_grey")], SLUG)
-    return body, bat
+    body = [Solid(collar, "interior_dark")] + [Solid(p, "control_interface") for p in posts]
+    batl, capl = [Solid(bat, "control_grey")], [Solid(cap, "control_interface")]
+    expect_in_front(body + [Solid(g.bat_pose(bat, 0.0), "control_grey"), Solid(g.cap_pose(cap, 0.0), "control_interface"),
+                            Solid(g.cap_pose(cap, g.CAP_OPEN_DEG), "control_interface")], SLUG)
+    return body, batl, capl, stand
 
 
 def build() -> dict:
+    g = scene_module("guarded_toggle")
     d = out_dir(GROUP, SLUG)
-    body, bat = solids()
+    body, bat, cap, stand = solids()
     rb = export_solids_glb(body, d / f"{SLUG}_body.glb", "LitGuardedToggleBody")
     rt = export_solids_glb(bat, d / f"{SLUG}_bat.glb", "LitGuardedToggleBat")
+    rc = export_solids_glb(cap, d / f"{SLUG}_cap.glb", "LitGuardedToggleCap")
     w, h = base_size_mm(*BASE)
-    s = Scene("LitGuardedToggle", script="res://src/interact/switch_lever.gd")
-    s.set(".", swing_deg=SWING_DEG, noise_profile=quiet_noise(s, 0.15, 2.0), pivot=NodePath("Pivot"))
+    tris = rb["triangles"] + rt["triangles"] + rc["triangles"] + entry("indicator_lamp")["triangles"]
+    expect(tris <= MAX_TRIS, f"{tris} triangles; the cap is {MAX_TRIS}")
+    s = Scene("LitGuardedToggle", script="res://src/interact/guarded_switch.gd")
+    s.set(".", swing_deg=g.SWING_DEG, noise_profile=quiet_noise(s, 0.15, 2.0), pivot=NodePath("Pivot"),
+          cap=NodePath("Cap"), cap_open_deg=-g.CAP_OPEN_DEG)
     s.node("Base", instance=base_glb(*BASE))
     s.node("Body", instance=rb["glb"])
-    s.node("Pivot", props={"transform": Xform(origin=(0, 0, HINGE_Z / 1000))})
+    s.node("Pivot", props={"transform": Xform(origin=(0, 0, g.HINGE_Z / 1000))})
     s.node("Bat", parent="Pivot", instance=rt["glb"])
+    s.node("Cap", instance=rc["glb"], props={"transform": Xform(origin=(0, g.CAP_HY / 1000, g.CAP_HZ / 1000))})
     s.node("Lamp", instance=scene_path("indicator_lamp"), props={"transform": Xform(origin=(0, LAMP_Y / 1000, PLATE_T_MM / 1000))})
     s.set(".", indicator=NodePath("Lamp"))
-    stand = (PLATE_T_MM + GUARD_DEPTH) / 1000
-    grab_box(s, ".", (w / 1000, h / 1000, stand), (0, 0, stand / 2))
+    grab_box(s, ".", (w / 1000, h / 1000, stand["closed"] / 1000), (0, 0, stand["closed"] / 2000))
     s.write(d / f"{SLUG}.tscn")
-    tris = rb["triangles"] + rt["triangles"] + entry("indicator_lamp")["triangles"]
     write_entry(GROUP, SLUG, {
         "kind": "control",
-        "summary": "Guarded two-position toggle on a tall plate; light grey bat swings +/-40 deg and snaps to on or off. "
-                   "A real indicator lamp above the guard is lit while the switch is on and dark while off, with nothing to wire.",
-        "tags": ["toggle", "switch", "guarded", "on-off", "lamp", "lit", "safety"],
+        "summary": "Guarded two-position toggle under a hinged cap, on a tall plate. Click lifts the cap, a second click sets "
+                   "the switch on and the cap stays open; click from on sets it off and closes the cap; a lifted cap over an "
+                   "off switch drops after 5 s. A real indicator lamp above the cap is lit while the switch is on and dark "
+                   "while off, visible with the cap closed, with nothing to wire.",
+        "tags": ["toggle", "switch", "guarded", "cap", "cover", "on-off", "lamp", "lit", "safety"],
         "scene": res(d / f"{SLUG}.tscn"),
-        "behaviour": {"script": "SwitchLever", "values": "0 off (bat down, lamp dark), 1 on (bat up, lamp lit)", "signal": "value_changed"},
+        "behaviour": {"script": "GuardedSwitch", "values": "0 off (bat down, cap closed, lamp dark), 1 on (bat up, cap open, lamp lit)",
+                      "signal": "value_changed", "cap": "child node `Cap` (hinge pivot), closed by default; cap_changed(open)"},
         "base": f"{BASE[0]}x{BASE[1]}",
         "footprint_mm": [w, h],
-        "stand_out_mm": HINGE_Z + BAT_LEN + KNOB_H,
-        "mount": "back on Z=0, centred; front +Z; on is toward +Y",
+        "stand_out_mm": round(stand["closed"], 1),
+        "stand_out_open_mm": round(stand["open"], 1),
+        "mount": "back on Z=0, centred; front +Z; on is toward +Y; the cap's hinge is along its top edge, +Y",
         "set_on_instance": {"label": "name at the aiming point"},
         "triangles": tris,
     })
