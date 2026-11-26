@@ -2,13 +2,13 @@
 
 Shaped like an arcade cabinet (side profile, top to bottom): a top block that overhangs the front; an upper panel
 sloping down and back toward the wall, carrying the dials; a recessed vertical carriage face at standing eye level with
-two open cradles (a CanisterSlot with a scrubber canister, and a linear_gauge for its saturation beside each); a storage
+two rectangular pockets cut into it, side by side, each holding a cradle (a CanisterSlot with a scrubber canister, and a linear_gauge for its saturation beside each); a storage
 shelf sloping like a console desk, tilted up toward the operator, bored with six 24-sided holes (two rows of three; the
 canisters stand along the shelf's normal, tops just below the surface; four filled, two empty); and a vertical base
 down to the plinth, standing further forward than the carriage face. Orange rails run down the cheeks. The operator
 stands at +Z, back of the unit on Z=0.
 
-Station-local solids (no behaviour, used once): the profile shell and cheeks, plinth, hazard band, rails, ledge,
+Station-local solids (no behaviour, used once): the profile shell and cheeks, plinth, hazard band, rails,
 cradles, the panel plate and hole rings. Everything lit, read or carried is a catalogue scene: scrubber_canister,
 linear_gauge, gauge, guarded_toggle, indicator_lamp and the existing noise_gauge.
 """
@@ -39,16 +39,18 @@ CHEEK_T = 55.0                              # side walls that frame the carriage
 SHELF_DEG, SHELF_L = 42.0, 390.0
 SHELF_N = (math.cos(math.radians(SHELF_DEG)), math.sin(math.radians(SHELF_DEG)))   # outward normal (y, z)
 ZC = D - SHELF_L * math.cos(math.radians(SHELF_DEG))     # the carriage face
-YS1 = 1286.0                                              # where the shelf meets the carriage face (a riser below the ledge)
+YS1 = 1286.0                                              # where the shelf meets the carriage face (a riser below the pockets)
 YB0 = YS1 - SHELF_L * math.sin(math.radians(SHELF_DEG))   # the base's top front edge
-# The carriage face: two bays at standing eye level (1650), a ledge under them.
+# The carriage face: two rectangular pockets cut into it at standing eye level (1650).
 CARR_Y0, CARR_Y1 = 1460.0, 1860.0
-LEDGE_T, LEDGE_DEPTH = 24.0, 200.0
-POCKET_CX = (-240.0, 240.0)                 # bay centres
-POCKET_W = 400.0
-# Cradle: a low seat with a back guard, open at the front. Offsets are from the bay's centre.
+POCKET_DEPTH = 180.0                        # each pocket is cut this far into the carriage face
+POCKET_Y1 = 1820.0                          # the pockets' tops: solid panel above and around them
+ZP = ZC - POCKET_DEPTH                      # a pocket's back wall
+POCKET_CX = (-235.0, 235.0)                 # pocket centres
+POCKET_W = 380.0
+# Cradle: a low seat with a back guard, open at the front. Offsets are from the pocket centre.
 CRADLE_DX, CRADLE_R, CRADLE_H = -60.0, 98.0, 28.0
-CRADLE_Z = ZC + 20.0 + 80.0                 # the canister's axis: guard (20 mm) then its radius and a little
+CRADLE_Z = ZP + 20.0 + 80.0                 # the canister's axis: guard (20 mm) then its radius and a little
 GUARD_T, GUARD_H = 20.0, 170.0
 GAUGE_DX = 140.0                            # gauge beside its cradle, on the carriage face
 # Rails: orange handles down the front edges of the cheeks, on stand-offs.
@@ -99,7 +101,7 @@ def _cradle_xyz(i: int) -> tuple[float, float, float]:
 
 def _gauge_xyz(i: int) -> tuple[float, float, float]:
     """Origin of gauge i: the bar's bottom, on the carriage face."""
-    return (POCKET_CX[i] + GAUGE_DX, CARR_Y0 + 100.0, ZC)
+    return (POCKET_CX[i] + GAUGE_DX, CARR_Y0 + 100.0, ZP)
 
 
 def _holes() -> list[tuple[float, float]]:
@@ -161,6 +163,9 @@ def solids() -> list[Solid]:
     # Cheeks: full-depth side walls beside the carriage face and the panel.
     for sx in (-1, 1):
         shell = shell + at(box(CHEEK_T, YT - YB0, D, chamfer_mm=BODY_CHAMFER), x=sx * (W / 2 - CHEEK_T / 2), y=(YB0 + YT) / 2)
+    # Two rectangular pockets, side by side, cut into the carriage face; solid panel between and around them.
+    for cx in POCKET_CX:
+        shell = shell - at(box(POCKET_W, POCKET_Y1 - CARR_Y0, POCKET_DEPTH + 1.0), x=cx, y=(CARR_Y0 + POCKET_Y1) / 2, z=ZP + (POCKET_DEPTH + 1.0) / 2)
     nrm = _shelf_normal()
     bore = 330.0
     for u, s in _holes():
@@ -174,12 +179,11 @@ def solids() -> list[Solid]:
         out.append(Solid(bar, "control_interface"))
         for y in (RAIL_Y0 + 60.0, RAIL_Y1 - 60.0):
             out.append(Solid(at(box(RAIL_W - 8.0, 40.0, RAIL_OUT - RAIL_W + 2.0), x=sx * RAIL_X, y=y, z=D - 2.0), "control_grey"))
-    # The ledge under the carriage bays, and each cradle: a seat and a back guard against the face.
-    out.append(Solid(at(box(W - 2 * CHEEK_T, LEDGE_T, LEDGE_DEPTH + 1.0, chamfer_mm=3.0), y=CARR_Y0 - LEDGE_T / 2, z=ZC - 1.0), "control_grey"))
+    # Each cradle, in its pocket: a seat on the pocket floor and a back guard against its back wall.
     for i in range(2):
         cx, cy, cz = _cradle_xyz(i)
         seat = at(prism(12, CRADLE_R, CRADLE_H, chamfer_top=4.0), x=cx, y=cy - CRADLE_H, z=cz, rx=-90.0)
-        guard = at(box(2 * CRADLE_R - 20.0, GUARD_H, GUARD_T, chamfer_mm=3.0), x=cx, y=CARR_Y0 + GUARD_H / 2, z=ZC)
+        guard = at(box(2 * CRADLE_R - 20.0, GUARD_H, GUARD_T, chamfer_mm=3.0), x=cx, y=CARR_Y0 + GUARD_H / 2, z=ZP + GUARD_T / 2)
         out += [Solid(seat, "trim_black"), Solid(guard, "control_grey")]
     # The panel plate, on the sloping face.
     plate = _along(box(2 * PANEL_HALF_W, PANEL_L - 4.0, PLATE_T, chamfer_mm=3.0), PANEL_O + PANEL_T * (PANEL_L / 2), PANEL_N)
@@ -227,13 +231,14 @@ def _check(sol: list[Solid]) -> dict:
         gx, gy, gz = _gauge_xyz(i)
         px0, px1 = POCKET_CX[i] - POCKET_W / 2, POCKET_CX[i] + POCKET_W / 2
         expect(abs(cy + ch / 2 - EYE[1]) <= 50.0, f"canister {i}'s middle ({cy + ch / 2:.0f}) at crew eye level ({EYE[1]:.0f})")
-        expect(cx - cw / 2 >= px0 + 10.0 and gx + gw / 2 <= px1 - 10.0, f"cradle {i} and gauge {i} inside bay {i}")
-        expect(px0 >= -W / 2 + CHEEK_T and px1 <= W / 2 - CHEEK_T, f"bay {i} between the cheeks")
-        expect(cy + ch <= CARR_Y1 - 40.0, f"canister {i} stands {cy + ch - CARR_Y0:.0f} mm in a bay {CARR_Y1 - CARR_Y0:.0f} mm tall, with room to lift")
+        expect(cx - cw / 2 >= px0 + 10.0 and gx + gw / 2 <= px1 - 10.0, f"cradle {i} and gauge {i} inside pocket {i}")
+        expect(px0 >= -W / 2 + CHEEK_T and px1 <= W / 2 - CHEEK_T, f"pocket {i} between the cheeks")
+        expect(cy + ch <= POCKET_Y1 - 30.0, f"canister {i} stands {cy + ch - CARR_Y0:.0f} mm in a pocket {POCKET_Y1 - CARR_Y0:.0f} mm tall, with room to lift")
+        expect(cz + cw / 2 <= ZC, f"canister {i} sits wholly inside its pocket (front at {cz + cw / 2:.0f}, face at {ZC:.0f})")
         expect(cz + cw / 2 <= D - 60.0, f"canister {i} sits well back from the face (its front at {cz + cw / 2:.0f} of {D:.0f})")
-        expect(cz + CRADLE_R <= ZC + LEDGE_DEPTH, f"cradle {i}'s seat on the ledge")
-        expect(cz - cw / 2 >= ZC + GUARD_T, f"canister {i} clear of the back guard")
-        expect(gy + gh <= CARR_Y1 - 20.0 and gy >= CARR_Y0 + 20.0, f"gauge {i} inside the bay's height")
+        expect(cz + CRADLE_R <= ZC + 30.0, f"cradle {i}'s seat within its pocket")
+        expect(cz - cw / 2 >= ZP + GUARD_T, f"canister {i} clear of the back guard")
+        expect(gy + gh <= POCKET_Y1 - 20.0 and gy >= CARR_Y0 + 20.0, f"gauge {i} inside the pocket's height")
         gap = (gx - gw / 2) - (cx + cw / 2)
         expect(gap >= 10.0, f"gauge {i} {gap:.0f} mm clear of its canister")
         expect(CRADLE_R * math.cos(math.pi / 12) >= cw / 2, f"cradle {i}'s seat holds the {cw:.0f} mm canister")
@@ -241,10 +246,11 @@ def _check(sol: list[Solid]) -> dict:
         pts += [np.array([gx + dx, gy + dy, gz + dz]) for dx in (-gw / 2, gw / 2) for dy in (0.0, gh) for dz in (0.0, gau["stand_out_mm"])]
         far = max(float(np.linalg.norm(q - EYE)) for q in pts)
         expect(far <= REACH_MM, f"cradle {i} and gauge {i} within {REACH_MM:.0f} mm of the standing eye ({far:.0f} mm)")
-    expect(POCKET_CX[0] + POCKET_W / 2 < POCKET_CX[1] - POCKET_W / 2 - 10.0, "a gap between the bays")
+    expect(POCKET_CX[1] - POCKET_CX[0] - POCKET_W >= 60.0, "solid panel between the pockets")
+    expect(W / 2 - CHEEK_T - (POCKET_CX[1] + POCKET_W / 2) >= 10.0 and ZP >= 20.0 and CARR_Y1 - POCKET_Y1 >= 20.0, "solid panel around the pockets")
     figures = _check_panel(sol)
     for sx in (-1, 1):
-        expect(abs(sx * RAIL_X) - RAIL_W / 2 >= W / 2 - CHEEK_T, "rails on the cheeks, clear of the bays")
+        expect(abs(sx * RAIL_X) - RAIL_W / 2 >= W / 2 - CHEEK_T, "rails on the cheeks, clear of the pockets")
         expect(abs(sx * RAIL_X) + RAIL_W / 2 <= W / 2, "rails inside the unit's width")
     expect(RAIL_Y1 <= YT and RAIL_Y0 >= KICK_H, "rails within the cheeks height")
     return {"aisle_m": round(aisle, 3), **figures}
@@ -282,15 +288,14 @@ def _check_panel(sol: list[Solid]) -> dict:
             low, back = min(low, q[1]), min(back, q[2])
     expect(back >= 10.0, f"every bore stays {back:.0f} mm in front of the back face")
     expect(low >= KICK_H + 20.0, f"every bore ends {low - KICK_H:.0f} mm above the plinth")
-    # A canister lifts out along the shelf normal without touching the ledge under the carriage bays.
-    ledge = (CARR_Y0 - LEDGE_T, CARR_Y0, ZC, ZC + LEDGE_DEPTH)         # y0, y1, z0, z1
+    # A canister lifts out along the shelf normal without touching the carriage face above the shelf.
     for u, s in holes:
         for t in range(0, 341, 10):
             axis = _hole_base(u, s) + nrm * t
             for off in (-can["footprint_mm"][0] / 2, can["footprint_mm"][0] / 2):
                 q = axis + tan * off
-                hit = ledge[0] <= q[1] <= ledge[1] and ledge[2] <= q[2] <= ledge[3]
-                expect(not hit, f"the canister in hole at u={u:.0f}, s={s:.0f} lifts out clear of the ledge (blocked at {t} mm)")
+                hit = q[1] >= YS1 and q[2] < ZC - 0.5
+                expect(not hit, f"the canister in hole at u={u:.0f}, s={s:.0f} lifts out clear of the carriage face (blocked at {t} mm)")
     expect(TOP_RECESS >= 5.0, "a stored canister shows its top just below the shelf surface")
     # The panel: plate bounds and dial layout, in plate coordinates (u, v up the slope).
     r, rn = GAUGE_R * 1000.0, NOISE_R * 1000.0

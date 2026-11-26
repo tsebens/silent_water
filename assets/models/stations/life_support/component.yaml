@@ -45,10 +45,10 @@ uses:
 - gauge
 - guarded_toggle
 - indicator_lamp
-triangles: 13192
+triangles: 13180
 triangle_budget: 24000
 triangles_by_part:
-  body: 2416
+  body: 2404
 checks:
   aisle_m: 0.849
   toggle_reach_mm: 444

@@ -33,26 +33,26 @@ transform = Transform3D(1, 0, 0, 0, 0.707107, -0.707107, 0, 0.707107, 0.707107, 
 
 [node name="CradleA" type="Node3D" parent="."]
 script = ExtResource("2")
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.3, 1.488, 0.310174)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.295, 1.488, 0.130174)
 
 [node name="CanisterA" parent="." instance=ExtResource("3")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.3, 1.488, 0.310174)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.295, 1.488, 0.130174)
 
 [node name="SaturationA" parent="." instance=ExtResource("4")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.1, 1.56, 0.210174)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.095, 1.56, 0.0301735)
 source_group = &"life_support_readouts"
 readout = &"saturation_a"
 max_value = 1
 
 [node name="CradleB" type="Node3D" parent="."]
 script = ExtResource("2")
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.18, 1.488, 0.310174)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.175, 1.488, 0.130174)
 
 [node name="CanisterB" parent="." instance=ExtResource("3")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.18, 1.488, 0.310174)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.175, 1.488, 0.130174)
 
 [node name="SaturationB" parent="." instance=ExtResource("4")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.38, 1.56, 0.210174)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.375, 1.56, 0.0301735)
 source_group = &"life_support_readouts"
 readout = &"saturation_b"
 max_value = 1
