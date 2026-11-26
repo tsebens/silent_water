@@ -59,11 +59,11 @@ uses:
 - gauge
 - lit_guarded_toggle
 - indicator_lamp
-triangles: 13764
+triangles: 13852
 triangle_budget: 15000
 triangles_by_part:
   strip: 604
-  pilot_seat: 1200
+  pilot_seat: 1288
   instruments: 11960
 checks:
   strip_top_mm: 780

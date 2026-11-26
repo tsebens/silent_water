@@ -2,7 +2,9 @@ slug: pilot_seat
 group: furniture
 kind: furniture
 summary: 'Pilot''s seat: the operator seat with a headrest, a throttle joystick (left armrest) and a planes-and-rudder
-  joystick (right armrest), and two decorative pedals on an open grating footrest. Faces -Z.'
+  joystick (right armrest), two decorative pedals on an open grating footrest, and a switch panel on each armrest
+  with two lit_toggle mounts: anchors ExternalLightSwitch, ExternalColourSwitch (right), CabinLightSwitch, CabinColourSwitch
+  (left); toggle face up, lamp toward the sitter. Faces -Z.'
 tags:
 - seat
 - chair
@@ -16,16 +18,34 @@ behaviour:
   bind_on_parent: StationSeat or a subclass (PilotSeat); sit_point = <instance>/SitPoint; a JoystickIndicator on
     ThrottleJoystick and FlightJoystick (stick = Frame/Stick)
 footprint_mm:
-- 630.0
+- 950.0
 - 1020.0
+mounts:
+- anchor: ExternalLightSwitch
+  scene: lit_toggle
+  offset_mm: 2.0
+  host_face: armrest panel top
+- anchor: ExternalColourSwitch
+  scene: lit_toggle
+  offset_mm: 2.0
+  host_face: armrest panel top
+- anchor: CabinLightSwitch
+  scene: lit_toggle
+  offset_mm: 2.0
+  host_face: armrest panel top
+- anchor: CabinColourSwitch
+  scene: lit_toggle
+  offset_mm: 2.0
+  host_face: armrest panel top
 mount: on the floor at Y=0, centred on the pedestal; occupant faces -Z; footrest ahead
 seated_eye_height_m: 1.2
 uses:
 - operator_seat
 - joystick
-triangles: 1200
+- lit_toggle
+triangles: 1288
 triangles_by_part:
-  extras: 336
+  extras: 424
   operator_seat: 376
   joysticks: 488
 built_by: tools/cadkit/scenes/pilot_seat.py
