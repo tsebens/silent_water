@@ -194,7 +194,7 @@ func test_pump_sweep_leaves_the_aisle() -> void:
 	for v: float in [0.0, 1.0]:
 		hp.host_set_value(v)
 		deepest = maxf(deepest, _bounds(st, hp).end.z)
-	expect(deepest <= 0.45, "the pump's sweep stays within 0.45 m of the hull (%.3f)" % deepest)
+	expect(deepest <= 0.7, "the pump's sweep stays within 0.7 m of the hull (%.3f)" % deepest)
 	# The hull's clear width at the ballast station (a tenth off for the narrower section at the pump's height).
 	var width: float = 2.0 * SubLayout.hull_inner_half(3.275).x * 0.9
 	expect(width - deepest >= AISLE_MIN_M, "at least %.1f m of aisle is clear of the sweep (%.2f m)" % [AISLE_MIN_M, width - deepest])
@@ -221,4 +221,24 @@ func test_controls_work_in_place() -> void:
 	var hp: HandPump = st.get_node("HandPump") as HandPump
 	hp.step(0.1, true)
 	expect(hp.phase == HandPump.Phase.DOWN, "holding the lever starts the down stroke")
+	st.queue_free()
+
+
+func test_pump_lever_comes_out_toward_the_player() -> void:
+	var st: Node3D = _make()
+	var hp: HandPump = st.get_node("HandPump") as HandPump
+	expect(hp.transform.basis.z.dot(Vector3.BACK) > 0.999, "the lever runs out along +Z, toward the player")
+	st.queue_free()
+
+
+func test_wheels_sit_inline_on_the_horizontal_pipe_runs_outside_the_risers() -> void:
+	var st: Node3D = _make()
+	var flood: Node3D = st.get_node("FloodWheel") as Node3D
+	var blow: Node3D = st.get_node("BlowWheel") as Node3D
+	expect_near(flood.position.x, -blow.position.x, 0.0001, "the two pipes are mirrored")
+	var tank: Node3D = st.get_node("TankGauge") as Node3D
+	var air: Node3D = st.get_node("AirGauge") as Node3D
+	expect(tank.position.x > flood.position.x + 0.1 and air.position.x < blow.position.x - 0.1, "the gauges sit between the two bends")
+	var console_w: float = _bounds(st, st.get_node("DropWeights")).size.x
+	expect(console_w > 0.0, "the console carries the drop-weights button")
 	st.queue_free()

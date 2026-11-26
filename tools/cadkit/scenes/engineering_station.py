@@ -1,13 +1,15 @@
 """engineering_station: the sub's staying-afloat-by-hand station (a panel). Brief: assets/models/panels/engineering_station/brief.yaml.
 
-Plumbing, not a wall unit. Back on Z=0 against the port hull. At chest height a ballast pipe runs along the hull with a
-FLOOD and a BLOW `valve_wheel` on it and, between them, a small plate with the TANK LEVEL and AIR REMAINING gauges. Below
-it a low console, its top raked toward the standing eye, carries the DROP WEIGHTS button under its hazard-striped guard,
-the BILGE PUMP switch with its RUNNING lamp, the BILGE LEVEL gauge and the noise repeater. The manual bilge pump's lever
-comes out of the console's end, along the hull, and swings up and down. Two orange grab rails run along the wall.
+Plumbing, not a wall unit. Back on Z=0 against the port hull. Two ballast pipes come in from the sides at chest height,
+each turning 90 degrees down into the top of the console, which is exactly as wide as the pipework between the risers.
+The FLOOD and BLOW `valve_wheel`s sit inline on the horizontal runs; between the two bends a small plate carries the
+TANK LEVEL and AIR REMAINING gauges. The low console, its top raked toward the standing eye, carries the DROP WEIGHTS
+button under its hazard-striped guard, the BILGE PUMP switch with its RUNNING lamp, the BILGE LEVEL gauge and the noise
+repeater. The manual bilge pump stands on a pod at the console's end and its lever comes out toward the player,
+swinging up and down.
 
-Local solids (static, used once): the pipe, its brackets, the gauge plate, the console, its front inset and hazard strip,
-the hose stub, the rails and the label plates. Everything else is a catalogue scene, set 2 mm off its host face (the
+Local solids (static, used once): the pipes, elbows and risers, the gauge plate, the console, its front inset and hazard
+strip, the pump pod and the label plates. Everything else is a catalogue scene, set 2 mm off its host face (the
 mount rule). No scripts are added: `label`, `readout`, `title` and the scales are set on the instances.
 
 Frame (mm): X along the hull, Y up, Z out of the hull (the mount face). The origin is the station's centre, 1.1 m above
@@ -38,15 +40,16 @@ REACH = 1100.0                                  # reach_m, from the shoulder
 FLOOR_Y = -1100.0                               # the floor, in the station frame (the centre is 1.1 m up)
 BALLAST_Z_M = 3.275                             # program.yaml: the ballast position, port
 
-# Ballast pipework and the gauge plate.
-PIPE_Y, PIPE_R, PIPE_Z, PIPE_X0, PIPE_X1 = 170.0, 26.0, 30.0, -560.0, 560.0
-BRACKET_X = (-470.0, -140.0, 140.0, 480.0)
-WHEEL_X = (-330.0, 330.0)
+# Ballast pipework: two pipes in from the sides, each turning down into the console top at RISER_X.
+PIPE_Y, PIPE_R, PIPE_Z, PIPE_END = 170.0, 26.0, 30.0, 595.0
+RISER_X = 354.0                                 # the risers' outer faces are the console's ends
+WHEEL_X = (-480.0, 480.0)
 GPLATE = (0.0, 300.0, 300.0, 190.0, 16.0)       # centre x, y, width, height, thickness (on the wall)
 WALL_GAUGE_R, WALL_GAUGE_X, WALL_GAUGE_Y = 0.055, (-75.0, 75.0), 315.0
 
-# The console: a box from the floor, its top raked down toward the aisle by SLOPE_DEG.
-CX0, CX1, CONSOLE_D = -600.0, 80.0, 400.0
+# The console: a box from the floor, its top raked down toward the aisle by SLOPE_DEG; as wide as the pipework.
+PUMP_W_POD = 165.0
+CX0, CX1, CONSOLE_D = -RISER_X - PIPE_R, RISER_X + PIPE_R, 440.0
 Y_BACK = -250.0                                 # top at the hull
 SLOPE_DEG = 22.0
 Y_FRONT = Y_BACK - CONSOLE_D * math.tan(math.radians(SLOPE_DEG))
@@ -54,14 +57,11 @@ Y_FRONT = Y_BACK - CONSOLE_D * math.tan(math.radians(SLOPE_DEG))
 ROW_V = 250.0
 LABEL_V = 130.0
 TOP_GAUGE_R = 0.05
-DROP_U, TOGGLE_U, BILGE_U, NOISE_U = -470.0, -330.0, -200.0, -60.0
+DROP_U, TOGGLE_U, BILGE_U, NOISE_U = -285.0, -160.0, -35.0, 90.0
 
-# The manual pump: out of the console's end, its lever along +X, swinging in the XY plane.
-PUMP_Y, PUMP_Z = -330.0, 200.0
-
-# Grab rails.
-RAIL_Z0, RAIL_Z1, RAIL_H = 50.0, 86.0, 30.0
-RAILS = ((40.0, -560.0, 560.0), (-100.0, -560.0, 60.0))     # (y, x0, x1)
+# The manual pump: on a pod at the console's +X end, its lever out toward the player (+Z), swinging in the YZ plane.
+PUMP_X, PUMP_Y = 292.5, -60.0
+POD_Z0, POD_Z1 = 62.0, 148.0                    # the pod's back clears the risers; its front is the pump's mount face
 
 # The hull's inner surface at the ballast position, from the program, for the aisle check.
 PROGRAM = REPO / "assets/models/vehicles/sub_interior/program.yaml"
@@ -154,20 +154,17 @@ def items() -> list[Item]:
                  readout=SName("bilge_water_t"), min_value=0.0, max_value=8.0, sweep_deg=180.0, radius=TOP_GAUGE_R),
         _console("NoiseGauge", "gauge", NOISE_U, rect=_gauge_rect(TOP_GAUGE_R), scene=NOISE_GAUGE_SCENE, radius=TOP_GAUGE_R),
     ]
-    # The pump: its +Z (the lever) runs out along +X, its +X is -Z, its housing back on the console's end face.
+    # The pump: its +Z (the lever) runs out toward the player, its housing back on the pod's front face.
     pe = entry("hand_pump")
     w, h = pe["footprint_mm"]
     off = mount.stand_off(0.0)
-    basis = np.column_stack([np.array([0.0, 0.0, -1.0]), np.array([0.0, 1.0, 0.0]), np.array([1.0, 0.0, 0.0])])
-    out.append(Item("HandPump", "hand_pump", scene_path("hand_pump"), np.array([CX1 + off, PUMP_Y, PUMP_Z]), basis,
-                    (-w / 2, -h / 2, w / 2, h / 2), 0.0, pe["stand_out_mm"], f"console end x={CX1:g}", off, "pump"))
+    out.append(Item("HandPump", "hand_pump", scene_path("hand_pump"), np.array([PUMP_X, PUMP_Y, POD_Z1 + off]), np.eye(3),
+                    (-w / 2, -h / 2, w / 2, h / 2), 0.0, pe["stand_out_mm"], f"pump pod face z={POD_Z1:g}", off, "pump"))
     return out
 
 
 def solids() -> tuple[list[Solid], dict]:
     gp = GPLATE
-    pipe = at(prism(16, PIPE_R, PIPE_X1 - PIPE_X0), PIPE_X0, PIPE_Y, PIPE_Z, ry=90)
-    brackets = [at(box(26.0, 84.0, PIPE_Z + PIPE_R - 4.0), x, PIPE_Y) for x in BRACKET_X]
     plate = at(box(gp[2], gp[3], gp[4], chamfer_mm=2.0), gp[0], gp[1])
     # The console: a polygon in (Y, Z) extruded along X.
     with bd.BuildPart() as b:
@@ -175,26 +172,30 @@ def solids() -> tuple[list[Solid], dict]:
             bd.Polygon((FLOOR_Y, 0.0), (FLOOR_Y, CONSOLE_D), (Y_FRONT, CONSOLE_D), (Y_BACK, 0.0), align=None)
         bd.extrude(amount=CX1 - CX0)
     console = at(b.part, x=CX0)
-    inset = at(box(420.0, 300.0, 4.0), -300.0, -800.0, CONSOLE_D)
-    kick = at(box(360.0, 30.0, 2.0), -300.0, -1070.0, CONSOLE_D)
-    hose = at(prism(8, 22.0, 110.0), CX1, PUMP_Y - 330.0, PUMP_Z, ry=90)
-    rails, posts = [], []
-    for y, x0, x1 in RAILS:
-        rails.append(at(box(x1 - x0, RAIL_H, RAIL_Z1 - RAIL_Z0, chamfer_mm=4.0), (x0 + x1) / 2, y, RAIL_Z0))
-        for x in (x0 + 40.0, (x0 + x1) / 2, x1 - 40.0):
-            posts.append(at(box(20.0, 20.0, RAIL_Z0 + 1.0), x, y))
+    inset = at(box(560.0, 300.0, 4.0), 0.0, -800.0, CONSOLE_D)
+    kick = at(box(500.0, 30.0, 2.0), 0.0, -1070.0, CONSOLE_D)
+    pod = at(box(PUMP_W_POD, 540.0, POD_Z1 - POD_Z0, chamfer_mm=4.0), PUMP_X, -130.0, POD_Z0)
+    pipes, joints, flanges, brackets = [], [], [], []
+    top_y = Y_BACK - PIPE_Z * math.tan(math.radians(SLOPE_DEG))
+    for sx in (-1.0, 1.0):
+        x = sx * RISER_X
+        run = PIPE_END - RISER_X
+        pipes.append(at(prism(12, PIPE_R, run), min(x, sx * PIPE_END), PIPE_Y, PIPE_Z, ry=90))
+        pipes.append(at(prism(12, PIPE_R, PIPE_Y - top_y + 12.0), x, PIPE_Y, PIPE_Z, rx=90))      # the riser, down into the top
+        joints.append(at(box(PIPE_R * 2 + 10.0, PIPE_R * 2 + 10.0, PIPE_R * 2 + 5.0, chamfer_mm=8.0), x, PIPE_Y, PIPE_Z - PIPE_R))
+        flanges.append(at(prism(12, PIPE_R + 3.0, 14.0), x, top_y + 6.0, PIPE_Z, rx=90))
+        brackets.append(at(box(60.0, 40.0, PIPE_Z + PIPE_R - 4.0), x, 40.0))
     on_wall = lambda w, h, x, y, z: at(box(w, h, 2.0), x, y, z)
     labels = [on_wall(110.0, 26.0, WHEEL_X[0], 285.0, 0.0), on_wall(110.0, 26.0, WHEEL_X[1], 285.0, 0.0)]
     surf = lambda w, h, u, v: bd.Plane(origin=tuple(surf_point(u, v)), x_dir=(1, 0, 0), z_dir=tuple(_N))
-    for w, h, u in ((170.0, 16.0, DROP_U), (96.0, 16.0, TOGGLE_U), (104.0, 16.0, BILGE_U), (64.0, 16.0, NOISE_U)):
+    for w, h, u in ((150.0, 16.0, DROP_U), (96.0, 16.0, TOGGLE_U), (104.0, 16.0, BILGE_U), (64.0, 16.0, NOISE_U)):
         labels.append(box(w, h, 2.0).moved(bd.Location(surf(w, h, u, LABEL_V))))
     parts = ([Solid(console, "interior_panel"), Solid(inset, "interior_dark"), Solid(kick, "hazard_stripe"),
-              Solid(pipe, "hull_metal"), Solid(hose, "hull_metal")]
-             + [Solid(s, "hull_metal") for s in brackets] + [Solid(plate, "label_plate")]
-             + [Solid(s, "label_plate") for s in labels] + [Solid(r, "control_interface") for r in rails]
-             + [Solid(p, "interior_dark") for p in posts])
+              Solid(pod, "interior_panel")]
+             + [Solid(s, "hull_metal") for s in pipes + joints + flanges + brackets] + [Solid(plate, "label_plate")]
+             + [Solid(s, "label_plate") for s in labels])
     expect_in_front(parts, SLUG)
-    return parts, {"rails": rails, "brackets": brackets, "pipe": pipe, "plate": plate, "hose": hose}
+    return parts, {"pipes": pipes + joints, "pod": pod, "plate": plate}
 
 
 def _seg_hits(a: np.ndarray, b: np.ndarray, bx: tuple, margin: float = 0.0) -> bool:
@@ -274,7 +275,9 @@ def checks(its: list[Item], parts: list[Solid], local: dict) -> dict:
     for name in ("FloodWheel", "BlowWheel"):
         i = by[name]
         expect(abs(i.origin[1] - PIPE_Y) < 0.01, f"{name} sits on the ballast pipe")
-        expect(PIPE_X0 + 100.0 <= i.origin[0] <= PIPE_X1 - 100.0, f"{name}'s pipe run lies within the ballast pipe")
+        run = (RISER_X, PIPE_END)
+        expect(run[0] <= abs(i.origin[0]) - 100.0 and abs(i.origin[0]) + 100.0 <= run[1],
+               f"{name}'s pipe run lies within the horizontal section of its pipe, clear of the elbow")
     # Grab boxes apart, within each plane (a hand between neighbours).
     for plane in ("wall", "console"):
         grp = [i for i in its if i.plane == plane]
@@ -322,7 +325,7 @@ def checks(its: list[Item], parts: list[Solid], local: dict) -> dict:
         targets[n] = (by[n], by[n].local_to_world((0.0, 0.0, 14.0)))
     sw = by["BilgeSwitch"]
     targets["BilgeSwitch lamp"] = (sw, sw.local_to_world((0.0, 52.0, 6.0)))
-    blockers = [(i.name, i.aabb) for i in its] + [("rail", _bb(r)) for r in local["rails"]] + [("pipe", _bb(local["pipe"]))]
+    blockers = ([(i.name, i.aabb) for i in its] + [("pipe", _bb(p)) for p in local["pipes"]] + [("pod", _bb(local["pod"]))])
     for name, (owner, p) in targets.items():
         for bn, bx in blockers:
             if bn == owner.name:
@@ -367,11 +370,12 @@ def build() -> dict:
     _cameras(d)
     write_entry(GROUP, SLUG, {
         "kind": "panel",
-        "summary": "Engineering station: a ballast pipe along the hull at chest height with the FLOOD and BLOW valve wheels "
-                   "and, between them, a plate with the TANK LEVEL and AIR REMAINING gauges; a low raked console beneath "
-                   "with the guarded DROP WEIGHTS button, the BILGE PUMP switch and RUNNING lamp, the BILGE LEVEL gauge and "
-                   "the noise repeater; the manual bilge pump's lever out of the console's end. Orange grab rails, "
-                   "aluminium label plates, matte grey body.",
+        "summary": "Engineering station: two ballast pipes in from the sides, each turning down into the top of a low raked "
+                   "console as wide as the pipework, with the FLOOD and BLOW valve wheels inline on the horizontal runs and "
+                   "the TANK LEVEL and AIR REMAINING gauges on a plate between the bends; on the console the guarded DROP "
+                   "WEIGHTS button, the BILGE PUMP switch and RUNNING lamp, the BILGE LEVEL gauge and the noise repeater; the "
+                   "manual bilge pump on a pod at the console's end, its lever out toward the player. Aluminium label "
+                   "plates, matte grey body.",
         "tags": ["panel", "engineering", "ballast", "flood", "blow", "valve", "drop weights", "bilge", "pump", "standing"],
         "scene": res(d / f"{SLUG}.tscn"),
         "behaviour": {"wire": {
@@ -385,7 +389,7 @@ def build() -> dict:
         "footprint_mm": [figs["along_hull_mm"], CONSOLE_D],
         "stand_out_mm": round(float(max(i.aabb[5] for i in its if i.name != "HandPump")), 1),
         "mount": "back on Z=0 against the port hull (X along the hull, Z out into the aisle); the station's centre stands "
-                 "1.1 m above the floor (Y -1100 is the floor); the pump lever runs out of the +X end toward the bilge well",
+                 "1.1 m above the floor (Y -1100 is the floor); the pump lever runs out toward the player from the console's +X end",
         "operator_eye_m": [float(v) / 1000 for v in EYE],
         "reach_m": REACH / 1000,
         "mounts": mounts_record(its),
