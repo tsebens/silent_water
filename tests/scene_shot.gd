@@ -3,7 +3,7 @@ extends Node3D
 ##   xvfb-run -a godot --path . --rendering-driver vulkan res://tests/scene_shot.tscn -- <scene.tscn> <out_dir> [cameras.json]
 ## Without cameras.json the scene is framed automatically: a three-quarter view, front, right side and top.
 ## cameras.json is a list of {name, pos: [x,y,z], look_at: [x,y,z], fov (deg) or ortho (m), light: "white"|"red"},
-## in the scene's own frame (metres). Lighting is neutral and dim, close to the sub's interior; red is the sub's red light.
+## in the scene's own frame (metres), plus optional "on": true, which drives a switch scene to its on end before the shot (put these last). Lighting is neutral and dim, close to the sub's interior; red is the sub's red light.
 
 var _env: WorldEnvironment
 var _key: DirectionalLight3D
@@ -28,6 +28,8 @@ func _ready() -> void:
 	cam.current = true
 	for spec: Dictionary in cams:
 		_set_light(String(spec.get("light", "white")))
+		if bool(spec.get("on", false)) and scene.has_method("host_set_value"):
+			scene.call("host_set_value", scene.get("max_value"))
 		var p: Array = spec["pos"]
 		var t: Array = spec["look_at"]
 		cam.position = Vector3(p[0], p[1], p[2])
