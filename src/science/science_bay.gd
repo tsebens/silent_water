@@ -24,6 +24,8 @@ func fit(t: int) -> ScienceModule:
 				module = ScanModule.new()
 			ModuleLoadout.Type.SWEEP:
 				module = SweepModule.new()
+			ModuleLoadout.Type.CAMERA:
+				module = CameraModule.new()
 			_:
 				module = ScienceModule.new()
 		module.module_type = t
