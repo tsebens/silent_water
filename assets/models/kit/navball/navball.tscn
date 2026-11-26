@@ -1,0 +1,23 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://src/interact/navball.gd" id="1"]
+[ext_resource type="PackedScene" path="res://assets/models/kit/navball/navball_housing.glb" id="2"]
+[ext_resource type="PackedScene" path="res://assets/models/kit/navball/navball_ball.glb" id="3"]
+[ext_resource type="PackedScene" path="res://assets/models/kit/navball/navball_reticle.glb" id="4"]
+[ext_resource type="PackedScene" path="res://assets/models/kit/navball/navball_dome.glb" id="5"]
+
+[node name="Navball" type="Node3D"]
+script = ExtResource("1")
+ball_path = "Ball/NavballBall"
+
+[node name="Housing" parent="." instance=ExtResource("2")]
+
+[node name="Ball" parent="." instance=ExtResource("3")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0.022)
+
+[node name="NavballBall" parent="Ball"]
+transform = Transform3D(0.62589, -0.254887, 0.737085, 0.299185, 0.951251, 0.0748958, -0.720243, 0.173648, 0.671637, 0, 0, 0)
+
+[node name="Reticle" parent="." instance=ExtResource("4")]
+
+[node name="Dome" parent="." instance=ExtResource("5")]

@@ -53,7 +53,7 @@ func test_ladder_rows_marked() -> void:
 func test_heading_marks() -> void:
 	var img: Image = _load()
 	for h in range(0, 360, 10):
-		var x: int = int(round(h * WIDTH / 360.0))
+		var x: int = int(round(((360 - h) % 360) * WIDTH / 360.0))
 		var found: bool = false
 		for dy: int in [-12, 12]:
 			if img.get_pixel(x % WIDTH, HORIZON_ROW + dy).b > 0.5:

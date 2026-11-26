@@ -12,7 +12,7 @@ The PNG is 2048 x 1024, 8-bit RGB, grey-scale MASKS, not colours. Every channel 
     B  markings: horizon line, pitch ladder with numbers, heading ticks with numbers      255 on a mark
 
 Layout. u = x / 2048 is longitude, 0 at the left edge, 360 degrees round, so heading h degrees is at
-x = h / 360 * 2048. v = y / 1024 is latitude from the apex (y = 0, +90 degrees) down to the nadir (y = 1023,
+x = (360 - h) / 360 * 2048. v = y / 1024 is latitude from the apex (y = 0, +90 degrees) down to the nadir (y = 1023,
 -90 degrees). The horizon lies between rows 511 and 512. One degree is about 5.7 px across and 5.7 px down.
 
 Markings:
@@ -118,7 +118,7 @@ def build() -> Mask:
 
     # Heading ticks and numbers.
     for h in range(0, 360, 10):
-        x = int(round(h * PX_PER_DEG_X))
+        x = int(round(((360 - h) % 360) * PX_PER_DEG_X))
         half = TICK_LONG if h % 30 == 0 else TICK_SHORT
         for y in range(HORIZON_ROW - half, HORIZON_ROW + half):
             m.fill_cols(x - TICK_PX // 2, x + TICK_PX // 2, y)
