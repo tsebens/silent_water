@@ -152,9 +152,11 @@ commits a copy as `brief.yaml` beside the scene.
   function is implemented. **Authoritative.** If the concept art draws six switches and `functions` lists one, the
   station has one.
 - `constraints`: `kind` (station or panel), the frame, the triangle budget, any size limit, and where the operator
-  is. Reach and sight lines are measured from the operator's eye: for a station with a seat, `seated_eye_height_m`
-  above the seat; for a panel, `operator_eye_m`, the eye's position in the panel's own frame. Without one of these,
-  reach and sight lines can't be checked.
+  is. The operator's eye is `seated_eye_height_m` above the seat for a station with a seat, or `operator_eye_m`, the
+  eye's position in the panel's own frame, for a panel. Without one of these, reach and sight lines can't be checked.
+  **Sight lines are measured from the eye. Reach is measured from the shoulder, 0.25 m below the eye**, and the
+  default `reach_m` is **1.1 m**, which allows for the lean or crouch a player makes for a low or far control (#553).
+  A brief may set a tighter reach, with a reason.
 
 A bind that follows the sub's pose as drawn (a render-space bind) names `SubFrame.render_transform()`, the
 smoothed pose used for rendering this frame. `SubFrame.sub_transform` is the raw replicated pose and lags or leads what
@@ -269,7 +271,7 @@ For an arc that creates or changes a generated scene:
    check. Fix the cause; never weaken a check to pass.
 4. **Test in Godot.** One test file per scene. A static part or display: it loads, has the script it should (or
    none), and its meshes fit its stated footprint and stand-out. A control: its parts are wired and it works at both
-   ends of its travel. A station or panel: the wiring, every function's control present, reach and line of sight from the seated eye,
+   ends of its travel. A station or panel: the wiring, every function's control present, reach from the shoulder and line of sight from the eye,
    grab boxes apart, displays facing the eye, controls working in place. `tools/check.sh` must pass.
 5. **Render.** `cadkit sheet <slug>` renders the scene afresh and writes `review/views.png` beside it (and, for a station, each concept
    image beside the render from its camera). Look at the result. Fix what is plainly wrong before anyone else has to.
