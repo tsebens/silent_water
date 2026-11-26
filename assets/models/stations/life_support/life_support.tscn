@@ -4,9 +4,13 @@
 [ext_resource type="Script" path="res://src/interact/canister_slot.gd" id="2"]
 [ext_resource type="PackedScene" path="res://assets/models/furniture/scrubber_canister/scrubber_canister.tscn" id="3"]
 [ext_resource type="PackedScene" path="res://assets/models/kit/linear_gauge/linear_gauge.tscn" id="4"]
+[ext_resource type="PackedScene" path="res://assets/models/kit/gauge/gauge.tscn" id="5"]
+[ext_resource type="PackedScene" path="res://assets/models/kit/indicator_lamp/indicator_lamp.tscn" id="6"]
+[ext_resource type="PackedScene" path="res://assets/models/kit/guarded_toggle/guarded_toggle.tscn" id="7"]
+[ext_resource type="PackedScene" path="res://src/noise/noise_gauge.tscn" id="8"]
 
 [sub_resource type="BoxShape3D" id="unit"]
-size = Vector3(1, 1.9, 0.5)
+size = Vector3(1, 2.26, 0.57)
 
 [node name="LifeSupport" type="Node3D"]
 
@@ -15,7 +19,7 @@ size = Vector3(1, 1.9, 0.5)
 [node name="Collision" type="StaticBody3D" parent="."]
 
 [node name="Unit" type="CollisionShape3D" parent="Collision"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.95, 0.25)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.13, 0.285)
 shape = SubResource("unit")
 
 [node name="OperatorPoint" type="Node3D" parent="."]
@@ -25,30 +29,112 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0.65)
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.65, 0.65)
 
 [node name="UpperPanelAnchor" type="Node3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.56, 0.5)
+transform = Transform3D(1, 0, 0, 0, 0.707107, -0.707107, 0, 0.707107, 0.707107, 0, 1.85434, 0.21583)
 
 [node name="CradleA" type="Node3D" parent="."]
 script = ExtResource("2")
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.3, 1.188, 0.34)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.17, 1.5, 0.120174)
 
 [node name="CanisterA" parent="." instance=ExtResource("3")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.3, 1.188, 0.34)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.17, 1.5, 0.120174)
 
 [node name="SaturationA" parent="." instance=ExtResource("4")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.1, 1.26, 0.24)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.33, 1.534, 0.210174)
 source_group = &"life_support_readouts"
 readout = &"saturation_a"
 max_value = 1
 
 [node name="CradleB" type="Node3D" parent="."]
 script = ExtResource("2")
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.18, 1.188, 0.34)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.17, 1.5, 0.120174)
 
 [node name="CanisterB" parent="." instance=ExtResource("3")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.18, 1.188, 0.34)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.17, 1.5, 0.120174)
 
 [node name="SaturationB" parent="." instance=ExtResource("4")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.38, 1.26, 0.24)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.33, 1.534, 0.210174)
 source_group = &"life_support_readouts"
 readout = &"saturation_b"
 max_value = 1
+
+[node name="Storage1" type="Node3D" parent="."]
+script = ExtResource("2")
+transform = Transform3D(1, 0, 0, 0, 0.743145, -0.669131, 0, 0.669131, 0.743145, -0.2, 0.855185, 0.217882)
+
+[node name="Stored1" parent="." instance=ExtResource("3")]
+transform = Transform3D(1, 0, 0, 0, 0.743145, -0.669131, 0, 0.669131, 0.743145, -0.2, 0.855185, 0.217882)
+
+[node name="Storage2" type="Node3D" parent="."]
+script = ExtResource("2")
+transform = Transform3D(1, 0, 0, 0, 0.743145, -0.669131, 0, 0.669131, 0.743145, 0, 0.855185, 0.217882)
+
+[node name="Stored2" parent="." instance=ExtResource("3")]
+transform = Transform3D(1, 0, 0, 0, 0.743145, -0.669131, 0, 0.669131, 0.743145, 0, 0.855185, 0.217882)
+
+[node name="Storage3" type="Node3D" parent="."]
+script = ExtResource("2")
+transform = Transform3D(1, 0, 0, 0, 0.743145, -0.669131, 0, 0.669131, 0.743145, 0.2, 0.855185, 0.217882)
+
+[node name="Stored3" parent="." instance=ExtResource("3")]
+transform = Transform3D(1, 0, 0, 0, 0.743145, -0.669131, 0, 0.669131, 0.743145, 0.2, 0.855185, 0.217882)
+
+[node name="Storage4" type="Node3D" parent="."]
+script = ExtResource("2")
+transform = Transform3D(1, 0, 0, 0, 0.743145, -0.669131, 0, 0.669131, 0.743145, -0.2, 0.978305, 0.0811433)
+
+[node name="Storage5" type="Node3D" parent="."]
+script = ExtResource("2")
+transform = Transform3D(1, 0, 0, 0, 0.743145, -0.669131, 0, 0.669131, 0.743145, 0, 0.978305, 0.0811433)
+
+[node name="Stored5" parent="." instance=ExtResource("3")]
+transform = Transform3D(1, 0, 0, 0, 0.743145, -0.669131, 0, 0.669131, 0.743145, 0, 0.978305, 0.0811433)
+
+[node name="Storage6" type="Node3D" parent="."]
+script = ExtResource("2")
+transform = Transform3D(1, 0, 0, 0, 0.743145, -0.669131, 0, 0.669131, 0.743145, 0.2, 0.978305, 0.0811433)
+
+[node name="O2Gauge" parent="." instance=ExtResource("5")]
+transform = Transform3D(1, 0, 0, 0, 0.707107, -0.707107, 0, 0.707107, 0.707107, -0.31, 2.00991, 0.385536)
+radius = 0.055
+title = "O2"
+source_group = &"life_support_readouts"
+readout = &"o2_level"
+min_value = 0
+max_value = 1
+
+[node name="Co2LevelGauge" parent="." instance=ExtResource("5")]
+transform = Transform3D(1, 0, 0, 0, 0.707107, -0.707107, 0, 0.707107, 0.707107, -0.105, 2.00991, 0.385536)
+radius = 0.055
+title = "CO2"
+source_group = &"life_support_readouts"
+readout = &"co2_level"
+min_value = 0
+max_value = 1
+
+[node name="Co2RateGauge" parent="." instance=ExtResource("5")]
+transform = Transform3D(1, 0, 0, 0, 0.707107, -0.707107, 0, 0.707107, 0.707107, 0.105, 2.00991, 0.385536)
+radius = 0.055
+title = "CO2 RATE"
+source_group = &"life_support_readouts"
+readout = &"co2_capacity_rate"
+readout_b = &"co2_production_rate"
+min_value = 0
+max_value = 1
+
+[node name="O2AlarmLamp" parent="." instance=ExtResource("6")]
+transform = Transform3D(1, 0, 0, 0, 0.707107, -0.707107, 0, 0.707107, 0.707107, -0.31, 1.90243, 0.263914)
+
+[node name="Co2AlarmLamp" parent="." instance=ExtResource("6")]
+transform = Transform3D(1, 0, 0, 0, 0.707107, -0.707107, 0, 0.707107, 0.707107, -0.105, 1.90243, 0.263914)
+
+[node name="FanToggle" parent="." instance=ExtResource("7")]
+transform = Transform3D(1, 0, 0, 0, 0.669131, 0.743145, 0, -0.743145, 0.669131, 0.352, 1.22578, 0.277057)
+label = "FANS"
+initial_value = 1
+
+[node name="FanLamp" parent="." instance=ExtResource("6")]
+transform = Transform3D(1, 0, 0, 0, 0.669131, 0.743145, 0, -0.743145, 0.669131, 0.412, 1.22578, 0.277057)
+
+[node name="NoiseRepeater" parent="." instance=ExtResource("8")]
+transform = Transform3D(1, 0, 0, 0, 0.707107, -0.707107, 0, 0.707107, 0.707107, 0.31, 2.00991, 0.385536)
+radius = 0.055

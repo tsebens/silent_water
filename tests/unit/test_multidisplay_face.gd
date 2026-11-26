@@ -75,3 +75,12 @@ func test_pilot_preset_matches_sub_controller() -> void:
 	expect_eq(d.ring_readout, &"air_fraction")
 	d.free()
 	sub.queue_free()
+
+
+func test_default_swatches_resolve() -> void:
+	var d: MultiDisplay = MultiDisplay.new()
+	var pal: Palette = Palette.main()
+	for name: StringName in [d.face_swatch, d.rim_swatch, d.ring_ok_swatch,
+			d.ring_warn_swatch, d.ring_alarm_swatch, d.ring_unlit_swatch]:
+		expect(pal.has(name), "default swatch '%s' is a real swatch" % name)
+	d.free()
