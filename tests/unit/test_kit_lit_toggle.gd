@@ -42,8 +42,21 @@ func test_bat_works_at_both_ends() -> void:
 	expect_near(s.pivot.rotation.x, -deg_to_rad(s.swing_deg * 0.5), 1e-4, "on: bat up")
 	s.host_set_value(s.min_value)
 	expect_near(s.pivot.rotation.x, deg_to_rad(s.swing_deg * 0.5), 1e-4, "off: bat down")
-	expect_eq(s._release_value(0.8), s.max_value, "snaps to on")
-	expect_eq(s._release_value(0.2), s.min_value, "snaps to off")
+	s.queue_free()
+
+
+func test_click_flips_the_toggle_and_its_lamp() -> void:
+	var s: SwitchLever = _make()
+	s.begin_interaction()
+	s.click_action()
+	s.end_interaction()
+	expect_eq(s.get_value(), s.max_value, "click: on")
+	expect(_lamp(s).is_lit(), "lamp lit")
+	s.begin_interaction()
+	s.click_action()
+	s.end_interaction()
+	expect_eq(s.get_value(), s.min_value, "second click: off")
+	expect(not _lamp(s).is_lit(), "lamp dark")
 	s.queue_free()
 
 
