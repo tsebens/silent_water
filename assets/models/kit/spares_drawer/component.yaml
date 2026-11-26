@@ -1,0 +1,37 @@
+slug: spares_drawer
+group: kit
+kind: display
+summary: 'Clear-fronted spares drawer: a recessed tray behind glass holding up to four spare breaker modules (stand-ins
+  from breaker_module''s body), label plate SPARES. The first N slots show, N being the spares readout.'
+tags:
+- spares
+- breaker
+- drawer
+- power
+- display
+- glass
+scene: res://assets/models/kit/spares_drawer/spares_drawer.tscn
+behaviour:
+  script: SparesDrawer
+  values: shows the first N of its four slots, N = spares_remaining clamped to 4
+  signal: 'none: display only'
+  wiring: '`slots` is set in the scene (nodes Spare1, Spare2, Spare3, Spare4); on a child node `Drawer`'
+slots:
+- Spare1
+- Spare2
+- Spare3
+- Spare4
+slot_count: 4
+footprint_mm:
+- 690.0
+- 160.0
+stand_out_mm: 39.0
+mount: back on Z=0, centred; faces +Z; spares lie face-out in the tray, handle-less
+uses:
+- breaker_module
+triangles: 244
+built_by: tools/cadkit/scenes/spares_drawer.py
+files:
+- component.yaml
+- spares_drawer.glb
+- spares_drawer.tscn
