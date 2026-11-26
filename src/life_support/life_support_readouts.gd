@@ -45,6 +45,10 @@ func readout(readout_name: StringName) -> float:
 			return saturation_a
 		&"saturation_b":
 			return saturation_b
+		&"capacity_a":
+			return 1.0 - saturation_a
+		&"capacity_b":
+			return 1.0 - saturation_b
 	return 0.0
 
 
