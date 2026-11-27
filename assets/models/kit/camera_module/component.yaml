@@ -1,0 +1,43 @@
+slug: camera_module
+group: kit
+kind: display
+summary: 'CAMERA science module: the shared module chassis with a hooded viewfinder screen, a light meter and a
+  stillness indicator (linear gauges on their sides) and a red shutter push button. The root is a CameraModule;
+  the gauges read it by group.'
+tags:
+- science
+- module
+- camera
+- viewfinder
+- photo
+- shutter
+- light meter
+- stillness
+- hood
+scene: res://assets/models/kit/camera_module/camera_module.tscn
+behaviour:
+  script: CameraModule
+  values: armed off/on; light_meter(), stillness_meter() 0..1
+  signal: Shutter (PushButton) value_changed
+  wiring: the gauges find the module by group `camera_modules`; the station draws the view on the viewfinder glass
+    and calls the objective's take_shot from Shutter.value_changed
+footprint_mm:
+- 340.0
+- 280.0
+stand_out_mm: 106.0
+depth_mm:
+  behind_origin: 0.0
+  in_front_of_origin: 106.0
+mount: 'as science_module_frame: back on Z=0, centred; faces +Z; the rear body slides into a bay about 0.35 m wide'
+uses:
+- science_module_frame
+- linear_gauge
+- push_button
+triangles: 1332
+built_by: tools/cadkit/scenes/camera_module.py
+files:
+- camera_module.tscn
+- camera_module_face.glb
+- component.yaml
+- review/.gdignore
+- review/cameras.json
