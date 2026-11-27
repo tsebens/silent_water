@@ -25,6 +25,7 @@
 [ext_resource type="PackedScene" path="res://assets/models/panels/electrical_station/electrical_station.tscn" id="electrical_station"]
 [ext_resource type="PackedScene" path="res://assets/models/panels/engineering_station/engineering_station.tscn" id="engineering_station"]
 [ext_resource type="PackedScene" path="res://assets/models/stations/life_support/life_support.tscn" id="life_support_station"]
+[ext_resource type="PackedScene" path="res://assets/models/panels/countermeasures_station/countermeasures_station.tscn" id="countermeasures_station"]
 [ext_resource type="Material" path="res://assets/palette/roles/trim_black.tres" id="hose_mat"]
 [ext_resource type="Script" path="res://src/interact/joystick_indicator.gd" id="joy_ind"]
 [ext_resource type="Script" path="res://src/sub/headlight_switch.gd" id="headlight_switch"]
@@ -370,6 +371,28 @@ collision_mask = 0
 [node name="Shape" type="CollisionShape3D" parent="Stations/Science/Station/Grab"]
 position = Vector3(0, 0.2, 0.5)
 shape = SubResource("science_grab")
+
+[node name="Countermeasures" type="Node3D" parent="Stations"]
+script = ExtResource("station_placement")
+station_id = &"countermeasures"
+placements = {
+"Panel": Vector3(0.225, 1.1, 0)
+}
+
+[node name="Panel" parent="Stations/Countermeasures" instance=ExtResource("countermeasures_station")]
+rotation = Vector3(0, -1.5708, 0)
+
+[node name="ForeFire" parent="Stations/Countermeasures/Panel" node_paths=PackedStringArray("tube")]
+tube = NodePath("../../../ForeLoader/Tube")
+
+[node name="AftFire" parent="Stations/Countermeasures/Panel" node_paths=PackedStringArray("tube")]
+tube = NodePath("../../../AftLoader/Tube")
+
+[node name="ForeLamps" parent="Stations/Countermeasures/Panel" node_paths=PackedStringArray("tube")]
+tube = NodePath("../../../ForeLoader/Tube")
+
+[node name="AftLamps" parent="Stations/Countermeasures/Panel" node_paths=PackedStringArray("tube")]
+tube = NodePath("../../../AftLoader/Tube")
 
 [node name="Engineering" type="Node3D" parent="Stations"]
 script = ExtResource("station_placement")

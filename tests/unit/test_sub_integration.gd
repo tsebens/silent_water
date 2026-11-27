@@ -178,7 +178,7 @@ func test_the_science_and_countermeasures_footprints_are_clear() -> void:
 	for id: StringName in [&"science", &"countermeasures"]:
 		var fp: Rect2 = SubLayout.top_footprint(id).grow(-0.001)
 		for n: Node in interior.get_node("Stations").find_children("*", "Node3D", true, false):
-			if interior.get_node("Stations/Maps").is_ancestor_of(n):
+			if interior.get_node("Stations/Maps").is_ancestor_of(n) or interior.get_node("Stations/Countermeasures").is_ancestor_of(n):
 				continue
 			var p: Vector3 = (n as Node3D).global_position
 			expect(not (fp.has_point(Vector2(p.x, p.z)) and p.y < 1.0 + SubLayout.position(id).y), "%s is inside %s" % [n.get_path(), id])
