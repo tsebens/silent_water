@@ -12,6 +12,12 @@ extends Interactable
 @export var allows_grabbing: bool = false
 
 
+## Whether a seated player may grab [param node]. By default all or nothing,
+## per [member allows_grabbing]; seats with a few controls in reach override it.
+func allow_grab(_node: Interactable) -> bool:
+	return allows_grabbing
+
+
 func seat_transform() -> Transform3D:
 	return sit_point.global_transform if sit_point != null else global_transform
 

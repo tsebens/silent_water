@@ -387,7 +387,7 @@ func _activate() -> void:
 ## Grabs it unless a seat forbids grabbing.
 func press_interact(node: Interactable) -> void:
 	_interact_down = true
-	if _seat == null or _seat.allows_grabbing:
+	if _seat == null or _seat.allow_grab(node):
 		_try_grab(node)
 
 
