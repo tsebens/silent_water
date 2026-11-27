@@ -1,9 +1,9 @@
 slug: bat_toggle
 group: kit
 kind: control
-summary: 'Lit bat toggle: a light grey paddle with deep grip ridges rocking about X in a shallow recessed bay, a
-  small swing and low stand-out. A rectangular LED loop round the bay is lit at on and dark at off, with nothing
-  wired on the instance. No round lamp.'
+summary: 'Lit bat toggle: a light grey flip lever with deep grip ridges standing out of a shallow recessed bay and
+  flipping up and down about X, a small swing and low stand-out. A rectangular LED loop round the bay is lit at
+  on and dark at off, with nothing wired on the instance. No round lamp.'
 tags:
 - toggle
 - switch
@@ -17,29 +17,29 @@ tags:
 scene: res://assets/models/kit/bat_toggle/bat_toggle.tscn
 behaviour:
   script: SwitchLever
-  values: 0 off (upper end out, loop dark), 1 on (upper end pressed in, loop lit)
+  values: 0 off (lever tipped to -Y, loop dark), 1 on (lever tipped to +Y, loop lit)
   signal: value_changed
   wiring: 'none: `indicator` is set to the IndicatorLamp node'
 base: 1x2
 footprint_mm:
 - 56.0
 - 116.0
-stand_out_mm: 25
+stand_out_mm: 28
 swing_envelope:
   swing_deg: 30.0
-  paddle_travel_deg: +/-15 about X through the centre
+  paddle_travel_deg: +/-15 about X; the lever tip travels along Y
   within_mm:
   - 26.0
   - 62.0
-  stand_out_mm: 25
+  stand_out_mm: 28
   note: the bar toggle (lit_toggle) stands 56 mm out
-mount: back on Z=0, centred; front +Z; on presses the upper (+Y) end in; the LED loop encircles the bay
+mount: back on Z=0, centred; front +Z; on flips the lever toward +Y; the LED loop encircles the bay
 set_on_instance:
   label: name at the aiming point
 uses:
 - control_base
 - led_strip
-triangles: 444
+triangles: 404
 built_by: tools/cadkit/scenes/bat_toggle.py
 files:
 - bat_toggle.tscn

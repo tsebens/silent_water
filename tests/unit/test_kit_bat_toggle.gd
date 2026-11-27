@@ -54,9 +54,9 @@ func test_loop_follows_the_switch_with_no_setup() -> void:
 func test_both_ends_of_travel_are_reached() -> void:
 	var s: SwitchLever = _make()
 	s.host_set_value(s.max_value)
-	expect_near(s.pivot.rotation.x, -deg_to_rad(s.swing_deg * 0.5), 1e-4, "on: upper end in")
+	expect_near(s.pivot.rotation.x, -deg_to_rad(s.swing_deg * 0.5), 1e-4, "on: lever tipped to +Y")
 	s.host_set_value(s.min_value)
-	expect_near(s.pivot.rotation.x, deg_to_rad(s.swing_deg * 0.5), 1e-4, "off: upper end out")
+	expect_near(s.pivot.rotation.x, deg_to_rad(s.swing_deg * 0.5), 1e-4, "off: lever tipped to -Y")
 	s.queue_free()
 
 
@@ -84,8 +84,8 @@ func test_footprint_and_stand_out_match_the_entry() -> void:
 		expect(b.size.x <= 0.0561 and b.size.y <= 0.1161, "within the 56 x 116 mm footprint: %s" % b)
 		expect(b.position.z >= -0.0001, "nothing behind the mount face: %s" % b)
 		worst = maxf(worst, b.end.z)
-	expect(worst <= 0.0251, "no more than 25 mm out at either end: %f" % worst)
-	expect(worst >= 0.0235, "stands out near the stated 25 mm at its extreme: %f" % worst)
+	expect(worst <= 0.0281, "no more than 28 mm out at either end: %f" % worst)
+	expect(worst >= 0.0265, "stands out near the stated 28 mm at its extreme: %f" % worst)
 	var paddle: AABB = _bounds(s.get_node("Pivot") as Node3D, s)
-	expect(paddle.size.y < 0.062 and paddle.size.x < 0.026, "paddle inside the 26 x 62 mm bay: %s" % paddle)
+	expect(paddle.size.y < 0.062 and paddle.size.x < 0.026, "lever inside the 26 x 62 mm bay: %s" % paddle)
 	s.queue_free()

@@ -1,8 +1,8 @@
 """bat_toggle: a lit two-position bat switch on the 1x2 base, with a small swing and a low stand-out.
 
-Brief (concept #700): a light-grey paddle bat with deep horizontal grip ridges pivots about X at the centre of a shallow
+Brief (concept #700): a light-grey bat lever with deep horizontal grip ridges stands out of the bay and flips about X at the centre of a shallow
 recessed bay. A rectangular LED loop (led_strip's `loop_lens`) follows the bay's border: dark at off, lit at on. No round
-lamp. Behaviour: SwitchLever, whose `indicator` is the loop's IndicatorLamp. On presses the upper (+Y) end in.
+lamp. Behaviour: SwitchLever, whose `indicator` is the loop's IndicatorLamp. On tips the lever toward +Y.
 Three GLBs: the bay and frame (static), the paddle (own frame, pivot through the origin about X) and the loop lens.
 """
 import json
@@ -20,19 +20,20 @@ BASE = (1, 2)
 FRAME_W, FRAME_H_Y, FRAME_Z = 36.0, 72.0, 3.0      # raised frame round the bay (X, Y, height above the plate)
 BAY_W, BAY_H_Y, FLOOR_Z = 26.0, 62.0, 1.0          # the recess: floor FLOOR_Z above the plate
 LOOP_BAR, LOOP_GAP, LOOP_Z = 3.0, 0.5, 1.2         # LED loop round the frame
-PAD_W, PAD_L, PAD_BOT, PAD_TOP = 21.0, 36.0, -2.0, 5.0   # paddle, in its own frame (pivot on the X axis through the origin)
-GROOVES, GROOVE_W, GROOVE_D = 5, 2.4, 2.6
-HINGE_Z = PLATE_T_MM + FLOOR_Z + 8.0
+PAD_W, PAD_T, PAD_BOT, PAD_LEN = 21.0, 7.0, -2.0, 16.0   # paddle in its own frame: wide in X, thick in Y, standing out along +Z from the pivot on the X axis
+GROOVES, GROOVE_W, GROOVE_D = 4, 2.0, 1.6
+HINGE_Z = PLATE_T_MM + FLOOR_Z + 4.0
 SWING_DEG = 30.0                                   # total; +/-15 degrees about X
 MAX_STAND_OUT = 30.0                               # lit_toggle stands 56 mm out; this is about half
 
 
 def _paddle() -> bd.Shape:
-    pad = at(box(PAD_W, PAD_L, PAD_TOP - PAD_BOT, chamfer_mm=1.0), z=PAD_BOT)
-    pitch = (PAD_L - 6.0) / (GROOVES - 1)
+    """A flip-switch lever: stands out along +Z from the pivot, ridged across its +Y face (the face that leads on)."""
+    pad = at(box(PAD_W, PAD_T, PAD_LEN - PAD_BOT, chamfer_mm=1.0), z=PAD_BOT)
+    pitch = (PAD_LEN - 5.0) / (GROOVES - 1)
     for i in range(GROOVES):
-        y = -PAD_L / 2 + 3.0 + i * pitch
-        pad = pad - at(box(PAD_W + 2.0, GROOVE_W, GROOVE_D), 0, y, PAD_TOP - GROOVE_D)
+        z = 4.0 + i * pitch
+        pad = pad - at(box(PAD_W + 2.0, GROOVE_D, GROOVE_W), 0, PAD_T / 2 - GROOVE_D / 2 + 0.01, z - GROOVE_W / 2)
     return pad
 
 
@@ -68,7 +69,7 @@ def solids():
         expect((t & frame).volume < 1e-6, f"paddle clear of the frame at {sgn * half:+g} deg")
         stand = max(stand, thi[2])
     expect(stand <= MAX_STAND_OUT, f"stand-out {stand:.1f} mm, well under the bar toggle's 56 mm (limit {MAX_STAND_OUT})")
-    expect(stand > PLATE_T_MM + FRAME_Z, "paddle stands proud of the frame")
+    expect(stand > PLATE_T_MM + FRAME_Z + 8.0, "lever stands well proud of the frame")
     # the loop clear of the bolts and the bay
     for bx, by in scene_module("control_base").bolt_positions(*BASE):
         expect(abs(bx) - 3.5 >= lhi[0] or abs(by) - 3.5 >= lhi[1], f"loop clear of bolt {bx:g},{by:g}")
@@ -106,20 +107,20 @@ def build() -> dict:
     _review(d)
     write_entry(GROUP, SLUG, {
         "kind": "control",
-        "summary": "Lit bat toggle: a light grey paddle with deep grip ridges rocking about X in a shallow recessed bay, "
+        "summary": "Lit bat toggle: a light grey flip lever with deep grip ridges standing out of a shallow recessed bay and flipping up and down about X, "
                    "a small swing and low stand-out. A rectangular LED loop round the bay is lit at on and dark at off, "
                    "with nothing wired on the instance. No round lamp.",
         "tags": ["toggle", "switch", "bat", "paddle", "lit", "led", "on-off", "indicator", "low-profile"],
         "scene": res(d / f"{SLUG}.tscn"),
-        "behaviour": {"script": "SwitchLever", "values": "0 off (upper end out, loop dark), 1 on (upper end pressed in, loop lit)",
+        "behaviour": {"script": "SwitchLever", "values": "0 off (lever tipped to -Y, loop dark), 1 on (lever tipped to +Y, loop lit)",
                       "signal": "value_changed", "wiring": "none: `indicator` is set to the IndicatorLamp node"},
         "base": f"{BASE[0]}x{BASE[1]}",
         "footprint_mm": [w, h],
         "stand_out_mm": math.ceil(stand),
-        "swing_envelope": {"swing_deg": SWING_DEG, "paddle_travel_deg": "+/-15 about X through the centre",
+        "swing_envelope": {"swing_deg": SWING_DEG, "paddle_travel_deg": "+/-15 about X; the lever tip travels along Y",
                            "within_mm": [BAY_W, BAY_H_Y], "stand_out_mm": math.ceil(stand),
                            "note": "the bar toggle (lit_toggle) stands 56 mm out"},
-        "mount": "back on Z=0, centred; front +Z; on presses the upper (+Y) end in; the LED loop encircles the bay",
+        "mount": "back on Z=0, centred; front +Z; on flips the lever toward +Y; the LED loop encircles the bay",
         "set_on_instance": {"label": "name at the aiming point"},
         "uses": USES,
         "triangles": tris,
