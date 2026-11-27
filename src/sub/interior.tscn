@@ -10,7 +10,6 @@
 [ext_resource type="PackedScene" path="res://src/damage/leak.tscn" id="7"]
 [ext_resource type="PackedScene" path="res://src/power/junction_box.tscn" id="junction_box"]
 [ext_resource type="PackedScene" path="res://src/interact/bilge_pump.tscn" id="8"]
-[ext_resource type="PackedScene" path="res://src/interact/lever.tscn" id="12"]
 [ext_resource type="Script" path="res://src/map/holo_map.gd" id="15"]
 [ext_resource type="Script" path="res://src/map/map_table_observer.gd" id="obs_seat"]
 [ext_resource type="Script" path="res://src/map/map_table.gd" id="16"]
@@ -284,11 +283,6 @@ label = "rudder"
 [node name="Planes" type="Node3D" parent="Stations/Pilot"]
 script = ExtResource("5")
 label = "dive planes"
-
-[node name="Dimmer" parent="Stations/Pilot" instance=ExtResource("12")]
-position = Vector3(-0.62, 0.3, 0.1)
-initial_value = 1.0
-label = "cabin lights"
 
 [node name="ExternalLightSwitch" parent="Stations/Pilot/Anchors"]
 initial_value = 1.0

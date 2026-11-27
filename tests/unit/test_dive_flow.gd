@@ -104,17 +104,12 @@ func test_surfacing_without_scan_does_not_complete() -> void:
 	expect_eq(director.phase, DiveDirector.Phase.DIVING)
 
 
-func test_cabin_dimmer_dims_cabin_but_not_headlight() -> void:
+func test_cabin_lights_hold_full_level_but_not_the_headlight() -> void:
 	var cabin: CabinLights = game.get_node("CabinLights") as CabinLights
-	var dimmer: Lever = game.get_node("Interior/Stations/Pilot/Dimmer") as Lever
-	var fore: OmniLight3D = game.get_node("Interior/Lights/Fore") as OmniLight3D
 	var head: SpotLight3D = game.get_node("Interior/Lights/Headlight") as SpotLight3D
-	await _frames(2)
-	var bright: float = fore.light_energy
 	var head_before: float = head.light_energy
-	dimmer.host_set_value(0.0)
 	await _frames(2)
-	expect_near(fore.light_energy, bright * CabinLights.MIN_LEVEL, 0.001, "dimmed to near dark")
+	expect_eq(cabin.level(), 1.0, "fixed level")
 	expect_eq(head.light_energy, head_before, "headlight untouched")
 	expect(cabin.cabin_lights().size() == 10, "ten cabin lights (four room lights, two coves, scanner and status board spots, two map table work lamps)")
 
@@ -140,28 +135,14 @@ func test_dev_log_captures_engine_output() -> void:
 	expect(found)
 
 
-func test_dimmer_scales_every_cabin_light_including_the_coves() -> void:
+func test_cove_lights_are_cabin_lights() -> void:
 	var lights: CabinLights = game.get_node("CabinLights") as CabinLights
-	var dimmer: Lever = game.get_node("Interior/Stations/Pilot/Dimmer") as Lever
 	var cabin: Array[Light3D] = lights.cabin_lights()
 	var names: Array[String] = []
 	for l: Light3D in cabin:
 		names.append(String(l.name))
 	expect(names.has("CoveLeft") and names.has("CoveRight"), "cove lights are cabin lights (%s)" % str(names))
 	expect(cabin.size() <= 10, "a handful of lights (%d)" % cabin.size())
-	var base: Dictionary = {}
-	dimmer.host_set_value(1.0)
-	await _frames(3)
-	for l: Light3D in cabin:
-		base[l.name] = l.light_energy
-	dimmer.host_set_value(0.0)
-	await _frames(3)
-	for l: Light3D in cabin:
-		expect_near(l.light_energy, float(base[l.name]) * CabinLights.MIN_LEVEL, 0.001, "%s dims to MIN_LEVEL" % l.name)
-	dimmer.host_set_value(1.0)
-	await _frames(3)
-	for l: Light3D in cabin:
-		expect_near(l.light_energy, float(base[l.name]), 0.001, "%s back to full" % l.name)
 
 
 func test_no_visible_strip_meshes_under_the_lights() -> void:

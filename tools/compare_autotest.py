@@ -29,10 +29,6 @@ def main() -> int:
         who = r["role"]
         if len(r["players"]) != expected:
             errors.append(f"{who} sees {len(r['players'])} players, expected {expected}")
-        if not near(r["lever"], 0.0, 0.001):
-            errors.append(f"{who} cabin lights lever={r['lever']} (expected 0: Crew3 must be rejected)")
-        if r["lever_holder"] != 0:
-            errors.append(f"{who} cabin lights lever still held by {r['lever_holder']}")
         if r["throttle"] < 0.9:
             errors.append(f"{who} throttle={r['throttle']} (Crew3 held W from the helm)")
         if not near(r["flood"], 0.5, 0.1):
@@ -68,7 +64,7 @@ def main() -> int:
     if reports:
         ref = reports[0]
         for r in reports[1:]:
-            for key, tol in (("lever", 0.001), ("throttle", 0.01), ("flood", 0.005), ("rudder", 0.05), ("depth", 0.5), ("tank", 0.02), ("sub_db", 1.5), ("ambient_db", 0.1)):
+            for key, tol in (("throttle", 0.01), ("flood", 0.005), ("rudder", 0.05), ("depth", 0.5), ("tank", 0.02), ("sub_db", 1.5), ("ambient_db", 0.1)):
                 if not near(r[key], ref[key], tol):
                     errors.append(f"{key} disagrees: {ref['role']}={ref[key]} {r['role']}={r[key]}")
             if r["apex_state"] != ref["apex_state"]:

@@ -46,7 +46,7 @@ func test_one_of_each_and_no_old_pods() -> void:
 	expect_eq(_count(interior.get_node("Stations/Maps/PilotHolo").get_parent(), &"HoloMap"), 2, "pilot and table holograms")
 	for gone: String in ["LeftPod", "RightPod", "CenterPod"]:
 		expect(_pilot().get_node_or_null(gone) == null, "%s is gone" % gone)
-	for path: String in ["Seat", "Throttle", "Rudder", "Planes", "Dimmer", "Strip"]:
+	for path: String in ["Seat", "Throttle", "Rudder", "Planes", "Strip"]:
 		expect(_pilot().get_node_or_null(path) != null, "%s resolves" % path)
 	expect_eq(_count(_pilot(), &"Gauge"), 2, "two dials: the speed gauge and the noise repeater")
 
