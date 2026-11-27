@@ -1,0 +1,58 @@
+# Station brief for the electrical station (concept #534), from the concept issue.
+station: electrical_station
+
+concept:
+  images:
+    - path: assets/models/electrical/concept/electrical_primary.png
+      role: primary            # the board to build
+      view: a standing crew member in the aisle, slightly behind and to the left of the board
+      camera: concept_primary
+    - path: assets/models/electrical/concept/electrical_generator_future_reference.png
+      role: context            # ONLY its analogue LOAD meter is used; its visible generator and its board are NOT built
+      view: from the aisle
+      camera: concept_load_meter
+  doc: assets/models/electrical/concept/electrical_concept.md
+  compare_on:
+    - overall massing: a tall flat board from knee to head height, flat against the hull, with orange grab rails either side
+    - the layout top to bottom: the generator section; the 3 x 3 breaker grid; the spares drawer; the battery bar down the right edge with the load meter
+    - the breakers as chunky toggles, each with its own lamp and label
+    - colour blocking, matching the life support unit
+  ignore:
+    - the exact labels, numbers and lamp states drawn in the art
+    - the crew member, the cable trays and junction box drawn beside it, lighting mood
+
+functions:
+  - id: breakers
+    control: "nine breaker modules in a 3 x 3 grid, each a chunky toggle with a status lamp and an engraved label (MOTOR, THRUSTERS, BILGE PUMP, CABIN LTS, EXT LTS, SONAR, FANS, HELM, DISPLAYS); clicked with the mouse. States read at a glance from the handle and the lamp: on (up, green); off (down, dark); tripped (handle mid-way, amber), reset by switching it back on; blown (red, or the handle limp), replaced from the spares"
+    binds: PowerSystem breaker switch requests and per-breaker state readouts (#541, #542)
+    status: control only; PowerSystem is being built in M14
+  - id: replace_breaker
+    control: interacting with a blown breaker while spares remain swaps it, pulling the dead module and seating a spare, then it can be switched on; the spares drawer shows the remaining modules physically, so the count can be read at a glance
+    binds: PowerSystem replace request and spares readout (#542)
+    status: control only; new
+  - id: generator
+    control: a guarded START/STOP switch in the generator section at the top, with a RUNNING lamp and a HEAT gauge
+    binds: PowerSystem generator start/stop request and readouts generator running and heat (#541)
+    status: control only; new
+  - id: battery
+    display: a tall vertical bar meter down the right edge showing the charge, 0 to 100%
+    binds: PowerSystem readout battery charge (shared readout(name) convention)
+    status: control only; new
+  - id: load
+    display: an analogue LOAD meter (needle, a red zone at the top) beside the battery readout, from the reference's variant 3, showing the total draw now
+    binds: PowerSystem readout load
+    status: control only; new
+  - id: junction_box
+    display: a bolted junction box kit scene for the cable trays; it sparks when its line is damaged and is repaired by holding E at it. #543 places the interactive nodes; this scene is what they look like
+    binds: #543's junction box nodes
+    status: control only; new
+
+constraints:
+  kind: panel
+  frame: back on Z=0 against the hull, centred on the board, controls toward +Z
+  operator_eye_m: [0.0, 0.55, 0.5]   # standing eye 1.65 m above the floor, the board centred at about 1.1 m, the crew member 0.5 m in front
+  reach_m: 1.1               # from the shoulder, 0.25 m below the eye (Tristan's answer on #534)
+  size: about 1.2 m along the hull at most (program.yaml engineering, footprint [1.2, 0.45]); from knee to head height (about 0.45 to 1.75 m above the floor); flat, standing out from the hull no more than the footprint's 0.45 m, so the aisle stays clear
+  triangle_budget: 4000        # panel
+  palette: every colour a palette swatch; the lamps use the indicator swatches (green on, amber tripped, red blown); the cyan information band is reserved for light_readout
+  red_light: the lamps and the battery bar must read under the stealth red cabin light; check the red-light render

@@ -24,12 +24,23 @@ const MASK: Texture2D = preload("res://assets/textures/navball_mask.png")
 @export var lower_swatch: StringName = &"floor_rock_black"
 @export var mark_swatch: StringName = &"light_readout"
 
+## False while the DISPLAYS circuit is unpowered: the digits go dark.
+var powered: bool = true
 var material: ShaderMaterial
 var _ball: Node3D
 var _heading_label: Label3D
 var _pitch_label: Label3D
 var _sub_frame: SubFrame
 var _source: Node
+
+
+## The ball is a solid object and stays; only its digits are lit.
+func set_powered(on: bool) -> void:
+	powered = on
+	if _heading_label != null:
+		_heading_label.visible = on
+	if _pitch_label != null:
+		_pitch_label.visible = on
 
 
 func _ready() -> void:
@@ -45,6 +56,7 @@ func _ready() -> void:
 		(_ball as GeometryInstance3D).material_override = material
 	_heading_label = get_node_or_null(heading_label_path) as Label3D
 	_pitch_label = get_node_or_null(pitch_label_path) as Label3D
+	PowerSink.bind(self, PowerSystem.Circuit.DISPLAYS, set_powered)
 
 
 func _process(_delta: float) -> void:

@@ -1,5 +1,26 @@
 slug: map_table
 group: stations
+mounts:
+- anchor: Shelf/NoiseRepeater
+  scene: gauge
+  offset_mm: 2.0
+  host_face: GaugeModule front plate
+- anchor: Shelf/DecorGauge1
+  scene: gauge
+  offset_mm: 2.0
+  host_face: GaugeModule front plate
+- anchor: Shelf/DecorGauge2
+  scene: gauge
+  offset_mm: 2.0
+  host_face: GaugeModule front plate
+- anchor: Shelf/DecorGauge3
+  scene: gauge
+  offset_mm: 2.0
+  host_face: GaugeModule front plate
+- anchor: Shelf/DecorGauge4
+  scene: gauge
+  offset_mm: 2.0
+  host_face: GaugeModule front plate
 kind: station
 summary: 'Crew map table: D-shaped table with orange edge rail, plinth and braces, a console jutting from the front
   edge (pan trackball, zoom lever, decorative knob, follow switch, lamp), an orange-railed instrument shelf with
@@ -34,7 +55,7 @@ uses:
 - guarded_toggle
 - indicator_lamp
 - gauge
-triangles: 4306
+triangles: 4494
 triangles_by_part:
   body: 1632
 checks:

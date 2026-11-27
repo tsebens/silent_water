@@ -18,6 +18,9 @@ extends Node3D
 ## from there to [member alarm_at], alarm above it.
 @export_range(0.0, 1.0) var warn_at: float = 0.5
 @export_range(0.0, 1.0) var alarm_at: float = 0.85
+## Flip the bands so low values are the alarm end: ok above [member warn_at], warn from there
+## down to [member alarm_at], alarm at or below it. Use with a "remaining capacity" readout.
+@export var descending: bool = false
 ## Palette swatches for the three bands.
 @export var ok_swatch: StringName = &"light_ok"
 @export var warn_swatch: StringName = &"light_warn"
@@ -65,6 +68,12 @@ func fraction_for(v: float) -> float:
 
 ## Swatch name of the band that fraction [param t] falls in.
 func swatch_for(t: float) -> StringName:
+	if descending:
+		if t > warn_at:
+			return ok_swatch
+		if t > alarm_at:
+			return warn_swatch
+		return alarm_swatch
 	if t > alarm_at:
 		return alarm_swatch
 	if t > warn_at:

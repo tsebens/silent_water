@@ -17,6 +17,11 @@ const G: float = 9.8
 var displacement_t: float = 150.0
 ## Hull, machinery and fixed gear (tonnes). Tuned for neutral at ~half tank.
 var dry_mass_t: float = 139.64
+## Part of [member dry_mass_t] that is the drop weights (tonnes). Shed once per
+## dive by [method shed_drop_weights]; the sub then turns strongly buoyant.
+var drop_weights_t: float = 6.0
+## True once the weights have been dropped this dive.
+var drop_weights_shed: bool = false
 ## Crew and carried cargo (tonnes). Add salvage here.
 var payload_t: float = 0.36
 
@@ -61,6 +66,8 @@ var rudder_authority: float = 0.02
 ## They turn the sub even when stopped (~8.6°/s at full, steady state);
 ## the rudder adds more once there's way on.
 var thruster_yaw_accel: float = 0.09
+## False when the THRUSTERS circuit is unpowered: no turning in place.
+var thrusters_powered: bool = true
 ## Pitch acceleration per unit planes per m/s of forward speed (rad/s²).
 var planes_authority: float = 0.02
 ## Righting (metacentric) stiffness for pitch and roll (1/s²).
@@ -89,6 +96,16 @@ func transform() -> Transform3D:
 
 func total_mass_t() -> float:
 	return dry_mass_t + payload_t + tank_water_t + bilge_water_t
+
+
+## Sheds the drop weights: the sub loses their mass. Returns the tonnes shed
+## (0 if already shed).
+func shed_drop_weights() -> float:
+	if drop_weights_shed:
+		return 0.0
+	drop_weights_shed = true
+	dry_mass_t -= drop_weights_t
+	return drop_weights_t
 
 
 ## Bilge tonnage at which, with the tank fully blown, buoyancy at the surface
@@ -190,7 +207,8 @@ func step(delta: float, ordered_engine: float, rudder: float, planes: float, flo
 	# Angular: control surfaces need water flowing over them.
 	var flow: float = absf(fwd_speed)
 	var flow_sign: float = signf(fwd_speed) if fwd_speed != 0.0 else 1.0
-	var yaw_acc: float = -rudder * (rudder_authority * flow * flow_sign + thruster_yaw_accel)
+	var thruster_acc: float = thruster_yaw_accel if thrusters_powered else 0.0
+	var yaw_acc: float = -rudder * (rudder_authority * flow * flow_sign + thruster_acc)
 	var pitch_acc: float = -planes * planes_authority * flow * flow_sign - righting * sin(angles.x)
 	var roll_acc: float = -righting * sin(angles.z) - heel_factor * angular_velocity.y * fwd_speed
 	angular_velocity += Vector3(pitch_acc, yaw_acc, roll_acc) * delta

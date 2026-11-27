@@ -55,6 +55,20 @@ func test_band_colour_changes_at_50_and_85_percent() -> void:
 	g.queue_free()
 
 
+func test_descending_bands_put_the_alarm_at_the_low_end() -> void:
+	var g: LinearGauge = _gauge()
+	g.descending = true
+	g.warn_at = 0.5
+	g.alarm_at = 0.15
+	expect_eq(g.swatch_for(1.0), g.ok_swatch)
+	expect_eq(g.swatch_for(0.51), g.ok_swatch)
+	expect_eq(g.swatch_for(0.5), g.warn_swatch)
+	expect_eq(g.swatch_for(0.16), g.warn_swatch)
+	expect_eq(g.swatch_for(0.15), g.alarm_swatch)
+	expect_eq(g.swatch_for(0.0), g.alarm_swatch)
+	g.queue_free()
+
+
 func test_thresholds_are_exports() -> void:
 	var g: LinearGauge = _gauge()
 	g.warn_at = 0.2

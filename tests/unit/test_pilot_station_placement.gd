@@ -35,7 +35,7 @@ func _pilot() -> Node3D:
 func test_one_of_each_and_no_old_pods() -> void:
 	var interior: Node = game.get_node("Interior")
 	expect_eq(_count(interior, &"PilotSeat"), 1, "one pilot seat")
-	expect_eq(_count(interior, &"DepthFinder"), 1, "one depth finder")
+	expect_eq(_count(interior, &"DepthFinder"), 1, "one depth finder, restored by #686")
 	expect_eq(_count(interior, &"MultiDisplay"), 1, "one multidisplay")
 	expect_eq(_count(interior, &"Navball"), 1, "one navball")
 	var warning_lamps: int = 0
@@ -46,7 +46,7 @@ func test_one_of_each_and_no_old_pods() -> void:
 	expect_eq(_count(interior.get_node("Stations/Maps/PilotHolo").get_parent(), &"HoloMap"), 2, "pilot and table holograms")
 	for gone: String in ["LeftPod", "RightPod", "CenterPod"]:
 		expect(_pilot().get_node_or_null(gone) == null, "%s is gone" % gone)
-	for path: String in ["Seat", "Throttle", "Rudder", "Planes", "Dimmer", "Strip"]:
+	for path: String in ["Seat", "Throttle", "Rudder", "Planes", "Strip"]:
 		expect(_pilot().get_node_or_null(path) != null, "%s resolves" % path)
 	expect_eq(_count(_pilot(), &"Gauge"), 2, "two dials: the speed gauge and the noise repeater")
 
@@ -118,3 +118,98 @@ func test_hologram_sits_at_the_anchor() -> void:
 	var holo: Node3D = game.get_node("Interior/Stations/Maps/PilotHolo") as Node3D
 	var anchor: Node3D = _pilot().get_node("Anchors/HologramAnchor") as Node3D
 	expect(holo.global_position.is_equal_approx(anchor.global_position), "holo at %s, anchor at %s" % [holo.global_position, anchor.global_position])
+
+
+func _toggle_click(sw: Interactable) -> void:
+	var before: float = sw.get_value()
+	var me: Player = game.local_player()
+	me.press_interact(sw)
+	me.release_interact()
+	expect(not is_equal_approx(sw.get_value(), before), "%s flipped by a click" % sw.name)
+
+
+func test_armrest_toggles_drive_the_real_switch_nodes() -> void:
+	var head: Light3D = game.get_node("Interior/Lights/Headlight") as Light3D
+	var pl: PaletteLight = head.get_node("PaletteLight") as PaletteLight
+	var lights: CabinLights = game.get_node("CabinLights") as CabinLights
+	var hs: HeadlightSwitch = _pilot().get_node("HeadlightSwitch") as HeadlightSwitch
+	var cs: CabinSwitch = game.get_node("CabinSwitch") as CabinSwitch
+	var seat: Node = _pilot().get_node("Seat")
+	for n: String in ["ExternalLightSwitch", "ExternalColourSwitch", "CabinLightSwitch", "CabinColourSwitch"]:
+		var sw: Interactable = _pilot().get_node("Anchors/" + n) as Interactable
+		expect(seat.is_ancestor_of(sw) or _pilot().get_node("Anchors").is_ancestor_of(sw), n + " resolves")
+	expect(hs.power == _pilot().get_node("Anchors/ExternalLightSwitch"), "headlight power bound to the armrest toggle")
+	expect(hs.colour == _pilot().get_node("Anchors/ExternalColourSwitch"), "headlight colour bound to the armrest toggle")
+	expect(cs.power == _pilot().get_node("Anchors/CabinLightSwitch"), "cabin power bound to the armrest toggle")
+	expect(cs.stealth_switch == _pilot().get_node("Anchors/CabinColourSwitch"), "cabin colour bound to the armrest toggle")
+	var ext: Interactable = hs.power
+	_toggle_click(ext)
+	hs.update()
+	expect(not head.visible, "external toggle off: headlight off")
+	_toggle_click(ext)
+	hs.update()
+	expect(head.visible, "external toggle on: headlight on")
+	_toggle_click(hs.colour)
+	hs.update()
+	expect(pl.stealth, "external colour toggle: red")
+	_toggle_click(hs.colour)
+	hs.update()
+	expect(not pl.stealth, "external colour toggle: halogen")
+	_toggle_click(cs.power)
+	cs.update()
+	expect(not lights.enabled, "cabin toggle off")
+	_toggle_click(cs.power)
+	cs.update()
+	expect(lights.enabled, "cabin toggle on")
+	_toggle_click(cs.stealth_switch)
+	cs.update()
+	expect(lights.stealth, "cabin colour toggle: red")
+	_toggle_click(cs.stealth_switch)
+	cs.update()
+	expect(not lights.stealth, "cabin colour toggle: standard")
+
+
+func test_co2_and_low_o2_lamps_light_on_their_conditions() -> void:
+	var ls: LifeSupportReadouts = game.get_node("Interior/LifeSupportReadouts") as LifeSupportReadouts
+	var co2: ThresholdLamp = _pilot().get_node("Drivers/Co2LampDriver") as ThresholdLamp
+	var o2: ThresholdLamp = _pilot().get_node("Drivers/LowO2LampDriver") as ThresholdLamp
+	var co2_lamp: IndicatorLamp = _pilot().get_node("Anchors/Co2Lamp") as IndicatorLamp
+	var o2_lamp: IndicatorLamp = _pilot().get_node("Anchors/LowO2Lamp") as IndicatorLamp
+	ls.co2_ppm = 400.0
+	ls.o2_level = 1.0
+	co2.update()
+	o2.update()
+	expect(not co2_lamp.lit and not o2_lamp.lit, "fresh air: both unlit")
+	ls.co2_ppm = 8000.0
+	co2.update()
+	expect(co2_lamp.lit, "CO2 over the steady line: lit")
+	expect(not o2_lamp.lit, "O2 lamp independent")
+	ls.co2_ppm = 400.0
+	ls.o2_level = 0.2
+	co2.update()
+	o2.update()
+	expect(not co2_lamp.lit, "CO2 back down: unlit")
+	expect(o2_lamp.lit, "O2 under a quarter: lit")
+
+
+func test_every_driver_export_is_bound_after_start() -> void:
+	var drivers: Array[Node] = []
+	for root: Node in [game, game.get_node("Interior")]:
+		for n: Node in root.find_children("*", "", true, false):
+			if n is HeadlightSwitch or n is CabinSwitch or n is ThresholdLamp:
+				drivers.append(n)
+	expect(drivers.size() >= 5, "found the switch and lamp drivers")
+	for d: Node in drivers:
+		var props: Array[String] = []
+		if d is ThresholdLamp:
+			props.append("lamp")
+		elif d is HeadlightSwitch:
+			props.append_array(["light", "power", "colour"])
+		else:
+			props.append_array(["lights", "power", "stealth_switch"])
+		for p: String in props:
+			expect(d.get(p) != null, "%s.%s is bound" % [d.name, p])
+		for p: String in props:
+			var target: Node = d.get(p) as Node
+			if target != null:
+				expect(target.is_inside_tree() and not str(target.get_path()).contains("Strip"), "%s.%s is live and off the old strip" % [d.name, p])

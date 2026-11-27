@@ -18,8 +18,25 @@ const ZOOM_STEP: float = 1.15
 @export var blow_valve: Interactable
 ## The pilot hologram the mouse wheel zooms.
 @export var holo: HoloMap
+## The light switches within reach of the seat: the only controls besides the
+## helm a seated pilot may grab.
+@export var switches: Array[Interactable] = []
 
+## False while the HELM circuit is unpowered: the ballast keys do nothing and
+## ballast falls back to the manual wheels. Steering and planes keep working.
+var helm_powered: bool = true
 var _has_ballast: bool = false
+
+
+func _ready() -> void:
+	super._ready()
+	PowerSink.bind(self, PowerSystem.Circuit.HELM, set_helm_powered)
+
+
+func set_helm_powered(on: bool) -> void:
+	helm_powered = on
+	if not on:
+		_release_ballast()
 
 
 func begin_interaction() -> void:
@@ -43,6 +60,8 @@ func drive(throttle_dir: float, rudder_dir: float, planes_dir: float, ballast_di
 	throttle.drive_input(throttle_dir, delta)
 	rudder.drive_input(rudder_dir, delta)
 	planes.drive_input(planes_dir, delta)
+	if not helm_powered:
+		ballast_dir = 0.0
 	_sync_ballast_hold(ballast_dir)
 	if _has_ballast:
 		var step: float = BALLAST_KEY_RATE * delta
@@ -69,6 +88,10 @@ func _unhandled_input(event: InputEvent) -> void:
 		get_viewport().set_input_as_handled()
 
 
+func allow_grab(node: Interactable) -> bool:
+	return node != null and switches.has(node)
+
+
 func interaction_hint() -> String:
 	return "press E to take the helm"
 
@@ -83,7 +106,7 @@ func seated_hint() -> String:
 
 ## Controls hint shown while seated.
 static func helm_hint() -> String:
-	return "W/S throttle · A/D rudder · R/F planes · Num8/PgUp blow · Num2/PgDn flood · wheel zoom · E to stand"
+	return "W/S throttle · A/D rudder · R/F planes · Num8/PgUp blow · Num2/PgDn flood · wheel zoom · click light switches · E to stand"
 
 
 func _helm() -> Array[Interactable]:

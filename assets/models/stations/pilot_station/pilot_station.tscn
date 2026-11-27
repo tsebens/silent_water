@@ -3,12 +3,12 @@
 [ext_resource type="PackedScene" path="res://assets/models/furniture/pilot_seat/pilot_seat.tscn" id="1"]
 [ext_resource type="PackedScene" path="res://assets/models/stations/pilot_station/pilot_station_strip.glb" id="2"]
 [ext_resource type="PackedScene" path="res://assets/models/kit/depth_finder/depth_finder.tscn" id="3"]
-[ext_resource type="PackedScene" path="res://assets/models/kit/multidisplay/multidisplay.tscn" id="4"]
-[ext_resource type="PackedScene" path="res://assets/models/kit/gauge/gauge.tscn" id="5"]
+[ext_resource type="PackedScene" path="res://assets/models/kit/gauge/gauge.tscn" id="4"]
+[ext_resource type="PackedScene" path="res://src/noise/noise_gauge.tscn" id="5"]
 [ext_resource type="PackedScene" path="res://assets/models/kit/navball/navball.tscn" id="6"]
-[ext_resource type="PackedScene" path="res://assets/models/kit/lit_guarded_toggle/lit_guarded_toggle.tscn" id="7"]
+[ext_resource type="PackedScene" path="res://assets/models/kit/multidisplay/multidisplay.tscn" id="7"]
 [ext_resource type="PackedScene" path="res://assets/models/kit/indicator_lamp/indicator_lamp.tscn" id="8"]
-[ext_resource type="PackedScene" path="res://src/noise/noise_gauge.tscn" id="9"]
+[ext_resource type="PackedScene" path="res://assets/models/kit/lit_toggle/lit_toggle.tscn" id="9"]
 [ext_resource type="Script" path="res://src/interact/threshold_lamp.gd" id="10"]
 
 [node name="PilotStation" type="Node3D"]
@@ -22,13 +22,10 @@
 [node name="Drivers" type="Node3D" parent="."]
 
 [node name="DepthFinder" parent="Anchors" instance=ExtResource("3")]
-transform = Transform3D(0.600683, -0.513901, 0.612443, 0, 0.766044, 0.642788, -0.799487, -0.386112, 0.46015, -0.701048, 0.653603, -0.491802)
+transform = Transform3D(0.658135, -0.483955, 0.576755, 0, 0.766044, 0.642788, -0.7529, -0.423041, 0.504161, -0.526542, 0.653603, -0.53557)
 
-[node name="Multidisplay" parent="Anchors" instance=ExtResource("4")]
-transform = Transform3D(0.473926, -0.566016, 0.674552, 0, 0.766044, 0.642788, -0.880565, -0.304634, 0.363048, -0.854191, 0.653603, -0.258344)
-
-[node name="SpeedGauge" parent="Anchors" instance=ExtResource("5")]
-transform = Transform3D(0.392831, -0.591114, 0.704463, 0, 0.766044, 0.642788, -0.919611, -0.252507, 0.300926, -0.978776, 0.670073, -0.0296577)
+[node name="SpeedGauge" parent="Anchors" instance=ExtResource("4")]
+transform = Transform3D(0.401203, -0.588786, 0.701688, 0, 0.766044, 0.642788, -0.915989, -0.257889, 0.30734, -0.717796, 0.729961, -0.352625)
 title = "SPEED m/s"
 readout = &"speed"
 readout_b = &"engine_output"
@@ -37,39 +34,42 @@ min_value = -3
 max_value = 3
 sweep_deg = 240
 major_divisions = 6
-radius = 0.1
+radius = 0.055
+
+[node name="NoiseRepeater" parent="Anchors" instance=ExtResource("5")]
+transform = Transform3D(0.401203, -0.588786, 0.701688, 0, 0.766044, 0.642788, -0.915989, -0.257889, 0.30734, -0.624768, 0.608926, -0.311878)
+radius = 0.055
 
 [node name="Navball" parent="Anchors" instance=ExtResource("6")]
-transform = Transform3D(0.621545, 0.503546, -0.600103, 0, 0.766044, 0.642788, 0.783379, -0.399521, 0.476131, 0.679215, 0.653603, -0.526402)
+transform = Transform3D(0.670764, 0.476737, -0.568153, 0, 0.766044, 0.642788, 0.741671, -0.431159, 0.513835, 0.519182, 0.653603, -0.54742)
 
-[node name="ExternalLightSwitch" parent="Anchors" instance=ExtResource("7")]
-transform = Transform3D(0.486104, 0.561733, -0.669447, 0, 0.766044, 0.642788, 0.873901, -0.312461, 0.372377, 0.777033, 0.653603, -0.389847)
-label = "external light"
-
-[node name="ExternalColourSwitch" parent="Anchors" instance=ExtResource("7")]
-transform = Transform3D(0.486104, 0.561733, -0.669447, 0, 0.766044, 0.642788, 0.873901, -0.312461, 0.372377, 0.817866, 0.653603, -0.316439)
-label = "external light colour"
-
-[node name="CabinLightSwitch" parent="Anchors" instance=ExtResource("7")]
-transform = Transform3D(0.486104, 0.561733, -0.669447, 0, 0.766044, 0.642788, 0.873901, -0.312461, 0.372377, 0.858698, 0.653603, -0.243032)
-label = "cabin light"
-
-[node name="CabinColourSwitch" parent="Anchors" instance=ExtResource("7")]
-transform = Transform3D(0.486104, 0.561733, -0.669447, 0, 0.766044, 0.642788, 0.873901, -0.312461, 0.372377, 0.899531, 0.653603, -0.169624)
-label = "cabin light colour"
+[node name="Multidisplay" parent="Anchors" instance=ExtResource("7")]
+transform = Transform3D(0.416625, 0.584344, -0.696394, 0, 0.766044, 0.642788, 0.909078, -0.267801, 0.319153, 0.653745, 0.653603, -0.339562)
 
 [node name="BilgeLamp" parent="Anchors" instance=ExtResource("8")]
-transform = Transform3D(0.397564, 0.589805, -0.702903, 0, 0.766044, 0.642788, 0.917574, -0.25555, 0.304552, 0.934321, 0.658745, -0.0872401)
+transform = Transform3D(0.416625, 0.909078, 0, 0, 0, 1, 0.909078, -0.416625, 0, 0.775012, 0.788, -0.456739)
 
 [node name="Co2Lamp" parent="Anchors" instance=ExtResource("8")]
-transform = Transform3D(0.397564, 0.589805, -0.702903, 0, 0.766044, 0.642788, 0.917574, -0.25555, 0.304552, 0.9542, 0.658745, -0.0413614)
+transform = Transform3D(0.416625, 0.909078, 0, 0, 0, 1, 0.909078, -0.416625, 0, 0.798343, 0.788, -0.40583)
 
 [node name="LowO2Lamp" parent="Anchors" instance=ExtResource("8")]
-transform = Transform3D(0.397564, 0.589805, -0.702903, 0, 0.766044, 0.642788, 0.917574, -0.25555, 0.304552, 0.974078, 0.658745, 0.00451733)
+transform = Transform3D(0.416625, 0.909078, 0, 0, 0, 1, 0.909078, -0.416625, 0, 0.821674, 0.788, -0.354922)
 
-[node name="NoiseRepeater" parent="Anchors" instance=ExtResource("9")]
-transform = Transform3D(0.334965, 0.605654, -0.72179, 0, 0.766044, 0.642788, 0.94223, -0.215312, 0.256598, 1.05923, 0.67172, 0.17291)
-radius = 0.11
+[node name="ExternalLightSwitch" parent="Anchors" instance=ExtResource("9")]
+transform = Transform3D(-1, 0, 0, 0, 0, 1, 0, 1, 0, 0.367, 0.662, 0.04)
+label = "external light"
+
+[node name="ExternalColourSwitch" parent="Anchors" instance=ExtResource("9")]
+transform = Transform3D(-1, 0, 0, 0, 0, 1, 0, 1, 0, 0.435, 0.662, 0.04)
+label = "external light colour"
+
+[node name="CabinLightSwitch" parent="Anchors" instance=ExtResource("9")]
+transform = Transform3D(-1, 0, 0, 0, 0, 1, 0, 1, 0, -0.367, 0.662, 0.04)
+label = "cabin light"
+
+[node name="CabinColourSwitch" parent="Anchors" instance=ExtResource("9")]
+transform = Transform3D(-1, 0, 0, 0, 0, 1, 0, 1, 0, -0.435, 0.662, 0.04)
+label = "cabin light colour"
 
 [node name="BilgeLampDriver" type="Node" parent="Drivers" node_paths=PackedStringArray("lamp")]
 script = ExtResource("10")
@@ -90,4 +90,4 @@ lamp = NodePath("../../Anchors/LowO2Lamp")
 above = false
 
 [node name="HologramAnchor" type="Node3D" parent="Anchors"]
-transform = Transform3D(0.600683, 0, 0.799487, 0, 1, 0, -0.799487, 0, 0.600683, -0.797834, 0.802, -0.56452)
+transform = Transform3D(0.658135, 0, 0.7529, 0, 1, 0, -0.7529, 0, 0.658135, -0.617688, 0.802, -0.615244)

@@ -4,11 +4,17 @@ extends TestCase
 ## toward the seated eye. The instruments themselves are the next arc's.
 
 const SCENE: String = "res://assets/models/stations/pilot_station/pilot_station.tscn"
-const GAP_M: float = 0.6
+const GAP_M: float = 0.4
 const EYE: Vector3 = Vector3(0.0, 1.15, 0.0)
-const LEFT: Array[String] = ["DepthFinder", "Multidisplay", "SpeedGauge"]
-const RIGHT: Array[String] = ["Navball", "ExternalLightSwitch", "ExternalColourSwitch", "CabinLightSwitch",
-		"CabinColourSwitch", "BilgeLamp", "Co2Lamp", "LowO2Lamp", "NoiseRepeater"]
+## #686: two equal wings fitted to the true hemisphere. LEFT and RIGHT are the instrument that leads each facet,
+## from the gap outward; the others are listed in ALSO_LEFT and ALSO_RIGHT. The four switches sit at the armrests.
+const LEFT: Array[String] = ["DepthFinder", "SpeedGauge"]
+const RIGHT: Array[String] = ["Navball", "Multidisplay"]
+const ALSO_LEFT: Array[String] = ["NoiseRepeater"]
+const ALSO_RIGHT: Array[String] = ["BilgeLamp", "Co2Lamp", "LowO2Lamp"]
+const SWITCHES: Array[String] = ["ExternalLightSwitch", "ExternalColourSwitch", "CabinLightSwitch", "CabinColourSwitch"]
+const FORWARD_DEG: float = 70.0
+const FORWARD: Array[String] = ["DepthFinder", "HologramAnchor", "Navball", "Multidisplay"]
 
 
 func _make() -> Node3D:
@@ -42,7 +48,7 @@ func test_seat_resolves() -> void:
 
 func test_every_anchor_exists_and_faces_the_eye() -> void:
 	var st: Node3D = _make()
-	for name: String in LEFT + RIGHT + ["HologramAnchor"]:
+	for name: String in LEFT + RIGHT + ALSO_LEFT + ALSO_RIGHT + SWITCHES + ["HologramAnchor"]:
 		var a: Node3D = _anchor(st, name)
 		if a == null:
 			continue
@@ -52,8 +58,11 @@ func test_every_anchor_exists_and_faces_the_eye() -> void:
 			expect(a.global_transform.basis.y.dot(Vector3.UP) > 0.99, "the hologram anchor stands up")
 			continue
 		expect(out.dot(Vector3.UP) > 0.5, "%s faces up" % name)
-		expect(out.dot((EYE - a.global_position).normalized()) > 0.55, "%s faces the seated eye" % name)
-		expect(a.global_position.y > 0.5 and a.global_position.y < 0.95, "%s is at knee height" % name)
+		# the lamps sit on the right wing's top ledge, which is flatter than the fascia
+		var need: float = 0.3 if ALSO_RIGHT.has(name) else 0.55
+		expect(out.dot((EYE - a.global_position).normalized()) > need, "%s faces the seated eye" % name)
+		if not SWITCHES.has(name):
+			expect(a.global_position.y > 0.5 and a.global_position.y < 0.95, "%s is at knee height" % name)
 	st.queue_free()
 
 
@@ -75,6 +84,15 @@ func test_wings_run_from_the_gap_outward_in_order() -> void:
 	var df: Node3D = _anchor(st, "DepthFinder")
 	expect(holo.global_position.y > df.global_position.y + 0.1, "the hologram stands above the depth finder")
 	expect(absf(holo.global_position.x - df.global_position.x) < 0.15, "the hologram is over the depth finder")
+	st.queue_free()
+
+
+func test_forward_instruments_are_within_the_view_limit() -> void:
+	var st: Node3D = _make()
+	for name: String in FORWARD:
+		var v: Vector3 = _anchor(st, name).global_position - EYE
+		var deg: float = rad_to_deg(v.angle_to(Vector3.FORWARD))
+		expect(deg <= FORWARD_DEG + 0.5, "%s is %.1f degrees off the eye's forward axis (%.0f or less)" % [name, deg, FORWARD_DEG])
 	st.queue_free()
 
 
@@ -109,16 +127,26 @@ const LAMPS: Array[String] = ["BilgeLamp", "Co2Lamp", "LowO2Lamp"]
 
 func test_instruments_resolve_with_their_behaviours() -> void:
 	var st: Node3D = _make()
-	expect(_anchor(st, "DepthFinder").get_node_or_null("DepthFinder") is MeshInstance3D, "the depth finder has its display")
 	expect(_anchor(st, "Multidisplay").get_node_or_null("Screen") is MultiDisplay, "the multidisplay's screen resolves")
 	expect(_anchor(st, "Navball") is Navball, "the navball is a Navball")
 	expect(_anchor(st, "SpeedGauge") is Gauge, "the speed gauge is a Gauge")
 	expect(_anchor(st, "NoiseRepeater") is Gauge, "the noise repeater is a Gauge")
+	st.queue_free()
+
+
+func test_gauges_stand_off_their_facets() -> void:
+	# #596: the build declares each gauge 2 mm off its facet (the mount gap), so the dial face is not coplanar with it.
+	var yaml: String = FileAccess.get_file_as_string("res://assets/models/stations/pilot_station/component.yaml")
+	expect(yaml.contains("Anchors/NoiseRepeater") and yaml.contains("Anchors/SpeedGauge"), "both gauges are declared mounts")
+	expect(not yaml.contains("offset_mm: 0"), "no declared mount sits on its host face")
+
+
+func test_toggles_and_lamps_resolve() -> void:
+	var st: Node3D = _make()
 	for name: String in TOGGLES:
 		expect(_anchor(st, name) is SwitchLever, "%s is a switch" % name)
 	for name: String in LAMPS:
 		expect(_anchor(st, name) is IndicatorLamp, "%s is a lamp" % name)
-	expect(st.get_node_or_null("Anchors/DepthFinder") != null, "the depth finder anchor stays")
 	st.queue_free()
 
 

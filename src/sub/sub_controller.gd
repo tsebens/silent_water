@@ -18,8 +18,8 @@ const ALTITUDE_MAX: float = 200.0
 const STRIKE_THRESHOLD: float = 0.15
 
 # Noise at 1 m (linear intensity; 1.0 = 100 dB). See docs/noise.md.
-## Engine at full output (~80 dB); falls off with the square of output.
-const ENGINE_FULL_INTENSITY: float = 0.01
+## The electric motor at full output (~73 dB); falls off with the square of output.
+const ENGINE_FULL_INTENSITY: float = 0.002
 ## Machinery hum whenever the engine is turning (~50 dB).
 const ENGINE_IDLE_INTENSITY: float = 1e-5
 ## Blowing ballast with the valve fully open (~90 dB). Compressed air is loud.
@@ -64,6 +64,7 @@ var vertical_speed: float = 0.0
 var model: SubPhysicsModel = SubPhysicsModel.new()
 
 var _hull_shape: BoxShape3D = BoxShape3D.new()
+var _power: PowerSystem
 
 
 func _ready() -> void:
@@ -92,10 +93,18 @@ func _physics_process(delta: float) -> void:
 	if not enabled or not is_multiplayer_authority() or sub_frame == null:
 		return
 	var before: Vector3 = model.position
+	var ordered: float = SubPhysicsModel.throttle_order(throttle.get_value(), throttle_dead_zone) if throttle != null else 0.0
+	var rudder_input: float = rudder.get_value() if rudder != null else 0.0
+	var power: PowerSystem = power_system()
+	if power != null:
+		power.set_engine_output(ordered)
+		ordered = power.effective_engine_output()
+		power.set_thruster_demand(rudder_input)
+		model.thrusters_powered = power.is_powered(PowerSystem.Circuit.THRUSTERS)
 	model.step(
 		delta,
-		SubPhysicsModel.throttle_order(throttle.get_value(), throttle_dead_zone) if throttle != null else 0.0,
-		rudder.get_value() if rudder != null else 0.0,
+		ordered,
+		rudder_input,
 		planes.get_value() if planes != null else 0.0,
 		flood_valve.get_normalized() if flood_valve != null else 0.0,
 		blow_valve.get_normalized() if blow_valve != null else 0.0,
@@ -103,6 +112,13 @@ func _physics_process(delta: float) -> void:
 	_resolve_collision(before)
 	sub_frame.set_pose(model.transform(), model.velocity)
 	_update_readouts()
+
+
+## The sub's [PowerSystem], found lazily (it lives in the interior). Null if none.
+func power_system() -> PowerSystem:
+	if _power == null or not is_instance_valid(_power):
+		_power = get_tree().get_first_node_in_group(PowerSystem.GROUP) as PowerSystem if is_inside_tree() else null
+	return _power
 
 
 ## Resolves the hull against the exterior. The world root is still at the
@@ -190,20 +206,35 @@ func flood_intensity() -> float:
 
 
 ## Noise system hook (polled on the host).
+## With a [PowerSystem] present, the motor and generator noise are that
+## system's own source, so the engine term is left out here (no double count).
 func noise_intensity() -> float:
-	return engine_intensity() + blow_intensity() + flood_intensity() + thruster_intensity()
+	var engine: float = engine_intensity() if power_system() == null else 0.0
+	return engine + blow_intensity() + flood_intensity() + thruster_intensity()
 
 
 func noise_breakdown() -> Dictionary:
-	return {
-		"engine": engine_intensity(), "blowing ballast": blow_intensity(),
+	var parts: Dictionary = {
+		"blowing ballast": blow_intensity(),
 		"flooding ballast": flood_intensity(), "thrusters": thruster_intensity(),
 	}
+	var power: PowerSystem = power_system()
+	if power == null:
+		parts["engine"] = engine_intensity()
+	else:
+		parts.merge(power.noise_breakdown())
+	return parts
 
 
-## Side thrusters whirring while the pilot turns (~73 dB at full).
+## Side thrusters whirring while the pilot turns (~73 dB at full). Silent
+## when the THRUSTERS circuit is unpowered.
 func thruster_intensity() -> float:
-	return THRUSTER_INTENSITY * absf(rudder.get_value()) if rudder != null else 0.0
+	if rudder == null:
+		return 0.0
+	var power: PowerSystem = power_system()
+	if power != null and not power.is_powered(PowerSystem.Circuit.THRUSTERS):
+		return 0.0
+	return THRUSTER_INTENSITY * absf(rudder.get_value())
 
 
 ## Height above the terrain straight below the sub (m), clamped to

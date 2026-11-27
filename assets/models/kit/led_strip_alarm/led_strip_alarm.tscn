@@ -1,0 +1,10 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://src/interact/indicator_lamp.gd" id="1"]
+[ext_resource type="PackedScene" path="res://assets/models/kit/led_strip_alarm/led_strip_alarm_lens.glb" id="2"]
+
+[node name="IndicatorLamp" type="Node3D" node_paths=PackedStringArray("lamp")]
+script = ExtResource("1")
+lamp = NodePath("Lens/LedStripLens")
+
+[node name="Lens" parent="." instance=ExtResource("2")]

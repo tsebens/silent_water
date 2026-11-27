@@ -1,0 +1,131 @@
+slug: electrical_station
+group: panels
+kind: panel
+summary: 'Electrical distribution board: tall flat grey board, back on the hull. Generator section at the top (guarded
+  START/STOP, RUNNING lamp, HEAT gauge), a 3 x 3 grid of breaker modules, the spares drawer below it, the battery
+  bar in a dark channel down the right edge with the analogue LOAD meter beside it, orange grab rails either side,
+  label plates and cable-tray stubs leaving the top.'
+tags:
+- panel
+- electrical
+- breaker
+- power
+- battery
+- generator
+- distribution board
+- standing
+scene: res://assets/models/panels/electrical_station/electrical_station.tscn
+behaviour:
+  wire:
+    breakers: BreakerMotor, BreakerThrusters, BreakerBilgePump, BreakerCabinLts, BreakerExtLts, BreakerSonar, BreakerFans,
+      BreakerHelm, BreakerDisplays (BreakerSwitch; circuit and label already set)
+    generator: GeneratorToggle (SwitchLever) tied to the power system by GeneratorLink; RunningLamp lit by RunningLampDriver
+      (ThresholdLamp on generator_running); HeatGauge reads generator_heat
+    battery: BatteryBar (LinearGauge, readout battery_charge, descending)
+    load: LoadGauge (Gauge, readout load, red zone from 0.8)
+    spares: SparesDrawer (its Drawer node reads spares_remaining)
+    sources: every display and driver reads the power_system group (PowerSystem)
+    eye: OperatorEye (the standing eye, 0.5 m out, 0.55 m above the board's centre)
+footprint_mm:
+- 1000.0
+- 1300.0
+stand_out_mm: 101.0
+mount: back on Z=0 against the hull, centred on the board (X and Y); controls toward +Z; the board's centre stands
+  1.1 m above the floor (Y -650 is knee height, Y +650 head height)
+operator_eye_m:
+- 0.0
+- 0.55
+- 0.5
+reach_m: 1.1
+mounts:
+- anchor: BreakerMotor
+  scene: breaker_module
+  offset_mm: 2.0
+  host_face: board face
+- anchor: BreakerThrusters
+  scene: breaker_module
+  offset_mm: 2.0
+  host_face: board face
+- anchor: BreakerBilgePump
+  scene: breaker_module
+  offset_mm: 2.0
+  host_face: board face
+- anchor: BreakerCabinLts
+  scene: breaker_module
+  offset_mm: 2.0
+  host_face: board face
+- anchor: BreakerExtLts
+  scene: breaker_module
+  offset_mm: 2.0
+  host_face: board face
+- anchor: BreakerSonar
+  scene: breaker_module
+  offset_mm: 2.0
+  host_face: board face
+- anchor: BreakerFans
+  scene: breaker_module
+  offset_mm: 2.0
+  host_face: board face
+- anchor: BreakerHelm
+  scene: breaker_module
+  offset_mm: 2.0
+  host_face: board face
+- anchor: BreakerDisplays
+  scene: breaker_module
+  offset_mm: 2.0
+  host_face: board face
+- anchor: GeneratorToggle
+  scene: guarded_toggle
+  offset_mm: 2.0
+  host_face: board face
+- anchor: RunningLamp
+  scene: indicator_lamp
+  offset_mm: 2.0
+  host_face: board face
+- anchor: HeatGauge
+  scene: gauge
+  offset_mm: 12.0
+  host_face: board face
+- anchor: LoadGauge
+  scene: gauge
+  offset_mm: 12.0
+  host_face: board face
+- anchor: BatteryBar
+  scene: linear_gauge
+  offset_mm: 2.0
+  host_face: board face
+- anchor: SparesDrawer
+  scene: spares_drawer
+  offset_mm: 2.0
+  host_face: board face
+uses:
+- breaker_module
+- spares_drawer
+- guarded_toggle
+- indicator_lamp
+- gauge
+- linear_gauge
+triangles: 3852
+triangles_by_part:
+  body: 312
+checks:
+  reach_mm:
+    BreakerMotor: 526.2
+    BreakerThrusters: 444.0
+    BreakerBilgePump: 435.3
+    BreakerCabinLts: 587.6
+    BreakerExtLts: 515.3
+    BreakerSonar: 507.9
+    BreakerFans: 691.7
+    BreakerHelm: 631.4
+    BreakerDisplays: 625.4
+    GeneratorToggle: 596.8
+  sight_lines: 18
+  reach_limit_mm: 1100.0
+built_by: tools/cadkit/scenes/electrical_station.py
+files:
+- component.yaml
+- electrical_station.tscn
+- electrical_station_body.glb
+- review/.gdignore
+- review/cameras.json

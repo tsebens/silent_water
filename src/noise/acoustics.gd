@@ -26,6 +26,19 @@ const LAYER_EXTERIOR: int = 1 << 3
 const BROADCAST_HZ: float = 10.0
 ## Voice reports older than this are treated as silence (s).
 const VOICE_TIMEOUT: float = 0.5
+## Speed of sound in water (m/s); a tuning constant.
+const SPEED_OF_SOUND: float = 1500.0
+## Position error floor (m) and growth per metre of distance at 0 dB margin.
+const UNCERTAINTY_MIN: float = 2.0
+const UNCERTAINTY_PER_M: float = 0.2
+## Every this many dB of margin above the background halves-ish the error
+## (error is divided by 1 + margin / this).
+const UNCERTAINTY_DB_SCALE: float = 6.0
+
+## The sub's combined periodic event and one-off impacts use these shared types.
+## Their intensity is the unit the live load (sum of systems) is multiplied by.
+const SUB_COMBINED_TYPE: SoundType = preload("res://src/noise/sound_types/sub_combined.tres")
+const IMPACT_TYPE: SoundType = preload("res://src/noise/sound_types/impact.tres")
 
 ## Total noise of the sub (linear intensity). Authoritative on the host,
 ## replicated to clients for gauges.
@@ -48,6 +61,16 @@ var _voice_times: Dictionary = {}
 var _impulses: Array[PackedFloat32Array] = []
 var _broadcast_accum: float = 0.0
 var _time: float = 0.0
+var _sub_event_accum: float = 0.0
+## Intensity of the last combined sub event's load (host only).
+var last_sub_event_load: float = 0.0
+## The last few emitted events (host only), newest last, for the developer
+## overlay: {time, position, intensity (at the emitter), kind, heard}.
+var recent_events: Array[Dictionary] = []
+const RECENT_EVENTS_MAX: int = 8
+var _rng: RandomNumberGenerator = RandomNumberGenerator.new()
+## Tests may replace the terrain check: Callable(from_world, to_world) -> bool.
+var occlusion_override: Callable = Callable()
 
 
 func _ready() -> void:
@@ -82,6 +105,8 @@ func add_impulse(intensity: float, duration: float = 1.0) -> void:
 	if not multiplayer.is_server():
 		return
 	_impulses.append(PackedFloat32Array([intensity, duration, duration]))
+	# A one-off also emits once, now, where the sub is.
+	emit_load(IMPACT_TYPE, _sub_position(), intensity, self)
 
 
 ## Called on every peer by its local mic meter. Forwards to the host.
@@ -115,6 +140,107 @@ func heard_at(world_point: Vector3, sub_frame: SubFrame) -> float:
 	return heard
 
 
+## Host only. Like [method emit_event], but for a load that is computed live (the
+## sub's summed systems, an impulse): the event's intensity is the type's
+## intensity times [param load_intensity]. Kind comes from the type.
+func emit_load(type: SoundType, position: Vector3, load_intensity: float, source: Object = null) -> int:
+	return emit_raw(position, type.intensity * maxf(load_intensity, 0.0), type.kind, source)
+
+
+func _sub_position() -> Vector3:
+	var frame: SubFrame = get_tree().get_first_node_in_group(&"sub_frame") as SubFrame
+	return frame.sub_transform.origin if frame != null else Vector3.ZERO
+
+
+## Advances the sub's combined-event clock; emits one event per period with the
+## given continuous load. Returns the number of events emitted.
+func advance_sub_events(delta: float, load_intensity: float) -> int:
+	var period: float = SUB_COMBINED_TYPE.period
+	if period <= 0.0:
+		return 0
+	_sub_event_accum += delta
+	var n: int = 0
+	while _sub_event_accum >= period:
+		_sub_event_accum -= period
+		last_sub_event_load = load_intensity
+		emit_load(SUB_COMBINED_TYPE, _sub_position(), load_intensity, self)
+		n += 1
+	return n
+
+
+## Seeds the perceived-position error, for deterministic tests.
+func seed_events(seed_value: int) -> void:
+	_rng.seed = seed_value
+
+
+## The acoustics clock (s), advanced in the physics tick.
+func now() -> float:
+	return _time
+
+
+## Host only. Emits a sound of a shared [SoundType] at a world position. [param scale]
+## is a bounded per-emitter multiplier on the type's intensity. Returns how many
+## detectors heard it.
+func emit_event(type: SoundType, position: Vector3, source: Object = null, scale: float = 1.0) -> int:
+	return emit_raw(position, type.scaled_intensity(scale), type.kind, source)
+
+
+## Host only. Delivers a sound of raw intensity synchronously to every
+## [SoundDetector] that can hear it. Nothing is retained. For tests and tools;
+## emitters use [method emit_event]. Returns how many detectors heard it.
+func emit_raw(position: Vector3, intensity: float, kind: StringName = &"", source: Object = null) -> int:
+	if Net.is_online() and not multiplayer.is_server():
+		return 0
+	var heard_count: int = 0
+	var occl_factor: float = NoiseLevel.from_db(NoiseLevel.REF_DB - OCCLUSION_LOSS_DB)
+	for node: Node in get_tree().get_nodes_in_group(&"sound_detectors"):
+		var det: SoundDetector = node as SoundDetector
+		if det == null:
+			continue
+		var dist: float = position.distance_to(det.world_position)
+		var received: float = NoiseLevel.attenuate(intensity, dist)
+		var occluded: bool = _occluded_between(position, det.world_position)
+		if occluded:
+			received *= occl_factor
+		var ambient: float = ambient_at(det.world_position)
+		var margin_db: float = NoiseLevel.to_db(received) - NoiseLevel.to_db(ambient)
+		if margin_db < det.threshold_db:
+			continue
+		var ev: SoundEvent = SoundEvent.new()
+		ev.true_position = position
+		ev.emitted_intensity = intensity
+		ev.intensity = received
+		ev.distance = dist
+		ev.kind = kind
+		ev.source = source
+		ev.occluded = occluded
+		ev.timestamp = _time + dist / SPEED_OF_SOUND
+		ev.uncertainty = uncertainty_for(dist, margin_db)
+		var dir: Vector3 = Vector3(_rng.randfn(0.0, 1.0), _rng.randfn(0.0, 1.0), _rng.randfn(0.0, 1.0))
+		dir = dir.normalized() if dir.length() > 0.0001 else Vector3.UP
+		ev.perceived_position = position + dir * ev.uncertainty * _rng.randf()
+		det.receive(ev)
+		heard_count += 1
+	recent_events.append({"time": _time, "position": position, "intensity": intensity, "kind": kind, "heard": heard_count})
+	if recent_events.size() > RECENT_EVENTS_MAX:
+		recent_events.pop_front()
+	return heard_count
+
+
+## Error radius (m): grows with distance, shrinks with margin above background.
+func uncertainty_for(distance: float, margin_db: float) -> float:
+	return UNCERTAINTY_MIN + distance * UNCERTAINTY_PER_M / (1.0 + maxf(margin_db, 0.0) / UNCERTAINTY_DB_SCALE)
+
+
+func _occluded_between(from_world: Vector3, to_world: Vector3) -> bool:
+	if occlusion_override.is_valid():
+		return bool(occlusion_override.call(from_world, to_world))
+	var frame: SubFrame = get_tree().get_first_node_in_group(&"sub_frame") as SubFrame
+	if frame == null:
+		return false
+	return _occluded(frame, from_world, to_world)
+
+
 func _physics_process(delta: float) -> void:
 	if not multiplayer.is_server() and Net.is_online():
 		return
@@ -135,6 +261,7 @@ func _physics_process(delta: float) -> void:
 		else:
 			var label: String = _label_for(node)
 			breakdown[label] = float(breakdown.get(label, 0.0)) + i_src
+	var continuous_total: float = total
 	var impulse_total: float = 0.0
 	for i: int in range(_impulses.size() - 1, -1, -1):
 		var imp: PackedFloat32Array = _impulses[i]
@@ -154,7 +281,9 @@ func _physics_process(delta: float) -> void:
 		if v > 0.0:
 			breakdown["voice:%d" % peer] = v
 		total += v
+		continuous_total += v
 	sub_intensity = total
+	advance_sub_events(delta, continuous_total)
 	ambient_intensity = _ambient_at_sub()
 	top_text = _top_text()
 	levels_changed.emit(sub_db(), ambient_db())
@@ -241,5 +370,8 @@ func reset() -> void:
 	_voices.clear()
 	_voice_times.clear()
 	_impulses.clear()
+	_sub_event_accum = 0.0
+	last_sub_event_load = 0.0
+	recent_events.clear()
 	sub_intensity = 0.0
 	ambient_intensity = NoiseLevel.from_db(OCEAN_BASE_DB)

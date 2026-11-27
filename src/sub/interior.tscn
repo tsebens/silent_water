@@ -3,26 +3,46 @@
 [ext_resource type="Script" path="res://src/power/power_system.gd" id="power_system"]
 [ext_resource type="PackedScene" path="res://src/sub/sub_model.tscn" id="1"]
 [ext_resource type="PackedScene" path="res://src/interact/valve.tscn" id="2"]
-[ext_resource type="Script" path="res://src/interact/gauge.gd" id="3"]
 [ext_resource type="Script" path="res://src/interact/pilot_seat.gd" id="4"]
 [ext_resource type="Script" path="res://src/interact/spring_axis.gd" id="5"]
 [ext_resource type="PackedScene" path="res://src/noise/noise_gauge.tscn" id="6"]
 [ext_resource type="PackedScene" path="res://src/damage/leak.tscn" id="7"]
-[ext_resource type="PackedScene" path="res://src/interact/bilge_pump.tscn" id="8"]
-[ext_resource type="PackedScene" path="res://src/interact/lever.tscn" id="12"]
+[ext_resource type="PackedScene" path="res://src/power/junction_box.tscn" id="junction_box"]
 [ext_resource type="Script" path="res://src/map/holo_map.gd" id="15"]
 [ext_resource type="Script" path="res://src/map/map_table_observer.gd" id="obs_seat"]
 [ext_resource type="Script" path="res://src/map/map_table.gd" id="16"]
+[ext_resource type="Script" path="res://src/science/science_station.gd" id="science_station"]
+[ext_resource type="PackedScene" path="res://assets/models/stations/science_bay/science_bay.tscn" id="science_bay"]
 [ext_resource type="PackedScene" path="res://src/sub/bilge_water.tscn" id="17"]
 [ext_resource type="Script" path="res://src/sub/palette_light.gd" id="palette_light"]
 [ext_resource type="Script" path="res://src/life_support/life_support_readouts.gd" id="ls_readouts"]
 [ext_resource type="Script" path="res://src/life_support/life_support_alarm_driver.gd" id="ls_driver"]
 [ext_resource type="Script" path="res://src/sub/station_placement.gd" id="station_placement"]
+[ext_resource type="Script" path="res://src/sub/cable_trays.gd" id="cable_trays"]
 [ext_resource type="PackedScene" path="res://assets/models/stations/sonar_console/sonar_console.tscn" id="sonar_console"]
 [ext_resource type="PackedScene" path="res://assets/models/stations/map_table/map_table.tscn" id="map_table"]
 [ext_resource type="PackedScene" path="res://assets/models/stations/pilot_station/pilot_station.tscn" id="pilot_station"]
+[ext_resource type="PackedScene" path="res://assets/models/panels/electrical_station/electrical_station.tscn" id="electrical_station"]
+[ext_resource type="PackedScene" path="res://assets/models/panels/engineering_station/engineering_station.tscn" id="engineering_station"]
+[ext_resource type="PackedScene" path="res://assets/models/stations/life_support/life_support.tscn" id="life_support_station"]
+[ext_resource type="Material" path="res://assets/palette/roles/trim_black.tres" id="hose_mat"]
 [ext_resource type="Script" path="res://src/interact/joystick_indicator.gd" id="joy_ind"]
 [ext_resource type="Script" path="res://src/sub/headlight_switch.gd" id="headlight_switch"]
+
+[sub_resource type="CylinderMesh" id="hose_drop"]
+top_radius = 0.018
+bottom_radius = 0.018
+height = 0.99
+
+[sub_resource type="CylinderMesh" id="hose_run"]
+top_radius = 0.018
+bottom_radius = 0.018
+height = 1.0925
+
+[sub_resource type="CylinderMesh" id="hose_turn"]
+top_radius = 0.018
+bottom_radius = 0.018
+height = 0.525
 
 [sub_resource type="BoxMesh" id="fascia_mesh"]
 size = Vector3(0.06, 0.22, 3.2)
@@ -46,6 +66,9 @@ size = Vector3(1.0, 1.1, 1.0)
 
 [sub_resource type="BoxShape3D" id="observer_grab"]
 size = Vector3(0.9, 0.9, 0.9)
+
+[sub_resource type="BoxShape3D" id="science_grab"]
+size = Vector3(1.3, 1.2, 0.9)
 
 [sub_resource type="BoxShape3D" id="table_grab"]
 size = Vector3(0.9, 0.9, 0.9)
@@ -184,6 +207,27 @@ spot_angle = 30.0
 script = ExtResource("palette_light")
 swatch = &"light_work_white"
 
+[node name="EmergencyLights" type="Node3D" parent="."]
+visible = false
+
+[node name="EmergencyFore" type="OmniLight3D" parent="EmergencyLights"]
+position = Vector3(0, 2.1, -1.5)
+light_energy = 0.12
+omni_range = 2.5
+
+[node name="PaletteLight" type="Node" parent="EmergencyLights/EmergencyFore"]
+script = ExtResource("palette_light")
+swatch = &"light_alarm"
+
+[node name="EmergencyAft" type="OmniLight3D" parent="EmergencyLights"]
+position = Vector3(0, 2.1, 1.5)
+light_energy = 0.12
+omni_range = 2.5
+
+[node name="PaletteLight" type="Node" parent="EmergencyLights/EmergencyAft"]
+script = ExtResource("palette_light")
+swatch = &"light_alarm"
+
 [node name="Stations" type="Node3D" parent="."]
 
 [node name="Pilot" parent="Stations" instance=ExtResource("pilot_station")]
@@ -196,14 +240,15 @@ follow = {
 "../Maps/PilotHolo": "Anchors/HologramAnchor"
 }
 
-[node name="Seat" parent="Stations/Pilot" node_paths=PackedStringArray("throttle", "rudder", "planes", "flood_valve", "blow_valve", "holo", "sit_point")]
+[node name="Seat" parent="Stations/Pilot" node_paths=PackedStringArray("throttle", "rudder", "planes", "flood_valve", "blow_valve", "holo", "switches", "sit_point")]
 script = ExtResource("4")
 throttle = NodePath("../Throttle")
 rudder = NodePath("../Rudder")
 planes = NodePath("../Planes")
-flood_valve = NodePath("../../Ballast/FloodValve")
-blow_valve = NodePath("../../Ballast/BlowValve")
+flood_valve = NodePath("../../Ballast/Panel/FloodWheel")
+blow_valve = NodePath("../../Ballast/Panel/BlowWheel")
 holo = NodePath("../../Maps/PilotHolo")
+switches = [NodePath("../Anchors/ExternalLightSwitch"), NodePath("../Anchors/ExternalColourSwitch"), NodePath("../Anchors/CabinLightSwitch"), NodePath("../Anchors/CabinColourSwitch")]
 sit_point = NodePath("SitPoint")
 eye_height = 1.15
 label = "pilot seat"
@@ -242,16 +287,21 @@ label = "rudder"
 script = ExtResource("5")
 label = "dive planes"
 
-[node name="Dimmer" parent="Stations/Pilot" instance=ExtResource("12")]
-position = Vector3(-0.62, 0.3, 0.1)
-initial_value = 1.0
-label = "cabin lights"
-
 [node name="ExternalLightSwitch" parent="Stations/Pilot/Anchors"]
 initial_value = 1.0
 
 [node name="CabinLightSwitch" parent="Stations/Pilot/Anchors"]
 initial_value = 1.0
+
+[node name="Co2LampDriver" parent="Stations/Pilot/Drivers"]
+source_group = &"life_support_readouts"
+readout = &"co2_ppm"
+threshold = 7000.0
+
+[node name="LowO2LampDriver" parent="Stations/Pilot/Drivers"]
+source_group = &"life_support_readouts"
+readout = &"o2_level"
+threshold = 0.25
 
 [node name="HeadlightSwitch" type="Node" parent="Stations/Pilot" node_paths=PackedStringArray("light", "power", "colour")]
 script = ExtResource("headlight_switch")
@@ -263,124 +313,82 @@ colour = NodePath("../Anchors/ExternalColourSwitch")
 script = ExtResource("station_placement")
 station_id = &"sonar"
 placements = {
-"../Sonar": Vector3(0.135, 0, -0.35)
+"../Sonar": Vector3(0.438, 0, 0)
 }
 
 [node name="Sonar" parent="Stations" instance=ExtResource("sonar_console")]
+transform = Transform3D(0, 0, -1, 0, 1, 0, 1, 0, 0, 0, 0, 0)
 
 [node name="Ballast" type="Node3D" parent="Stations"]
 script = ExtResource("station_placement")
 station_id = &"ballast"
 placements = {
-"BlowLabel": Vector3(-0.26, 0.72, 0.25),
-"BlowValve": Vector3(-0.2, 1.0, 0.25),
-"FloodLabel": Vector3(-0.26, 0.72, -0.25),
-"FloodValve": Vector3(-0.2, 1.0, -0.25),
-"NoiseGauge": Vector3(-0.18, 1.95, 0),
-"TankGauge": Vector3(-0.26, 1.55, -0.25),
-"AirGauge": Vector3(-0.26, 1.55, 0.25)
+"Panel": Vector3(-0.225, 1.1, 0),
+"Hose": Vector3(0, 0, 0)
 }
 
-[node name="FloodValve" parent="Stations/Ballast" instance=ExtResource("2")]
-rotation = Vector3(0, 1.5708, 0)
-turns_full_range = 2.0
-label = "flood valve"
-
-[node name="BlowValve" parent="Stations/Ballast" instance=ExtResource("2")]
-rotation = Vector3(0, 1.5708, 0)
-turns_full_range = 2.0
-label = "blow valve"
-
-[node name="FloodLabel" type="Label3D" parent="Stations/Ballast"]
-rotation = Vector3(0, 1.5708, 0)
-pixel_size = 0.002
-text = "FLOOD"
-modulate = Color(0.5, 0.75, 0.95, 1)
-
-[node name="BlowLabel" type="Label3D" parent="Stations/Ballast"]
-rotation = Vector3(0, 1.5708, 0)
-pixel_size = 0.002
-text = "BLOW"
-modulate = Color(0.95, 0.6, 0.45, 1)
-
-[node name="TankGauge" type="Node3D" parent="Stations/Ballast"]
-rotation = Vector3(0, 1.5708, 0)
-script = ExtResource("3")
-readout = &"tank_fraction"
-title = "TANK"
-max_value = 1.0
-sweep_deg = 180.0
-
-[node name="AirGauge" type="Node3D" parent="Stations/Ballast"]
-rotation = Vector3(0, 1.5708, 0)
-script = ExtResource("3")
-readout = &"air_fraction"
-title = "HP AIR"
-max_value = 1.0
-sweep_deg = 180.0
-
-[node name="NoiseGauge" parent="Stations/Ballast" instance=ExtResource("6")]
+[node name="Panel" parent="Stations/Ballast" instance=ExtResource("engineering_station")]
 rotation = Vector3(0, 1.5708, 0)
 
-[node name="Scanner" type="Node3D" parent="Stations"]
+[node name="Hose" type="Node3D" parent="Stations/Ballast"]
+
+[node name="Drop" type="MeshInstance3D" parent="Stations/Ballast/Hose"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.075, 0.545, -0.2925)
+mesh = SubResource("hose_drop")
+surface_material_override/0 = ExtResource("hose_mat")
+
+[node name="Run" type="MeshInstance3D" parent="Stations/Ballast/Hose"]
+transform = Transform3D(1, 0, 0, 0, 0, -1, 0, 1, 0, -0.075, 0.05, 0.2538)
+mesh = SubResource("hose_run")
+surface_material_override/0 = ExtResource("hose_mat")
+
+[node name="Turn" type="MeshInstance3D" parent="Stations/Ballast/Hose"]
+transform = Transform3D(0, -1, 0, 1, 0, 0, 0, 0, 1, 0.1875, 0.05, 0.8)
+mesh = SubResource("hose_turn")
+surface_material_override/0 = ExtResource("hose_mat")
+
+[node name="Science" type="Node3D" parent="Stations"]
 script = ExtResource("station_placement")
-station_id = &"scanner"
+station_id = &"science"
 placements = {
-"Switch": Vector3(0.5, 1.1, 0),
-"ProgressGauge": Vector3(0.4, 1.6, 0)
+"Station": Vector3(0.36, 1.1, 0)
 }
 
-[node name="Switch" parent="Stations/Scanner" instance=ExtResource("8")]
-rotation = Vector3(0, 0, 1.5708)
-label = "scanner switch"
-
-[node name="ProgressGauge" type="Node3D" parent="Stations/Scanner"]
+[node name="Station" type="Node3D" parent="Stations/Science" node_paths=PackedStringArray("sit_point")]
 rotation = Vector3(0, -1.5708, 0)
-script = ExtResource("3")
-source_group = &"scan_readouts"
-readout = &"progress"
-title = "SCAN"
-max_value = 1.0
-sweep_deg = 180.0
+script = ExtResource("science_station")
+sit_point = NodePath("Panel/OperatorPoint")
+anchor_root = NodePath("Panel")
+label = "science station"
+
+[node name="Panel" parent="Stations/Science/Station" instance=ExtResource("science_bay")]
+
+[node name="Grab" type="StaticBody3D" parent="Stations/Science/Station"]
+collision_layer = 2
+collision_mask = 0
+
+[node name="Shape" type="CollisionShape3D" parent="Stations/Science/Station/Grab"]
+position = Vector3(0, 0.2, 0.5)
+shape = SubResource("science_grab")
 
 [node name="Engineering" type="Node3D" parent="Stations"]
 script = ExtResource("station_placement")
 station_id = &"engineering"
 placements = {
-"EngineGauge": Vector3(0.2, 1.55, 0)
+"Panel": Vector3(0.225, 1.1, 0)
 }
 
-[node name="EngineGauge" type="Node3D" parent="Stations/Engineering"]
+[node name="Panel" parent="Stations/Engineering" instance=ExtResource("electrical_station")]
 rotation = Vector3(0, -1.5708, 0)
-script = ExtResource("3")
-readout = &"engine_output"
-title = "ENGINE"
-min_value = -1.0
-max_value = 1.0
-sweep_deg = 180.0
 
-[node name="Bilge" type="Node3D" parent="Stations"]
+[node name="LifeSupport" type="Node3D" parent="Stations"]
 script = ExtResource("station_placement")
-station_id = &"bilge"
+station_id = &"life_support"
 placements = {
-"BilgeGauge": Vector3(-0.8, 1.6, -0.3),
-"NoiseGauge": Vector3(-0.8, 1.6, 0.2),
-"Pump": Vector3(-0.75, 1.1, -0.3)
+"Station": Vector3(-0.25, 0, 0)
 }
 
-[node name="Pump" parent="Stations/Bilge" instance=ExtResource("8")]
-rotation = Vector3(0, 0, -1.5708)
-label = "bilge pump switch"
-
-[node name="BilgeGauge" type="Node3D" parent="Stations/Bilge"]
-rotation = Vector3(0, 1.5708, 0)
-script = ExtResource("3")
-readout = &"bilge_water_t"
-title = "BILGE"
-max_value = 8.0
-sweep_deg = 180.0
-
-[node name="NoiseGauge" parent="Stations/Bilge" instance=ExtResource("6")]
+[node name="Station" parent="Stations/LifeSupport" instance=ExtResource("life_support_station")]
 rotation = Vector3(0, 1.5708, 0)
 
 [node name="StatusBoardPlacement" type="Node3D" parent="Stations"]
@@ -431,7 +439,7 @@ heading_up = true
 meters_per_unit = 120.0
 clip_rx = 0.1
 clip_rz = 0.1
-height = 0.01
+height = 0.06
 contour_count = 6
 marker_size = 0.012
 
@@ -519,7 +527,8 @@ min_meters_per_unit = 60.0
 max_meters_per_unit = 900.0
 clip_rx = 0.9
 clip_rz = 0.5
-height = 0.03
+height = 0.68
+panel_height = 0.7
 d_shaped = true
 d_flat_z = -0.62
 back_panel = true
@@ -536,3 +545,100 @@ script = ExtResource("ls_driver")
 
 [node name="PowerSystem" type="Node" parent="."]
 script = ExtResource("power_system")
+
+[node name="CableTrays" type="Node3D" parent="."]
+script = ExtResource("cable_trays")
+board = NodePath("../Stations/Engineering/Panel")
+boxes = NodePath("../JunctionBoxes")
+
+[node name="JunctionBoxes" type="Node3D" parent="."]
+
+[node name="Motor0" parent="JunctionBoxes" instance=ExtResource("junction_box")]
+position = Vector3(-1.2, 2.1, -1.6)
+circuit = 0
+box_index = 0
+
+[node name="Motor1" parent="JunctionBoxes" instance=ExtResource("junction_box")]
+position = Vector3(1.2, 2.1, -1.6)
+circuit = 0
+box_index = 1
+
+[node name="Thrusters0" parent="JunctionBoxes" instance=ExtResource("junction_box")]
+position = Vector3(-1.2, 2.1, -1.2)
+circuit = 1
+box_index = 0
+
+[node name="Thrusters1" parent="JunctionBoxes" instance=ExtResource("junction_box")]
+position = Vector3(1.2, 2.1, -1.2)
+circuit = 1
+box_index = 1
+
+[node name="BilgePump0" parent="JunctionBoxes" instance=ExtResource("junction_box")]
+position = Vector3(-1.2, 2.1, -0.8)
+circuit = 2
+box_index = 0
+
+[node name="BilgePump1" parent="JunctionBoxes" instance=ExtResource("junction_box")]
+position = Vector3(1.2, 2.1, -0.8)
+circuit = 2
+box_index = 1
+
+[node name="CabinLts0" parent="JunctionBoxes" instance=ExtResource("junction_box")]
+position = Vector3(-1.2, 2.1, -0.4)
+circuit = 3
+box_index = 0
+
+[node name="CabinLts1" parent="JunctionBoxes" instance=ExtResource("junction_box")]
+position = Vector3(1.2, 2.1, -0.4)
+circuit = 3
+box_index = 1
+
+[node name="ExtLts0" parent="JunctionBoxes" instance=ExtResource("junction_box")]
+position = Vector3(-1.2, 2.1, 0.0)
+circuit = 4
+box_index = 0
+
+[node name="ExtLts1" parent="JunctionBoxes" instance=ExtResource("junction_box")]
+position = Vector3(1.2, 2.1, 0.0)
+circuit = 4
+box_index = 1
+
+[node name="Sonar0" parent="JunctionBoxes" instance=ExtResource("junction_box")]
+position = Vector3(-1.2, 2.1, 0.4)
+circuit = 5
+box_index = 0
+
+[node name="Sonar1" parent="JunctionBoxes" instance=ExtResource("junction_box")]
+position = Vector3(1.2, 2.1, 0.4)
+circuit = 5
+box_index = 1
+
+[node name="Fans0" parent="JunctionBoxes" instance=ExtResource("junction_box")]
+position = Vector3(-1.2, 2.1, 0.8)
+circuit = 6
+box_index = 0
+
+[node name="Fans1" parent="JunctionBoxes" instance=ExtResource("junction_box")]
+position = Vector3(1.2, 2.1, 0.8)
+circuit = 6
+box_index = 1
+
+[node name="Helm0" parent="JunctionBoxes" instance=ExtResource("junction_box")]
+position = Vector3(-1.2, 2.1, 1.2)
+circuit = 7
+box_index = 0
+
+[node name="Helm1" parent="JunctionBoxes" instance=ExtResource("junction_box")]
+position = Vector3(1.2, 2.1, 1.2)
+circuit = 7
+box_index = 1
+
+[node name="Displays0" parent="JunctionBoxes" instance=ExtResource("junction_box")]
+position = Vector3(-1.2, 2.1, 1.6)
+circuit = 8
+box_index = 0
+
+[node name="Displays1" parent="JunctionBoxes" instance=ExtResource("junction_box")]
+position = Vector3(1.2, 2.1, 1.6)
+circuit = 8
+box_index = 1

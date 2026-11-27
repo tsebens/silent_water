@@ -6,15 +6,15 @@ extends Node
 ## compares the reports from every instance (tools/compare_autotest.py).
 ##
 ## Scenario (seconds after the session starts):
-##   Crew2 walks forward for 1.5 s, grabs the cabin lights lever at 2.0, drags
-##     it all the way down and releases at 3.5.
-##   Crew3 tries to grab the same lever from 2.5, once it sees Crew2 holding
-##     it, and drags it up. The host must reject this. At 3.6 Crew3 takes the helm and holds
+##   Crew2 walks forward for 1.5 s.
+##   At 3.6 Crew3 takes the helm and holds
 ##     W (throttle ahead) and A (rudder to port) from 4.0.
-##   Crew1 (host) opens the flood valve about 1.5 turns between 2.0 and 3.0.
+##   Crew1 (host) opens the flood valve about 1.5 turns between 2.0 and 3.0 (half the 3-turn wheel).
 ##   Crew2 "talks" at 75 dB from 4.0 on (simulated mic level) and puts on
 ##   the sonar headset at 4.5 (it's on the starboard side; the cord check
 ##   uses distance, so Crew2 is moved next to it first).
+##   Crew1 then tours every placed station (TOUR) from 3.2 s, one per TOUR_STEP seconds: it stands in the aisle beside
+##   each one, logs `AUTOTEST_VISIT <id>` and lists it under `visits` in its report (#581).
 ##   At 10.0 (engine fully spooled, so noise is steady) the host tells every
 ##   instance to report at once; clients then quit, and the host quits once
 ##   they are gone. The host holds the report for up to REPORT_GRACE while any
@@ -28,12 +28,20 @@ const REPORT_GRACE: float = 3.0
 ## A peer's voice counts as fresh when its last report is younger than this (s).
 ## Must stay well under Acoustics.VOICE_TIMEOUT or the wait is pointless.
 const VOICE_FRESH: float = 0.25
+## Stations Crew1 visits, in order: pilot, sonar, map table, electrical (the engineering panel), engineering (ballast), life support.
+const TOUR: Array[StringName] = [&"pilot", &"sonar", &"map_table", &"engineering", &"ballast", &"life_support"]
+const TOUR_START: float = 3.2
+const TOUR_STEP: float = 0.9
+## How far into the aisle (m) the visitor stands from a station's floor position, and the longest it may end up from it.
+const TOUR_STAND_OFF: float = 0.7
+const TOUR_REACH: float = 1.6
 const STATIONS: String = "Interior/Stations/"
 
 var role: String = ""
 var _game: Game
 var _t: float = -1.0
 var _done: PackedStringArray = PackedStringArray()
+var _visits: PackedStringArray = PackedStringArray()
 
 
 func setup(game: Game, player_name: String) -> void:
@@ -56,17 +64,12 @@ func _physics_process(delta: float) -> void:
 		return
 	_t += delta
 	var me: Player = _game.local_player()
-	var lever: Interactable = _node("Pilot/Dimmer") as Interactable
-	var flood: Interactable = _node("Ballast/FloodValve") as Interactable
+	var flood: Interactable = _node("Ballast/Panel/FloodWheel") as Interactable
 	var seat: PilotSeat = _node("Pilot/Seat") as PilotSeat
 	match role:
 		"Crew2":
 			if me != null:
 				me.bot_move = Vector2(0, -1) if _t < 1.5 else Vector2.ZERO
-			_once("grab", 2.0, func() -> void: lever.begin_interaction())
-			if _t > 2.1 and _t < 3.3:
-				lever.drag(Vector2(0, 8))
-			_once("release", 3.5, func() -> void: lever.end_interaction())
 			# Through the mic meter, so it's the only thing reporting this voice.
 			MicMeter.forced_db = 75.0 if _t > 4.0 else -1.0
 			_once("pin", 5.0, func() -> void:
@@ -77,17 +80,6 @@ func _physics_process(delta: float) -> void:
 					me.teleport(headset.global_position + Vector3(-0.8, -1.4, 0))
 					me.put_on(headset))
 		"Crew3":
-			# Only contest the lever once Crew2's hold has reached this instance:
-			# instances start their clocks when they connect, so on a loaded
-			# runner a fixed time can land before Crew2's grab and Crew3 would
-			# win the lever (#210). Never grab late either.
-			if _t >= 2.5 and _t < 3.2 and not _done.has("grab") \
-					and lever.state.holder != InteractableState.NO_HOLDER \
-					and lever.state.holder != Net.local_id():
-				_once("grab", 2.5, func() -> void: lever.begin_interaction())
-			if _done.has("grab") and _t < 3.2:
-				lever.drag(Vector2(0, -8))
-			_once("release", 3.4, func() -> void: lever.end_interaction())
 			if me != null:
 				_once("sit", 3.6, func() -> void: me.sit_in(seat))
 				me.bot_move = Vector2(-1, -1) if _t > 4.0 else Vector2.ZERO
@@ -99,6 +91,10 @@ func _physics_process(delta: float) -> void:
 				var r: float = 120.0
 				flood.drag(Vector2(-sin(a), cos(a)) * r * TAU * 1.5 * delta)
 			_once("release", 3.0, func() -> void: flood.end_interaction())
+			if me != null:
+				for i: int in TOUR.size():
+					var id: StringName = TOUR[i]
+					_once("visit_" + String(id), TOUR_START + TOUR_STEP * float(i), func() -> void: _visit(me, id))
 	# The host tells everyone when to report so all snapshots are simultaneous.
 	if Net.is_host() and not _done.has("report"):
 		var ages: Array[float] = []
@@ -131,6 +127,20 @@ func _once(key: String, at: float, action: Callable) -> void:
 		action.call()
 
 
+## Where a visitor stands to use station [param id]: its floor position, moved toward the centre line.
+static func stand_point(id: StringName) -> Vector3:
+	var at: Vector3 = SubLayout.position(id)
+	var toward: float = -signf(at.x) if absf(at.x) > 0.3 else 1.0
+	return Vector3(at.x + toward * TOUR_STAND_OFF, 0.1 + at.y, at.z)
+
+
+func _visit(me: Player, id: StringName) -> void:
+	me.teleport(stand_point(id))
+	if me.position.distance_to(SubLayout.position(id)) <= TOUR_REACH:
+		_visits.append(String(id))
+		print("AUTOTEST_VISIT " + String(id))
+
+
 static func _count_host_events() -> int:
 	var n: int = 0
 	for entry: Array in DevLog.lines:
@@ -161,10 +171,8 @@ func _report() -> void:
 		"peer": Net.local_id(),
 		"is_host": Net.is_host(),
 		"players": positions,
-		"lever": snappedf((_node("Pilot/Dimmer") as Interactable).get_value(), 0.001),
-		"lever_holder": (_node("Pilot/Dimmer") as Interactable).state.holder,
 		"throttle": snappedf((_node("Pilot/Throttle") as Interactable).get_value(), 0.001),
-		"flood": snappedf((_node("Ballast/FloodValve") as Interactable).get_value(), 0.001),
+		"flood": snappedf((_node("Ballast/Panel/FloodWheel") as Interactable).get_value(), 0.001),
 		"rudder": snappedf((_node("Pilot/Rudder") as Interactable).get_value(), 0.001),
 		"seat_holder": seat.state.holder,
 		"seat_point": [snappedf(seat.seat_transform().origin.x, 0.01), snappedf(seat.seat_transform().origin.y, 0.01), snappedf(seat.seat_transform().origin.z, 0.01)],
@@ -178,6 +186,7 @@ func _report() -> void:
 		"apex_state": (_game.get_node("World/Apex") as ApexMonster).state(),
 		"apex_pos": _vec((_game.get_node("World/Apex") as ApexMonster).position),
 		"ambient_db": snappedf(Acoustics.ambient_db(), 0.01),
+		"visits": Array(_visits),
 	}
 	if Net.is_host():
 		var voices: Dictionary = {}

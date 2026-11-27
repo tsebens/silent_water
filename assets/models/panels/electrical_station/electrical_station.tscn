@@ -1,0 +1,115 @@
+[gd_scene format=3]
+
+[ext_resource type="PackedScene" path="res://assets/models/panels/electrical_station/electrical_station_body.glb" id="1"]
+[ext_resource type="PackedScene" path="res://assets/models/kit/breaker_module/breaker_module.tscn" id="2"]
+[ext_resource type="PackedScene" path="res://assets/models/kit/guarded_toggle/guarded_toggle.tscn" id="3"]
+[ext_resource type="PackedScene" path="res://assets/models/kit/indicator_lamp/indicator_lamp.tscn" id="4"]
+[ext_resource type="PackedScene" path="res://assets/models/kit/gauge/gauge.tscn" id="5"]
+[ext_resource type="PackedScene" path="res://assets/models/kit/linear_gauge/linear_gauge.tscn" id="6"]
+[ext_resource type="PackedScene" path="res://assets/models/kit/spares_drawer/spares_drawer.tscn" id="7"]
+[ext_resource type="Script" path="res://src/interact/generator_link.gd" id="8"]
+[ext_resource type="Script" path="res://src/interact/threshold_lamp.gd" id="9"]
+
+[node name="ElectricalStation" type="Node3D"]
+
+[node name="Body" parent="." instance=ExtResource("1")]
+
+[node name="BreakerMotor" parent="." instance=ExtResource("2")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.305, 0.2, 0.03)
+circuit = 0
+label = "MOTOR"
+
+[node name="BreakerThrusters" parent="." instance=ExtResource("2")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.115, 0.2, 0.03)
+circuit = 1
+label = "THRUSTERS"
+
+[node name="BreakerBilgePump" parent="." instance=ExtResource("2")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.075, 0.2, 0.03)
+circuit = 2
+label = "BILGE PUMP"
+
+[node name="BreakerCabinLts" parent="." instance=ExtResource("2")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.305, 0.02, 0.03)
+circuit = 3
+label = "CABIN LTS"
+
+[node name="BreakerExtLts" parent="." instance=ExtResource("2")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.115, 0.02, 0.03)
+circuit = 4
+label = "EXT LTS"
+
+[node name="BreakerSonar" parent="." instance=ExtResource("2")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.075, 0.02, 0.03)
+circuit = 5
+label = "SONAR"
+
+[node name="BreakerFans" parent="." instance=ExtResource("2")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.305, -0.16, 0.03)
+circuit = 6
+label = "FANS"
+
+[node name="BreakerHelm" parent="." instance=ExtResource("2")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.115, -0.16, 0.03)
+circuit = 7
+label = "HELM"
+
+[node name="BreakerDisplays" parent="." instance=ExtResource("2")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.075, -0.16, 0.03)
+circuit = 8
+label = "DISPLAYS"
+
+[node name="GeneratorToggle" parent="." instance=ExtResource("3")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.41, 0.47, 0.03)
+label = "GENERATOR"
+
+[node name="RunningLamp" parent="." instance=ExtResource("4")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.31, 0.5, 0.03)
+
+[node name="HeatGauge" parent="." instance=ExtResource("5")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.16, 0.47, 0.04)
+title = "HEAT"
+readout = &"generator_heat"
+source_group = &"power_system"
+min_value = 0
+max_value = 1
+radius = 0.05
+
+[node name="LoadGauge" parent="." instance=ExtResource("5")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.335, 0.06, 0.036)
+title = "LOAD"
+readout = &"load"
+source_group = &"power_system"
+min_value = 0
+max_value = 1
+radius = 0.06
+zone_from = 0.8
+zone_to = 1
+zone_swatch = &"light_alarm"
+
+[node name="BatteryBar" parent="." instance=ExtResource("6")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.44, -0.116, 0.03)
+readout = &"battery_charge"
+source_group = &"power_system"
+min_value = 0
+max_value = 1
+descending = true
+warn_at = 0.5
+alarm_at = 0.15
+
+[node name="SparesDrawer" parent="." instance=ExtResource("7")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.115, -0.355, 0.026)
+
+[node name="GeneratorLink" type="Node" parent="." node_paths=PackedStringArray("switch_lever")]
+script = ExtResource("8")
+switch_lever = NodePath("../GeneratorToggle")
+
+[node name="RunningLampDriver" type="Node" parent="." node_paths=PackedStringArray("lamp")]
+script = ExtResource("9")
+lamp = NodePath("../RunningLamp")
+source_group = &"power_system"
+readout = &"generator_running"
+threshold = 0.5
+
+[node name="OperatorEye" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.55, 0.5)

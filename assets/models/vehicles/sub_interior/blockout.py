@@ -141,10 +141,39 @@ def wireframe(obj: bpy.types.Object, thickness: float = 0.012) -> None:
 
 # ---- hull -------------------------------------------------------------------------------------
 
+def build_dome(layout: dict) -> None:
+    """The dome: a hemisphere (layout.json "dome") bulging forward of its ring, as the glass wireframe. Halves are split
+    port / starboard so cutaways can hide one."""
+    d = layout["dome"]
+    cx, cy, cz = d["centre"]
+    r, n_seg, n_ring = d["radius_m"], d["segments_round"], d["rings_to_apex"]
+    for side, k_range in (("port", range(n_seg // 4, 3 * n_seg // 4)), ("stbd", [k for k in range(n_seg) if not n_seg // 4 <= k < 3 * n_seg // 4])):
+        bm = bmesh.new()
+        cache: dict = {}
+
+        def vert(j: int, k: int):
+            if (j, k % n_seg) not in cache:
+                a, p = 0.5 * math.pi * j / n_ring, 2 * math.pi * (k % n_seg) / n_seg
+                cache[(j, k % n_seg)] = bm.verts.new(to_blender(cx + r * math.sin(a) * math.cos(p), cy + r * math.sin(a) * math.sin(p), cz - r * math.cos(a)))
+            return cache[(j, k % n_seg)]
+        for j in range(n_ring):
+            for k in k_range:
+                vs = [vert(j, k), vert(j, k + 1), vert(j + 1, k + 1), vert(j + 1, k)]
+                try:
+                    bm.faces.new(list(dict.fromkeys(vs)))
+                except ValueError:
+                    pass
+        bmesh.ops.recalc_face_normals(bm, faces=bm.faces)
+        obj = mesh_object(f"dome_{side}", bm, "glass", "dome")
+        obj["groups"] = ["dome", f"dome_{side}"]
+        wireframe(obj, 0.008)
+
+
 def build_hull(layout: dict, cockpit_end: float) -> None:
     """Loft the inner hull surface from its rings, split into groups so cutaways can hide parts:
     shell_low / shell_high (split above head height) and port / starboard halves; the dome (cockpit) apart."""
-    rings = layout["hull"]["rings"]
+    ring_z = layout["dome"]["ring_z"]
+    rings = [r for r in layout["hull"]["rings"] if r["z"] >= ring_z - 1e-6]     # the hull ends at the dome's ring
     split_y = layout["main_deck_y"] + 2.0
     n = len(rings[0]["points"])
     faces: dict[str, list] = {}
@@ -157,13 +186,10 @@ def build_hull(layout: dict, cockpit_end: float) -> None:
             cy = sum(p[0][1] for p in quad) / 4
             cz = sum(p[1] for p in quad) / 4
             side = "port" if cx < 0 else "stbd"
-            if cz < cockpit_end:
-                key = f"dome_{'port' if cx < 0 else 'stbd'}"
-            else:
-                key = f"shell_{'high' if cy > split_y else 'low'}_{side}"
+            key = f"shell_{'high' if cy > split_y else 'low'}_{side}"
             faces.setdefault(key, []).append(quad)
-    # cap both ends: the rings stop short of the tips, so the open ends would read as windows in the renders
-    for ring, key, mat, group in ((rings[0], "dome_cap", "glass", "dome"), (rings[-1], "stern_cap", "shell", "shell")):
+    # cap the stern: the rings stop short of the tip, so the open end would read as a window in the renders
+    for ring, key, mat, group in ((rings[-1], "stern_cap", "shell", "shell"),):
         bm = bmesh.new()
         bm.faces.new([bm.verts.new(to_blender(x, y, ring["z"])) for x, y in ring["points"]])
         cap = mesh_object(key, bm, mat, group)
@@ -185,12 +211,8 @@ def build_hull(layout: dict, cockpit_end: float) -> None:
             except ValueError:
                 pass
         bmesh.ops.recalc_face_normals(bm, faces=bm.faces)
-        is_dome = key.startswith("dome")
-        obj = mesh_object(key, bm, "glass" if is_dome else "shell", key.rsplit("_", 1)[0] if not is_dome else "dome")
+        obj = mesh_object(key, bm, "shell", key.rsplit("_", 1)[0])
         obj["groups"] = [key.split("_")[0], key.rsplit("_", 1)[0], f"{key.split('_')[0]}_{key.rsplit('_', 1)[1]}"]
-        if is_dome:
-            # a sparse wireframe: keep every 3rd ring and 6th meridian so the glass reads without blocking the view
-            wireframe(obj, 0.008)
 
 
 def build_floors(layout: dict) -> None:
@@ -406,6 +428,7 @@ def main() -> None:
     setup_scene()
     comps = {c["id"]: c for c in layout["compartments"]}
     build_hull(layout, comps["cockpit"]["z"][1])
+    build_dome(layout)
     build_floors(layout)
     if "bulkhead" in comps:
         build_bulkhead(layout, comps["bulkhead"])
@@ -418,10 +441,11 @@ def main() -> None:
     keel = min(p[1] for r in layout["hull"]["rings"] for p in r["points"])
     box("seafloor", -30.0, 30.0, keel - 2.05, keel - 2.0, -40.0, 40.0, "seafloor", "seafloor")
     # the dome's rim ring
-    cockpit_end = comps["cockpit"]["z"][1]
-    ring = min(layout["hull"]["rings"], key=lambda r: abs(r["z"] - cockpit_end))
+    dome = layout["dome"]
     bm = bmesh.new()
-    pts = [bm.verts.new(to_blender(x, y, cockpit_end)) for x, y in ring["points"]]
+    pts = [bm.verts.new(to_blender(dome["centre"][0] + dome["radius_m"] * math.cos(2 * math.pi * k / 72),
+                                   dome["centre"][1] + dome["radius_m"] * math.sin(2 * math.pi * k / 72), dome["ring_z"]))
+           for k in range(72)]
     for k in range(len(pts)):
         bm.edges.new((pts[k], pts[(k + 1) % len(pts)]))
     rim = mesh_object("dome_rim", bm, "ring", "dome_rim")

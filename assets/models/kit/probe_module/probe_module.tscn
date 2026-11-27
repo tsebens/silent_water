@@ -1,0 +1,22 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://src/science/probe_module.gd" id="1"]
+[ext_resource type="PackedScene" path="res://assets/models/kit/science_module_frame/science_module_frame.tscn" id="2"]
+[ext_resource type="PackedScene" path="res://assets/models/kit/probe_module/probe_module_face.glb" id="3"]
+[ext_resource type="PackedScene" path="res://assets/models/kit/probe_module/probe_module_reel.glb" id="4"]
+[ext_resource type="PackedScene" path="res://assets/models/kit/lit_toggle/lit_toggle.tscn" id="5"]
+
+[node name="ProbeModule" type="Node3D"]
+script = ExtResource("1")
+
+[node name="Frame" parent="." instance=ExtResource("2")]
+
+[node name="Face" parent="." instance=ExtResource("3")]
+
+[node name="ReelPivot" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.085, 0, 0.0825)
+
+[node name="Reel" parent="ReelPivot" instance=ExtResource("4")]
+
+[node name="WinchSwitch" parent="." instance=ExtResource("5")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.112, 0, 0.058)

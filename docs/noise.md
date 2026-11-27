@@ -1,12 +1,12 @@
 # Noise system
 
-Noise is the core system. Everything the crew does feeds one number: how loud the sub is.
+Noise is the core system. Everything the crew does feeds the sound field (events with places and times) and one continuous number for the gauges: how loud the sub is.
 
 ## Model
 
 - Every source reports **linear intensity** (proportional to pressure squared) at 1 m. Intensities add; decibels and pascals don't.
 - Scale: intensity 1.0 = **100 dB**. Conversions live in `NoiseLevel` (`to_db`, `from_db`, `attenuate`).
-- The host (`Acoustics` autoload) sums every source into `sub_intensity` each physics tick. The sub is tiny next to what's listening, so it's one number for the whole sub.
+- The host (`Acoustics` autoload) sums every source into `sub_intensity` each physics tick. The sub is tiny next to what's listening, so the gauges and `heard_at` use one number for the whole sub; creatures use the event field below.
 - Ocean background is `OCEAN_BASE_DB` (62 dB) plus any `AmbientZone`s near the sub. When the sub is quieter than the background, it is **masked** (`Acoustics.is_masked()`).
 - Clients receive both levels at 10 Hz for the gauges.
 
@@ -24,7 +24,8 @@ Noise is the core system. Everything the crew does feeds one number: how loud th
 | Walking (2.6 m/s) | `Player.FOOTSTEP_INTENSITY` | 75 dB |
 | Side thrusters, full turn | `SubController.THRUSTER_INTENSITY` | 73 dB (∝ rudder input) |
 | Bilge pump running | `LeakSystem.PUMP_INTENSITY` | 78 dB |
-| Engine, full ahead | `SubController.ENGINE_FULL_INTENSITY` | 80 dB (∝ output²) |
+| Electric motor, full output | `SubController.ENGINE_FULL_INTENSITY` | 73 dB (∝ output²; see Power) |
+| Generator running | `PowerConfig.generator_noise` | 85 dB, constant |
 | Shout (RMS ≈ 0.3) | `VoiceLoudness` | ~87 dB |
 | Blowing ballast, valve fully open | `SubController.BLOW_INTENSITY` | 90 dB |
 | Hull strike at 1 m/s | `SubController.STRIKE_INTENSITY` | 95 dB, decays over 1.5 s (∝ speed²) |
@@ -46,6 +47,14 @@ Debug: hold **F3** to simulate normal speech, **Shift+F3** for a shout. `--fake-
 
 The reports travel unreliable-ordered, and the host counts a peer's voice as silence once its last report is older than `Acoustics.VOICE_TIMEOUT` (0.5 s), so a voice stops adding noise promptly when a player goes quiet or drops. The three-instance autotest therefore holds its snapshot until every peer's report is fresh (`Autotest.report_due`, bounded by a short grace), rather than reading a timed-out zero as a failure ([#86](https://github.com/tsebens/silent_water/issues/86)).
 
+## Power
+
+Noise follows the power system (`docs/` Power and electrics, `PowerSystem`):
+
+- The engine's throttle noise is the **motor's**: about 0.002 at full (73 dB), down from 0.01. `PowerSystem` reports it with the generator's constant 0.03 (85 dB) while running; `SubController` leaves its own engine term out when a `PowerSystem` exists, so nothing counts twice. The breakdown names `motor` and `generator`.
+- The engine output limit comes from `PowerSystem`: 40% motor power on the battery alone (output about 0.54), full on the generator, 0 with MOTOR out or the battery empty.
+- With THRUSTERS unpowered the side thrusters stop turning the sub in place and stop their noise.
+
 ## Hearing at a distance (for creatures)
 
 `Acoustics.heard_at(world_point, sub_frame)` gives the sub's noise at a point:
@@ -66,3 +75,21 @@ The two-needle noise gauge (`src/noise/noise_gauge.tscn`) reads `sub_db` (red) a
 ## Leak rate
 
 Spontaneous leaks are a Poisson process: the rate is `depth_factor(depth) / mean_interval_sec` (`LeakSystem`, `mean_interval_sec` exported, default 180 s). `depth_factor` rises linearly from 0.25 at the surface to 2.0 at the canyon floor (230 m) and stays there below that, so a leak is about eight times as likely at the floor as at the surface. After a patch (or at the start of a dive) nothing opens until the hold time has run out. Hull strikes are unchanged. F6 (dev) switches spontaneous leaks off for everyone.
+
+## Sound events (M19.1)
+
+`Acoustics.emit_event(type, position, source, scale)` gives a sound a place in the world. It is host-only, synchronous, and keeps nothing: each `SoundDetector` in range gets a short-lived `SoundEvent` carrying the received intensity (`NoiseLevel.attenuate` plus `OCCLUSION_LOSS_DB` behind terrain), an uncertainty (grows with distance, shrinks with the margin above `ambient_at`), a perceived position (true position plus a seeded random error within the uncertainty) and a timestamp (emission time plus distance / `SPEED_OF_SOUND`). A detector only hears events at least `threshold_db` above the background at its position. Listeners keep `SoundMemory` records in a `SoundMemory.Store`, which fades on the listener's own clock. Emitters never pass raw intensities: each references a shared `SoundType` Resource (intensity, kind, period; one `.tres` per kind in `src/noise/sound_types/`), so changing the type changes every emitter that uses it. `scale` is a per-emitter multiplier, clamped to `SoundType.SCALE_MIN`..`SCALE_MAX`. `Acoustics.emit_raw` takes a raw intensity and is for tests and tools only. `SoundDetector.world_position` is a plain var its owner must keep current. `heard_at` and the gauges are unchanged.
+
+## Emitters (M19.2)
+
+`SoundEmitter` (a node with a `sound_type`, `scale`, `world_position`) emits one event per `SoundType.period` while active; a one-off type (period 0) emits through `fire()`. The sub is the same: `Acoustics` sums every continuous system (sources and voices) and emits one combined event per period of `sub_combined.tres` (1 s) at `SubFrame.sub_transform.origin`; the type's intensity is the unit that sum is multiplied by. `add_impulse` also emits once, immediately, using `impact.tres`. `sub_intensity`, `breakdown`, `top_text` and the gauges stay continuous and unchanged.
+
+## The apex hears detections (M19.3)
+
+The apex no longer calls `heard_at`. It owns a `SoundDetector` whose `threshold_db` is `-hearing_gain_db`, so it hears any sound the old model scored at SNR ≥ 0. Detections become `SoundMemory` records in `ApexMonster.memories` (lifetime 20 s on the acoustics clock; kind recorded, unused). Each tick the brain's fix (`last_heard`) is the loudest memory weighted toward the recent, so a louder event elsewhere draws it away and a stale fix is dropped (`has_heard` false once all have faded). The SNR fed to `SuspicionModel` is the strongest among detections no older than `ApexMonster.HEARD_HOLD_SEC` (1.25 s, just over the sub's 1 s event period), so steady sub noise reads as it did before and the ladder and thresholds are unchanged.
+
+## The sound field (M19.4)
+
+Overview of M19.1 to M19.3: **emitters** (`SoundEmitter`, the sub's combined event, `add_impulse`) call `Acoustics.emit_event`; each **detector** in range receives a `SoundEvent` with attenuated intensity, uncertainty and a perceived position; a listener turns events into **memories** that fade on its own clock. The continuous gauges (`sub_intensity`, `breakdown`, `top_text`) are kept alongside.
+
+Dev overlay (F1): the stats panel lists `EVENTS` (the last `Acoustics.RECENT_EVENTS_MAX` emitted events, newest first: kind, level at 1 m, position, age, detectors that heard it) and `MEMORIES` (the apex's, with level, position, uncertainty and age), with placeholders when empty. The minimap shows events as white dots and memories as orange ones. Events are recorded on the host only, so a client's list stays empty. `DevOverlay.sound_field_lines` builds the text.

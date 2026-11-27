@@ -80,8 +80,9 @@ There are more jobs than people, so the crew keeps moving between stations, and 
 | Rounds | Life support | Swapping CO2 scrubber canisters, watching O2 (see *Life support* below) |
 | Rounds | Leaks | Finding leaks by ear and patching them |
 | Rounds | Countermeasures | Decoys and noisemakers; replaces the original concept's weapons station |
+| Rounds | Science | Data gathering at three module bays (#529): each bay takes any of four instruments, SCAN, SWEEP, PROBE or CAMERA (default fit SCAN, SWEEP, CAMERA). One operator steps up like at the map table, picks the active module with left/right, works it with mapped keys, and steps back with E or Esc. Each module's screen shows how well it is going, the time left, and what would help |
 
-The original concept also had a charts station. It became the **map table** (M7): a holographic terrain display built into the port wall of midships, with a standing operator who moves the camera and standing observers who drop pins. Everyone at the table stands; whoever steps up leans over it, about 0.25 m below the standing eye and 0.15 m further over the table, the same for everyone, and the hologram is tuned for that leaning eye height. Only the operator's console and keys drive the camera; observers step up at two points either side of the operator and place and remove pins (concept in `assets/models/map_table/concept/`). The hologram is a low relief of contour lines lying on the tabletop, with a curved panel of light along the back edge as a backdrop (round 6, #380). The operator pans with a trackball, zooms with a lever and follows the sub with a toggle; rotation is on mouse and keyboard, and the console's knob is decoration. Countermeasures stands against the starboard wall just aft of the sonar station, across the aisle from the table, so its operator can watch their decoys on the hologram. The pilot has a smaller heading-up hologram of the same shared chart, in the same display model.
+The original concept also had a charts station. It became the **map table** (M7): a holographic terrain display built into the port wall of midships, with a standing operator who moves the camera and standing observers who drop pins. Everyone at the table stands; whoever steps up leans over it, about 0.25 m below the standing eye and 0.15 m further over the table, the same for everyone, and the hologram is tuned for that leaning eye height. Only the operator's console and keys drive the camera; observers step up at two points either side of the operator and place and remove pins (concept in `assets/models/map_table/concept/`). The hologram is a low relief of contour lines lying on the tabletop, with a curved panel of light along the back edge as a backdrop (round 6, #380). The operator pans with a trackball, zooms with a lever and follows the sub with a toggle; rotation is on mouse and keyboard, and the console's knob is decoration. The starboard wall carries the working stations, bow to stern: sonar turned to the hull, the science station (three module bays over a hand ledge), and countermeasures at the aft end against the bulkhead, no longer facing the table (#586). The port side keeps the way out: the lock-out trunk's hatch on the centreline just astern of the table, with the lockers and the tower ladder aft of the table on the port wall. The pilot has a smaller heading-up hologram of the same shared chart, in the same display model.
 
 ### Controls
 
@@ -167,8 +168,9 @@ station's active ports. Each is a perforated cylinder full of absorbent beads.
   `assets/models/life_support/concept/`.
 - **Two active ports** side by side in a chamfered alcove at chest height. Each is a **minimal open
   cradle**: a shallow socket the canister stands in, lifted straight out and dropped back in, with no door and
-  no pivot. Each port has its own **vertical linear gauge** that fills from the bottom as the canister
-  saturates: green to 50%, yellow to 85%, red to 100% (colour coding collapses under stealth red, so the
+  no pivot. Each port has its own **vertical linear gauge** that shows the canister's remaining
+  capacity: a fresh canister is a full green bar that drains, green above 50% remaining, yellow from 50% to 15%,
+  red below 15% (colour coding collapses under stealth red, so the
   gauge and the canister rings still need the red-light check noted in `docs/palette.md`). The gauge is a
   new base asset. A pivoting carriage that tilts the canister out toward the player (Tristan's diagrams in
   the concept folder) is a possible future upgrade to the swap's feel, not part of the design.
@@ -230,7 +232,7 @@ Noise is the core system, and every other system feeds into it.
 ### Noise model
 
 - **Sources:** voices, footsteps, engine speed, pumps, fans, controls moved quickly, repairs (welding is loudest), active sonar, and accidents like dropped tools or hull strikes.
-- **One number for the sub.** The sub is tiny next to the monster, so every source inside it sums to a single noise level at the sub's position. It falls off with distance and is blocked by terrain.
+- **A field of sound events.** Sources inside the sub still sum as intensity, and the sub emits that sum as a combined event about once a second at its position; one-offs (impacts) emit immediately. Each listener receives an event attenuated by distance and terrain, with an uncertain perceived position, and keeps fading memories of what it heard. The continuous gauges (one level for the sub, one for the ocean) are kept.
 - **Sum intensity, not decibels.** Sources add as acoustic intensity (proportional to sound pressure squared). Decibels and raw pascals don't add directly. Convert the total back to a level for gauges and creatures.
 - Creatures build suspicion from what they hear, which drives the escalation ladder (see Threats).
 - **The mix tells the truth.** What the crew hears inside the sub matches what creatures hear outside.
@@ -291,7 +293,7 @@ Nothing that matters can be killed. Diver tools are defensive.
 Each step must be audible or felt, so death is never unannounced.
 
 1. **Unaware:** distant calls, faint sonar traces.
-2. **Curious:** drifts toward noise it heard.
+2. **Curious:** drifts toward noise it heard (the loudest recent memory, not a live read of the sub).
 3. **Hunting:** searches where it last heard the sub.
 4. **Committed:** charges; this is the last window to break contact.
 5. **Contact:** the sub is lost.

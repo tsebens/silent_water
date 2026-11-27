@@ -42,6 +42,12 @@ const NEEDLE: PackedScene = preload("res://assets/models/kit/gauge/gauge_needle.
 @export var major_divisions: int = 4
 ## Short tick marks between two long ones.
 @export var minor_per_division: int = 1
+## Start of a coloured zone on the scale (e.g. a red zone at the top). NAN, the default, draws none.
+@export var zone_from: float = NAN
+## End of the zone; NAN runs it to [member max_value].
+@export var zone_to: float = NAN
+## Palette swatch of the zone.
+@export var zone_swatch: StringName = &"light_alarm"
 ## Readings stay legible without colour: the position and shape of the needle and ticks carry the value.
 ## Colours come from the palette (roles `readout_face`, `readout_ink`; swatches `light_readout`, `info_black`).
 const FACE_ROLE: String = "readout_face"
@@ -107,6 +113,9 @@ func _rebuild() -> void:
 
 ## Label text is drawn here rather than by a role material, so it follows the palette by hand.
 func _recolor_labels() -> void:
+	var zone: MeshInstance3D = get_node_or_null("Zone") as MeshInstance3D
+	if zone != null:
+		(zone.material_override as StandardMaterial3D).albedo_color = Palette.main().color(zone_swatch)
 	for child: Node in get_children():
 		var l: Label3D = child as Label3D
 		if l != null:
@@ -160,6 +169,14 @@ func _build() -> void:
 	face.position.z = -0.0005
 	add_child(face)
 
+	if not wraps and not is_nan(zone_from):
+		var zone: MeshInstance3D = MeshInstance3D.new()
+		zone.name = "Zone"
+		zone.mesh = _zone_mesh()
+		zone.position.z = 0.0002
+		zone.material_override = _zone_material()
+		add_child(zone)
+
 	var marks: MeshInstance3D = MeshInstance3D.new()
 	marks.name = "Marks"
 	marks.mesh = _marks_mesh()
@@ -189,6 +206,34 @@ func _build() -> void:
 	elif wraps:
 		for i: int in range(mini(wrap_labels.size(), 4)):
 			_add_label(wrap_labels[i], _dir(-float(i) * PI / 2.0) * radius * 0.6 + Vector3(0, 0, 0.0012), 0.0008 * s)
+
+
+## The zone as a flat band along the scale, inside the tick marks.
+func _zone_mesh() -> ArrayMesh:
+	var st: SurfaceTool = SurfaceTool.new()
+	st.begin(Mesh.PRIMITIVE_TRIANGLES)
+	st.set_normal(Vector3(0, 0, 1))
+	var t0: float = _fraction(zone_from)
+	var t1: float = 1.0 if is_nan(zone_to) else _fraction(zone_to)
+	var segments: int = 24
+	for i: int in range(segments):
+		var da: Vector3 = _dir(_angle_for(lerpf(t0, t1, float(i) / segments)))
+		var db: Vector3 = _dir(_angle_for(lerpf(t0, t1, float(i + 1) / segments)))
+		var a0: Vector3 = da * radius * 0.66
+		var a1: Vector3 = da * radius * 0.74
+		var b0: Vector3 = db * radius * 0.66
+		var b1: Vector3 = db * radius * 0.74
+		for p: Vector3 in [a0, a1, b1, a0, b1, b0]:
+			st.add_vertex(p)
+	return st.commit()
+
+
+func _zone_material() -> StandardMaterial3D:
+	var m: StandardMaterial3D = StandardMaterial3D.new()
+	m.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	m.cull_mode = BaseMaterial3D.CULL_DISABLED
+	m.albedo_color = Palette.main().color(zone_swatch)
+	return m
 
 
 ## Tick marks as one flat mesh on the dial face: long ones at the major

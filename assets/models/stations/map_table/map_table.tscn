@@ -66,29 +66,29 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.17, 0.1, 0)
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.17, 1.425, 0.068)
 
 [node name="NoiseRepeater" parent="Shelf" instance=ExtResource("7")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.01, 0)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.01, 0.002)
 radius = 0.075
 
 [node name="DecorGauge1" parent="Shelf" instance=ExtResource("8")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.11, 0.055, 0)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.11, 0.055, 0.002)
 radius = 0.04
 title = ""
 source_group = &"map_table_no_readouts"
 
 [node name="DecorGauge2" parent="Shelf" instance=ExtResource("8")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.11, 0.055, 0)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.11, 0.055, 0.002)
 radius = 0.04
 title = ""
 source_group = &"map_table_no_readouts"
 
 [node name="DecorGauge3" parent="Shelf" instance=ExtResource("8")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.11, -0.06, 0)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.11, -0.06, 0.002)
 radius = 0.04
 title = ""
 source_group = &"map_table_no_readouts"
 
 [node name="DecorGauge4" parent="Shelf" instance=ExtResource("8")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.11, -0.06, 0)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.11, -0.06, 0.002)
 radius = 0.04
 title = ""
 source_group = &"map_table_no_readouts"

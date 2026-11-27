@@ -17,14 +17,14 @@ import math
 import build123d as bd
 import numpy as np
 
-from cadkit import library
+from cadkit import library, mount
 from cadkit.solids import Solid, at, expect, export_solids_glb, prism
 from cadkit.library import entry, note, out_dir, res, scene_module, scene_path, write_entry
 from cadkit.tscn import NodePath, Scene, SName, Xform
 
 SLUG, GROUP = "pilot_station", "stations"
 USES: list[str] = ["pilot_seat", "operator_seat", "joystick", "multidisplay", "navball", "depth_finder", "gauge",
-                   "lit_guarded_toggle", "indicator_lamp"]
+                   "lit_toggle", "indicator_lamp"]
 TRIANGLE_BUDGET = 15000     # approved on #482 (the station comes to about 14,300): recorded in the entry
 
 # --- where the station sits in the hull (the program's pilot position and the cockpit floor), mm
@@ -34,7 +34,7 @@ HULL_Y0 = -1150.0          # layout.json cockpit floor y
 LAYOUT = library.REPO / "assets/models/vehicles/sub_interior/layout.json"
 RIM_HALF_MM = 60.0         # build_sub_hull.py RIM_HALF
 RIM_INSET_MM = 80.0        # the ring stands this far in from the wall
-EYE_MM = np.array([0.0, 1150.0, 0.0])    # seated eye (brief: seated_eye_height_m 1.15)
+EYE_MM = np.array([0.0, 1150.0, 0.0])    # seated eye (brief: seated_eye_height_m 1.15), 100 mm above the sphere's centre
 
 # --- the strip's section, in (d, y): d toward the pilot from the back's foot, y up, mm
 BOT, TOP = 440.0, 780.0    # foot and top of the back; the strip's top edge is TOP
@@ -44,22 +44,27 @@ FASCIA_DEG = 40.0          # the fascia's normal is this far above horizontal (t
 FASCIA_L = 330.0           # fascia length, top to bottom
 LIP = 60.0                 # depth of the front's edge face under the fascia
 STANDOFF = 85.0            # the foot of the back stands this far off the glass
-GAP = 600.0                # the clear gap at the apex, X
-CAP_T, CAP_PROUD = 40.0, 10.0    # the orange end cap's thickness along the wing, and how far it stands proud
-MARGIN = 30.0              # space between an instrument and its facet's edge, each side
+GAP = 400.0                # the clear gap at the apex, X (#686: the true hemisphere sets how near the wings can start)
+FORWARD_DEG = 70.0         # centre-based: depth finder, hologram, navball and multidisplay centres lie within this of the seated eye's forward axis (#686: 35 then 60 were out of reach on a 2.2 m hemisphere)
+FORWARD_NAMES = ("DepthFinder", "HologramAnchor", "Navball", "Multidisplay")
+CAP_T, CAP_PROUD = 36.0, 10.0    # the orange end cap's thickness along the wing, and how far it stands proud
+MARGIN = 10.0              # space between an instrument and its facet's edge, each side
 
 # --- the hologram: the map table's display model, about 20 cm, above the depth finder on the strip's top
 HOLO_H, HOLO_R = 200.0, 100.0
 HOLO_BASE_R, HOLO_BASE_H, HOLO_BASE_D = 75.0, 22.0, -30.0    # projector pad: radius, height, d from the back's foot
 
 # --- instruments (sizes come from the catalogue entries; settings are those the next arc will set)
-SPEED_R, NOISE_R = 0.10, 0.11      # gauge radii, m
-TOGGLE_PITCH, LAMP_PITCH = 84.0, 50.0
+SPEED_R, NOISE_R = 0.055, 0.055    # gauge radii, m (were 0.10 and 0.11: #605 stacks the two on one facet)
+LAMP_PITCH = 56.0
 LAMP_PLATE_T = 8.0
-BORE_D, BORE_SIDES = 36.0, 24
+BORE_D, BORE_SIDES = 60.0, 24
 PLATE_W, PLATE_H, PLATE_T = 44.0, 12.0, 2.5       # engraved label plate
-PLATE_DROP_TOGGLE = 88.0 + 12.0     # centre of a toggle's plate below its origin: half its 176 mm (1x3) plate and a margin
-PLATE_DROP_LAMP = 25.0 + 12.0       # below the lamps' 50 mm dark plate      # the navball's bore into the fascia: depth (keep_clear 34) and sides
+# where each instrument sits up its facet (mm from the fascia's middle; the fascia is 330 long): #605 stacks them
+GAUGE_UP = (98.0, -60.0)           # speed over noise (each about 147 mm tall)
+PLATE_DROP_LAMP = 25.0 + 12.0       # below the lamps' 50 mm dark plate: a label plate under each lamp
+LAMP_LEDGE_D = -RAKE + LEDGE / 2    # the lamps sit along the middle of the top ledge (d from the back's foot)
+LAMP_UP = 8.0                       # shifts the lamp, its dark plate and its label plate to centre on the 90 mm ledge
 
 
 # --- what each instrument is set to (tier-1 instance settings), and the lamp drivers (readout, threshold, threshold_of, above)
@@ -84,83 +89,55 @@ def _gauge_extent(radius_m: float) -> tuple[float, float, float]:
 
 
 def _facets() -> dict[str, list[tuple[str, float, str]]]:
-    """Per wing: facets from the gap outward: (name, length mm, what it carries)."""
-    df = entry("depth_finder")["footprint_mm"][0]
+    """Per wing: facets from the gap outward: (name, length mm, what it carries). The two wings have equal length (#686):
+    the shorter one's last facet is padded."""
     md = entry("multidisplay")["footprint_mm"][0]
     nb = entry("navball")["footprint_mm"][0]
-    sw = entry("lit_guarded_toggle")["footprint_mm"][0]
+    df = entry("depth_finder")["footprint_mm"][0]
     m2 = 2 * MARGIN
-    return {
-        "left": [("DepthFinder", df + m2, "depth finder, with the hologram above it"),
-                 ("Multidisplay", md + m2, "multidisplay"),
-                 ("Speed", 2 * _gauge_extent(SPEED_R)[0] + m2, "speed and throttle gauge")],
-        "right": [("Navball", nb + m2, "navball"),
-                  ("Switches", 3 * TOGGLE_PITCH + sw + m2, "four light switches"),
-                  ("Lamps", 2 * LAMP_PITCH + entry("indicator_lamp")["footprint_mm"][0] + m2, "three warning lamps"),
-                  ("Noise", 2 * _gauge_extent(NOISE_R)[0] + m2, "noise repeater")],
-    }
+    g = max(2 * _gauge_extent(SPEED_R)[0], 2 * _gauge_extent(NOISE_R)[0]) + m2
+    left = [("DepthFinder", df + m2, "depth finder, with the hologram above it"),
+            ("Gauges", g, "speed and throttle gauge over the noise repeater")]
+    right = [("Navball", nb + m2, "navball"),
+             ("Multidisplay", md + m2, "multidisplay; the three warning lamps along its top ledge")]
+    ll, rl = sum(f[1] for f in left), sum(f[1] for f in right)
+    if ll < rl:
+        left[-1] = (left[-1][0], left[-1][1] + rl - ll, left[-1][2])
+    else:
+        right[-1] = (right[-1][0], right[-1][1] + ll - rl, right[-1][2])
+    return {"left": left, "right": right}
 
 
 # ---------------------------------------------------------------------------------------------------------------- hull
 _HULL: dict = {}
 
 
-def _rings() -> tuple[np.ndarray, list[np.ndarray], float]:
-    """The dome's rings in the station's frame (mm): z values, and (n, 2) points (x, y) per ring; and the rim's z."""
+def _dome() -> tuple[np.ndarray, float, float]:
+    """The bubble from layout.json's `dome` block, in the station's frame (mm): its centre, its radius and the ring's z.
+    The glass is the true sphere on the bow side of the ring plane (z <= ring z); the strip stands inside it."""
     if not _HULL:
-        lay = json.loads(LAYOUT.read_text())
-        zs, pts = [], []
-        for r in lay["hull"]["rings"]:
-            zs.append(r["z"] * 1000.0 - HULL_Z0)
-            pts.append(np.array(r["points"], float) * 1000.0 - np.array([0.0, HULL_Y0]))
-        cockpit_end = next(c for c in lay["compartments"] if c["id"] == "cockpit")["z"][1]
-        _HULL.update(z=np.array(zs), pts=pts, rim=cockpit_end * 1000.0 - HULL_Z0)
-    return _HULL["z"], _HULL["pts"], _HULL["rim"]
-
-
-def ring_at(z: float) -> np.ndarray:
-    zs, pts, _ = _rings()
-    i = int(np.clip(np.searchsorted(zs, z) - 1, 0, len(zs) - 2))
-    t = (z - zs[i]) / (zs[i + 1] - zs[i])
-    return (1 - t) * pts[i] + t * pts[i + 1]
+        d = json.loads(LAYOUT.read_text())["dome"]
+        c = np.array([d["centre"][0] * 1000.0, d["centre"][1] * 1000.0 - HULL_Y0, d["centre"][2] * 1000.0 - HULL_Z0])
+        _HULL.update(centre=c, radius=d["radius_m"] * 1000.0, rim=d["ring_z"] * 1000.0 - HULL_Z0)
+    return _HULL["centre"], _HULL["radius"], _HULL["rim"]
 
 
 def halfwidth(z: float, y: float) -> float:
-    """How far the glass is from the centreline (X>0 side) at height y and station z, mm."""
-    p = ring_at(z)
-    best = -1e9
-    for k in range(len(p)):
-        a, b = p[k], p[(k + 1) % len(p)]
-        if (a[1] - y) * (b[1] - y) <= 0 and a[1] != b[1]:
-            best = max(best, a[0] + (y - a[1]) / (b[1] - a[1]) * (b[0] - a[0]))
-    return best
+    """How far the glass is from the centreline (X>0 side) at height y and station z, mm (-1e9 where there is none)."""
+    c, r, _ = _dome()
+    h2 = r * r - (y - c[1]) ** 2 - (z - c[2]) ** 2
+    return math.sqrt(h2) if h2 > 0 else -1e9
 
 
 def inside_dome(x: float, y: float, z: float) -> bool:
-    p = ring_at(z)
-    c = False
-    for k in range(len(p)):
-        a, b = p[k], p[(k + 1) % len(p)]
-        if (a[1] > y) != (b[1] > y) and x < a[0] + (y - a[1]) / (b[1] - a[1]) * (b[0] - a[0]):
-            c = not c
-    return c
+    c, r, rim = _dome()
+    return z <= rim and float(np.linalg.norm(np.array([x, y, z]) - c)) < r
 
 
-def glass_cloud() -> np.ndarray:
-    """Dense points on the glass from the bow to the rim ring, (n, 3) mm."""
-    if "cloud" in _HULL:
-        return _HULL["cloud"]
-    zs, _, rim = _rings()
-    out = []
-    for z in np.arange(zs[0], rim + 1.0, 20.0):
-        p = ring_at(float(z))
-        for k in range(len(p)):
-            a, b = p[k], p[(k + 1) % len(p)]
-            for t in (0.0, 0.25, 0.5, 0.75):
-                q = a + t * (b - a)
-                out.append((q[0], q[1], z))
-    _HULL["cloud"] = np.array(out)
-    return _HULL["cloud"]
+def glass_distance(pts: np.ndarray) -> np.ndarray:
+    """Distance (mm) from each point inside the bubble to the glass, which is the nearest point of the sphere."""
+    c, r, _ = _dome()
+    return r - np.linalg.norm(pts - c, axis=1)
 
 
 # ---------------------------------------------------------------------------------------------------------------- strip
@@ -297,14 +274,29 @@ class Wing:
         return x_axis, y_axis, z_axis, origin
 
 
+    def ledge_frame(self, i: int, along: float = 0.0, up: float = 0.0, out: float = 0.0) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+        """Mount frame on chord i's flat top ledge: Z up, +Y away from the pilot (along the ledge), +X toward the pilot's
+        right. The origin is the ledge's middle, moved `along` the chord, `up` away from the pilot and `out` upward."""
+        a, b = np.array(self.joints[i]), np.array(self.joints[i + 1])
+        t = (b - a) / np.linalg.norm(b - a)
+        if t[0] < 0:
+            t = -t
+        n = self.normals[i]
+        x_axis = np.array([t[0], 0.0, t[1]])
+        y_axis = np.array([-n[0], 0.0, -n[1]])
+        z_axis = np.cross(x_axis, y_axis)
+        c = (a + b) / 2 + LAMP_LEDGE_D * n
+        origin = np.array([c[0], TOP, c[1]]) + along * x_axis + up * y_axis + out * z_axis
+        return x_axis, y_axis, z_axis, origin
+
+
 def _fits_dome(w: Wing) -> bool:
-    """The cap and first two facets are inside the dome and 25 mm clear of the glass."""
-    cloud = glass_cloud()
+    """The cap and first two facets are inside the dome and 40 mm clear of the glass."""
     for i in range(3):
         p = chord_points(w, i)
         if not all(inside_dome(q[0], q[1], q[2]) for q in p):
             return False
-        if np.min(np.linalg.norm(cloud[None] - p[:, None], axis=2)) < 40.0:
+        if glass_distance(p).min() < 40.0:
             return False
     return True
 
@@ -336,27 +328,28 @@ def hologram_frame(w: Wing) -> tuple[np.ndarray, np.ndarray]:
 
 # ------------------------------------------------------------------------------------------------------------- anchors
 def anchors(wings: dict[str, Wing]) -> dict[str, dict]:
-    """Every instrument anchor: name -> {wing, facet index, slug, along, up, out, size mm (w, h), settings}."""
-    sw, lamp = entry("lit_guarded_toggle"), entry("indicator_lamp")
+    """Every instrument anchor on the strip: name -> {wing, facet, slug, along, up, out, size mm (w, h), settings}. The
+    four light switches are not here: they are the seat's armrest anchors (#686)."""
+    lamp = entry("indicator_lamp")
     out: dict[str, dict] = {}
 
-    def add(name, side, facet, slug, w, h, along=0.0, up=0.0, o=0.0, y_range=None, **settings):
+    def add(name, side, facet, slug, w, h, along=0.0, up=0.0, o=0.0, y_range=None, ledge=False, **settings):
+        if slug == "gauge":
+            o = mount.stand_off(o)      # the dial's face is drawn on the anchor's Z=0: off the facet by the mount gap
         out[name] = {"wing": side, "facet": facet, "slug": slug, "along": along, "up": up, "out": o, "size": (w, h),
-                     "y_range": y_range or (-h / 2, h / 2),
+                     "y_range": y_range or (-h / 2, h / 2), "ledge": ledge,
                      "stand_out": entry(slug).get("stand_out_mm") or entry(slug)["depth_mm"]["in_front_of_origin"], "settings": settings}
 
-    df, md = entry("depth_finder"), entry("multidisplay")
-    add("DepthFinder", "left", 1, "depth_finder", *df["footprint_mm"])
-    add("Multidisplay", "left", 2, "multidisplay", *md["footprint_mm"])
+    add("DepthFinder", "left", 1, "depth_finder", *entry("depth_finder")["footprint_mm"])
     sp, _t, sb = _gauge_extent(SPEED_R)
-    add("SpeedGauge", "left", 3, "gauge", 2 * sp, _t + sb, up=(sb - _t) / 2, y_range=(-sb, _t), radius=SPEED_R)
-    add("Navball", "right", 1, "navball", *entry("navball")["footprint_mm"])
-    for k, name in enumerate(("ExternalLightSwitch", "ExternalColourSwitch", "CabinLightSwitch", "CabinColourSwitch")):
-        add(name, "right", 2, "lit_guarded_toggle", *sw["footprint_mm"], along=(k - 1.5) * TOGGLE_PITCH)
-    for k, name in enumerate(("BilgeLamp", "Co2Lamp", "LowO2Lamp")):
-        add(name, "right", 3, "indicator_lamp", *lamp["footprint_mm"], along=(k - 1) * LAMP_PITCH, o=LAMP_PLATE_T)
+    add("SpeedGauge", "left", 2, "gauge", 2 * sp, _t + sb, up=GAUGE_UP[0], y_range=(-sb, _t), radius=SPEED_R)
     nb, nt, nbot = _gauge_extent(NOISE_R)
-    add("NoiseRepeater", "right", 4, "gauge", 2 * nb, nt + nbot, up=(nbot - nt) / 2, y_range=(-nbot, nt), radius=NOISE_R)
+    add("NoiseRepeater", "left", 2, "gauge", 2 * nb, nt + nbot, up=GAUGE_UP[1], y_range=(-nbot, nt), radius=NOISE_R)
+    add("Navball", "right", 1, "navball", *entry("navball")["footprint_mm"])
+    add("Multidisplay", "right", 2, "multidisplay", *entry("multidisplay")["footprint_mm"])
+    for k, name in enumerate(("BilgeLamp", "Co2Lamp", "LowO2Lamp")):
+        add(name, "right", 2, "indicator_lamp", *lamp["footprint_mm"], along=(k - 1) * LAMP_PITCH, up=LAMP_UP, o=LAMP_PLATE_T,
+            y_range=(-PLATE_DROP_LAMP - PLATE_H / 2, 25.0), ledge=True)
     return out
 
 
@@ -375,7 +368,8 @@ def envelope(wings: dict[str, Wing], a: dict) -> np.ndarray:
 
 
 def anchor_frame(wings: dict[str, Wing], a: dict) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
-    return wings[a["wing"]].frame(a["facet"], a["along"], a["up"], a["out"])
+    w = wings[a["wing"]]
+    return (w.ledge_frame if a["ledge"] else w.frame)(a["facet"], a["along"], a["up"], a["out"])
 
 
 # ---------------------------------------------------------------------------------------------------------------- build
@@ -395,7 +389,7 @@ def solids() -> tuple[list[Solid], dict]:
             f = w.facet_solid(i)
             if w.names[i] == "Navball":
                 x, y, z, o = w.frame(i)
-                rb = 115.0 / 2 / math.cos(math.pi / BORE_SIDES)
+                rb = entry("navball")["panel_cutout"]["diameter_mm"] / 2 / math.cos(math.pi / BORE_SIDES)
                 bore = prism(BORE_SIDES, rb, BORE_D + 8.0).moved(_loc(o - z * BORE_D, x, z))
                 inner = prism(BORE_SIDES, rb, BORE_D).moved(_loc(o - z * BORE_D, x, z))
                 expect((inner - f).volume < 1.0, f"the navball's bore ({BORE_D:.0f} mm deep) stays inside its facet ({(bore - f).volume:.0f} mm3 outside)")
@@ -403,21 +397,18 @@ def solids() -> tuple[list[Solid], dict]:
                 shapes["navball_bore"] = bore
             out.append(Solid(f, "interior_panel"))
             shapes[f"{side}.{w.names[i]}"] = f
-    # lamp plate: a dark plate on the lamps' facet
-    rw = wings["right"]
-    li = rw.names.index("Lamps")
-    x, y, z, o = rw.frame(li)
-    lp = box_plate(2 * LAMP_PITCH + entry("indicator_lamp")["footprint_mm"][0] + 20.0, 50.0, LAMP_PLATE_T).moved(_loc(o, x, z))
+    # lamp plate: a dark plate along the right wing's top ledge
+    an = anchors(wings)
+    bx, by, bz, bo = anchor_frame(wings, an["Co2Lamp"])
+    lp = box_plate(2 * LAMP_PITCH + entry("indicator_lamp")["footprint_mm"][0] + 20.0, 50.0, LAMP_PLATE_T).moved(_loc(bo - bz * an["Co2Lamp"]["out"], bx, bz))
     out.append(Solid(lp, "interior_dark"))
     shapes["lamp_plate"] = lp
-    # engraved label plates under each toggle and lamp: shapes only, no text (art direction)
-    an = anchors(wings)
+    # engraved label plates under each lamp: shapes only, no text (art direction)
     for name, a in an.items():
-        if a["slug"] not in ("lit_guarded_toggle", "indicator_lamp"):
+        if a["slug"] != "indicator_lamp":
             continue
         x, y, z, o = anchor_frame(wings, a)
-        drop = (PLATE_DROP_TOGGLE if a["slug"] == "lit_guarded_toggle" else PLATE_DROP_LAMP)
-        centre = o - y * drop - z * a["out"]
+        centre = o - y * PLATE_DROP_LAMP - z * a["out"]
         pl = label_plate()
         out.append(Solid(pl.moved(_loc(centre, x, z)), "interior_dark"))
         shapes[f"plate.{name}"] = pl.moved(_loc(centre, x, z))
@@ -483,15 +474,14 @@ def _check(wings: dict[str, Wing], shapes: dict[str, bd.Shape], holo: np.ndarray
         expect(hi <= -GAP / 2 + 0.5 or lo >= GAP / 2 - 0.5, f"{k}'s solid does not cross the gap ({lo:.0f}..{hi:.0f})")
     expect(abs(pts["hologram"][:, 0].max() + GAP / 2) > 0 and pts["hologram"][:, 0].max() < -GAP / 2, "the hologram stands up and to the side of the gap, over the left wing")
     # --- the dome: inside the glass, clear of it, short of the rim ring
-    cloud = glass_cloud()
     near = 1e9
     for k, p in pts.items():
         for q in p:
             expect(inside_dome(q[0], q[1], q[2]), f"{k} is inside the dome at {q.round(0)}")
-        d = np.min(np.linalg.norm(cloud[None, :, :] - p[:, None, :], axis=2), axis=1).min()
+        d = float(glass_distance(p).min())
         near = min(near, d)
         expect(d >= 25.0, f"{k} stays clear of the glass ({d:.0f} mm)")
-    zs, _, rim_z = _rings()
+    rim_z = _dome()[2]
     rim_near = rim_z - RIM_HALF_MM
     zmax = float(allp[:, 2].max())
     expect(zmax <= rim_near - 100.0, f"the strip ends {rim_near - zmax:.0f} mm short of the rim ring (at {rim_near:.0f} mm), 100 needed")
@@ -538,13 +528,16 @@ def _check(wings: dict[str, Wing], shapes: dict[str, bd.Shape], holo: np.ndarray
         fl = math.dist(w.joints[a["facet"]], w.joints[a["facet"] + 1])
         wd, ht = a["size"]
         expect(abs(a["along"]) + wd / 2 <= fl / 2 - 10.0, f"{name} ({wd:.0f} mm) fits across its facet ({fl:.0f} mm)")
-        expect(ht / 2 <= FASCIA_L / 2 - 5.0, f"{name} ({ht:.0f} mm, its box centred on the fascia) fits up its fascia ({FASCIA_L:.0f} mm)")
+        lo_y, hi_y = a["up"] + a["y_range"][0], a["up"] + a["y_range"][1]
+        span = LEDGE if a["ledge"] else FASCIA_L
+        expect(max(abs(lo_y), abs(hi_y)) <= span / 2 - 5.0, f"{name} ({lo_y:.0f} to {hi_y:.0f} mm from its {'ledge' if a['ledge'] else 'fascia'}'s middle) fits up it ({span:.0f} mm)")
         expect(float(z @ np.array([0.0, 1.0, 0.0])) > 0.5, f"{name} faces up toward the eye")
         top_y = o[1] + abs(y[1]) * ht / 2 + z[1] * a["stand_out"]
         expect(top_y <= holo_top, f"{name} does not rise above the hologram's top ({top_y:.0f} mm)")
         to_eye = EYE_MM - o
         to_eye /= np.linalg.norm(to_eye)
-        expect(float(z @ to_eye) >= 0.55, f"{name}'s face is within 57 degrees of the line to the eye")
+        need = 0.3 if a["ledge"] else 0.55      # the lamps lie flat on the ledge, seen at a grazing angle
+        expect(float(z @ to_eye) >= need, f"{name}'s face is within {math.degrees(math.acos(need)):.0f} degrees of the line to the eye")
         reach[name] = round(float(np.linalg.norm(o - EYE_MM)))
     # --- every instrument's whole envelope (its footprint box out to its stand-out): inside the wing, clear of its
     # neighbours, short of the glass, off the gap and below the eye's horizon
@@ -552,7 +545,7 @@ def _check(wings: dict[str, Wing], shapes: dict[str, bd.Shape], holo: np.ndarray
     for name, c in boxes.items():
         for q in c:
             expect(inside_dome(q[0], q[1], q[2]), f"{name}'s envelope is inside the dome at {q.round(0)}")
-        d = float(np.min(np.linalg.norm(cloud[None, :, :] - c[:, None, :], axis=2)))
+        d = float(glass_distance(c).min())
         expect(d >= 20.0, f"{name}'s envelope stays clear of the glass ({d:.0f} mm, 20 needed)")
         side = an[name]["wing"]
         gx = np.abs(c[:, 0]).min()
@@ -565,35 +558,62 @@ def _check(wings: dict[str, Wing], shapes: dict[str, bd.Shape], holo: np.ndarray
     names = list(an)
     for i, n1 in enumerate(names):
         for n2 in names[i + 1:]:
-            if an[n1]["wing"] != an[n2]["wing"] or an[n1]["facet"] != an[n2]["facet"]:
+            if an[n1]["wing"] != an[n2]["wing"] or an[n1]["facet"] != an[n2]["facet"] or an[n1]["ledge"] != an[n2]["ledge"]:
                 continue
             x1, _, _, o1 = anchor_frame(wings, an[n1])
             x2, _, _, o2 = anchor_frame(wings, an[n2])
-            gap = abs(float((o2 - o1) @ x1)) - an[n1]["size"][0] / 2 - an[n2]["size"][0] / 2
+            across = abs(float((o2 - o1) @ x1)) - an[n1]["size"][0] / 2 - an[n2]["size"][0] / 2
+            a1, a2 = an[n1], an[n2]
+            up_gap = max(a1["up"] + a1["y_range"][0] - (a2["up"] + a2["y_range"][1]), a2["up"] + a2["y_range"][0] - (a1["up"] + a1["y_range"][1]))
+            gap = max(across, up_gap)      # side by side, or one above the other
             expect(gap >= 8.0, f"{n1} and {n2} are {gap:.0f} mm apart on their facet (8 needed)")
-    # the four guarded toggles are reached by the seated hand resting on its armrest, at the joystick (#482, #528)
+    # the four light switches are the seat's armrest anchors: the seated hand resting on its joystick reaches each (#482, #686)
     pm_ = scene_module("pilot_seat")
     arm_x_ = scene_module("operator_seat").ARM_X
-    hands = [np.array([sx * arm_x_, pm_.ARM_TOP, pm_.JOY_Z]) for sx in (-1, 1)]
-    toggles = ["ExternalLightSwitch", "ExternalColourSwitch", "CabinLightSwitch", "CabinColourSwitch"]
+    hands = [np.array([sx * arm_x_, pm_.HAND_UP + pm_.ARM_TOP, pm_.JOY_Z]) for sx in (-1, 1)]
+    lt = entry("lit_toggle")
     hand_reach = {}
-    for name in toggles:
-        _x, _y, z_, o = anchor_frame(wings, an[name])
-        tip = o + z_ * an[name]["stand_out"]          # the bat's reach at its guard: the worse of the base and this point
-        hand_reach[name] = round(max(min(float(np.linalg.norm(p - h)) for h in hands) for p in (o, tip)))
+    for name, sx, idx in pm_.MOUNTS:
+        tx, tz = pm_.toggle_xz(sx, idx)
+        base = np.array([tx, pm_.ARM_TOP + pm_.MOUNT_GAP, tz])
+        tip = base + np.array([0.0, lt["stand_out_mm"], 0.0])         # the bat's reach: the worse of the base and this point
+        hand_reach[name] = round(max(min(float(np.linalg.norm(p - h)) for h in hands) for p in (base, tip)))
         expect(hand_reach[name] <= REACH_MM, f"{name} is {hand_reach[name]} mm from the nearer resting hand (reach {REACH_MM:.0f} mm)")
-    order = {"left": ["DepthFinder", "Multidisplay", "SpeedGauge"],
-             "right": ["Navball", "ExternalLightSwitch", "BilgeLamp", "NoiseRepeater"]}
+    # --- the wings: equal length, and the order of each from the gap outward
+    def wing_len(w: Wing) -> float:
+        return sum(math.dist(p, q) for p, q in zip(w.joints, w.joints[1:]))
+    expect(abs(wing_len(left) - wing_len(right)) < 1.0, f"the two wings have equal length ({wing_len(left):.0f} and {wing_len(right):.0f} mm)")
+    gap_real = 2.0 * min(abs(q[0]) for w in wings.values() for s_ in w.sections(0, enlarge(w.prof, CAP_PROUD)) for q in s_)
+    expect(gap_real >= GAP, f"the apex gap is {gap_real:.0f} mm at the caps' inner ends (the brief's {GAP:.0f} mm or more)")
+    order = {"left": ["DepthFinder", "SpeedGauge"], "right": ["Navball", "Multidisplay"]}
     for side, names in order.items():
         xs = [abs(anchor_frame(wings, an[n])[3][0]) for n in names]
         expect(xs == sorted(xs), f"the {side} wing's order from the gap outward: {', '.join(names)}")
     expect(abs(anchor_frame(wings, an["DepthFinder"])[3][0] - holo[0]) < 150.0, "the hologram stands above the depth finder")
+    expect(holo[1] > anchor_frame(wings, an["DepthFinder"])[3][1], "the hologram is above the depth finder")
+    lamp_y = [anchor_frame(wings, an[n])[3][1] for n in ("BilgeLamp", "Co2Lamp", "LowO2Lamp")]
+    expect(max(lamp_y) - min(lamp_y) < 1.0 and max(lamp_y) + 30.0 <= holo_top and abs(max(lamp_y) - TOP) < 40.0,
+           f"the three lamps are in one row on the right wing's top ledge ({lamp_y[0]:.0f} mm up), below the hologram's top ({holo_top:.0f} mm)")
+    # --- the forward-view check: these four are read without a head turn, within FORWARD_DEG of the eye's forward axis (-Z)
+    fwd = np.array([0.0, 0.0, -1.0])
+
+    def off_axis(p: np.ndarray) -> float:
+        v = p - EYE_MM
+        return math.degrees(math.acos(float(v @ fwd) / float(np.linalg.norm(v))))
+    forward = {}
+    for name in FORWARD_NAMES:
+        centre = holo + np.array([0.0, HOLO_H / 2, 0.0]) if name == "HologramAnchor" else anchor_frame(wings, an[name])[3]
+        corners = pts["hologram"] if name == "HologramAnchor" else boxes[name]
+        forward[name] = {"centre_deg": round(off_axis(centre), 1), "worst_corner_deg": round(max(off_axis(q) for q in corners), 1)}
+        expect(forward[name]["centre_deg"] <= FORWARD_DEG, f"{name}'s centre is {forward[name]['centre_deg']:.1f} degrees off the eye's forward axis ({FORWARD_DEG:.0f} or less)")
+    half_angle = max(v["centre_deg"] for v in forward.values())
     # the navball's keep-clear behind its face
     nb = entry("navball")
     expect(BORE_D >= nb["keep_clear_mm"]["behind_face"], f"the bore ({BORE_D:.0f} mm) holds the ball's {nb['keep_clear_mm']['behind_face']:.0f} mm behind the face")
-    expect(math.isclose(nb["panel_cutout"]["diameter_mm"], 115.0), "the bore is the navball's 115 mm cutout")
+    expect(nb["panel_cutout"]["shape"] == "round", f"the bore is the navball's {nb['panel_cutout']['diameter_mm']:.0f} mm round cutout")
     return {"strip_top_mm": round(top), "hologram_top_mm": round(holo_top), "glass_clearance_mm": round(near),
-            "gap_mm": GAP, "eye_to_anchor_mm": reach, "toggle_hand_reach_mm": hand_reach, "rim_ring_clear_mm": round(rim_near - zmax),
+            "gap_mm": round(gap_real), "forward_view_half_angle_deg": half_angle, "forward_view_deg": forward,
+            "wing_length_mm": round(wing_len(left)), "eye_to_anchor_mm": reach, "toggle_hand_reach_mm": hand_reach, "rim_ring_clear_mm": round(rim_near - zmax),
             "stick_clearance_mm": round(jdist)}
 
 
@@ -605,7 +625,8 @@ def build() -> dict:
     seat_tris = entry("pilot_seat")["triangles"]
     shell_tris = rep["triangles"] + seat_tris
     an = anchors(wings)
-    inst = sum(entry(a["slug"])["triangles"] for a in an.values())
+    pm = scene_module("pilot_seat")
+    inst = sum(entry(a["slug"])["triangles"] for a in an.values()) + len(pm.MOUNTS) * entry("lit_toggle")["triangles"]
     total = shell_tris + inst
     expect(total <= TRIANGLE_BUDGET, f"the whole station ({total} triangles: shell and seat {shell_tris}, instruments {inst}) is within {TRIANGLE_BUDGET}")
     s = Scene("PilotStation")
@@ -617,12 +638,14 @@ def build() -> dict:
         x, y, z, o = anchor_frame(wings, a)
         props = {"transform": Xform.frame(x, y, z, tuple(o / 1000.0))}
         props.update(SETTINGS.get(name, {}))
-        if a["slug"] == "lit_guarded_toggle":
-            props["label"] = TOGGLE_LABELS[name]
         if a["slug"] == "gauge":
             props["radius"] = a["settings"]["radius"]
         inst_path = "res://src/noise/noise_gauge.tscn" if name == "NoiseRepeater" else scene_path(a["slug"])
         s.node(name, parent="Anchors", instance=inst_path, props=props)
+    # the four light switches sit at the seat's armrest anchors (same node names, the seat's frames; the seat is at the origin)
+    for name, sx, idx in pm.MOUNTS:
+        s.node(name, parent="Anchors", instance=scene_path("lit_toggle"),
+               props={"transform": pm.mount_xform(sx, idx), "label": TOGGLE_LABELS[name]})
     for lamp, (readout, threshold, of, above) in LAMP_DRIVERS.items():
         props = {"lamp": NodePath(f"../../Anchors/{lamp}"), "above": above}
         if readout:
@@ -636,25 +659,33 @@ def build() -> dict:
            props={"transform": Xform.frame(hx, (0, 1, 0), np.cross(hx, (0, 1, 0)), tuple(ho / 1000.0))})
     s.write(d / f"{SLUG}.tscn")
     _cameras(d)
+    mounts = [mount.record(f"Anchors/{n}", a["slug"], a["out"], f"{a['wing']} wing facet {a['facet']}")
+              for n, a in an.items() if a["slug"] == "gauge"]
+    stand = {m["offset_mm"] for m in mounts}
+    expect(mounts and min(stand) > mount.COPLANAR_TOL_MM and not mount.problems(SLUG, {"mounts": mounts}, entry),
+           f"no gauge face (back, dial face on Z=0, bezel front) within {mount.COPLANAR_TOL_MM} mm of its facet; gap {sorted(stand)} mm")
     write_entry(GROUP, SLUG, {
+        "mounts": mounts,
         "kind": "station",
         "summary": "Pilot's station: the pilot seat on the centreline facing -Z, and one knee-height instrument strip low against the "
-                   "dome in two faceted wings with orange end caps either side of a clear gap (600 mm). Marked anchors for every "
-                   "instrument (left wing from the gap outward: depth finder with the hologram above it, multidisplay, speed gauge; "
-                   "right wing: navball, four light switches, three warning lamps, noise repeater). Every instrument is placed: "
-                   "the scenes sit at the anchors, the lamps have ThresholdLamp drivers (bilge wired; CO2 and O2 unwired), the "
-                   "speed gauge's scale follows the sub's top speed, and each toggle and lamp has an engraved label plate.",
+                   "dome in two equal faceted wings with orange end caps either side of a clear gap (400 mm). Left wing from the "
+                   "gap outward: depth finder with the hologram above it, then the speed/throttle gauge over the noise repeater; "
+                   "right wing: navball, multidisplay, and the BILGE, CO2 and LOW O2 lamps in a row along its top ledge. The four "
+                   "light switches are lit_toggles at the seat's armrest anchors. Every instrument is placed: the scenes sit at "
+                   "the anchors, the lamps have ThresholdLamp drivers (bilge wired; CO2 and O2 unwired), the speed gauge's scale "
+                   "follows the sub's top speed, and each switch and lamp has an engraved label plate.",
         "tags": ["station", "pilot", "strip", "dome", "helm", "seat"],
         "scene": res(d / f"{SLUG}.tscn"),
         "behaviour": {"script": None,
                       "wire": {"seat": "Seat/SitPoint (PilotSeat binds it; Seat/ThrottleJoystick and Seat/FlightJoystick take a JoystickIndicator)",
                                "anchors": "Anchors/<name> (Node3D; mount frame: +Z out of the fascia, +Y up the slope, +X toward the pilot's right)",
-                               "left_wing": "DepthFinder, Multidisplay, SpeedGauge (from the gap outward); HologramAnchor above the depth finder, standing up",
-                               "right_wing": "Navball, ExternalLightSwitch, ExternalColourSwitch, CabinLightSwitch, CabinColourSwitch, "
-                                             "BilgeLamp, Co2Lamp, LowO2Lamp (on a dark plate, 8 mm proud), NoiseRepeater",
-                               "instances": "each Anchors/<name> is the instrument's scene (lamps, switches, gauges, navball, depth "
-                                            "finder, multidisplay); Drivers/<Lamp>Driver are ThresholdLamps; the four switches are not "
-                                            "yet wired to the headlight and cabin lights (the placement arc does that)"}},
+                               "left_wing": "DepthFinder, SpeedGauge and NoiseRepeater (stacked) from the gap outward; HologramAnchor above the depth finder, standing up",
+                               "right_wing": "Navball, Multidisplay (from the gap outward); BilgeLamp, Co2Lamp, LowO2Lamp in a row on a dark plate "
+                                             "along its top ledge (8 mm proud, facing up)",
+                               "switches": "ExternalLightSwitch, ExternalColourSwitch, CabinLightSwitch, CabinColourSwitch are lit_toggle "
+                                           "instances at the pilot_seat's armrest anchors (same names and frames as Seat/<name>)",
+                               "instances": "each Anchors/<name> is the instrument's scene; Drivers/<Lamp>Driver are ThresholdLamps; "
+                                            "HeadlightSwitch and CabinSwitch bind the switches by node name"}},
         "footprint_mm": [round(float(2 * max(abs(w.joints[-1][0]) for w in wings.values()))), round(float(-min(w.joints[0][1] for w in wings.values()) + 400))],
         "mount": "floor at Y=0, seat origin on the centreline at X=0, Z=0; the pilot faces -Z; the strip is ahead at -Z",
         "placement": {"hull_z_m": HULL_Z0 / 1000.0, "hull_floor_y_m": HULL_Y0 / 1000.0,

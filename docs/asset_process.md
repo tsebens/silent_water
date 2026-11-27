@@ -167,6 +167,20 @@ and reports what is wrong.
 
 Worked example: [`assets/models/stations/sonar_console/brief.yaml`](../assets/models/stations/sonar_console/brief.yaml).
 
+### 5.1 The mount gap
+
+A station that instances a kit scene sets it **off its host face by `MOUNT_GAP_MM` (2 mm)**, so the scene's back face
+is never coplanar with the face it sits on (coplanar faces flicker). The station does not cut a recess and host panels
+need no change. `cadkit.mount.stand_off(out_mm)` adds the gap to an anchor's offset out of the host face.
+
+A station opts in by listing each such mount in its entry: `body["mounts"] = [mount.record(anchor, slug, offset_mm,
+host_face)]`, where `offset_mm` is the anchor's offset out of the host face. `cadkit verify` (and every build) fails
+the station when the instanced scene's declared `depth_mm.behind_origin` or `in_front_of_origin` (from its
+`component.yaml`; the GLB is not read) puts a face **within 0.5 mm (`COPLANAR_TOL_MM`)** of the host face; the message
+names the station, anchor and depths. A station with no `mounts` key has not opted in and is not checked. Stations
+not yet converted (life_support, sonar_console) are exactly those; pilot_station and map_table have converted (#596); the
+conversion arcs add `mounts` to each, so there is no allow-list to empty.
+
 ## 6. The loop, stage by stage
 
 The recursion is the pipeline's arc graph. The organization agent breaks the whole station down at once, every level,
@@ -380,7 +394,8 @@ the panel module). Read an existing script of the same kind before writing one:
 | --- | --- |
 | Shared solids | `control_base.py`, `gauge.py` |
 | Element (no base) | `push_button.py` |
-| Control on a base, with a moving part | `guarded_toggle.py`, `trackball.py` |
+| Control on a base, with a moving part | `trackball.py`, `guarded_toggle.py` |
+| Control under a hinged cap or guard (its own GLB, a pivot node on the hinge, closed by default; the entry declares `stand_out_open_mm`) | `guarded_toggle.py`, `drop_weights_button.py` |
 | Control group | `map_keypad.py` |
 | Furniture | `operator_seat.py` |
 | Station | `sonar_console.py` |

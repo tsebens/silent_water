@@ -1,12 +1,12 @@
 extends TestCase
-## What is built stays clear of the program's reserved footprints, the scanner and status board sit at their
+## What is built stays clear of the program's reserved footprints, the status board sits at its
 ## program entries inside the hull, and every interior light is a palette light inside the hull.
 
 const INTERIOR_SCENE: PackedScene = preload("res://src/sub/interior.tscn")
 
 ## Floor space the program reserves for stations and features that other arcs build (the map table is M12.8).
 const RESERVED: Array[StringName] = [
-	&"countermeasures", &"life_support", &"lock_out_trunk", &"tower_ladder", &"lockers", &"drop_weights", &"map_table",
+	&"countermeasures", &"lock_out_trunk", &"tower_ladder", &"lockers", &"map_table",
 	&"science",
 ]
 
@@ -22,9 +22,9 @@ func after_each() -> void:
 	interior.free()
 
 
-## True when `n` is inside the (not yet built) map table's subtree, which the reserved footprint stands for.
+## True when `n` is inside the map table's or the science station's subtree, which their reserved footprints stand for.
 func _is_map_table(n: Node) -> bool:
-	return interior.get_node("Stations/Maps").is_ancestor_of(n)
+	return interior.get_node("Stations/Maps").is_ancestor_of(n) or interior.get_node("Stations/Science").is_ancestor_of(n)
 
 
 func test_nothing_built_overlaps_a_reserved_footprint() -> void:
@@ -45,19 +45,19 @@ func test_nothing_built_overlaps_a_reserved_footprint() -> void:
 func test_the_map_tables_footprint_is_reserved_and_empty() -> void:
 	var fp: Rect2 = SubLayout.top_footprint(&"map_table")
 	expect(fp.size.x > 0.8 and fp.size.y > 2.0, "the map table's reservation is the program's (%s)" % fp)
-	for id: StringName in [&"sonar", &"scanner", &"engineering", &"ballast", &"bilge"]:
+	for id: StringName in [&"sonar", &"engineering", &"ballast", &"bilge"]:
 		expect(not SubLayout.footprint(id).grow(-0.001).intersects(fp), "%s does not overlap the map table" % id)
 
 
 func test_the_science_stations_footprint_is_reserved_and_empty() -> void:
 	var fp: Rect2 = SubLayout.top_footprint(&"science")
-	expect(fp.size.x > 0.4 and fp.size.y > 0.8, "the science reservation is the program's (%s)" % fp)
-	for id: StringName in [&"map_table", &"lock_out_trunk", &"tower_ladder", &"sonar", &"countermeasures", &"lockers"]:
+	expect(fp.size.x > 0.2 and fp.size.y > 1.1 and fp.position.x > 0.0, "the science reservation is the program's long starboard one (%s)" % fp)
+	for id: StringName in [&"map_table", &"lock_out_trunk", &"tower_ladder", &"sonar", &"sonar_seat", &"countermeasures", &"lockers"]:
 		expect(not SubLayout.footprint(id).grow(-0.001).intersects(fp), "%s does not overlap the science station" % id)
 
 
 func test_program_footprints_do_not_overlap_each_other() -> void:
-	var ids: Array[StringName] = [&"scanner", &"engineering", &"life_support", &"ballast", &"bilge", &"drop_weights", &"lockers", &"countermeasures", &"lock_out_trunk", &"tower_ladder", &"sonar"]
+	var ids: Array[StringName] = [&"science", &"engineering", &"life_support", &"ballast", &"bilge", &"lockers", &"countermeasures", &"lock_out_trunk", &"tower_ladder", &"sonar"]
 	for i: int in ids.size():
 		for j: int in range(i + 1, ids.size()):
 			# Shrunk by a millimetre: footprints that touch end to end are not overlapping (float rounding).
@@ -65,13 +65,9 @@ func test_program_footprints_do_not_overlap_each_other() -> void:
 			expect(not a.intersects(SubLayout.footprint(ids[j]).grow(-0.001)), "%s overlaps %s" % [ids[i], ids[j]])
 
 
-func test_scanner_parts_are_at_the_program_scanner_inside_the_hull() -> void:
-	var fp: Rect2 = SubLayout.footprint(&"scanner")
-	for n: String in ["Switch", "ProgressGauge"]:
-		var p: Vector3 = (interior.get_node("Stations/Scanner/" + n) as Node3D).position
-		expect(fp.grow(0.7).has_point(Vector2(p.x, p.z)), "%s at the scanner panel (%s)" % [n, p])
-		expect(SubLayout.inside_hull(p.x, p.y, p.z), "%s inside the hull (%s)" % [n, p])
-		expect(p.x > 0.0, "%s on the starboard wall" % n)
+func test_the_scanner_panel_is_retired() -> void:
+	expect(not SubLayout.has(&"scanner"), "the program has no scanner panel")
+	expect(interior.get_node_or_null("Stations/Scanner") == null, "the engineering wall has no scanner switch or gauge")
 
 
 func test_status_board_is_on_the_bulkhead_above_the_hatch() -> void:

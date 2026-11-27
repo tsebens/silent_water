@@ -1,7 +1,7 @@
 slug: navball
 group: kit
 kind: display
-summary: 'Attitude ball: a 110 mm ball behind a glass dome in the multidisplay''s bezel, plate, orange ring and
+summary: 'Attitude ball: a 164 mm ball behind a glass dome in the multidisplay''s bezel, plate, orange ring and
   with a small fixed orange reticle in front of the ball. The root is a Navball.'
 tags:
 - display
@@ -21,30 +21,30 @@ behaviour:
   reads: 'SubFrame.render_transform() from group sub_frame (no digit windows: the Label3D paths are unset)'
   wiring: 'none: put the sub''s SubFrame in group sub_frame'
 footprint_mm:
-- 190.0
-- 190.0
-stand_out_mm: 86.2
+- 244.5977011494253
+- 244.5977011494253
+stand_out_mm: 113.4
 mount: 'back on Z=0, centred on the origin; faces +Z. The ball''s rear half sinks behind the mount face through
   a bore in the plate: the parent provides the cutout below'
 panel_cutout:
   shape: round
-  diameter_mm: 115.0
+  diameter_mm: 169.0
 keep_clear_mm:
-  behind_face: 34.0
-  radius: 56.0
+  behind_face: 60.0
+  radius: 83.0
 depth_mm:
-  behind_origin: 33.0
-  in_front_of_origin: 86.2
+  behind_origin: 59.0
+  in_front_of_origin: 113.4
 set_on_instance:
   mount_rotation_deg: the ball's marking frame relative to its node
   upper_swatch, lower_swatch, mark_swatch: palette swatches of the ball
   frame_group: where the sub pose comes from
 limits:
-  max_stand_out_mm: 90.0
+  max_stand_out_mm: 125.0
 triangle_budget: 10000
 uses:
 - multidisplay
-triangles: 9702
+triangles: 8784
 built_by: tools/cadkit/scenes/navball.py
 files:
 - component.yaml

@@ -16,7 +16,8 @@
 #   3c. close milestones (`M<n> · …`) whose sub-issues are all closed, once the last one has been closed for
 #      MILESTONE_QUIET_HOURS (a milestone still receiving arcs is not closed between two of them)
 #   4. project labels onto the board (agents touch labels only; this is the one writer of Status)
-#   5. log anomalies (stale changes-requested PRs)
+#   5. log anomalies (stale changes-requested PRs; open arcs closed-then-reopened or closed by a merged PR)
+#   Board writes for any status but Done re-read the issue state fresh and skip a closed issue.
 #
 # Runs on label changes and closes (the primary clock) and a 30-minute cron (recovery).
 #
@@ -123,6 +124,10 @@ open_blockers_of() { # number
   if [ -z "$line" ]; then echo "?no-blocked-by-line"; return 0; fi
   rest=$(sed -E 's/^\**[Bb]locked by:?\**:?//; s/[*[:space:]]+//g' <<<"$line")
   if [ -z "$rest" ]; then echo "?blank-blocked-by-line"; return 0; fi
+  # Every entry must be `none` or `#<digits>`; a bare `#`, `Arc 3` or stray words make the line unreadable.
+  for b in $(sed -E 's/^\**[Bb]locked by:?\**:?//; s/\*//g; s/,/ /g' <<<"$line"); do
+    if ! grep -qiE '^(none|#[0-9]+)$' <<<"$b"; then echo "?malformed-blocked-by-line"; return 0; fi
+  done
   deps=$(gh api "repos/$REPO/issues/$1/dependencies/blocked_by" --jq '.[].number' 2>/dev/null) || { echo "?dependencies-unreadable"; return 0; }
   for b in $( { grep -oE '#[0-9]+' <<<"$line" | tr -d '#' || true; echo "$deps"; } | grep -E '^[0-9]+$' | sort -un); do
     issue_is_closed "$b" || echo "#$b"
@@ -273,6 +278,14 @@ set_board_status() { # number status-name
   item=$(echo "$PROJECT_ITEMS" | jq -r --argjson n "$1" '.[] | select(.number == $n) | .item_id')
   option=$(echo "$STATUS_OPTIONS" | jq -r --arg s "$2" '.[] | select(.name == $s) | .id')
   if [ -z "$item" ] || [ -z "$option" ]; then log "    #$1 not on board (or no option '$2'); status not set"; return; fi
+  # An open status is never written onto a closed issue (a stale label or snapshot must not reopen a card). Two guards:
+  # the board snapshot's content state, then a fresh REST read taken right before the mutation. A failed read skips.
+  if [ "$2" != "Done" ]; then
+    if [ "$(board_state_of "$1")" = "CLOSED" ]; then log "    #$1 is closed (board snapshot); not setting '$2'"; return; fi
+    local fresh
+    fresh=$(gh api "repos/$REPO/issues/$1" --jq .state 2>/dev/null) || { log "    #$1 state lookup failed; not setting '$2'"; return; }
+    if [ "$fresh" = "closed" ]; then log "    #$1 is closed (fresh read); not setting '$2'"; return; fi
+  fi
   log "    #$1 board -> $2"
   act gh api graphql -f project="$PROJECT_ID" -f item="$item" -f field="$STATUS_FIELD_ID" -f option="$option" -f query='
     mutation($project: ID!, $item: ID!, $field: ID!, $option: String!) {
@@ -363,6 +376,16 @@ close_finished_milestones() { # same arguments as closable_milestones
 # Run.
 # ---------------------------------------------------------------------------
 
+# A malformed `Blocked by:` line cannot be trusted either way: escalate once (needs-human is terminal, so later
+# passes skip the arc). $2 is the open_blockers_of output.
+escalate_if_malformed() { # number open-blockers
+  case "$2" in *'?malformed-blocked-by-line'*) ;; *) return 1 ;; esac
+  log "  #$1 has a malformed Blocked by: line; escalating"
+  add_label "$1" needs-human
+  act gh issue edit "$1" -R "$REPO" --add-assignee tsebens >/dev/null
+  return 0
+}
+
 # Step 1. A board Status of Ready puts an arc on the radar but never overrides open blockers, whoever set it.
 mirror_board_ready() {
   local n open
@@ -370,6 +393,7 @@ mirror_board_ready() {
     arc_has "$n" arc || continue   # not an open arc (closed, or not labeled arc)
     if arc_has "$n" needs-human || arc_has "$n" claimed || arc_has "$n" in-review || arc_has "$n" ready; then continue; fi
     open=$(open_blockers_of "$n" | tr '\n' ' ')
+    if escalate_if_malformed "$n" "$open"; then continue; fi
     if [ -n "$open" ]; then
       log "  #$n is Ready on the board but has open blockers (${open% }); not promoting, leaving it blocked"
       arc_has "$n" blocked || add_label "$n" blocked
@@ -387,6 +411,7 @@ unblock_arcs() {
   for n in $(arcs_with blocked); do
     arc_has "$n" needs-human && continue
     open=$(open_blockers_of "$n" | tr '\n' ' ')
+    if escalate_if_malformed "$n" "$open"; then continue; fi
     if [ -z "$open" ]; then
       log "  #$n: all blockers closed"
       remove_label "$n" blocked
@@ -396,6 +421,66 @@ unblock_arcs() {
       log "  #$n: waiting on ${open% }"
     fi
   done
+}
+
+pr_has() { echo "$PR_LABELS" | jq -e --argjson n "$1" --arg l "$2" '.[] | select(.arc == $n) | .labels | index($l) != null' >/dev/null 2>&1; }
+
+# Add an issue to the board if it is not there yet (plan review creates arcs without touching
+# the board; the board is the dispatcher's to keep). Appends the new item to PROJECT_ITEMS.
+ensure_on_board() { # number
+  if echo "$PROJECT_ITEMS" | jq -e --argjson n "$1" '.[] | select(.number == $n)' >/dev/null; then return 0; fi
+  local content item
+  content=$(gh api "repos/$REPO/issues/$1" --jq .node_id 2>/dev/null) || return 1
+  log "    #$1 not on the board; adding"
+  if [ "$DRY_RUN" = "true" ]; then return 1; fi
+  item=$(gh api graphql -F project="$PROJECT_ID" -F content="$content" -f query='
+    mutation($project: ID!, $content: ID!) {
+      addProjectV2ItemById(input: {projectId: $project, contentId: $content}) { item { id } }
+    }' --jq '.data.addProjectV2ItemById.item.id') || return 1
+  PROJECT_ITEMS=$(echo "$PROJECT_ITEMS" | jq -c --arg id "$item" --argjson n "$1" '. + [{item_id: $id, number: $n, state: "OPEN", status: ""}]')
+}
+
+project() { # number wanted-status
+  local current
+  ensure_on_board "$1" || return 0
+  current=$(echo "$PROJECT_ITEMS" | jq -r --argjson n "$1" '.[] | select(.number == $n) | .status')
+  [ "$current" = "$2" ] && return 0
+  set_board_status "$1" "$2"
+}
+
+project_arc_labels() {
+  local n
+  for n in $(echo "$ARCS" | jq -r '.[].number'); do
+    arc_has "$n" needs-human && continue
+    if arc_has "$n" in-review; then
+      if pr_has "$n" changes-requested; then project "$n" "In progress"; else project "$n" "In review"; fi
+    elif arc_has "$n" claimed && arc_has "$n" look-review; then project "$n" "In review"
+    elif arc_has "$n" claimed; then project "$n" "In progress"
+    elif arc_has "$n" ready;   then project "$n" "Ready"
+    elif arc_has "$n" blocked; then project "$n" "Backlog"
+    fi
+  done
+}
+
+# Step 5 anomaly: an open arc whose timeline shows `closed` then `reopened` within a minute (something closed and
+# reopened it, so a card may have flickered), or that has a merged PR saying `Closes #<n>` (it should be closed).
+# $1 = arc number, $2 = normalised timeline JSON [{event, created_at, merged_at, body}] from arc_timeline.
+log_arc_anomalies() {
+  local n="$1" row
+  row=$(jq -r '[.[] | select(.event == "closed" or .event == "reopened")] as $e
+    | [range(1; $e | length) | select($e[.-1].event == "closed" and $e[.].event == "reopened"
+        and (($e[.].created_at | fromdateiso8601) - ($e[.-1].created_at | fromdateiso8601)) <= 60)] | length' <<<"$2")
+  if [ "${row:-0}" -gt 0 ]; then log "  anomaly: open arc #$n was closed then reopened within a minute"; fi
+  row=$(jq -r --arg n "$n" '[.[] | select(.event == "cross-referenced" and .merged_at != null
+      and ((.body // "") | test("(?i)\\b(close[sd]?|fix(e[sd])?|resolve[sd]?)[: ]+#" + $n + "\\b")))] | first | .merged_at // empty' <<<"$2")
+  if [ -n "$row" ]; then log "  anomaly: open arc #$n has a PR merged at $row with Closes #$n"; fi
+}
+
+arc_timeline() { # number -> normalised timeline JSON, "[]" if the read fails
+  gh api --paginate "repos/$REPO/issues/$1/timeline?per_page=100" \
+    --jq '[.[] | select(.event == "closed" or .event == "reopened" or .event == "cross-referenced")
+           | {event, created_at, merged_at: (.source.issue.pull_request.merged_at // null), body: (.source.issue.body // "")}]' \
+    2>/dev/null | jq -s 'add // []' 2>/dev/null || echo "[]"
 }
 
 # Tests source this file with DISPATCH_LIB_ONLY=1 to get the functions without running.
@@ -445,6 +530,7 @@ for n in $(arcs_with ready); do
   [ "$in_flight_count" -lt "$WORKER_CAP" ] || continue
   arc_has "$n" needs-human && continue
   open=$(open_blockers_of "$n" | tr '\n' ' ')
+  if escalate_if_malformed "$n" "$open"; then continue; fi
   if [ -n "$open" ]; then log "  #$n is ready but has open blockers (${open% }); not claiming"; continue; fi
   t=$(touches_of "$n")
   if [ -z "$t" ]; then log "  #$n has no Touches: line; treating as touching everything"; t="."; fi
@@ -489,41 +575,8 @@ load_board
 PR_LABELS=$(gh api --paginate "repos/$REPO/pulls?state=open&base=dev&per_page=100" \
   --jq '[.[] | select(.head.ref | test("^arc/[0-9]+-")) | {arc: (.head.ref | capture("^arc/(?<n>[0-9]+)-").n | tonumber), labels: [.labels[].name]}]' \
   | jq -s 'add // []')
-pr_has() { echo "$PR_LABELS" | jq -e --argjson n "$1" --arg l "$2" '.[] | select(.arc == $n) | .labels | index($l) != null' >/dev/null 2>&1; }
 
-# Add an issue to the board if it is not there yet (plan review creates arcs without touching
-# the board; the board is the dispatcher's to keep). Appends the new item to PROJECT_ITEMS.
-ensure_on_board() { # number
-  if echo "$PROJECT_ITEMS" | jq -e --argjson n "$1" '.[] | select(.number == $n)' >/dev/null; then return 0; fi
-  local content item
-  content=$(gh api "repos/$REPO/issues/$1" --jq .node_id 2>/dev/null) || return 1
-  log "    #$1 not on the board; adding"
-  if [ "$DRY_RUN" = "true" ]; then return 1; fi
-  item=$(gh api graphql -F project="$PROJECT_ID" -F content="$content" -f query='
-    mutation($project: ID!, $content: ID!) {
-      addProjectV2ItemById(input: {projectId: $project, contentId: $content}) { item { id } }
-    }' --jq '.data.addProjectV2ItemById.item.id') || return 1
-  PROJECT_ITEMS=$(echo "$PROJECT_ITEMS" | jq -c --arg id "$item" --argjson n "$1" '. + [{item_id: $id, number: $n, state: "OPEN", status: ""}]')
-}
-
-project() { # number wanted-status
-  local current
-  ensure_on_board "$1" || return 0
-  current=$(echo "$PROJECT_ITEMS" | jq -r --argjson n "$1" '.[] | select(.number == $n) | .status')
-  [ "$current" = "$2" ] && return 0
-  set_board_status "$1" "$2"
-}
-
-for n in $(echo "$ARCS" | jq -r '.[].number'); do
-  arc_has "$n" needs-human && continue
-  if arc_has "$n" in-review; then
-    if pr_has "$n" changes-requested; then project "$n" "In progress"; else project "$n" "In review"; fi
-  elif arc_has "$n" claimed && arc_has "$n" look-review; then project "$n" "In review"
-  elif arc_has "$n" claimed; then project "$n" "In progress"
-  elif arc_has "$n" ready;   then project "$n" "Ready"
-  elif arc_has "$n" blocked; then project "$n" "Backlog"
-  fi
-done
+project_arc_labels
 CONCEPTS=$({ for l in concept design; do
   gh api --paginate "repos/$REPO/issues?state=open&labels=$l&per_page=100" \
     --jq '[.[] | select(.pull_request == null) | {number, labels: [.labels[].name]}]'
@@ -556,6 +609,10 @@ for pr in $(gh api --paginate "repos/$REPO/pulls?state=open&base=dev&per_page=10
   if [ "$(date -u -d "$applied" +%s)" -lt "$stale_before" ]; then
     log "  PR #$pr has had changes-requested since $applied with no rework run clearing it; check the rework workflow's runs"
   fi
+done
+
+for n in $(echo "$ARCS" | jq -r '.[].number'); do
+  log_arc_anomalies "$n" "$(arc_timeline "$n")"
 done
 
 log "Dispatcher done."

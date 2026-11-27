@@ -42,8 +42,8 @@ func _process(_delta: float) -> void:
 		target = me.aim_target()
 	_active = target != null
 	if me.seat() != null and me.held_control() == null:
-		var aimed: Interactable = me.aim_target() if me.seat().allows_grabbing else null
-		if aimed != null and not (aimed is StationSeat) and not (aimed is Wearable):
+		var aimed: Interactable = me.aim_target()
+		if aimed != null and me.seat().allow_grab(aimed) and not (aimed is StationSeat) and not (aimed is Wearable):
 			_name.text = aimed.display_name()
 			_hint.text = aimed.interaction_hint()
 			_active = true

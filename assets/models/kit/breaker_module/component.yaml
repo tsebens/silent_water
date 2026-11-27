@@ -1,0 +1,40 @@
+slug: breaker_module
+group: kit
+kind: control
+summary: 'Chunky breaker module for one power circuit: grey plate with a label-plate recess, a toggle handle on
+  a hinge block and a status lamp above it. A click switches the breaker, resets a trip or asks for a replacement
+  when blown.'
+tags:
+- breaker
+- switch
+- power
+- circuit
+- toggle
+- lamp
+- fuse
+scene: res://assets/models/kit/breaker_module/breaker_module.tscn
+behaviour:
+  script: BreakerSwitch
+  values: off (handle down, lamp dark), on (handle up, lamp ok), tripped (handle mid, lamp warn), blown (handle
+    limp, lamp alarm)
+  signal: 'none: the state is read from the power system''s breaker_<circuit> readout'
+  wiring: '`handle` and `lamp` are set in the scene; set `circuit` on the instance'
+footprint_mm:
+- 100.0
+- 150.0
+stand_out_mm: 53.0
+mount: back on Z=0 on a flat face, centred; front +Z; on is toward +Y; the label recess is at the bottom
+set_on_instance:
+  circuit: PowerSystem.Circuit the breaker switches
+  label: name at the aiming point
+uses:
+- indicator_lamp
+triangles: 192
+built_by: tools/cadkit/scenes/breaker_module.py
+files:
+- breaker_module.tscn
+- breaker_module_body.glb
+- breaker_module_handle.glb
+- component.yaml
+- review/.gdignore
+- review/cameras.json

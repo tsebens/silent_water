@@ -1,0 +1,38 @@
+slug: scan_module
+group: kit
+kind: control
+summary: 'SCAN science module: the module frame with a recessed square ring screen (progress, range, CLOSER hint)
+  on the left and a large lit arm switch on the right. Arming it runs the scan.'
+tags:
+- science
+- module
+- scan
+- screen
+- ring
+- switch
+- lit
+- arm
+scene: res://assets/models/kit/scan_module/scan_module.tscn
+behaviour:
+  script: ScanModule
+  values: armed (switch up, lamp lit) or stopped; the screen shows ring, range and hint
+  signal: armed_changed(armed)
+  wiring: '`arm_switch` is set in the scene; the objective is found in group scan_objectives'
+footprint_mm:
+- 340.0
+- 280.0
+stand_out_mm: 112.0
+mount: back on Z=0, centred; faces +Z; slides into a bay about 0.35 m wide, the plate overlaps its opening
+set_on_instance:
+  objective: 'ScanObjective to drive (default: first in group scan_objectives)'
+uses:
+- science_module_frame
+- lit_toggle
+triangles: 776
+built_by: tools/cadkit/scenes/scan_module.py
+files:
+- component.yaml
+- review/.gdignore
+- review/cameras.json
+- scan_module.tscn
+- scan_module_bezel.glb

@@ -41,6 +41,24 @@ static func hiss() -> AudioStreamWAV:
 		return _wav(s, true))
 
 
+## Electrical crackle: irregular sharp pops over a faint buzz. Sparking wiring.
+static func crackle() -> AudioStreamWAV:
+	return _cached(&"crackle", func() -> AudioStreamWAV:
+		var n: int = RATE
+		var s: PackedFloat32Array = PackedFloat32Array()
+		s.resize(n)
+		var rng: RandomNumberGenerator = _rng(21)
+		var pop: float = 0.0
+		for i: int in range(n):
+			if rng.randf() < 0.0012:
+				pop = rng.randf_range(0.5, 1.0)
+			pop *= 0.992
+			var t: float = float(i) / RATE
+			s[i] = pop * rng.randf_range(-1.0, 1.0) + 0.06 * sin(TAU * 100.0 * t)
+		_fade_loop_edges(s, 200)
+		return _wav(s, true))
+
+
 ## Low gurgle with bubble blips: flooding ballast, bilge pump.
 static func gurgle() -> AudioStreamWAV:
 	return _cached(&"gurgle", func() -> AudioStreamWAV:

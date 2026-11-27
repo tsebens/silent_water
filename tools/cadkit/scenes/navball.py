@@ -5,7 +5,7 @@ mask material. Fixed in front of it: a glass dome and a small orange reticle. Th
 plate (look review round 1). The housing is the multidisplay's (`scene_module("multidisplay").housing()`), not rebuilt:
 its screen disc and label plate are left out and its plate is bored for the ball, which is the only change made to it here.
 
-The ball is 110 mm across and the bezel only 24 mm deep, so to look set into the bezel (the concept) it is centred
+The ball is 164 mm across and the bezel only 31 mm deep, so to look set into the bezel (the concept) it is centred
 BALL_Z in front of the mount face and its rear half sinks behind Z=0. The entry declares that as a panel cutout and keep-clear
 depth. Everything else keeps its back on Z=0.
 
@@ -23,25 +23,27 @@ from cadkit.tscn import Scene, Xform
 
 SLUG, GROUP = "navball", "kit"
 USES = ["multidisplay"]
-HOUSING_D_MM = 140.0            # the multidisplay's screen diameter, which sizes the shared housing
-BALL_R = 55.0                   # 110 mm ball
-BALL_Z = 22.0                   # the ball's centre in front of the mount face
+RING_OUT_D_MM = 224.0           # the housing's outer ring, equal to the gauge bezel (#607)
+HOUSING_D_MM = RING_OUT_D_MM / 174.0 * 140.0   # the multidisplay's screen diameter that gives it (its ring is 174 mm across at 140)
+MAX_PLATE_MM = 250.0
+BALL_R = 82.0                   # 164 mm ball
+BALL_Z = 23.0                   # the ball's centre in front of the mount face
 BORE_R = BALL_R + 2.5           # the hole in the plate round the ball (a 16-sided prism: its flats clear the ball)
-DOME_Z, DOME_OUT_R, DOME_IN_R = 14.0, 72.2, 70.2   # the dome's sphere centre, and its outer and inner radii; its rim is cut at BALL_Z
-RETICLE_R_IN, RETICLE_R_OUT = 57.0, 58.6      # the reticle lies on a thin shell round the ball
-RETICLE_W = 0.9
-DOT_R = 0.6
+DOME_Z, DOME_OUT_R, DOME_IN_R = 20.0, 93.4, 91.4   # the dome's sphere centre, and its outer and inner radii; its rim is cut at BALL_Z
+RETICLE_R_IN, RETICLE_R_OUT = 84.0, 85.9      # the reticle lies on a thin shell round the ball
+RETICLE_W = 1.34
+DOT_R = 0.9
 MARGIN_MM = 6.0                 # the ball's reach inside the bezel's inner radius, at least
-MAX_STAND_OUT_MM = 90.0
+MAX_STAND_OUT_MM = 125.0
 SAMPLE_ATTITUDE = {"heading": 47.0, "pitch": -10.0, "roll": 15.0}     # the review renders and the scene's rest pose
 SAMPLES = {"heading_deg": 47.0, "pitch_deg": -10.0}
 BUDGET = 10000                  # this scene's triangle budget (Tristan's decision, look review round 1; the kit default is 1500)
-SPHERE_TOL = (0.4, 0.14)        # tessellation tolerance (mm, rad) for the ball and the dome: the budget decides
+SPHERE_TOL = (0.4, 0.15)        # tessellation tolerance (mm, rad) for the ball and the dome: the budget decides
 RETICLE_TOL = (0.2, 0.3)
 SAMPLE_SOURCE_GROUP = "sub_readouts"
 
 # The reticle's strokes (mm, in the screen plane): a bracket and a V either side of the centre dot.
-ARM = [(-5.6, 3.6), (-7.4, 0.4), (-5.2, -2.8), (-3.2, -1.2)]   # 1/5 of the first design: about 1/8 of the ball wide
+ARM = [(-8.35, 5.37), (-11.03, 0.6), (-7.75, -4.17), (-4.77, -1.79)]   # 1/5 of the first design: about 1/8 of the ball wide
 
 
 def _shell(r_out: float, r_in: float) -> bd.Shape:
@@ -71,15 +73,17 @@ def rest_basis() -> np.ndarray:
 
 def solids() -> dict:
     """Every solid, then every check, before anything is written."""
-    h = scene_module("multidisplay").housing(HOUSING_D_MM)
+    h = scene_module("multidisplay").housing(HOUSING_D_MM, MAX_PLATE_MM)
     k = h["k"]
     plate_s, bezel_s, ring_s, _disc, _label = h["solids"][:5]    # the screen disc and the label plate are left out
     bolts = h["solids"][5:]
     bezel_in = 73.0 * k
     plate_w = h["plate_mm"]
+    plate_w_t = 8.0 * k
     bezel_front = bbox_mm(bezel_s.shape)[1][2]
 
-    plate = Solid(plate_s.shape - at(prism(16, BORE_R, 12.0), z=-2.0), plate_s.role)
+    expect(abs(2 * 87.0 * k - RING_OUT_D_MM) < 0.01, f"the housing's outer ring is {2 * 87.0 * k:.1f} mm; the gauge bezel is {RING_OUT_D_MM:.0f}")
+    plate = Solid(plate_s.shape - at(prism(16, BORE_R, plate_w_t + 4.0), z=-2.0), plate_s.role)
 
     ball = bd.Sphere(BALL_R)                       # in its own frame, centred on the origin
     dome = at(bd.Sphere(DOME_OUT_R) - bd.Sphere(DOME_IN_R), z=DOME_Z) & at(box(400, 400, 200), z=BALL_Z)
@@ -147,7 +151,7 @@ def build() -> dict:
     plate = s_["plate_mm"]
     write_entry(GROUP, SLUG, {
         "kind": "display",
-        "summary": "Attitude ball: a 110 mm ball behind a glass dome in the multidisplay's bezel, plate, orange ring and "
+        "summary": "Attitude ball: a 164 mm ball behind a glass dome in the multidisplay's bezel, plate, orange ring and "
                    "with a small fixed orange reticle in front of the ball. "
                    "The root is a Navball.",
         "tags": ["display", "navball", "attitude", "ball", "heading", "pitch", "round", "instrument", "pilot"],

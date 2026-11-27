@@ -120,7 +120,10 @@ func test_dev_switch_stops_spontaneous_but_not_strikes() -> void:
 
 func test_pump_empties_bilge_noisily() -> void:
 	controller.model.bilge_water_t = 2.0
-	var pump: Lever = game.get_node("Interior/Stations/Bilge/Pump") as Lever
+	# Flooding trips the BILGE PUMP breaker (M14); reset it, as a crew member would.
+	await _frames(2)
+	(game.get_node("Interior/PowerSystem") as PowerSystem).set_breaker(PowerSystem.Circuit.BILGE_PUMP, true)
+	var pump: Lever = game.get_node("Interior/Stations/Ballast/Panel/BilgeSwitch") as Lever
 	pump.host_set_value(1.0)
 	await _frames(60)
 	expect(controller.model.bilge_water_t < 1.97, "pump removes water (%f)" % controller.model.bilge_water_t)
@@ -133,11 +136,14 @@ func test_bilge_water_makes_sub_heavier() -> void:
 	expect(controller.model.buoyancy_accel() < before - 0.2)
 
 
-func test_engine_noise_reaches_about_80_db_at_full() -> void:
+func test_generator_full_ahead_is_about_85_db() -> void:
+	var power: PowerSystem = game.get_node("Interior/PowerSystem") as PowerSystem
+	power.start_generator()
 	var throttle: SpringAxis = game.get_node("Interior/Stations/Pilot/Throttle") as SpringAxis
 	throttle.host_set_value(1.0)
-	await _frames(60 * 7)
-	expect_near(Acoustics.sub_db(), 80.0, 1.0)
+	await _frames(60 * 12)
+	# Generator 0.03 plus the motor at full 0.002: about 85 dB.
+	expect_near(Acoustics.sub_db(), 85.1, 1.0)
 	expect(not Acoustics.is_masked(), "full ahead is not masked")
 
 
@@ -190,23 +196,27 @@ func _station_node(path: String) -> Node3D:
 
 func test_ballast_station_is_at_the_program_panel() -> void:
 	var fp: Rect2 = SubLayout.footprint(&"ballast")
-	for n: String in ["FloodValve", "BlowValve", "TankGauge", "AirGauge", "NoiseGauge"]:
-		var p: Vector3 = _station_node("Stations/Ballast/" + n).position
+	for n: String in ["FloodWheel", "BlowWheel", "TankGauge", "AirGauge", "NoiseGauge"]:
+		var p: Vector3 = _station_node("Stations/Ballast/Panel/" + n).global_position
 		expect(fp.grow(0.3).has_point(Vector2(p.x, p.z)), "%s at the ballast panel (%s)" % [n, p])
 		expect(p.y > SubLayout.position(&"ballast").y, "%s above the floor" % n)
 
 
-func test_engineering_gauge_is_at_the_program_panel() -> void:
-	var p: Vector3 = _station_node("Stations/Engineering/EngineGauge").position
-	expect(SubLayout.footprint(&"engineering").grow(0.3).has_point(Vector2(p.x, p.z)), "engine gauge at the engineering panel (%s)" % p)
+func test_engineering_panel_is_at_the_program_panel() -> void:
+	var p: Vector3 = _station_node("Stations/Engineering/Panel").position
+	expect(SubLayout.footprint(&"engineering").grow(0.3).has_point(Vector2(p.x, p.z)), "engine hum source at the engineering panel (%s)" % p)
 
 
-func test_bilge_controls_are_beside_the_program_bilge_well() -> void:
-	var fp: Rect2 = SubLayout.footprint(&"bilge")
-	for n: String in ["Pump", "BilgeGauge", "NoiseGauge"]:
-		var p: Vector3 = _station_node("Stations/Bilge/" + n).position
-		expect(fp.grow(1.0).has_point(Vector2(p.x, p.z)), "%s near the bilge well (%s)" % [n, p])
+func test_bilge_controls_are_on_the_ballast_panel_and_the_hose_reaches_the_well() -> void:
+	var fp: Rect2 = SubLayout.footprint(&"ballast")
+	for n: String in ["BilgeSwitch", "BilgeGauge", "HandPump"]:
+		var p: Vector3 = _station_node("Stations/Ballast/Panel/" + n).global_position
+		expect(fp.grow(0.1).has_point(Vector2(p.x, p.z)), "%s on the engineering station (%s)" % [n, p])
 		expect(SubLayout.inside_hull(p.x, p.y, p.z), "%s inside the hull (%s)" % [n, p])
+	var well: Rect2 = SubLayout.footprint(&"bilge")
+	var end: Node3D = _station_node("Stations/Ballast/Hose/Turn")
+	var tip: Vector3 = end.global_position - end.global_basis.y * 0.2625
+	expect(well.grow(0.05).has_point(Vector2(tip.x, tip.z)), "the hose ends at the bilge well (%s)" % tip)
 
 
 func test_every_leak_is_inside_the_hull() -> void:

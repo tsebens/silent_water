@@ -89,6 +89,8 @@ func _ready() -> void:
 	_ray.collision_mask = LAYER_INTERACTABLE
 	var local: bool = is_multiplayer_authority()
 	_camera.current = local
+	if local:
+		_bind_fov()
 	_body_mesh.visible = not local
 	_tint_from_id(name.to_int())
 	if local:
@@ -99,14 +101,50 @@ func _ready() -> void:
 	add_to_group(&"noise_sources")
 
 
+func _bind_fov() -> void:
+	var settings: GameSettings = get_tree().get_first_node_in_group(GameSettings.GROUP) as GameSettings
+	if settings != null and not settings.changed.is_connected(_on_setting_changed):
+		settings.changed.connect(_on_setting_changed)
+	if not get_viewport().size_changed.is_connected(_apply_fov):
+		get_viewport().size_changed.connect(_apply_fov)
+	_apply_fov()
+
+
+func _on_setting_changed(key: StringName, _value: Variant) -> void:
+	if key == &"fov_horizontal":
+		_apply_fov()
+
+
+## Sets the camera's vertical FOV from the horizontal setting and the viewport's aspect.
+func _apply_fov() -> void:
+	var size: Vector2 = get_viewport().get_visible_rect().size
+	if size.y <= 0.0:
+		return
+	var settings: GameSettings = get_tree().get_first_node_in_group(GameSettings.GROUP) as GameSettings
+	if settings == null:
+		_camera.fov = GameSettings.FALLBACK_VERTICAL_FOV_DEG
+		return
+	var h: float = float(settings.get_value(&"fov_horizontal"))
+	_camera.fov = GameSettings.horizontal_to_vertical(h, size.x / size.y)
+
+
 func _unhandled_input(event: InputEvent) -> void:
 	if not is_multiplayer_authority():
 		return
+	var menu: PauseMenu = get_tree().get_first_node_in_group(PauseMenu.GROUP) as PauseMenu
+	if menu != null and menu.is_open():
+		# The menu owns input: Escape steps back, everything else is ignored.
+		if event.is_action_pressed(&"release_mouse"):
+			menu.back()
+		return
 	if event.is_action_pressed(&"release_mouse"):
+		var busy: bool = _seat != null or _held != null
 		_interact_down = false
 		_release_held()
 		stand_up()
 		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+		if not busy and menu != null:
+			menu.open()
 		return
 	if _seat != null and _seat.has_table_view():
 		# The table handles its own mouse and keys; only E leaves it.
@@ -122,12 +160,9 @@ func _unhandled_input(event: InputEvent) -> void:
 		_activate()
 		return
 	if event.is_action_pressed(&"interact"):
-		_interact_down = true
-		if _seat == null or _seat.allows_grabbing:
-			_try_grab()
+		press_interact(aim_target())
 	elif event.is_action_released(&"interact"):
-		_interact_down = false
-		_release_held()
+		release_interact()
 	var motion: InputEventMouseMotion = event as InputEventMouseMotion
 	if motion != null:
 		if _held != null:
@@ -160,7 +195,9 @@ func _simulate(delta: float) -> void:
 	if _sub_frame != null:
 		gravity = _sub_frame.gravity_in_sub()
 	var input: Vector2 = bot_move
-	if input == Vector2.ZERO and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
+	var menu: PauseMenu = get_tree().get_first_node_in_group(PauseMenu.GROUP) as PauseMenu
+	var menu_open: bool = menu != null and menu.is_open()
+	if input == Vector2.ZERO and not menu_open and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
 		input = Input.get_vector(&"move_left", &"move_right", &"move_forward", &"move_back")
 	if _seat != null and not (_seat is PilotSeat):
 		position = _seat.seat_transform().origin
@@ -171,7 +208,7 @@ func _simulate(delta: float) -> void:
 		# single-player mode Numpad 8/2 blow and flood.
 		var planes: float = 0.0
 		var ballast: float = 0.0
-		if Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
+		if not menu_open and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
 			planes = Input.get_axis(&"pilot_planes_rise", &"pilot_planes_dive")
 			ballast = Input.get_axis(&"pilot_flood", &"pilot_blow")
 		planes += bot_planes
@@ -195,7 +232,7 @@ func _simulate(delta: float) -> void:
 	horizontal = horizontal.lerp(wish, 1.0 - exp(-ACCEL * delta))
 	velocity = Vector3(horizontal.x, velocity.y, horizontal.z)
 	var jump_pressed: bool = bot_jump or (
-		Input.mouse_mode == Input.MOUSE_MODE_CAPTURED and Input.is_action_just_pressed(&"jump")
+		not menu_open and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED and Input.is_action_just_pressed(&"jump")
 	)
 	bot_jump = false
 	if is_on_floor():
@@ -346,8 +383,24 @@ func _activate() -> void:
 		take_off()
 
 
-func _try_grab() -> void:
-	var node: Interactable = aim_target()
+## The interact button went down on [param node] (what the player aims at).
+## Grabs it unless a seat forbids grabbing.
+func press_interact(node: Interactable) -> void:
+	_interact_down = true
+	if _seat == null or _seat.allow_grab(node):
+		_try_grab(node)
+
+
+## The interact button came up: a click action on the held control (a switch
+## flipping) runs while the player still holds it, then the control is let go.
+func release_interact() -> void:
+	_interact_down = false
+	if _held != null:
+		_held.click_action()
+	_release_held()
+
+
+func _try_grab(node: Interactable) -> void:
 	if node == null or node is StationSeat or node is Wearable:
 		return  # Stations are taken with E, not grabbed.
 	_held = node

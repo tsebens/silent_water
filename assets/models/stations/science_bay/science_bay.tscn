@@ -1,0 +1,36 @@
+[gd_scene format=3]
+
+[ext_resource type="PackedScene" path="res://assets/models/stations/science_bay/science_bay_body.glb" id="1"]
+[ext_resource type="PackedScene" path="res://assets/models/kit/scan_module/scan_module.tscn" id="2"]
+[ext_resource type="PackedScene" path="res://assets/models/kit/sweep_module/sweep_module.tscn" id="3"]
+[ext_resource type="PackedScene" path="res://assets/models/kit/camera_module/camera_module.tscn" id="4"]
+[ext_resource type="PackedScene" path="res://src/noise/noise_gauge.tscn" id="5"]
+
+[node name="ScienceBay" type="Node3D"]
+
+[node name="Body" parent="." instance=ExtResource("1")]
+
+[node name="Bay0" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 0.990268, 0.139173, 0, -0.139173, 0.990268, -0.36, 0.11327, 0.0851571)
+
+[node name="Module" parent="Bay0" instance=ExtResource("2")]
+
+[node name="Bay1" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 0.990268, 0.139173, 0, -0.139173, 0.990268, 0, 0.11327, 0.0851571)
+
+[node name="Module" parent="Bay1" instance=ExtResource("3")]
+
+[node name="Bay2" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 0.990268, 0.139173, 0, -0.139173, 0.990268, 0.36, 0.11327, 0.0851571)
+
+[node name="Module" parent="Bay2" instance=ExtResource("4")]
+
+[node name="NoiseGauge" parent="." instance=ExtResource("5")]
+transform = Transform3D(1, 0, 0, 0, 0.990268, 0.139173, 0, -0.139173, 0.990268, 0.44, 0.395582, 0.132326)
+radius = 0.05
+
+[node name="OperatorEye" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.55, 0.5)
+
+[node name="OperatorPoint" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -1.1, 0.5)

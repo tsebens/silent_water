@@ -26,6 +26,7 @@ func before_each() -> void:
 
 
 func after_each() -> void:
+	Acoustics.occlusion_override = Callable()
 	game.end_session()
 	game.free()
 
@@ -130,3 +131,97 @@ func test_reenabled_apex_starts_fresh() -> void:
 	expect(apex.active and apex.visible)
 	expect(apex.position.distance_to(apex.spawn_position) < 5.0, "back home")
 	expect_eq(apex.state(), SuspicionModel.State.UNAWARE as int)
+
+
+# --- Hearing by detection and memory (M19.3) ---------------------------------
+
+func _no_occlusion() -> void:
+	Acoustics.occlusion_override = func(_a: Vector3, _b: Vector3) -> bool: return false
+	Acoustics.seed_events(3)
+
+
+func _emit_at(point: Vector3, intensity: float) -> void:
+	Acoustics.emit_raw(point, intensity, &"mechanical", null)
+
+
+func test_apex_registers_a_detector() -> void:
+	expect(apex.detector.is_in_group(&"sound_detectors"))
+	expect_eq(apex.detector.threshold_db, -apex.tuning.hearing_gain_db)
+
+
+func test_apex_chases_the_loudest_memory() -> void:
+	_no_occlusion()
+	apex.brain_enabled = false
+	apex.position = Vector3(0, -80, -350)
+	apex.detector.world_position = apex.position
+	_emit_at(apex.position + Vector3(60, 0, 0), 0.001)
+	_emit_at(apex.position + Vector3(0, 0, 60), 0.01)
+	_emit_at(apex.position + Vector3(-60, 0, 0), 0.003)
+	var m: SoundMemory = apex.loudest_memory()
+	expect(m != null)
+	expect(m.position.distance_to(apex.position + Vector3(0, 0, 60)) <= m.uncertainty + 0.01, "the loudest fix is the one it chases")
+	apex.brain_enabled = true
+	await _frames(2)
+	expect(apex.brain.last_heard.distance_to(m.position) < 0.01, "the brain's target is that memory")
+
+
+func test_louder_event_elsewhere_draws_the_apex_away() -> void:
+	_no_occlusion()
+	apex.position = Vector3(0, -80, -350)
+	apex.detector.world_position = apex.position
+	var sub_pos: Vector3 = controller.model.position
+	_emit_at(sub_pos, 0.01)
+	await _frames(1)
+	var near_sub: Vector3 = apex.brain.last_heard
+	expect(near_sub.distance_to(sub_pos) <= apex.loudest_memory().uncertainty + 0.01, "first it points at the sub")
+	var decoy: Vector3 = apex.position + Vector3(150, 0, -80)
+	_emit_at(decoy, 1.0)
+	await _frames(1)
+	expect(apex.brain.last_heard.distance_to(decoy) <= apex.loudest_memory().uncertainty + 0.01, "a louder event elsewhere takes over")
+	expect(apex.brain.last_heard.distance_to(sub_pos) > 100.0, "and it is no longer the sub")
+
+
+func test_memories_fade_and_a_stale_fix_is_dropped() -> void:
+	_no_occlusion()
+	apex.brain_enabled = false
+	apex.position = Vector3(0, -80, -350)
+	apex.detector.world_position = apex.position
+	_emit_at(apex.position + Vector3(60, 0, 0), 0.01)
+	expect(apex.loudest_memory() != null)
+	var m: SoundMemory = apex.memories.memories[0]
+	var store: SoundMemory.Store = apex.memories
+	expect(store.weight(m, m.time + store.lifetime * 0.5) < store.weight(m, m.time), "weight falls with age")
+	expect(store.loudest(m.time + store.lifetime + 1.0) == null, "past its lifetime the fix is dropped")
+	expect_eq(store.memories.size(), 0)
+	# A fresher, quieter memory beats an older, louder one once the old one has faded.
+	var e: SoundEvent = SoundEvent.new()
+	e.intensity = 1.0
+	e.perceived_position = Vector3(1, 0, 0)
+	store.add(e, 0.0)
+	var q: SoundEvent = SoundEvent.new()
+	q.intensity = 0.4
+	q.perceived_position = Vector3(2, 0, 0)
+	store.add(q, 15.0)
+	expect_eq(store.loudest(15.0).position.x, 2.0, "recent beats stale")
+
+
+func test_steady_sub_noise_reads_as_before() -> void:
+	# The suspicion SNR derived from detections matches heard_at, every frame.
+	Acoustics.occlusion_override = Callable()
+	Acoustics.seed_events(5)
+	apex.position = Vector3(0, -80, -350)
+	apex.detector.world_position = apex.position
+	var frame: SubFrame = game.get_tree().get_first_node_in_group(&"sub_frame") as SubFrame
+	var worst: float = 0.0
+	var heard_frames: int = 0
+	for i: int in range(60 * 6):
+		Acoustics.report_voice(NoiseLevel.from_db(80.0))
+		await runner.get_tree().physics_frame
+		if i < 90:
+			continue  # Let the first events land.
+		var old_snr: float = apex.brain.snr_db(Acoustics.heard_at(apex.position, frame), Acoustics.ambient_at(apex.position))
+		if old_snr > 0.0:
+			heard_frames += 1
+			worst = maxf(worst, absf(apex.brain.last_snr_db - old_snr))
+	expect(heard_frames > 0, "the sub is audible at this noise")
+	expect(worst < 1.0, "detection SNR within 1 dB of the old one, worst %.2f" % worst)

@@ -1,0 +1,32 @@
+slug: science_module_frame
+group: kit
+kind: element
+summary: 'Science-station module chassis: grey face plate with two rails, two quick-release latches with orange
+  tabs, orange side handles on posts, and a rear mount that fits a 350 mm bay. The shared frame the four instrument
+  modules build on. Static; no script.'
+tags:
+- science
+- module
+- frame
+- chassis
+- bay
+- handle
+- latch
+- static
+scene: res://assets/models/kit/science_module_frame/science_module_frame.tscn
+footprint_mm:
+- 340.0
+- 280.0
+stand_out_mm: 96.0
+depth_mm:
+  behind_origin: 0.0
+  in_front_of_origin: 96.0
+mount: back on Z=0, centred; faces +Z; the rear mount slides into a bay about 0.35 m wide, the plate overlaps its
+  opening
+uses: []
+triangles: 424
+built_by: tools/cadkit/scenes/science_module_frame.py
+files:
+- component.yaml
+- science_module_frame.glb
+- science_module_frame.tscn

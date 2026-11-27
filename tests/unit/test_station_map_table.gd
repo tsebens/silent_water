@@ -38,6 +38,19 @@ func test_every_function_has_its_control() -> void:
 	st.queue_free()
 
 
+func test_shelf_gauges_stand_off_their_module() -> void:
+	# #596: the dial face is drawn on the anchor's Z=0, so each gauge sits 2 mm off the module's front plate.
+	var st: Node3D = _make()
+	var shelf: Node3D = st.get_node("Shelf") as Node3D
+	var n: int = 0
+	for child: Node in shelf.get_children():
+		if child is Gauge:
+			n += 1
+			expect((child as Node3D).position.z >= 0.0019, "%s stands off the module's front plate" % child.name)
+	expect(n == 5, "five gauges on the shelf (%d)" % n)
+	st.queue_free()
+
+
 func test_mount_nodes_exist() -> void:
 	var st: Node3D = _make()
 	var holo: Node3D = st.get_node_or_null("HoloMount") as Node3D

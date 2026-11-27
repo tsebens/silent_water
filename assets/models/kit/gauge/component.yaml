@@ -30,6 +30,8 @@ set_on_instance:
   title, readout, readout_b, source_group: what it shows
   min_value, max_value, wraps, wrap_labels: the scale
   sweep_deg, sweep_center_deg: how far the scale runs, and where its middle points (degrees clockwise from up)
+  zone_from, zone_to, zone_swatch: a coloured band along the scale from zone_from to zone_to (default max_value);
+    none by default; swatch default light_alarm
   major_divisions, minor_per_division, show_scale: the markings
   face_color, marking_color, needle_color, needle_b_color: colours
 triangles: 320

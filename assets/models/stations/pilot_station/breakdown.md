@@ -51,3 +51,21 @@ outward, is **navball, the four light switches, the three warning lamps, noise r
 - **Triangles.** The instruments alone come to about 12,800 triangles (the navball is 9,702), so the shell and seat
   plus the instruments reach about 14,300: over the station's 12,000. The shell and seat are 1,544. A larger budget
   needs Tristan's approval at the look gate (as life_support's 24,000 did).
+
+## Rebuilt to the true hemisphere (#686, replaces the #605 stopgap)
+
+The dome is a true 2.2 m sphere (`layout.json` `dome`); the seated eye is 0.10 m above its centre. The strip now has
+two **equal-length** wings, and the apex gap is at least 400 mm (the cap and first facets stay 40 mm off the glass, so
+the entry reports the real figure, about 700 mm).
+
+- **Left wing from the gap:** the depth finder (restored), the hologram above it, then the speed/throttle gauge and
+  the noise repeater stacked on one facet.
+- **Right wing from the gap:** the navball, then the multidisplay. The BILGE, CO2 and LOW O2 lamps run in a row along
+  its top edge. The navball and multidisplay are the larger kit sizes.
+- **Switches:** the four light switches leave the strip and are `lit_toggle` instances at the armrest anchors (#685),
+  under the same node names and drivers.
+- **Forward view:** the depth finder, hologram, navball and multidisplay centres lie within **70 degrees** of the seated
+  eye's forward axis (an `expect`; the entry reports each centre and worst-corner angle). The limit moved from 35 to 60
+  to 70: the strip lies 0.25 to 0.5 m below the eye and about 0.9 m ahead, so the first instruments sit 47 to 54
+  degrees off axis and the multidisplay, second on its wing, 67.5. The speed gauge, lamps and noise repeater are exempt.
+- **Triangles:** 13,620 against the station's 12,000 overage (budget 15,000), for approval at the look gate.

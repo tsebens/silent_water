@@ -53,8 +53,8 @@ func _hold_depth(target_y: float) -> void:
 	var vy: float = c.model.velocity.y
 	var want_vy: float = clampf(-err * 0.08, -0.8, 0.8)
 	var dv: float = vy - want_vy
-	_put("Ballast/FloodValve", clampf(dv * 2.0, 0.0, 1.0))
-	_put("Ballast/BlowValve", clampf(-dv * 1.0, 0.0, 1.0))
+	_put("Ballast/Panel/FloodWheel", clampf(dv * 2.0, 0.0, 1.0))
+	_put("Ballast/Panel/BlowWheel", clampf(-dv * 1.0, 0.0, 1.0))
 	_put("Pilot/Planes", clampf(err * 0.05, -1.0, 1.0))
 
 
@@ -111,7 +111,7 @@ func test_autopilot_completes_a_dive() -> void:
 				_steer_to(HOVER)
 				_hold_depth(HOVER.y)
 				if scan.in_position():
-					_put("Scanner/Switch", 1.0)
+					_put("Science/Station/Panel/Bay0/Module/ArmSwitch", 1.0)
 					if scan_started_at < 0.0:
 						scan_started_at = t
 				if scan.complete:
@@ -120,8 +120,8 @@ func test_autopilot_completes_a_dive() -> void:
 				_put("Pilot/Throttle", 0.0)
 				_put("Pilot/Rudder", 0.0)
 				_put("Pilot/Planes", 0.0)
-				_put("Ballast/FloodValve", 0.0)
-				_put("Ballast/BlowValve", 1.0 if not c.surfaced else 0.0)
+				_put("Ballast/Panel/FloodWheel", 0.0)
+				_put("Ballast/Panel/BlowWheel", 1.0 if not c.surfaced else 0.0)
 		await runner.get_tree().physics_frame
 		t += dt
 		if fmod(t, 60.0) < dt:

@@ -1,0 +1,36 @@
+slug: hand_pump
+group: kit
+kind: element
+summary: 'Manual bilge pump: a housing with a long yellow lever that swings up (rest) and down (stroke) about X.
+  HandPump behaviour; hold to pump. stand_out_mm is the furthest point of the sweep.'
+tags:
+- pump
+- hand pump
+- manual
+- bilge
+- lever
+- engineering
+scene: res://assets/models/kit/hand_pump/hand_pump.tscn
+behaviour:
+  script: HandPump
+  values: 0 rest (handle up) .. 1 bottom of the stroke (handle down)
+  wiring: leaks export or the leak_system group (LeakSystem.manual_bail)
+footprint_mm:
+- 160.0
+- 386.2
+stand_out_mm: 515.09
+handle_tip_mm:
+  up_yz:
+  - 177.5
+  - 462.65
+  down_yz:
+  - -177.5
+  - 462.65
+mount: back on Z=0, centred; front +Z; the lever runs out along +Z and swings in the YZ plane (up is +Y)
+triangles: 272
+built_by: tools/cadkit/scenes/hand_pump.py
+files:
+- component.yaml
+- hand_pump.tscn
+- hand_pump_body.glb
+- hand_pump_lever.glb

@@ -121,7 +121,7 @@ func lean_eye(eye: Vector3) -> Vector3:
 func view_transform_from(eye: Vector3) -> Transform3D:
 	var leaned: Vector3 = lean_eye(eye)
 	var base: Vector3 = holo.global_position
-	var look: Vector3 = base + holo.global_basis * Vector3(0, holo.height * 0.3, holo.clip_rz * 0.4)
+	var look: Vector3 = base + holo.global_basis * Vector3(0, holo.relief_max_height() * 0.3, holo.clip_rz * 0.4)
 	return Transform3D.IDENTITY.looking_at(look - leaned, holo.global_basis.y).translated(leaned)
 
 
@@ -400,7 +400,7 @@ func pick_world_from_ray(from_r: Vector3, dir_r: Vector3) -> Variant:
 	if not hit.is_empty():
 		return frame.sub_transform * (hit["position"] as Vector3)
 	# No terrain under the cursor: use the depth at the middle of the display.
-	var mid_y: float = holo.to_world(Vector3(0, holo.height * 0.5, 0)).y
+	var mid_y: float = holo.to_world(Vector3(0, holo.relief_max_height() * 0.5, 0)).y
 	if absf(dir_world.y) < 1e-4:
 		return null
 	var t: float = (mid_y - a_world.y) / dir_world.y

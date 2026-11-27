@@ -6,10 +6,11 @@ extends Node3D
 ## listening cone. Everything is clipped to an elliptic cylinder standing on
 ## this node (local +Y up).
 ##
-## Display model: a low terrain relief. With [member relief] on (the
-## default) the chart is a thin sheet of glowing [code]light_readout[/code]
-## contours on a dark base, [member height] is the relief's full height (a few
-## centimetres at most), and pins and contacts are small glowing dots. The
+## Display model: a terrain relief. With [member relief] on (the default) the
+## chart is a sheet of glowing [code]light_readout[/code] contours on a dark
+## base, [member height] is the relief's full height (about 0.7 m on the map
+## table, 6 cm on the pilot's disc), and pins and contacts are small glowing
+## dots that sit at the height of the terrain they belong to. The
 ## outline is a disc or a D ([member d_shaped]) of [member clip_rx] x
 ## [member clip_rz]. Turn [member relief] off for the old tall volume.
 ##
@@ -37,7 +38,7 @@ const OUTLINE_SEGMENTS: int = 48
 @export var clip_rz: float = 0.48
 ## Height of the display: the relief's full height, or the volume's.
 @export var height: float = 0.03
-## Draw a thin terrain relief on a dark base rather than a tall volume.
+## Draw a terrain relief on a dark base rather than a tall volume.
 @export var relief: bool = true
 ## World metres of depth that [member height] spans (relief only).
 @export var relief_depth_m: float = 230.0
@@ -76,6 +77,8 @@ const OUTLINE_SEGMENTS: int = 48
 ## World position at the centre of the display when not following the sub.
 var focus: Vector3 = Vector3(0, -110, -200)
 
+## False while the DISPLAYS circuit is unpowered: the hologram goes dark.
+var powered: bool = true
 var _content: Node3D
 var _markers: Node3D
 var _pins_root: Node3D
@@ -90,7 +93,13 @@ var _base: MeshInstance3D
 var _shader: Shader = preload("res://src/map/holo.gdshader")
 
 
+func set_powered(on: bool) -> void:
+	powered = on
+	visible = on
+
+
 func _ready() -> void:
+	PowerSink.bind(self, PowerSystem.Circuit.DISPLAYS, set_powered)
 	if game == null:
 		var n: Node = get_parent()
 		while n != null and not (n is Game):

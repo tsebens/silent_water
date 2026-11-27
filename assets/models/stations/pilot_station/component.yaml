@@ -1,12 +1,22 @@
 slug: pilot_station
 group: stations
+mounts:
+- anchor: Anchors/SpeedGauge
+  scene: gauge
+  offset_mm: 2.0
+  host_face: left wing facet 2
+- anchor: Anchors/NoiseRepeater
+  scene: gauge
+  offset_mm: 2.0
+  host_face: left wing facet 2
 kind: station
 summary: 'Pilot''s station: the pilot seat on the centreline facing -Z, and one knee-height instrument strip low
-  against the dome in two faceted wings with orange end caps either side of a clear gap (600 mm). Marked anchors
-  for every instrument (left wing from the gap outward: depth finder with the hologram above it, multidisplay, speed
-  gauge; right wing: navball, four light switches, three warning lamps, noise repeater). Every instrument is placed:
-  the scenes sit at the anchors, the lamps have ThresholdLamp drivers (bilge wired; CO2 and O2 unwired), the speed
-  gauge''s scale follows the sub''s top speed, and each toggle and lamp has an engraved label plate.'
+  against the dome in two equal faceted wings with orange end caps either side of a clear gap (400 mm). Left wing
+  from the gap outward: depth finder with the hologram above it, then the speed/throttle gauge over the noise repeater;
+  right wing: navball, multidisplay, and the BILGE, CO2 and LOW O2 lamps in a row along its top ledge. The four
+  light switches are lit_toggles at the seat''s armrest anchors. Every instrument is placed: the scenes sit at the
+  anchors, the lamps have ThresholdLamp drivers (bilge wired; CO2 and O2 unwired), the speed gauge''s scale follows
+  the sub''s top speed, and each switch and lamp has an engraved label plate.'
 tags:
 - station
 - pilot
@@ -21,16 +31,17 @@ behaviour:
     seat: Seat/SitPoint (PilotSeat binds it; Seat/ThrottleJoystick and Seat/FlightJoystick take a JoystickIndicator)
     anchors: 'Anchors/<name> (Node3D; mount frame: +Z out of the fascia, +Y up the slope, +X toward the pilot''s
       right)'
-    left_wing: DepthFinder, Multidisplay, SpeedGauge (from the gap outward); HologramAnchor above the depth finder,
-      standing up
-    right_wing: Navball, ExternalLightSwitch, ExternalColourSwitch, CabinLightSwitch, CabinColourSwitch, BilgeLamp,
-      Co2Lamp, LowO2Lamp (on a dark plate, 8 mm proud), NoiseRepeater
-    instances: each Anchors/<name> is the instrument's scene (lamps, switches, gauges, navball, depth finder, multidisplay);
-      Drivers/<Lamp>Driver are ThresholdLamps; the four switches are not yet wired to the headlight and cabin lights
-      (the placement arc does that)
+    left_wing: DepthFinder, SpeedGauge and NoiseRepeater (stacked) from the gap outward; HologramAnchor above the
+      depth finder, standing up
+    right_wing: Navball, Multidisplay (from the gap outward); BilgeLamp, Co2Lamp, LowO2Lamp in a row on a dark plate
+      along its top ledge (8 mm proud, facing up)
+    switches: ExternalLightSwitch, ExternalColourSwitch, CabinLightSwitch, CabinColourSwitch are lit_toggle instances
+      at the pilot_seat's armrest anchors (same names and frames as Seat/<name>)
+    instances: each Anchors/<name> is the instrument's scene; Drivers/<Lamp>Driver are ThresholdLamps; HeadlightSwitch
+      and CabinSwitch bind the switches by node name
 footprint_mm:
-- 2364
-- 1110
+- 1594
+- 1130
 mount: floor at Y=0, seat origin on the centreline at X=0, Z=0; the pilot faces -Z; the strip is ahead at -Z
 placement:
   hull_z_m: -3.9
@@ -48,39 +59,50 @@ uses:
 - navball
 - depth_finder
 - gauge
-- lit_guarded_toggle
+- lit_toggle
 - indicator_lamp
-triangles: 14834
+triangles: 13620
 triangle_budget: 15000
 triangles_by_part:
-  strip: 652
-  pilot_seat: 1200
-  instruments: 12982
+  strip: 428
+  pilot_seat: 1288
+  instruments: 11904
 checks:
   strip_top_mm: 780
   hologram_top_mm: 1002
-  glass_clearance_mm: 42
-  gap_mm: 600.0
+  glass_clearance_mm: 40
+  gap_mm: 705
+  forward_view_half_angle_deg: 67.5
+  forward_view_deg:
+    DepthFinder:
+      centre_deg: 53.5
+      worst_corner_deg: 63.7
+    HologramAnchor:
+      centre_deg: 47.3
+      worst_corner_deg: 54.9
+    Navball:
+      centre_deg: 52.7
+      worst_corner_deg: 63.9
+    Multidisplay:
+      centre_deg: 67.5
+      worst_corner_deg: 78.6
+  wing_length_mm: 594
   eye_to_anchor_mm:
-    DepthFinder: 990
-    Multidisplay: 1021
-    SpeedGauge: 1091
-    Navball: 992
-    ExternalLightSwitch: 1001
-    ExternalColourSwitch: 1008
-    CabinLightSwitch: 1021
-    CabinColourSwitch: 1041
-    BilgeLamp: 1059
-    Co2Lamp: 1074
-    LowO2Lamp: 1091
-    NoiseRepeater: 1175
+    DepthFinder: 900
+    SpeedGauge: 903
+    NoiseRepeater: 883
+    Navball: 903
+    Multidisplay: 888
+    BilgeLamp: 970
+    Co2Lamp: 966
+    LowO2Lamp: 965
   toggle_hand_reach_mm:
-    ExternalLightSwitch: 653
-    ExternalColourSwitch: 641
-    CabinLightSwitch: 640
-    CabinColourSwitch: 649
-  rim_ring_clear_mm: 132
-  stick_clearance_mm: 449
+    ExternalLightSwitch: 113
+    ExternalColourSwitch: 169
+    CabinLightSwitch: 113
+    CabinColourSwitch: 169
+  rim_ring_clear_mm: 102
+  stick_clearance_mm: 312
 built_by: tools/cadkit/scenes/pilot_station.py
 files:
 - component.yaml

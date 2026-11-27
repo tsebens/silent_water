@@ -138,3 +138,48 @@ def test_a_scene_may_carry_its_own_approved_budget(tree, monkeypatch):
     entry["triangles"] = 21
     with pytest.raises(build.BuildFailed):
         build._check_budget("knob", "kit")
+
+
+STATION = '''
+from cadkit import mount
+from cadkit.library import out_dir, write_entry
+from cadkit.solids import Solid, box, export_solids_glb
+
+SLUG, GROUP, USES = "desk", "stations", ["gauge_like"]
+
+
+def build() -> dict:
+    rep = export_solids_glb([Solid(box(100, 100, 10), "trim_black")], out_dir(GROUP, SLUG) / "desk.glb", "N")
+    body = {{"kind": "station", "summary": "t", "tags": [], "triangles": rep["triangles"]}}
+    {mounts}
+    write_entry(GROUP, SLUG, body)
+    return {{}}
+'''
+GAUGE_LIKE = SCENE.replace('"kind": "element"', '"kind": "element", "depth_mm": {{"behind_origin": 20.0, "in_front_of_origin": 15.0}}')
+
+
+def station_tree(tmp_path, mounts):
+    scenes, models = tmp_path / "scenes", tmp_path / "models"
+    scenes.mkdir(parents=True)
+    models.mkdir(parents=True)
+    (scenes / "gauge_like.py").write_text(textwrap.dedent(GAUGE_LIKE).format(slug="gauge_like", uses=[], width=50, glb="g"))
+    (scenes / "desk.py").write_text(textwrap.dedent(STATION).format(mounts=mounts))
+    return scenes, models
+
+
+def test_a_station_whose_instrument_back_is_coplanar_with_its_panel_fails_verify(tmp_path):
+    scenes, models = station_tree(tmp_path, 'body["mounts"] = [mount.record("Gauge", "gauge_like", 20.0, "panel")]')
+    out = build.run("verify", scenes, models)
+    assert not out["ok"] and out["failed"] == "desk"
+    assert "desk" in out["error"] and "Gauge" in out["error"] and "behind 20.0 mm" in out["error"]
+    near = station_tree(tmp_path / "n", 'body["mounts"] = [mount.record("Gauge", "gauge_like", 20.4)]')   # 0.4 mm: still coplanar
+    assert not build.run("verify", *near)["ok"]
+
+
+def test_a_gapped_station_and_an_unconverted_one_pass_verify(tmp_path):
+    from cadkit import mount
+    scenes, models = station_tree(tmp_path, 'body["mounts"] = [mount.record("Gauge", "gauge_like", mount.stand_off(20.0))]')
+    assert mount.MOUNT_GAP_MM > mount.COPLANAR_TOL_MM
+    assert build.run("build", scenes, models)["ok"] and build.run("verify", scenes, models)["ok"]
+    other = station_tree(tmp_path / "o", "pass")      # declares no mounts: not opted in, so not checked
+    assert build.run("build", *other)["ok"] and build.run("verify", *other)["ok"]

@@ -29,7 +29,7 @@ func test_screen_is_a_multidisplay_with_the_pilot_preset() -> void:
 	expect(d != null, "Screen is a MultiDisplay")
 	expect(d.preset != null and d.preset.resource_path == PILOT, "the pilot preset is set")
 	expect(d.slots.size() == 4 and d.chevrons_enabled and d.ring_enabled, "the preset was applied")
-	expect_near(d.screen_diameter, 0.14, 1e-6)
+	expect_near(d.screen_diameter, 0.2, 1e-6)
 	n.queue_free()
 
 
@@ -48,8 +48,8 @@ func test_meshes_fit_footprint_and_stand_out() -> void:
 	var n: Node3D = _make()
 	var box: AABB = _housing_box(n)
 	expect(absf(box.position.z) < 0.0005, "back on Z=0")
-	expect(box.size.x <= 0.1901 and box.size.y <= 0.1901, "within the 190 mm footprint")
-	expect(box.size.x >= 0.18, "the plate fills the footprint")
-	expect(box.end.z <= 0.0261 and box.end.z >= 0.02, "stand-out within the stated 26 mm")
+	expect(box.size.x <= 0.2801 and box.size.y <= 0.2801, "within the 280 mm plate limit")
+	expect(box.size.x >= 0.26, "the plate fills the footprint")
+	expect(box.end.z <= 0.0372 and box.end.z >= 0.03, "stand-out within the scaled 37 mm")
 	expect(absf(box.get_center().x) < 0.001 and absf(box.get_center().y) < 0.001, "centred on the origin")
 	n.queue_free()

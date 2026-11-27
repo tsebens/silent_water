@@ -1,0 +1,16 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://src/science/sweep_module.gd" id="1"]
+[ext_resource type="PackedScene" path="res://assets/models/kit/science_module_frame/science_module_frame.tscn" id="2"]
+[ext_resource type="PackedScene" path="res://assets/models/kit/sweep_module/sweep_module_screen.glb" id="3"]
+[ext_resource type="PackedScene" path="res://assets/models/kit/lit_toggle/lit_toggle.tscn" id="4"]
+
+[node name="SweepModule" type="Node3D"]
+script = ExtResource("1")
+
+[node name="Frame" parent="." instance=ExtResource("2")]
+
+[node name="Screen" parent="." instance=ExtResource("3")]
+
+[node name="ArmSwitch" parent="." instance=ExtResource("4")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.112, 0, 0.058)
