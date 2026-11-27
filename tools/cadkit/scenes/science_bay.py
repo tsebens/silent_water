@@ -1,11 +1,13 @@
 """science_bay: the science station's panel (a row of three module bays). Brief: assets/models/stations/science_bay/brief.yaml.
 
-A long low housing against the starboard hull: a kick-plinthed pedestal, a sloped hand ledge, and above the ledge a face
-raked back by RAKE_DEG so every screen faces up toward the standing eye. Three bay recesses are cut into the raked face
-at a 360 mm pitch, each a dark pocket that reads on its own when empty. A module scene (the default fit: SCAN, SWEEP,
+A long low housing against the starboard hull: a shallow kick-plinthed pedestal, a proud ledge band, a recessed module panel
+raked back by RAKE_DEG so every screen faces up toward the standing eye, and a proud upper panel. Three bays are cut into
+the module panel at a 360 mm pitch, each a stepped dark pocket (the plate seats in a step with 3 mm of gap all round, the
+rear mount in a slot behind it) that reads on its own when empty. A module scene (the default fit: SCAN, SWEEP,
 CAMERA) is set in each, its back 2 mm off the pocket floor (the mount rule); PROBE, or any of the four in any bay, fits the
 same way, because every module is the shared `science_module_frame` chassis (340 x 280 mm, plate overlapping the opening).
-Above the row: the SCIENCE BAY plate and a running strip. On the ledge: an orange trim and the shared noise repeater.
+Upper panel: the SCIENCE BAY plate, a running strip, decorative (unwired) knobs and lamps (local solids), and the shared noise
+repeater. On the ledge: an orange trim.
 
 Local solids (static, used once): the housing with its pockets, pocket liners, the plate, the strip, the ledge trim.
 Everything else is a catalogue scene. No scripts: `OperatorPoint` and `OperatorEye` are markers for the placement arc,
@@ -21,7 +23,7 @@ import build123d as bd
 import numpy as np
 
 from cadkit import mount
-from cadkit.solids import Solid, at, box, expect, expect_in_front, export_solids_glb
+from cadkit.solids import Solid, at, box, prism, expect, expect_in_front, export_solids_glb
 from cadkit.library import entry, note, out_dir, res, scene_path, write_entry
 from cadkit.tscn import Scene, Xform
 
@@ -41,27 +43,35 @@ FLOOR_Y = -1100.0                               # the floor, in the station fram
 WAIST_Y = FLOOR_Y + 1000.0                      # about 1.0 m above the floor
 FACE_MAX_DEG = 60.0                             # a screen may face the eye within this angle
 
-# The housing: a polygon in (Y, Z) extruded along X. Its upper face is raked back RAKE_DEG; the ledge slopes down to the lip.
+# The housing: a polygon in (Y, Z) extruded along X, shaped like the life-support station. Bottom to top: a shallow kick and
+# pedestal; a proud ledge band (the lower panel); the module panel, recessed and raked back RAKE_DEG; and a proud upper panel.
 HOUSING_W = 1200.0
-RAKE_DEG = 12.0
-FACE_BASE = np.array([-20.0, 130.0])            # (y, z) where the ledge meets the raked face
-FACE_LEN = 430.0                                # the raked face, along its slope
-LIP = np.array([-95.0, 436.0])                  # the ledge's front edge
-KICK_Y, KICK_Z, BODY_FRONT_Z = -1040.0, 400.0, 436.0   # the plinth's inset, then the pedestal's front
+RAKE_DEG = 8.0
+KICK_Y, KICK_Z = -1040.0, 65.0                  # the plinth's inset
+PED_Z, PED_TOP_Y = 105.0, -250.0                # the pedestal's front: shallower than the module panel
+LIP = np.array([-130.0, 200.0])                 # the ledge band's top front edge (y, z)
+FACE_BASE = np.array([-60.0, 160.0])            # (y, z) where the ledge meets the module panel's face
+MOD_LEN = 350.0                                 # the module panel, along its slope
+REVEAL = 24.0                                   # the upper panel stands this far proud of the module panel
+UP_LEN = 560.0                                  # the upper panel's top, along the slope from the module panel's base
 
-# Bays.
+# Bays: a wide shallow step takes the module plate (3 mm of gap all round), a slot behind it takes the rear mount.
 PITCH = 360.0
 BAY_X = (-PITCH, 0.0, PITCH)
-OPEN_W, OPEN_H = 324.0, 264.0                   # a pocket's opening: the module body (312 x 252) slides in, the plate (340 x 280) overlaps it
-POCKET_D = 44.0                                 # the frame's BODY_D
-BAY_S = 170.0                                   # the pocket's centre, along the raked face from its base
+STEP_W, STEP_H, STEP_D = 346.0, 286.0, 8.0      # the plate (340 x 280) seats in this step
+OPEN_W, OPEN_H = 324.0, 264.0                   # the slot: the module body (312 x 252) slides in
+POCKET_D = 52.0                                 # step + the frame's BODY_D (44) behind the plate
+BAY_S = 182.0                                   # the bays' centre, along the module panel from its base
 LINER_T = 1.0
 
-# Face furniture, along the raked face (s) and the ledge (v from the lip).
-PLATE_S, PLATE_W, PLATE_H = 385.0, 300.0, 46.0
-STRIP_S, STRIP_W, STRIP_H = 415.0, 1100.0, 14.0
+# Face furniture on the upper panel (s along the slope from the module panel's base, x along the hull).
+PLATE_S, PLATE_X, PLATE_W, PLATE_H = 525.0, -300.0, 300.0, 46.0
+STRIP_S, STRIP_W, STRIP_H = 368.0, 1100.0, 14.0
 TRIM_V, TRIM_W, TRIM_H = 40.0, 1100.0, 16.0
-GAUGE_R, GAUGE_X, GAUGE_V = 0.05, 480.0, 165.0
+GAUGE_R, GAUGE_X, GAUGE_S = 0.05, 440.0, 455.0
+DECOR_S = 450.0                                 # decorative, unwired controls (local solids: the triangle budget is tight)
+KNOB_X, KNOB_R, KNOB_H = (-430.0, -350.0, -270.0), 18.0, 22.0
+LAMP_X, LAMP_W = (-150.0, -100.0, -50.0, 0.0), 18.0
 
 _RAKE = math.radians(RAKE_DEG)
 _X = np.array([1.0, 0.0, 0.0])
@@ -89,8 +99,12 @@ def on_ledge(v: float, out: float = 0.0, x: float = 0.0) -> np.ndarray:
     return LIP_ORIGIN + _X * x + LEDGE_T * v + LEDGE_N * out
 
 
+def on_upper(s: float, out: float = 0.0, x: float = 0.0) -> np.ndarray:
+    return on_face(s, REVEAL + out, x)
+
+
 def housing_top() -> np.ndarray:
-    return on_face(FACE_LEN)
+    return on_face(UP_LEN, REVEAL)
 
 
 class Item:
@@ -144,41 +158,53 @@ def items() -> list[Item]:
     behind = (entry("gauge").get("depth_mm") or {"behind_origin": 0.0})["behind_origin"]
     front = (entry("gauge").get("depth_mm") or {"in_front_of_origin": entry("gauge")["stand_out_mm"]})["in_front_of_origin"]
     off = mount.stand_off(behind)
-    out.append(Item("NoiseGauge", "gauge", NOISE_GAUGE_SCENE, on_ledge(GAUGE_V, off, GAUGE_X), LEDGE_BASIS,
+    out.append(Item("NoiseGauge", "gauge", NOISE_GAUGE_SCENE, on_upper(GAUGE_S, off, GAUGE_X), FACE_BASIS,
                     (-ge["bezel"] * r, -ge["plate_bottom"] * r, -behind, ge["bezel"] * r, ge["bezel"] * r, front), off,
-                    "ledge top", "ledge", radius=GAUGE_R))
+                    "upper panel", "upper", radius=GAUGE_R))
     return out
 
 
-def _pocket_cutter(x: float) -> bd.Shape:
-    """The opening's box, from POCKET_D below the raked face to a little above it, laid on the face."""
+def _pocket_cutters(x: float) -> list[bd.Shape]:
+    """The bay's two cuts: the slot (down to POCKET_D) and the wider step for the plate (down to STEP_D), laid on the face."""
     p = on_face(BAY_S, -POCKET_D, x)
-    return at(box(OPEN_W, OPEN_H, POCKET_D + 30.0), p[0], p[1], p[2], rx=FACE_RX)
+    q = on_face(BAY_S, -STEP_D, x)
+    return [at(box(OPEN_W, OPEN_H, POCKET_D + 30.0), p[0], p[1], p[2], rx=FACE_RX),
+            at(box(STEP_W, STEP_H, STEP_D + 30.0), q[0], q[1], q[2], rx=FACE_RX)]
 
 
 def solids() -> list[Solid]:
     top = housing_top()
+    pts = [(FLOOR_Y, 0.0), (FLOOR_Y, KICK_Z), (KICK_Y, KICK_Z), (KICK_Y, PED_Z), (PED_TOP_Y, PED_Z), (PED_TOP_Y, LIP[1]),
+           (LIP[0], LIP[1]), (FACE_BASE[0], FACE_BASE[1]), tuple(on_face(MOD_LEN)[1:]), tuple(on_face(MOD_LEN, REVEAL)[1:]),
+           (top[1], top[2]), (top[1], 0.0)]
     with bd.BuildPart() as b:
         with bd.BuildSketch(bd.Plane.YZ):
-            bd.Polygon((FLOOR_Y, 0.0), (FLOOR_Y, KICK_Z), (KICK_Y, KICK_Z), (KICK_Y, BODY_FRONT_Z), (LIP[0], LIP[1]),
-                       (FACE_BASE[0], FACE_BASE[1]), (top[1], top[2]), (top[1], 0.0), align=None)
+            bd.Polygon(*pts, align=None)
         bd.extrude(amount=HOUSING_W)
     housing = at(b.part, x=-HOUSING_W / 2)
     for x in BAY_X:
-        housing = housing - _pocket_cutter(x)
+        for c in _pocket_cutters(x):
+            housing = housing - c
     liners = []
     for x in BAY_X:
         p = on_face(BAY_S, -POCKET_D + 0.5, x)
         liners.append(at(box(OPEN_W - 2.0, OPEN_H - 2.0, LINER_T), p[0], p[1], p[2], rx=FACE_RX))
-    pl = on_face(PLATE_S, 0.0)
+    pl = on_upper(PLATE_S, 0.0, PLATE_X)
     plate = at(box(PLATE_W, PLATE_H, 2.5), pl[0], pl[1], pl[2], rx=FACE_RX)
-    st = on_face(STRIP_S, 0.0)
+    st = on_upper(STRIP_S, 0.0)
     strip = at(box(STRIP_W, STRIP_H, 3.0), st[0], st[1], st[2], rx=FACE_RX)
     tr = on_ledge(TRIM_V, 0.0)
     trim = at(box(TRIM_W, TRIM_H, 3.0), tr[0], tr[1], tr[2], rx=LEDGE_RX)
-    inset = at(box(1040.0, 520.0, 4.0), 0.0, -600.0, BODY_FRONT_Z)           # a recessed dark panel on the pedestal's front
+    inset = at(box(1040.0, 520.0, 4.0), 0.0, -600.0, PED_Z)                  # a dark panel on the pedestal's front
+    decor = []
+    for x in KNOB_X:
+        k = on_upper(DECOR_S, 0.0, x)
+        decor.append(Solid(at(prism(6, KNOB_R, KNOB_H), k[0], k[1], k[2], rx=FACE_RX), "control_interface"))
+    for x in LAMP_X:
+        k = on_upper(DECOR_S, 0.0, x)
+        decor.append(Solid(at(box(LAMP_W, LAMP_W, 5.0), k[0], k[1], k[2], rx=FACE_RX), "indicator_ok"))
     parts = ([Solid(housing, "interior_panel"), Solid(inset, "interior_dark")] + [Solid(s, "interior_dark") for s in liners]
-             + [Solid(plate, "label_plate"), Solid(strip, "interior_dark"), Solid(trim, "control_interface")])
+             + [Solid(plate, "label_plate"), Solid(strip, "interior_dark"), Solid(trim, "control_interface")] + decor)
     expect_in_front(parts, SLUG)
     return parts
 
@@ -223,15 +249,24 @@ def checks(its: list[Item], parts: list[Solid]) -> dict:
     # The bays: pocket against the module frame, and against each other.
     fw, fh = frame["footprint_mm"]
     body_w, body_h = 312.0, 252.0     # the frame's rear mount (science_module_frame.py BODY_W, BODY_H); the plate is the footprint
-    expect(body_w < OPEN_W < fw, f"pocket opening {OPEN_W:.0f} mm takes the {body_w:.0f} mm rear mount and the {fw:.0f} mm plate overlaps it")
-    expect(body_h < OPEN_H < fh, f"pocket opening {OPEN_H:.0f} mm tall takes the {body_h:.0f} mm rear mount and the {fh:.0f} mm plate overlaps it")
-    expect(POCKET_D >= 44.0, "pocket as deep as the frame's rear mount (44 mm)")
+    expect(body_w < OPEN_W < fw, f"slot {OPEN_W:.0f} mm takes the {body_w:.0f} mm rear mount; the {fw:.0f} mm plate is wider")
+    expect(body_h < OPEN_H < fh, f"slot {OPEN_H:.0f} mm tall takes the {body_h:.0f} mm rear mount; the {fh:.0f} mm plate is taller")
+    expect(1.0 <= (STEP_W - fw) / 2 <= 4.0 and 1.0 <= (STEP_H - fh) / 2 <= 4.0,
+           f"a narrow gap all round the plate in its step ({(STEP_W - fw) / 2:.1f} x {(STEP_H - fh) / 2:.1f} mm a side)")
+    expect(POCKET_D >= STEP_D + 44.0, "bay as deep as the step plus the frame's rear mount (44 mm)")
+    expect(mount.stand_off(0.0) + 44.0 <= POCKET_D, "the module's rear mount lies inside the bay")
     expect(PITCH - fw >= 10.0, f"neighbouring plates at least 10 mm apart ({PITCH - fw:.0f})")
     expect(BAY_X[-1] + fw / 2 <= HOUSING_W / 2 - 40.0, "end bays leave a 40 mm cheek of housing")
     top = housing_top()
-    pocket_hi = BAY_S + OPEN_H / 2
-    expect(pocket_hi <= FACE_LEN - 20.0, "the pockets stop 20 mm short of the top of the face")
+    pocket_hi = BAY_S + STEP_H / 2
+    expect(pocket_hi <= MOD_LEN - 20.0, "the bays stop 20 mm short of the top of the module panel")
+    expect(BAY_S - STEP_H / 2 >= 20.0, "the bays start 20 mm above the ledge")
     back_y, back_z = on_face(pocket_hi, -POCKET_D)[1:]
+    depths = [float(on_face(s_)[2]) for s_ in (0.0, MOD_LEN)]
+    expect(min(depths) >= 100.0 and max(depths) <= 160.0 + 0.01, f"module panel {min(depths):.0f}..{max(depths):.0f} mm deep (a thick section)")
+    expect(PED_Z < min(depths), f"the lower section ({PED_Z:.0f} mm) is shallower than the module panel ({min(depths):.0f} mm)")
+    expect(REVEAL >= 15.0, "the upper panel stands proud of the module panel")
+    expect(LIP[1] > min(depths), "the ledge band stands proud of the module panel")
     expect(back_z >= 10.0, f"the pocket's back stays 10 mm in front of the hull face (Z {back_z:.1f})")
 
     # Every module type, in every bay: size, waist-to-eye band, ledge clearance, reach.
@@ -258,10 +293,16 @@ def checks(its: list[Item], parts: list[Solid]) -> dict:
     reach["NoiseGauge"] = round(dg, 1)
     expect(dg <= REACH, f"the noise repeater within reach {REACH:.0f} mm of the shoulder ({dg:.0f})")
 
-    # The repeater sits on the ledge: along it, inside the housing, above it, clear of the pocket row.
-    vs = [float(LEDGE_T @ (c - LIP_ORIGIN)) for c in g.corners()]
-    expect(min(vs) >= 15.0 and max(vs) <= LEDGE_LEN - 15.0, f"the repeater lies on the ledge ({min(vs):.0f}..{max(vs):.0f} of {LEDGE_LEN:.0f})")
-    expect(abs(g.corners()[:, 0]).max() <= HOUSING_W / 2 - 20.0, "the repeater inside the housing's width")
+    # The repeater and the decorative controls sit on the upper panel: above the module panel, below its top, inside its width.
+    for it in its:
+        if it.plane != "upper":
+            continue
+        ss = [float(FACE_T @ (c - FACE_ORIGIN)) for c in it.corners()]
+        expect(min(ss) >= MOD_LEN + 10.0 and max(ss) <= UP_LEN - 10.0, f"{it.name} on the upper panel ({min(ss):.0f}..{max(ss):.0f}, panel {MOD_LEN:.0f}..{UP_LEN:.0f})")
+        expect(abs(it.corners()[:, 0]).max() <= HOUSING_W / 2 - 20.0, f"{it.name} inside the housing's width")
+    for lo_s, hi_s, what in ((PLATE_S - PLATE_H / 2, PLATE_S + PLATE_H / 2, "plate"), (STRIP_S - STRIP_H / 2, STRIP_S + STRIP_H / 2, "strip"),
+                             (DECOR_S - KNOB_R, DECOR_S + KNOB_R, "decorative controls")):
+        expect(MOD_LEN + 5.0 <= lo_s and hi_s <= UP_LEN - 5.0, f"the {what} lies on the upper panel")
 
     # Grab boxes apart: neighbouring modules and the repeater, 10 mm or more (axis-aligned boxes in the station frame).
     boxes = {i.name: i.aabb for i in its}
@@ -327,8 +368,8 @@ def build() -> dict:
     figs["triangles_heaviest_fit"] = worst
     write_entry(GROUP, SLUG, {
         "kind": "panel",
-        "summary": "Science bay: a long low raked housing with three module bays at chest height over a sloped hand ledge, "
-                   "a SCIENCE BAY plate and running strip above, the shared noise repeater on the ledge. Each bay is an "
+        "summary": "Science bay: a shallow housing with three module bays in a recessed, raked panel at chest height over a ledge band, "
+                   "a SCIENCE BAY plate and running strip above, the shared noise repeater and decorative controls on a proud upper panel. Each bay is an "
                    "anchor (Bay0..Bay2) whose child `Module` is a module scene (default SCAN, SWEEP, CAMERA); any of the "
                    "four module scenes fits any bay, and an empty bay is a dark pocket.",
         "tags": ["panel", "station", "science", "bay", "module", "scan", "sweep", "probe", "camera", "ledge", "standing"],
@@ -338,7 +379,7 @@ def build() -> dict:
                     "fit replace that child with another module scene (any of the four fits any bay)",
             "operator": "no script on the panel: the placement arc wraps it in ScienceStation (as the map table is wrapped) "
                         "with OperatorPoint (feet) and OperatorEye (the standing eye, 0.5 m out, 0.55 m above the centre)",
-            "noise": "NoiseGauge (acoustics_readouts) on the ledge"}},
+            "noise": "NoiseGauge (acoustics_readouts) on the upper panel"}},
         "footprint_mm": [figs["along_hull_mm"], figs["deep_mm"]],
         "stand_out_mm": figs["deep_mm"],
         "mount": "back on Z=0 against the starboard hull (X along the hull, Z out into the aisle); the station's centre stands "

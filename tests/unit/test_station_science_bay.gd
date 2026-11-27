@@ -246,3 +246,28 @@ func test_controls_work_in_place() -> void:
 	shutter.end_interaction()
 	expect_eq(shutter.get_value(), shutter.min_value, "and springs back")
 	st.queue_free()
+
+
+func test_housing_is_shallow_with_an_upper_panel_holding_the_noise_gauge() -> void:
+	var st: Node3D = _make()
+	var box: AABB = _bounds(st, st)
+	expect(box.end.z <= 0.25, "the whole station stands at most 0.25 m out (%.3f)" % box.end.z)
+	var body: AABB = _bounds(st, st.get_node("Body"))
+	expect(body.end.z <= 0.21, "the housing alone is shallow (%.3f)" % body.end.z)
+	var gauge: AABB = _bounds(st, st.get_node("NoiseGauge"))
+	for bay: String in BAYS:
+		expect(gauge.position.y > _bounds(st, _module(st, bay)).end.y, "the noise gauge is on the upper panel, above %s" % bay)
+	st.queue_free()
+
+
+func test_modules_sit_in_bays_with_a_narrow_gap_all_round() -> void:
+	var st: Node3D = _make()
+	for bay: String in BAYS:
+		var anchor: Node3D = st.get_node(bay) as Node3D
+		var plate: AABB = _bounds(st, _module(st, bay))
+		expect(plate.size.x >= 0.33 and plate.size.x <= 0.35, "%s: the module is about 0.34 m wide (%.3f)" % [bay, plate.size.x])
+		# the module's rear mount is inside the housing: its back, 0.044 m behind the plate, is behind the housing's front face
+		var back: Vector3 = anchor.position + anchor.transform.basis.z * 0.0
+		var body: AABB = _bounds(st, st.get_node("Body"))
+		expect(body.has_point(back - anchor.transform.basis.z * 0.01), "%s: the module's back lies inside the housing" % bay)
+	st.queue_free()
