@@ -178,7 +178,7 @@ reference.
    aft to keep the screen out of the pilot's sightline, moving it out of the dome altogether was
    the cleaner version.
 2. **The sonar station is a desk with a screen, just aft of the dome on the starboard side.** The
-   operator keeps a forward view past the pilot's seat and gives up the side and downward views.
+   operator sits facing the starboard hull, so gives up the forward, side and downward views (#586).
    The screen can be as large as the operator likes without ever crossing the pilot's sightline.
 3. **Two displays, not one.** The pilot's small hologram is locked centred on the sub; the sonar
    operator has their own 2D screen with a free camera. They are not shared, because the operator
@@ -223,7 +223,7 @@ reference.
 - **The sub experiment's layout** (`program.yaml` and `brief_cockpit_concept.md` on the sub
   experiment branch) still has two seats in the cockpit and an "old" sub. Both need revising to
   this concept when that branch lands: sonar becomes a midships station just aft of the dome,
-  starboard, and the brief's materials list follows the art direction doc.
+  starboard, facing the hull, and the brief's materials list follows the art direction doc.
 - **The map table concept** was reworked after this session's lock, in #329 (hull-side cab cowl, modern
   finish); its concept doc in `assets/models/map_table/concept/` is the current lock, and the round-1
   shots linked above show the earlier circular table that the pilot's hologram style was taken from.
