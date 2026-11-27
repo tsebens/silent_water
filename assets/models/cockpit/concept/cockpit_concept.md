@@ -41,9 +41,9 @@ The screen shows where the passive array is pointed.
 - **The pilot sits alone in the bubble**, seat on the centreline, well forward, glass all round
   and below. The bubble is small: a hand's width between the seat's armrests and the glass.
 - **The sonar operator sits outside the dome**, just aft of the rim ring on the starboard side,
-  on the main deck level (one step up from the pilot), in a forward-facing seat at a desk console
-  against the starboard hull, about a metre behind the pilot's right shoulder. They can look past
-  the pilot's seat into the dome.
+  on the main deck level (one step up from the pilot), on the aisle side of a console turned to
+  the starboard hull, facing outboard (changed from the original aft-of-the-pilot, forward-facing seat by #586:
+  the operator no longer looks past the pilot into the dome).
 - Both seats are modern heavy-equipment operator seats on suspension pedestals with armrests.
 
 **Pilot station** (the readouts and switches were re-planned on 2026-11-25: see "Pilot station, round 4"

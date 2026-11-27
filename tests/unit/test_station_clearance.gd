@@ -51,8 +51,8 @@ func test_the_map_tables_footprint_is_reserved_and_empty() -> void:
 
 func test_the_science_stations_footprint_is_reserved_and_empty() -> void:
 	var fp: Rect2 = SubLayout.top_footprint(&"science")
-	expect(fp.size.x > 0.4 and fp.size.y > 0.8, "the science reservation is the program's (%s)" % fp)
-	for id: StringName in [&"map_table", &"lock_out_trunk", &"tower_ladder", &"sonar", &"countermeasures", &"lockers"]:
+	expect(fp.size.x > 0.4 and fp.size.y > 1.8 and fp.position.x > 0.0, "the science reservation is the program's long starboard one (%s)" % fp)
+	for id: StringName in [&"map_table", &"lock_out_trunk", &"tower_ladder", &"sonar", &"sonar_seat", &"countermeasures", &"lockers"]:
 		expect(not SubLayout.footprint(id).grow(-0.001).intersects(fp), "%s does not overlap the science station" % id)
 
 

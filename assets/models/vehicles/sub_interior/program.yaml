@@ -52,10 +52,12 @@ compartments:
   - id: midships
     z: [-3.35, 1.5]
     notes: >
-      The crowded catch-all and the crew's hub. Starboard: the sonar desk just aft of the dome ring, then
-      countermeasures. Port: the map table in a bay in the hull wall, its operator standing at the middle of
-      the front edge, observers standing either side. Then the lock-out trunk in the floor, and the conning-tower ladder and lockers by
-      the bulkhead. Countermeasures and the map table face each other across the aisle.
+      The crowded catch-all and the crew's hub. Starboard wall, bow to stern: the sonar console turned to the hull
+      just aft of the dome ring (its operator seated on the aisle side, facing outboard), the long science station
+      over its hand ledge, and countermeasures at the aft end against the bulkhead. Port: the map table in a bay in
+      the hull wall, its operator standing at the middle of the front edge, observers standing either side; aft of it
+      the lockers, then the conning-tower ladder by the bulkhead. The lock-out trunk is in the floor on the
+      centreline just astern of the table, its space kept clear.
   - id: bulkhead
     z: [1.5, 1.7]
     notes: Watertight hatch, which can isolate a flooding engineering space.
@@ -74,17 +76,20 @@ stations:
   # hand (now 640 to 650 mm, was 690 to 720); the seat stays inside the cockpit (z -4.9 to -3.35). Tristan's decision on #482, arc #528.
   - {id: pilot,           compartment: cockpit,     kind: seat,  x: 0.0,  z: -3.9, footprint: [0.8, 0.7],
      display: {size: small, placement: a crisp 20 cm cylinder of light up and to the side of the apex gap, above the depth finder, purpose: chart locked centred on the sub; maybe a little zoom, never pan or rotate}}
-  - {id: sonar,           compartment: midships,    kind: desk,  side: starboard, z: -2.95, footprint: [0.7, 0.65], mount_height_m: 0.75, faces: aft,
+  - {id: sonar,           compartment: midships,    kind: desk,  side: starboard, z: -2.95, footprint: [0.7, 0.65], mount_height_m: 0.75, faces: starboard,
      display: {size: large, placement: a 55 cm screen in a deep bezel on a steeply raked desk, purpose: the operator's own sub-centred view with zoom, pan and rotate; points the passive array; active sonar on and off}}
-  - {id: sonar_seat,      compartment: midships,    kind: chair, side: starboard, z: -2.3, footprint: [0.6, 0.6], aft_of: sonar, faces: forward}
-  - {id: countermeasures, compartment: midships,    kind: panel, side: starboard, z: -1.35, footprint: [1.0, 0.45]}
+  # Sonar is turned to the hull (#598): the console's back is against the starboard hull and the operator sits on the
+  # aisle side facing outboard, so the seat is inboard of the desk at the same z.
+  - {id: sonar_seat,      compartment: midships,    kind: chair, side: starboard, z: -2.95, footprint: [0.6, 0.6], inboard_of: sonar, faces: starboard}
+  # The science station (#529, reserved here by #598): a long starboard wall station, three module bays over a hand ledge,
+  # taking the bulk of the wall between sonar and countermeasures. The operator stands in the aisle facing starboard.
+  - {id: science,         compartment: midships,    kind: panel, side: starboard, z: -1.4, footprint: [2.0, 0.5], faces: starboard}
+  # Countermeasures: the aft end of the starboard wall, against the bulkhead (footprint ends at z 1.5). Kept 0.5 m long so it does
+  # not run alongside the lock-out trunk (z 0.05 to 0.95): the trunk keeps a clear 0.98 m of deck on its starboard side.
+  - {id: countermeasures, compartment: midships,    kind: panel, side: starboard, z: 1.25, footprint: [0.5, 0.45]}
   - {id: map_table,       compartment: midships,    kind: table, side: port,      z: -1.25, footprint: [2.2, 0.9], mount_height_m: 0.75,
      hologram_height_m: 0.7,
      display: {size: table, placement: a curved slab of light filling the D-shaped top, capped at 0.7 m tall, purpose: every scale for the crew; one operator moves the camera, observers place pins; everyone stands, so all share one perspective}}
-  # Reserved floor for the science station (designed and built in #529; footprint a placeholder until then): data
-  # gathering (sensor scans, bathymetry sweeps, temperature readings, photos) beside the map table, aft of it and ahead
-  # of the tower ladder. The operator stands in the aisle facing port.
-  - {id: science,         compartment: midships,    kind: panel, side: port,      z: 0.45, footprint: [0.9, 0.5]}
   - {id: engineering,     compartment: engineering, kind: panel, side: starboard, z: 2.3, footprint: [1.2, 0.45]}
   - {id: life_support,    compartment: engineering, kind: panel, side: port,      z: 2.3, footprint: [1.0, 0.5]}
   # The engineering station (#530, placed by #572): the FLOOD and BLOW wheels on the ballast pipework, the drop-weights
@@ -109,7 +114,7 @@ features:
       sea; the pumps are loud. Placed for play, not engineering realism.
   - {id: tower_ladder, compartment: midships, kind: ladder, side: port, z: 1.2, footprint: [0.4, 0.35],
      notes: Up into the conning tower and its top hatch, for docking at the ship or a station.}
-  - {id: lockers, compartment: midships, kind: storage, side: starboard, z: 1.2, footprint: [0.4, 0.45],
+  - {id: lockers, compartment: midships, kind: storage, side: port, z: 0.4, footprint: [0.4, 0.45],
      notes: Patches, scrubber canisters, cargo.}
   # Wall-mounted: takes no floor (`mounted`), so it is left out of the clearance report. The mission orders and
   # dive status, on the forward face of the bulkhead above the hatch (lintel 1.85 m), readable from the map table.
@@ -120,7 +125,7 @@ features:
 displays:
   # Two charts, not one shared view: the pilot's small locked hologram and sonar's own screen, plus the map table.
   - The pilot has a 20 cm hologram locked centred on the sub, up and to the side of the apex gap, above the depth finder, clear of the forward view.
-  - Sonar has its own 2D screen, sub-centred by default but free to zoom, pan and rotate; it is not shared with the pilot.
+  - Sonar has its own 2D screen, on a console against the starboard hull that its seated operator faces, sub-centred by default but free to zoom, pan and rotate; it is not shared with the pilot.
   - The map table covers every scale for the crew to plan around; its hologram is capped at 0.7 m to fit the headroom.
   - Everyone at the map table stands to the table and leans over it (MapTable.lean_eye, 0.25 m down and 0.15 m toward the
     hologram), so the hologram is tuned for a standing eye of 1.65 m and a leaning eye of 1.40 m, about 0.65 m above the
@@ -128,9 +133,11 @@ displays:
     under the overhead. The operator's console is level with the table top and reached from the leaning eye.
 
 design_notes:
-  - "The operational core shares one volume: the pilot in the dome, sonar a metre behind their right shoulder, countermeasures beside sonar, and the map table across the aisle. Nobody is more than a few steps from anyone else."
+  - "The operational core shares one volume: the pilot in the dome, sonar turned to the starboard hull just aft of the dome, the science station along the same wall, countermeasures at its aft end, and the map table across the aisle. Nobody is more than a few steps from anyone else."
   - Crew standing behind the pilot look over one head, out through the dome and down to the sea floor.
-  - Countermeasures faces the map table across the aisle, so its operator watches their decoys on the hologram.
+  - Countermeasures sits at the aft end of the starboard wall against the bulkhead, away from the table, so its operator works with their back to the quiet end of the boat.
+  - Sonar gives up its forward view: its operator sits facing the hull, not past the pilot into the dome (#586).
+  - The starboard wall carries the working stations, so the port side keeps the way out: the lock-out trunk's hatch stays clear on the centreline astern of the map table.
   - Rounds are an engineering job, behind the bulkhead, away from the table's chatter.
   - The ballast wheels, the drop-weight release and the bilge pumps share one port-wall station, all about staying afloat.
 
@@ -144,17 +151,17 @@ design_notes:
 # 2 m under the keel gives the dome views something to look down at; the cutaways hide it.
 cameras:
   - {id: midships_forward, pos: [0.25, 0.70, 1.05], look: [0.0, 0.05, -4.6], lens_mm: 16, hide: [crew, dome],
-     notes: "Hero. Standing by the lockers looking forward: trunk, map table (port), countermeasures and sonar (starboard), the pilot in the dome."}
+     notes: "Hero. Standing aft by the trunk looking forward: trunk, lockers and map table (port), countermeasures, science and sonar (starboard), the pilot in the dome."}
   - {id: pilot_view, seat: pilot, look_dir: [0.0, -0.15, -1.0], lens_mm: 18, hide: [crew, dome],
      notes: The pilot's view out of the dome, the small hologram up and to the side of the apex gap, above the depth finder.}
-  - {id: sonar_view, seat: sonar_seat, look_dir: [-0.35, -0.35, -1.0], lens_mm: 18, hide: [crew, dome],
-     notes: Seated at the sonar desk, the screen ahead and the pilot's seat past it to the left.}
-  - {id: science_view, pos: [-0.35, 0.70, 0.45], look: [-1.3, 0.4, 0.45], lens_mm: 18, hide: [crew, dome],
-     notes: "Standing at the science station's reserved spot, looking port: the map table's aft end to the left, the tower ladder to the right."}
+  - {id: sonar_view, seat: sonar_seat, look_dir: [1.0, -0.35, 0.0], lens_mm: 18, hide: [crew, dome],
+     notes: Seated at the sonar console facing outboard, the screen ahead against the starboard hull.}
+  - {id: science_view, pos: [0.2, 0.70, -1.4], look: [1.4, 0.4, -1.4], lens_mm: 18, hide: [crew, dome],
+     notes: "Standing in the aisle at the science station's middle, looking starboard along its three bays."}
   - {id: map_operator_view, pos: [0.05, 0.75, -0.7], look: [-1.25, -0.15, -1.4], lens_mm: 20, hide: [crew, dome],
      notes: "Over the standing operator's shoulder: the hologram slab ahead, the cowl above."}
   - {id: map_observer_view, pos: [0.65, 0.70, -0.2], look: [-1.25, -0.25, -1.45], lens_mm: 18, hide: [crew, dome],
-     notes: Standing in the aisle across from the table, countermeasures behind the viewer.}
+     notes: Standing in the aisle across from the table, the science station behind the viewer.}
   - {id: engineering_aft, pos: [0.0, 0.70, 1.55], look: [0.0, -0.35, 4.6], lens_mm: 16, hide: [crew],
      notes: From the bulkhead hatch looking aft into engineering.}
   - {id: overview, pos: [-5.6, 5.8, 6.4], look: [0.0, -0.7, -0.2], lens_mm: 32, hide: [seafloor, shell_high, dome],
