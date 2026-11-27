@@ -1,0 +1,42 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://src/interact/loader_drawer.gd" id="1"]
+[ext_resource type="Script" path="res://src/interact/noise_profile.gd" id="2"]
+[ext_resource type="PackedScene" path="res://assets/models/kit/loader_drawer/loader_drawer_body.glb" id="3"]
+[ext_resource type="PackedScene" path="res://assets/models/kit/loader_drawer/loader_drawer_drawer.glb" id="4"]
+[ext_resource type="Script" path="res://src/interact/decoy_cradle.gd" id="5"]
+
+[sub_resource type="Resource" id="noise"]
+script = ExtResource("2")
+idle_intensity = 0
+max_intensity = 0.3
+clank_rate = 1.5
+exponent = 2
+
+[sub_resource type="BoxShape3D" id="grab"]
+size = Vector3(0.82, 0.32, 0.37)
+
+[node name="LoaderDrawer" type="Node3D" node_paths=PackedStringArray("body")]
+script = ExtResource("1")
+slide_axis = Vector3(0, 0, 1)
+travel_m = 0.65
+body = NodePath("Slide")
+noise_profile = SubResource("noise")
+
+[node name="Body" parent="." instance=ExtResource("3")]
+
+[node name="Slide" type="Node3D" parent="."]
+
+[node name="Drawer" parent="Slide" instance=ExtResource("4")]
+
+[node name="Cradle" type="Node3D" parent="Slide"]
+script = ExtResource("5")
+transform = Transform3D(0, 0, -1, 0, 1, 0, 1, 0, 0, 0, -0.008, 0.29)
+
+[node name="Grab" type="StaticBody3D" parent="Slide"]
+collision_layer = 2
+collision_mask = 0
+
+[node name="Shape" type="CollisionShape3D" parent="Slide/Grab"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0.27)
+shape = SubResource("grab")

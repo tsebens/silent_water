@@ -1,0 +1,38 @@
+slug: loader_drawer
+group: kit
+kind: control
+summary: 'Decoy loader drawer: a heavy slide-out drawer in a rail sleeve, viewing window in its front, a half-pipe
+  cradle (a DecoyCradle, decoy lying across) and an orange pull handle. LoaderDrawer: drag to slide, 0 closed to
+  1 open, 0.65 m of travel along +Z.'
+tags:
+- drawer
+- loader
+- decoy
+- cradle
+- slide
+- window
+- countermeasure
+scene: res://assets/models/kit/loader_drawer/loader_drawer.tscn
+behaviour:
+  script: LoaderDrawer
+  values: 0 closed .. 1 open (slides `Slide` 0.65 m along +Z)
+  signal: value_changed
+  wiring: '`body` is the Slide node; `Cradle` (DecoyCradle) rides on it: wire LaunchTube.drawer to the root and
+    LaunchTube.cradle to Slide/Cradle'
+cradle_node: Slide/Cradle
+footprint_mm:
+- 800.0
+- 300.0
+stand_out_mm: 450.0
+open_stand_out_mm: 1100.0
+travel_mm: 650.0
+mount: back on Z=0, centred; the drawer opens along +Z; the decoy lies across it, label toward the window
+uses:
+- decoy
+triangles: 424
+built_by: tools/cadkit/scenes/loader_drawer.py
+files:
+- component.yaml
+- loader_drawer.tscn
+- loader_drawer_body.glb
+- loader_drawer_drawer.glb
