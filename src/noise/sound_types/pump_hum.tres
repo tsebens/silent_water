@@ -1,0 +1,9 @@
+[gd_resource type="Resource" script_class="SoundType" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://src/noise/sound_type.gd" id="1_type"]
+
+[resource]
+script = ExtResource("1_type")
+intensity = 0.001
+kind = &"mechanical"
+period = 1.0
