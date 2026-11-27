@@ -54,8 +54,10 @@ func test_the_bays_hold_the_default_modules_and_the_scan_module_is_the_objective
 	objective.free()
 
 
-func test_the_station_adds_no_second_set_of_modules() -> void:
-	expect_eq(_station().fitted().size(), 0, "no script-only modules beside the scene's")
+func test_the_station_adopts_the_scenes_modules_without_a_second_set() -> void:
+	expect_eq(_station().fitted().size(), 3, "three fitted bays")
+	expect(_station().bays[0].module == _panel().get_node("Bay0/Module"), "bay 0 is the scene's SCAN module")
+	expect_eq(_station().find_children("*", "ScanModule", true, false).size(), 1, "one SCAN module in the station")
 
 
 func test_the_station_spans_the_reservations_length() -> void:
