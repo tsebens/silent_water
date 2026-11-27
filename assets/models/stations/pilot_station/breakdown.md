@@ -52,17 +52,20 @@ outward, is **navball, the four light switches, the three warning lamps, noise r
   plus the instruments reach about 14,300: over the station's 12,000. The shell and seat are 1,544. A larger budget
   needs Tristan's approval at the look gate (as life_support's 24,000 did).
 
-## Fitted to the true hemisphere (#605, stopgap until #633)
+## Rebuilt to the true hemisphere (#686, replaces the #605 stopgap)
 
-The dome is a true 2.2 m sphere (`layout.json` `dome`); the seated eye is 0.10 m above its centre. The station reads
-the sphere, not the hull rings. Each wing has about 520 mm of facet between the 600 mm gap and the rim ring's
-100 mm clearance, so the strip is shorter than #482 built it:
+The dome is a true 2.2 m sphere (`layout.json` `dome`); the seated eye is 0.10 m above its centre. The strip now has
+two **equal-length** wings, and the apex gap is at least 400 mm (the cap and first facets stay 40 mm off the glass, so
+the entry reports the real figure, about 700 mm).
 
-- **Dropped:** the depth finder (anchor and facet). The hologram now stands above the multidisplay.
-- **Shrunk:** the speed and noise gauges to radius 0.055 m (were 0.10 and 0.11 m); the switch pitch to 66 mm (was 84 mm);
-  the facet margin to 14 mm (was 30 mm).
-- **Stacked:** speed over noise on one left-wing facet; the three lamps above the four switches on one right-wing facet.
-  The noise repeater moved from the right wing to the left.
-
-#633 restores these in a proper redesign. The checks hold: `rim_ring_clear_mm` 101 (100 needed), glass clearance 40 mm, the toggles
-within 560 mm of the resting hand (reach 750).
+- **Left wing from the gap:** the depth finder (restored), the hologram above it, then the speed/throttle gauge and
+  the noise repeater stacked on one facet.
+- **Right wing from the gap:** the navball, then the multidisplay. The BILGE, CO2 and LOW O2 lamps run in a row along
+  its top edge. The navball and multidisplay are the larger kit sizes.
+- **Switches:** the four light switches leave the strip and are `lit_toggle` instances at the armrest anchors (#685),
+  under the same node names and drivers.
+- **Forward view:** the depth finder, hologram, navball and multidisplay centres lie within **70 degrees** of the seated
+  eye's forward axis (an `expect`; the entry reports each centre and worst-corner angle). The limit moved from 35 to 60
+  to 70: the strip lies 0.25 to 0.5 m below the eye and about 0.9 m ahead, so the first instruments sit 47 to 54
+  degrees off axis and the multidisplay, second on its wing, 67.5. The speed gauge, lamps and noise repeater are exempt.
+- **Triangles:** 13,620 against the station's 12,000 overage (budget 15,000), for approval at the look gate.
