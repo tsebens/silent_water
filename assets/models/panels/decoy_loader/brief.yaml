@@ -1,0 +1,40 @@
+# Brief for the decoy loader panel (concept #746, arc #754), from the concept issue.
+station: decoy_loader
+
+concept:
+  images:
+    - path: assets/models/countermeasures/concept/decoy_loader_primary.png
+      role: primary            # the unit to build
+      view: a crew member at the unit, from the aisle, slightly in front and to the right
+      camera: concept_primary
+  doc: assets/models/countermeasures/concept/countermeasures_concept.md
+  compare_on:
+    - overall massing: a heavy armoured wall box, drawer below, lever housing above, flat against the hull
+    - the drawer with its viewing window and orange pull handle
+    - the prime lever above the drawer, a plate and lamp at the top, a valve and a braided hose to the left
+  ignore:
+    - the crew member, the surrounding corridor, cable runs, the exact label text
+    - the lamp's colour and state in the art: the brief's EMPTY / LOADED / PRIMED lamps replace the single PRIMED lamp
+
+functions:
+  - id: load
+    control: slide the drawer open (0.65 m), lay a decoy in its cradle, slide it closed; the decoy shows through the window
+    binds: LoaderDrawer, DecoyCradle
+    status: kit scene loader_drawer
+  - id: prime
+    control: pull the lever above the drawer down; it stays down, locks the drawer shut and primes the tube
+    binds: LaunchTube.request_prime via the prime_lever SwitchLever
+    status: kit scene prime_lever
+  - id: state
+    display: three strip lamps EMPTY / LOADED / PRIMED, exactly one lit, the same behaviour as the countermeasures station
+    binds: TubeLamps from LaunchTube.state_changed (#762)
+    status: led_strip_warn, led_strip, led_strip_alarm
+
+constraints:
+  kind: panel
+  frame: back on Z=0 against the hull, centred; the drawer opens toward +Z
+  operator_eye_m: [0.0, 0.65, 0.5]
+  reach_m: 1.1                 # from the shoulder, 0.25 m below the eye
+  size: about 0.8 m wide, 0.6 m tall, at most 0.45 m deep closed; the open drawer reaches about 0.65 m further
+  triangle_budget: 4000        # panel, the instanced drawer and lever included
+  palette: every colour a palette swatch; the lamps use the indicator swatches; they must read under the stealth red cabin light
