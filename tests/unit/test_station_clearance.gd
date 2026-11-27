@@ -6,7 +6,7 @@ const INTERIOR_SCENE: PackedScene = preload("res://src/sub/interior.tscn")
 
 ## Floor space the program reserves for stations and features that other arcs build (the map table is M12.8).
 const RESERVED: Array[StringName] = [
-	&"countermeasures", &"life_support", &"lock_out_trunk", &"tower_ladder", &"lockers", &"map_table",
+	&"countermeasures", &"lock_out_trunk", &"tower_ladder", &"lockers", &"map_table",
 	&"science",
 ]
 
