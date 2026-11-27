@@ -19,6 +19,7 @@
 [ext_resource type="Script" path="res://src/life_support/life_support_readouts.gd" id="ls_readouts"]
 [ext_resource type="Script" path="res://src/life_support/life_support_alarm_driver.gd" id="ls_driver"]
 [ext_resource type="Script" path="res://src/sub/station_placement.gd" id="station_placement"]
+[ext_resource type="Script" path="res://src/sub/cable_trays.gd" id="cable_trays"]
 [ext_resource type="PackedScene" path="res://assets/models/stations/sonar_console/sonar_console.tscn" id="sonar_console"]
 [ext_resource type="PackedScene" path="res://assets/models/stations/map_table/map_table.tscn" id="map_table"]
 [ext_resource type="PackedScene" path="res://assets/models/stations/pilot_station/pilot_station.tscn" id="pilot_station"]
@@ -533,6 +534,11 @@ script = ExtResource("ls_driver")
 
 [node name="PowerSystem" type="Node" parent="."]
 script = ExtResource("power_system")
+
+[node name="CableTrays" type="Node3D" parent="."]
+script = ExtResource("cable_trays")
+board = NodePath("../Stations/Engineering/Panel")
+boxes = NodePath("../JunctionBoxes")
 
 [node name="JunctionBoxes" type="Node3D" parent="."]
 
