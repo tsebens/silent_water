@@ -20,7 +20,10 @@ func test_types_match_the_old_players() -> void:
 	var sc: SoundType = load("res://src/noise/sound_types/scanner.tres") as SoundType
 	expect_near(sc.volume_db, SubAudio.volume_for(ScanObjective.SCAN_INTENSITY), 0.001, "scanner volume")
 	expect(sc.get_stream() == ProceduralSounds.scanner(), "scanner plays the scanner stream")
-	for t: SoundType in [pump, sc]:
+	var chime: SoundType = load("res://src/noise/sound_types/alarm_chime.tres") as SoundType
+	expect(chime.get_stream() == ProceduralSounds.alarm_chime(), "chime plays the alarm chime stream")
+	expect_near(chime.volume_db, SubAudio.volume_for(chime.intensity), 0.001, "chime volume")
+	for t: SoundType in [pump, sc, chime]:
 		expect_eq(t.bus, AudioBuses.INSIDE)
 		expect_near(t.unit_size, SubAudio.UNIT_SIZE, 0.0001, "unit size")
 
