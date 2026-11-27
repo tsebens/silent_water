@@ -136,10 +136,17 @@ func now() -> float:
 	return _time
 
 
-## Host only. Emits a sound at a world position and delivers it synchronously to
-## every [SoundDetector] that can hear it. Nothing is retained. Returns how many
+## Host only. Emits a sound of a shared [SoundType] at a world position. [param scale]
+## is a bounded per-emitter multiplier on the type's intensity. Returns how many
 ## detectors heard it.
-func emit_event(position: Vector3, intensity: float, kind: StringName = &"", source: Object = null) -> int:
+func emit_event(type: SoundType, position: Vector3, source: Object = null, scale: float = 1.0) -> int:
+	return emit_raw(position, type.scaled_intensity(scale), type.kind, source)
+
+
+## Host only. Delivers a sound of raw intensity synchronously to every
+## [SoundDetector] that can hear it. Nothing is retained. For tests and tools;
+## emitters use [method emit_event]. Returns how many detectors heard it.
+func emit_raw(position: Vector3, intensity: float, kind: StringName = &"", source: Object = null) -> int:
 	if Net.is_online() and not multiplayer.is_server():
 		return 0
 	var heard_count: int = 0
