@@ -37,6 +37,9 @@ const INTERIOR_BOUNDS: AABB = AABB(Vector3(-2.0, -0.8, -5.0), Vector3(4.0, 3.8, 
 const LANDING_INTENSITY: float = 1.2e-2
 const LANDING_NOISE_S: float = 0.25
 const RESCUE_POINT: Vector3 = Vector3(0.0, 0.1, -0.8)
+## Wander oscillator rates (rad/s). Two incommensurate sines read as drifting.
+const WANDER_RATE_A: float = 1.7
+const WANDER_RATE_B: float = 2.9
 
 ## Replicated pose (sub-local). Written by the owning peer.
 @export var sync_position: Vector3 = Vector3.ZERO
@@ -80,6 +83,29 @@ var _landing_left: float = 0.0
 
 func _enter_tree() -> void:
 	set_multiplayer_authority(name.to_int())
+
+
+## Wander added to walk [param input] at time [param t] seconds: sideways and
+## along the input, swinging further as strength rises. Zero when the model
+## has no movement effect or there is no input. Deterministic and continuous in [param t].
+static func impaired_wander(input: Vector2, model: ImpairmentModel, t: float) -> Vector2:
+	var swing: float = model.wander_swing()
+	if swing <= 0.0 or input == Vector2.ZERO:
+		return Vector2.ZERO
+	var side: Vector2 = Vector2(-input.y, input.x)
+	var osc_side: float = sin(t * WANDER_RATE_A) * 0.6 + sin(t * WANDER_RATE_B + 1.3) * 0.4
+	var osc_along: float = sin(t * WANDER_RATE_B + 0.4) * 0.5
+	return (side * osc_side + input * osc_along) * swing
+
+
+## Walk input with the impairment wander added.
+static func impaired_input(input: Vector2, model: ImpairmentModel, t: float) -> Vector2:
+	return input + impaired_wander(input, model, t)
+
+
+## Walking [param speed] after the impairment slowdown.
+static func impaired_speed(speed: float, model: ImpairmentModel) -> float:
+	return speed * (1.0 - model.movement_slowdown())
 
 
 func _ready() -> void:
@@ -219,6 +245,11 @@ func _simulate(delta: float) -> void:
 		return
 	var sneaking: bool = Input.is_action_pressed(&"sneak")
 	var speed: float = SNEAK_SPEED if sneaking else WALK_SPEED
+	var impairment: PlayerImpairment = get_node_or_null(^"Impairment") as PlayerImpairment
+	if impairment != null and impairment.model != null:
+		impairment.model.strength = impairment.impairment
+		input = impaired_input(input, impairment.model, Time.get_ticks_msec() / 1000.0)
+		speed = impaired_speed(speed, impairment.model)
 	# Part of gravity along the deck. The deck is flat in the sub frame, so the
 	# physics engine never sees a slope; tilt is handled here instead.
 	var along_deck: Vector3 = Vector3(gravity.x, 0.0, gravity.z)
