@@ -11,6 +11,10 @@ extends Resource
 
 ## Optional sound played to players at the emitter. Null means silent.
 @export var stream: AudioStream
+## Name of a [ProceduralSounds] generator (`gurgle`, `scanner`; add more in [method get_stream]) used when [member stream]
+## is null, so a type can name a generated sound from a .tres.
+@export var procedural: StringName = &""
+@export var pitch_scale: float = 1.0
 @export var volume_db: float = 0.0
 @export var attenuation_model: AudioStreamPlayer3D.AttenuationModel = AudioStreamPlayer3D.ATTENUATION_INVERSE_DISTANCE
 @export var unit_size: float = SubAudio.UNIT_SIZE
@@ -31,13 +35,26 @@ func scaled_intensity(scale: float = 1.0) -> float:
 
 
 func has_stream() -> bool:
-	return stream != null
+	return get_stream() != null
+
+
+## The stream players hear: [member stream], else the named procedural one.
+func get_stream() -> AudioStream:
+	if stream != null:
+		return stream
+	match procedural:
+		&"gurgle":
+			return ProceduralSounds.gurgle()
+		&"scanner":
+			return ProceduralSounds.scanner()
+	return null
 
 
 ## Copies this type's playback settings onto [param p]. Called at play time
 ## (and refreshed while looping) so edits to the type take effect everywhere.
 func apply_to(p: AudioStreamPlayer3D) -> void:
-	p.stream = stream
+	p.stream = get_stream()
+	p.pitch_scale = pitch_scale
 	p.volume_db = volume_db
 	p.attenuation_model = attenuation_model
 	p.unit_size = unit_size
