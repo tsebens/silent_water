@@ -443,10 +443,16 @@ The game's tests need only Godot: the GLBs are committed.
 ## 8. Milestones
 
 - Changes to this process, to cadkit or to the role prompts: **M11 · CAD asset process**.
-- Stations and other content built with the process: the open content milestone, **M12 · Sub interior stations**.
-  The organization agent uses it for **every** arc of a concept that carries a brief, the behaviour arcs included,
-  and does not escalate for want of a milestone. The dispatcher closes a milestone once all its sub-issues are
-  closed, so M12 may be closed between stations; plan review reopens it when it files the next station's arcs.
+- Stations and other content built with the process: **the milestone the brief names**, if it names one (for
+  example M16 · Science station, M19 · Sound field and countermeasures). Otherwise the open content milestone,
+  **M18 · Sub interior stations, continued**. M12 · Sub interior stations is **full**: GitHub caps a parent at
+  100 sub-issues, so no arc may be filed under M12.
+  The organization agent uses that milestone for **every** arc of a concept that carries a brief, the behaviour
+  arcs included, and does not escalate for want of a milestone. The dispatcher closes a milestone once all its
+  sub-issues are closed, so the content milestone may be closed between stations; plan review reopens it when it
+  files the next station's arcs.
+- **Before filing, plan review checks the milestone's sub-issue count.** At 100 it is full: plan review escalates
+  with the arcs **not yet created**, rather than creating arcs it cannot attach.
 
 ## 9. Known limits of the alpha
 

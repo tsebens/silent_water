@@ -17,7 +17,8 @@ extends Resource
 @export var pitch_scale: float = 1.0
 @export var volume_db: float = 0.0
 @export var attenuation_model: AudioStreamPlayer3D.AttenuationModel = AudioStreamPlayer3D.ATTENUATION_INVERSE_DISTANCE
-@export var unit_size: float = SubAudio.UNIT_SIZE
+## Matches SubAudio.UNIT_SIZE (a literal: referencing SubAudio would make a script cycle).
+@export var unit_size: float = 4.0
 @export var bus: StringName = AudioBuses.INSIDE
 
 ## Bounds on the per-emitter scale passed to [method Acoustics.emit_event].
