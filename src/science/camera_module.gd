@@ -18,6 +18,7 @@ func _init() -> void:
 
 
 func _ready() -> void:
+	add_to_group(&"camera_modules")
 	PowerSink.bind(self, PowerSystem.Circuit.DISPLAYS, set_powered)
 	_link()
 
@@ -106,3 +107,13 @@ func hint() -> String:
 	if l <= s:
 		return "LIGHT"
 	return "HOLD STILL"
+
+
+## Named readout for a kit gauge: `light` and `stillness`, 0..1; unknown names give 0.
+func readout(readout_name: StringName) -> float:
+	match readout_name:
+		&"light":
+			return light_meter()
+		&"stillness":
+			return stillness_meter()
+	return 0.0
