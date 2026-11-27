@@ -166,10 +166,17 @@ static func render_offset_m() -> float:
 	return physics_waterline_y - rendered_waterline_y
 
 
-## Marine snow density multiplier at a world depth (m, positive below the
-## surface): 0 at and above the surface, `base_density` below it.
+## Depth (m below the rendered surface) at which marine snow reaches full density. One shared constant with the
+## light ramp: the snow is full where the sunlight runs out.
+const SNOW_PEAK_DEPTH: float = SurfaceLighting.RAMP_DEPTH
+## Exponent of the density curve `(depth / peak) ^ SNOW_CURVE_POWER`. Mirrored by marine_snow.gdshader.
+const SNOW_CURVE_POWER: float = 2.0
+
+
+## Marine snow density multiplier at a depth (m, positive below the rendered surface): 0 at and above the surface,
+## a convex curve rising to `base_density` at SNOW_PEAK_DEPTH, constant below.
 static func snow_density(depth: float, base_density: float = 1.0) -> float:
-	return base_density if depth > 0.0 else 0.0
+	return base_density * pow(clampf(depth / SNOW_PEAK_DEPTH, 0.0, 1.0), SNOW_CURVE_POWER)
 
 
 ## True when a render-space point lies inside the hull volume (centre, half

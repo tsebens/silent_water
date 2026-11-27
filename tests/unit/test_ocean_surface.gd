@@ -7,8 +7,17 @@ const GAME_SCENE: PackedScene = preload("res://src/game/game.tscn")
 func test_snow_density_zero_at_and_above_surface() -> void:
 	expect_near(OceanSurface.snow_density(0.0), 0.0)
 	expect_near(OceanSurface.snow_density(-5.0), 0.0)
-	expect_near(OceanSurface.snow_density(10.0), 1.0)
-	expect_near(OceanSurface.snow_density(10.0, 0.4), 0.4)
+	var peak: float = OceanSurface.SNOW_PEAK_DEPTH
+	expect(OceanSurface.snow_density(5.0) < 0.05, "nearly empty at 5 m")
+	var prev: float = 0.0
+	for i: int in range(1, 21):
+		var d: float = peak * float(i) / 20.0
+		var v: float = OceanSurface.snow_density(d)
+		expect(v > prev, "strictly increasing at %f m" % d)
+		prev = v
+	expect_near(OceanSurface.snow_density(peak), 1.0)
+	expect(OceanSurface.snow_density(peak * 2.0) == 1.0, "exactly 1 at twice the peak")
+	expect_near(OceanSurface.snow_density(peak, 0.4), 0.4)
 
 
 func _default_waves(steep: float = 0.7) -> Array[OceanSurface.Wave]:
@@ -275,7 +284,7 @@ func test_render_offset_in_range_and_drives_surface() -> void:
 func test_snow_density_zero_above_rendered_surface() -> void:
 	# Depth below the rendered plane: world y above SURFACE_Y is negative depth.
 	expect_near(OceanSurface.snow_density(OceanSurface.SURFACE_Y - (OceanSurface.SURFACE_Y + 0.5)), 0.0)
-	expect_near(OceanSurface.snow_density(OceanSurface.SURFACE_Y - (OceanSurface.SURFACE_Y - 0.5)), 1.0)
+	expect(OceanSurface.snow_density(OceanSurface.SURFACE_Y - (OceanSurface.SURFACE_Y - 0.5)) > 0.0, "snow below the rendered surface")
 
 
 ## Only these files may read the rendered surface; everything else stays on physics depth.

@@ -32,7 +32,7 @@ Players collide with layers 1 and 3 only, so exterior geometry moving through re
 
 - **Sub physics (M2)** is a custom integrator on `sub_transform`. For collisions with terrain, cast the hull shape from the origin along the sub's velocity (rotated into render space) against layer 4. In render space the sub is always at the origin.
 - **Audio (M3/M4):** world sound sources live under `World`. The listener is the local player's camera in the interior. Both share render space, so 3D audio positions are correct with no extra work.
-- **Exterior particles** such as marine snow must be anchored in world space. A particle system emitting in render space would travel with the sub.
+- **Exterior particles** such as marine snow must be anchored in world space. A particle system emitting in render space would travel with the sub. Their density is `(depth / SurfaceLighting.RAMP_DEPTH)^2`, clamped, with depth measured from the rendered surface (`OceanSurface.snow_density`): empty at the surface and full where the light ramp ends.
 - **Floating point:** the sub's absolute world position stays small in prototype maps. Large maps may need origin shifting of `sub_transform`.
 
 ## Clients
