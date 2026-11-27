@@ -16,6 +16,7 @@ Silent Water is a first-person co-op submarine stealth game for a crew of four, 
 4. **Fair dread.** Death can be sudden but never unannounced. Every threat telegraphs its escalation.
 5. **Decisions cost at every level.** A choice inside a dive affects the expedition, and expedition choices shape every dive.
 6. **Multiplayer only.** No single-player mode. The game lives in the crew's interactions.
+7. **Never break the facade.** Players grant enormous grace: they will take the world's word for almost anything. Nothing has to be exactly right, but nothing may contradict the world, because one out-of-place detail wakes the part of the mind that checks, and then the whole thing collapses. Ask "would anything here make a player stop and squint?", not "is this realistic?". A few well-chosen signals of a real place matter, and the absence of anything that jars matters more: a station built for ten has toilets, stores and a medical bay even though no objective needs them.
 
 ## Setting and tone
 
@@ -343,13 +344,81 @@ Use marine creatures in flooded stations and amphibious ones in dry stations. Th
 - **The final step is loud or bright.** Pumps start, generators kick on, lights flood out, winches haul. Each dive builds to a moment the crew has to plan around.
 - Side objectives can serve the main one. Restore a deterrent buoy first, and it covers you for the rest.
 - **Gear decides what's possible.** A dive can list more objectives than a loadout can complete (a capture net, a drone clamp). The game warns but never blocks, and rewards each completed objective.
-- Rescued survivors and salvage add weight, so bringing things back competes with getting back.
+- Rescued survivors and salvage add weight, so bringing things back competes with getting back. A survivor aboard also breathes: more O2 used and more CO2 made.
+
+### Dive size and the point budget
+
+Every dive has a **point budget**, and every piece of work in it costs points. The budget sets how much there is to do; the costs keep different kinds of work comparable. It is a tuning surface (a dive that feels like too much work gets a smaller budget, not a redesign) and the basis for generating dives and their objectives procedurally while keeping the workload consistent.
+
+- **Dive sizes** (placeholders): light about 50 points, medium about 100, large about 200.
+- **Costs** (placeholders, to tune in play):
+
+| Work | Points |
+| --- | --- |
+| Scan one place from the sub | 10 |
+| Survey a large area with the multibeam | 20 |
+| Repair a sensor station (diver out, fix, retrieve, back aboard) | 30–35 |
+| Restore a facility's power | 15 |
+| Recover a flooded facility | 20–25 |
+| Retrieve a data coil | 10–15 |
+| Set demolition charges | 30 |
+| Rescue crew | 40 |
+
+- A facility's state is part of the budget, not a fixed script: power may already be on, the air may be fine, the place may be dry. Each problem the crew must solve is a line item.
+- Implementing the budget and generated dives: #850.
 
 ### Diving outside the sub
 
 - The diver talks only over the suit radio, is the most exposed crew member, and depends on the sonar operator for warnings.
 - Radio signal degrades with distance and walls, worst inside facilities.
 - Emergencies can force a dive, not just objectives.
+- **Two ways out of the sub** (#843): the **dorsal hatch** in the conning tower (the surface hatch, and the hatch that mates to a station's docking collar; passengers who aren't divers use it) and the **lock-out trunk** in the midships floor (the diver's way out underwater: seal the top hatch, flood, open to the sea). Neither is built yet (#844).
+
+## Facilities
+
+Raindrop's facilities are the places the crew docks with and goes inside. They follow **form follows function**: decide what a facility is for and who lived there, then build something plausible for that role (pillar 7).
+
+### Classes
+
+Facilities are told apart mainly by the crew they were built for. Each class has its own feel; all share the core systems below.
+
+| Class | Crew | Examples |
+| --- | --- | --- |
+| Unmanned | 0 | Sensor array, automated lab, drone bay |
+| Outpost | about 2 | A small manned post |
+| Research station | 4–10 | The first facility to build: Raindrop's regional research and operations hub |
+| Hub | 30–40 | Large; several power plants or one big one, a larger layout |
+
+### Shared systems
+
+- **Power** comes from a reactor in its own building, set apart from the habitat because it is nuclear. In a manned station a tunnel connects them; elsewhere, or when the tunnel has collapsed, the crew goes out through the water to it, following the power line. The plant is never hidden: it is separate, not a puzzle.
+- **Life support** is its own sealed space beside maintenance. It cleans and replenishes the air.
+- **Bilge pumps** keep water out, started from maintenance. Recovering a flooded station takes three steps: isolate the breach, pump, and re-pressurise from the station's gas stores through life support (water pumped out must be replaced with gas).
+- **Communications** run over a hard line, usually up to a surface buoy with an antenna. The comms room doubles as the station's administration.
+- **The dock** (#842). Deep stations are kept at surface pressure, so they use **closed docks**: a docking collar the sub's dorsal hatch mates to, then an airlock. **Open docks** (a moon pool the sub surfaces into) are a later option for particularly large stations, where crews refit vessels.
+
+### The shape of a facility mission
+
+1. Arrive and dock (or, for an unmanned site, work from outside).
+2. Fix what stands between the crew and the objective, as the budget dictates: restore power (the station lights up as it spins up), recover flooding, restore the air. Until the air is breathable, the crew works in dive suits: narrower view, slower movement.
+3. The objective: retrieve data coils (from the science lab, the comms room), restore communications and test them, rescue survivors and carry them aboard, or decommission the station (shut down the reactor, set charges, get clear, blow it).
+4. Get back to the sub and out.
+
+Thoughts on facility missions collect in #854; the variants have draft concepts (suits indoors #845, flooding #846, survivors #847, decommissioning #848, the power restart #849). Variants come from the station's state and the objective: a routine restart of a hibernated station, a lost-contact investigation, a rescue against a survivor's air supply, a demolition. The crew always knows the shape (a structure, a way in, air to be won, something to fetch) and never quite knows the state.
+
+### The research station
+
+A crew of about ten, lately; contact has been lost. Rooms, by what people do there:
+
+| Need | Rooms |
+| --- | --- |
+| Arrive | Docking collar and airlock; dive locker; a lock-out to the sea |
+| Work | Science lab (the largest room); comms and admin; maintenance workshop with the bilge controls |
+| Keep alive | Life support, sealed, beside maintenance; the tunnel to the reactor building |
+| Live | Commons (shared galley, mess, games); two shift dorms; washroom; medical bay; stores |
+| Hooks | An emergency refuge where survivors would hole up; the station chief's office in admin |
+
+The floorplan (#853) is laid out for play first: routes, loops and dead ends, doors that stay shut without power, room for a suited diver and for carrying a survivor, watertight zones for flooding, and where objectives sit. The exterior wraps the plan; its look is the style board in `assets/models/concepts/infrastructure/research_hub/concept/`.
 
 ## Audio direction
 
