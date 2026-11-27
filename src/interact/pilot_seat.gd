@@ -18,6 +18,9 @@ const ZOOM_STEP: float = 1.15
 @export var blow_valve: Interactable
 ## The pilot hologram the mouse wheel zooms.
 @export var holo: HoloMap
+## The light switches within reach of the seat: the only controls besides the
+## helm a seated pilot may grab.
+@export var switches: Array[Interactable] = []
 
 ## False while the HELM circuit is unpowered: the ballast keys do nothing and
 ## ballast falls back to the manual wheels. Steering and planes keep working.
@@ -85,6 +88,10 @@ func _unhandled_input(event: InputEvent) -> void:
 		get_viewport().set_input_as_handled()
 
 
+func allow_grab(node: Interactable) -> bool:
+	return node != null and switches.has(node)
+
+
 func interaction_hint() -> String:
 	return "press E to take the helm"
 
@@ -99,7 +106,7 @@ func seated_hint() -> String:
 
 ## Controls hint shown while seated.
 static func helm_hint() -> String:
-	return "W/S throttle · A/D rudder · R/F planes · Num8/PgUp blow · Num2/PgDn flood · wheel zoom · E to stand"
+	return "W/S throttle · A/D rudder · R/F planes · Num8/PgUp blow · Num2/PgDn flood · wheel zoom · click light switches · E to stand"
 
 
 func _helm() -> Array[Interactable]:

@@ -238,7 +238,7 @@ follow = {
 "../Maps/PilotHolo": "Anchors/HologramAnchor"
 }
 
-[node name="Seat" parent="Stations/Pilot" node_paths=PackedStringArray("throttle", "rudder", "planes", "flood_valve", "blow_valve", "holo", "sit_point")]
+[node name="Seat" parent="Stations/Pilot" node_paths=PackedStringArray("throttle", "rudder", "planes", "flood_valve", "blow_valve", "holo", "switches", "sit_point")]
 script = ExtResource("4")
 throttle = NodePath("../Throttle")
 rudder = NodePath("../Rudder")
@@ -246,6 +246,7 @@ planes = NodePath("../Planes")
 flood_valve = NodePath("../../Ballast/Panel/FloodWheel")
 blow_valve = NodePath("../../Ballast/Panel/BlowWheel")
 holo = NodePath("../../Maps/PilotHolo")
+switches = [NodePath("../Anchors/ExternalLightSwitch"), NodePath("../Anchors/ExternalColourSwitch"), NodePath("../Anchors/CabinLightSwitch"), NodePath("../Anchors/CabinColourSwitch")]
 sit_point = NodePath("SitPoint")
 eye_height = 1.15
 label = "pilot seat"
