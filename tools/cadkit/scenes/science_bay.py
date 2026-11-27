@@ -2,7 +2,7 @@
 
 A long low housing against the starboard hull: a shallow kick-plinthed pedestal, a proud ledge band, a recessed module panel
 raked back by RAKE_DEG so every screen faces up toward the standing eye, and a proud upper panel. Three bays are cut into
-the module panel at a 360 mm pitch, each a stepped dark pocket (the plate seats in a step with 3 mm of gap all round, the
+the module panel at a 360 mm pitch, each a stepped dark pocket (the plate seats in a step with 6 mm of gap all round, the
 rear mount in a slot behind it) that reads on its own when empty. A module scene (the default fit: SCAN, SWEEP,
 CAMERA) is set in each, its back 2 mm off the pocket floor (the mount rule); PROBE, or any of the four in any bay, fits the
 same way, because every module is the shared `science_module_frame` chassis (340 x 280 mm, plate overlapping the opening).
@@ -55,10 +55,10 @@ MOD_LEN = 350.0                                 # the module panel, along its sl
 REVEAL = 24.0                                   # the upper panel stands this far proud of the module panel
 UP_LEN = 560.0                                  # the upper panel's top, along the slope from the module panel's base
 
-# Bays: a wide shallow step takes the module plate (3 mm of gap all round), a slot behind it takes the rear mount.
+# Bays: a wide shallow step takes the module plate (6 mm of gap all round), a slot behind it takes the rear mount.
 PITCH = 360.0
 BAY_X = (-PITCH, 0.0, PITCH)
-STEP_W, STEP_H, STEP_D = 346.0, 286.0, 8.0      # the plate (340 x 280) seats in this step
+STEP_W, STEP_H, STEP_D = 352.0, 292.0, 8.0      # the plate (340 x 280) seats in this step
 OPEN_W, OPEN_H = 324.0, 264.0                   # the slot: the module body (312 x 252) slides in
 POCKET_D = 52.0                                 # step + the frame's BODY_D (44) behind the plate
 BAY_S = 182.0                                   # the bays' centre, along the module panel from its base
@@ -251,7 +251,7 @@ def checks(its: list[Item], parts: list[Solid]) -> dict:
     body_w, body_h = 312.0, 252.0     # the frame's rear mount (science_module_frame.py BODY_W, BODY_H); the plate is the footprint
     expect(body_w < OPEN_W < fw, f"slot {OPEN_W:.0f} mm takes the {body_w:.0f} mm rear mount; the {fw:.0f} mm plate is wider")
     expect(body_h < OPEN_H < fh, f"slot {OPEN_H:.0f} mm tall takes the {body_h:.0f} mm rear mount; the {fh:.0f} mm plate is taller")
-    expect(1.0 <= (STEP_W - fw) / 2 <= 4.0 and 1.0 <= (STEP_H - fh) / 2 <= 4.0,
+    expect(1.0 <= (STEP_W - fw) / 2 <= 7.0 and 1.0 <= (STEP_H - fh) / 2 <= 7.0,
            f"a narrow gap all round the plate in its step ({(STEP_W - fw) / 2:.1f} x {(STEP_H - fh) / 2:.1f} mm a side)")
     expect(POCKET_D >= STEP_D + 44.0, "bay as deep as the step plus the frame's rear mount (44 mm)")
     expect(mount.stand_off(0.0) + 44.0 <= POCKET_D, "the module's rear mount lies inside the bay")
