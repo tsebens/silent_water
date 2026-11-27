@@ -15,6 +15,8 @@ extends Node
 ##   Crew2 "talks" at 75 dB from 4.0 on (simulated mic level) and puts on
 ##   the sonar headset at 4.5 (it's on the starboard side; the cord check
 ##   uses distance, so Crew2 is moved next to it first).
+##   Crew1 then tours every placed station (TOUR) from 3.2 s, one per TOUR_STEP seconds: it stands in the aisle beside
+##   each one, logs `AUTOTEST_VISIT <id>` and lists it under `visits` in its report (#581).
 ##   At 10.0 (engine fully spooled, so noise is steady) the host tells every
 ##   instance to report at once; clients then quit, and the host quits once
 ##   they are gone. The host holds the report for up to REPORT_GRACE while any
@@ -28,12 +30,20 @@ const REPORT_GRACE: float = 3.0
 ## A peer's voice counts as fresh when its last report is younger than this (s).
 ## Must stay well under Acoustics.VOICE_TIMEOUT or the wait is pointless.
 const VOICE_FRESH: float = 0.25
+## Stations Crew1 visits, in order: pilot, sonar, map table, electrical (the engineering panel), engineering (ballast), life support.
+const TOUR: Array[StringName] = [&"pilot", &"sonar", &"map_table", &"engineering", &"ballast", &"life_support"]
+const TOUR_START: float = 3.2
+const TOUR_STEP: float = 0.9
+## How far into the aisle (m) the visitor stands from a station's floor position, and the longest it may end up from it.
+const TOUR_STAND_OFF: float = 0.7
+const TOUR_REACH: float = 1.6
 const STATIONS: String = "Interior/Stations/"
 
 var role: String = ""
 var _game: Game
 var _t: float = -1.0
 var _done: PackedStringArray = PackedStringArray()
+var _visits: PackedStringArray = PackedStringArray()
 
 
 func setup(game: Game, player_name: String) -> void:
@@ -99,6 +109,10 @@ func _physics_process(delta: float) -> void:
 				var r: float = 120.0
 				flood.drag(Vector2(-sin(a), cos(a)) * r * TAU * 1.5 * delta)
 			_once("release", 3.0, func() -> void: flood.end_interaction())
+			if me != null:
+				for i: int in TOUR.size():
+					var id: StringName = TOUR[i]
+					_once("visit_" + String(id), TOUR_START + TOUR_STEP * float(i), func() -> void: _visit(me, id))
 	# The host tells everyone when to report so all snapshots are simultaneous.
 	if Net.is_host() and not _done.has("report"):
 		var ages: Array[float] = []
@@ -129,6 +143,20 @@ func _once(key: String, at: float, action: Callable) -> void:
 	if _t >= at and not _done.has(key):
 		_done.append(key)
 		action.call()
+
+
+## Where a visitor stands to use station [param id]: its floor position, moved toward the centre line.
+static func stand_point(id: StringName) -> Vector3:
+	var at: Vector3 = SubLayout.position(id)
+	var toward: float = -signf(at.x) if absf(at.x) > 0.3 else 1.0
+	return Vector3(at.x + toward * TOUR_STAND_OFF, 0.1 + at.y, at.z)
+
+
+func _visit(me: Player, id: StringName) -> void:
+	me.teleport(stand_point(id))
+	if me.position.distance_to(SubLayout.position(id)) <= TOUR_REACH:
+		_visits.append(String(id))
+		print("AUTOTEST_VISIT " + String(id))
 
 
 static func _count_host_events() -> int:
@@ -178,6 +206,7 @@ func _report() -> void:
 		"apex_state": (_game.get_node("World/Apex") as ApexMonster).state(),
 		"apex_pos": _vec((_game.get_node("World/Apex") as ApexMonster).position),
 		"ambient_db": snappedf(Acoustics.ambient_db(), 0.01),
+		"visits": Array(_visits),
 	}
 	if Net.is_host():
 		var voices: Dictionary = {}
