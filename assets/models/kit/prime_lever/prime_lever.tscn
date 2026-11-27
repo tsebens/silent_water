@@ -1,0 +1,37 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://src/interact/switch_lever.gd" id="1"]
+[ext_resource type="Script" path="res://src/interact/noise_profile.gd" id="2"]
+[ext_resource type="PackedScene" path="res://assets/models/kit/prime_lever/prime_lever_body.glb" id="3"]
+[ext_resource type="PackedScene" path="res://assets/models/kit/prime_lever/prime_lever_arm.glb" id="4"]
+
+[sub_resource type="Resource" id="noise"]
+script = ExtResource("2")
+idle_intensity = 0
+max_intensity = 0.25
+clank_rate = 2
+exponent = 2
+
+[sub_resource type="BoxShape3D" id="grab"]
+size = Vector3(0.124, 0.33158, 0.28118)
+
+[node name="PrimeLever" type="Node3D" node_paths=PackedStringArray("pivot")]
+script = ExtResource("1")
+swing_deg = -80
+noise_profile = SubResource("noise")
+pivot = NodePath("Pivot")
+
+[node name="Body" parent="." instance=ExtResource("3")]
+
+[node name="Pivot" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0.062)
+
+[node name="Arm" parent="Pivot" instance=ExtResource("4")]
+
+[node name="Grab" type="StaticBody3D" parent="."]
+collision_layer = 2
+collision_mask = 0
+
+[node name="Shape" type="CollisionShape3D" parent="Grab"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.02776, 0.14059)
+shape = SubResource("grab")

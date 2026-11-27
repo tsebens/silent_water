@@ -12,6 +12,7 @@ signal leak_patched(quality: float, hold_sec: float)
 const LEAK_INTENSITY: float = 2e-3
 ## Bilge pump running (~78 dB).
 const PUMP_INTENSITY: float = 6e-3
+const PUMP_SOUND_PATH: String = "res://src/noise/sound_types/bilge_pump.tres"
 ## Quiet time at the start of a dive (and after a reset) before spontaneous
 ## leaks can begin.
 const START_QUIET_SEC: float = 45.0
@@ -45,7 +46,7 @@ var spontaneous_disabled: bool = false
 var _leaks: Array[Leak] = []
 var _timer: float = 0.0
 var _rng: RandomNumberGenerator = RandomNumberGenerator.new()
-var _pump_audio: AudioStreamPlayer3D
+var _pump_emitter: SoundEmitter
 
 
 func _ready() -> void:
@@ -62,12 +63,12 @@ func _ready() -> void:
 	if controller != null:
 		controller.hull_strike.connect(_on_hull_strike)
 	Net.peer_joined.connect(_on_peer_joined)
-	_pump_audio = AudioStreamPlayer3D.new()
-	_pump_audio.stream = ProceduralSounds.gurgle()
-	_pump_audio.unit_size = SubAudio.UNIT_SIZE
-	_pump_audio.bus = AudioBuses.INSIDE
-	_pump_audio.pitch_scale = 1.6
-	(pump_point if pump_point != null else self as Node).add_child(_pump_audio)
+	_pump_emitter = SoundEmitter.new()
+	_pump_emitter.name = "PumpEmitter"
+	_pump_emitter.sound_type = load(PUMP_SOUND_PATH) as SoundType  # load, not preload: SoundType -> SubAudio -> ... -> here would be a cycle
+	_pump_emitter.field_events = false  # the sub's combined load already carries it
+	_pump_emitter.active = false
+	add_child(_pump_emitter)
 
 
 ## True when the electric pump runs: its switch is on and the BILGE PUMP
@@ -111,12 +112,15 @@ func noise_breakdown() -> Dictionary:
 
 
 func _process(_delta: float) -> void:
-	var want: bool = pump_on()
-	if want and not _pump_audio.playing:
-		_pump_audio.volume_db = SubAudio.volume_for(PUMP_INTENSITY)
-		_pump_audio.play()
-	elif not want and _pump_audio.playing:
-		_pump_audio.stop()
+	_pump_emitter.active = pump_on()
+	var anchor: Node3D = pump_point if pump_point != null else null
+	if anchor != null and anchor.is_inside_tree():
+		_pump_emitter.world_position = anchor.global_position
+
+
+## The pump's emitter (sound only; no field events).
+func pump_emitter() -> SoundEmitter:
+	return _pump_emitter
 
 
 func _physics_process(delta: float) -> void:
