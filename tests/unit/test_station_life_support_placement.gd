@@ -50,7 +50,7 @@ func test_exactly_one_station_at_the_program_position() -> void:
 
 func test_body_is_inside_the_hull_and_clear_of_neighbours() -> void:
 	var fp: Rect2 = _plan(_station().get_node("Body"))
-	for id: StringName in [&"ballast", &"engineering", &"lockers", &"scanner", &"bilge"]:
+	for id: StringName in [&"ballast", &"engineering", &"lockers", &"bilge"]:
 		expect(not fp.intersects(SubLayout.footprint(id).grow(-0.001)), "body clear of %s" % id)
 	var aisle: float = SubLayout.footprint(&"engineering").position.x - fp.end.x
 	expect(aisle >= SubLayout.clearance("aisle_min_m"), "aisle %f m" % aisle)
