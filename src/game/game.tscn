@@ -105,14 +105,17 @@ sub_frame = NodePath("../SubFrame")
 throttle = NodePath("../Interior/Stations/Pilot/Throttle")
 rudder = NodePath("../Interior/Stations/Pilot/Rudder")
 planes = NodePath("../Interior/Stations/Pilot/Planes")
-flood_valve = NodePath("../Interior/Stations/Ballast/FloodValve")
-blow_valve = NodePath("../Interior/Stations/Ballast/BlowValve")
+flood_valve = NodePath("../Interior/Stations/Ballast/Panel/FloodWheel")
+blow_valve = NodePath("../Interior/Stations/Ballast/Panel/BlowWheel")
 
 [node name="Sync" type="MultiplayerSynchronizer" parent="SubController"]
 replication_interval = 0.1
 replication_config = SubResource("readout_repl")
 
 [node name="Interior" parent="." instance=ExtResource("4")]
+
+[node name="DropWeights" parent="Interior/Stations/Ballast/Panel" node_paths=PackedStringArray("director")]
+director = NodePath("../../../../../DiveDirector")
 
 [node name="World" type="Node3D" parent="."]
 
@@ -143,15 +146,15 @@ script = ExtResource("7")
 controller = NodePath("../SubController")
 players = NodePath("../Players")
 engine_point = NodePath("../Interior/Stations/Engineering/Panel")
-blow_point = NodePath("../Interior/Stations/Ballast/BlowValve")
-flood_point = NodePath("../Interior/Stations/Ballast/FloodValve")
+blow_point = NodePath("../Interior/Stations/Ballast/Panel/BlowWheel")
+flood_point = NodePath("../Interior/Stations/Ballast/Panel/FloodWheel")
 
 [node name="LeakSystem" type="Node" parent="." node_paths=PackedStringArray("controller", "leaks_root", "pump", "pump_point")]
 script = ExtResource("8")
 controller = NodePath("../SubController")
 leaks_root = NodePath("../Interior/Leaks")
-pump = NodePath("../Interior/Stations/Bilge/Pump")
-pump_point = NodePath("../Interior/Stations/Bilge/Pump")
+pump = NodePath("../Interior/Stations/Ballast/Panel/BilgeSwitch")
+pump_point = NodePath("../Interior/Stations/Ballast/Panel/BilgeSwitch")
 
 [node name="OutsideAudio" type="Node" parent="."]
 script = ExtResource("10")

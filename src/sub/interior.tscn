@@ -23,8 +23,25 @@
 [ext_resource type="PackedScene" path="res://assets/models/stations/map_table/map_table.tscn" id="map_table"]
 [ext_resource type="PackedScene" path="res://assets/models/stations/pilot_station/pilot_station.tscn" id="pilot_station"]
 [ext_resource type="PackedScene" path="res://assets/models/panels/electrical_station/electrical_station.tscn" id="electrical_station"]
+[ext_resource type="PackedScene" path="res://assets/models/panels/engineering_station/engineering_station.tscn" id="engineering_station"]
+[ext_resource type="Material" path="res://assets/palette/roles/trim_black.tres" id="hose_mat"]
 [ext_resource type="Script" path="res://src/interact/joystick_indicator.gd" id="joy_ind"]
 [ext_resource type="Script" path="res://src/sub/headlight_switch.gd" id="headlight_switch"]
+
+[sub_resource type="CylinderMesh" id="hose_drop"]
+top_radius = 0.018
+bottom_radius = 0.018
+height = 0.99
+
+[sub_resource type="CylinderMesh" id="hose_run"]
+top_radius = 0.018
+bottom_radius = 0.018
+height = 1.0925
+
+[sub_resource type="CylinderMesh" id="hose_turn"]
+top_radius = 0.018
+bottom_radius = 0.018
+height = 0.525
 
 [sub_resource type="BoxMesh" id="fascia_mesh"]
 size = Vector3(0.06, 0.22, 3.2)
@@ -224,8 +241,8 @@ script = ExtResource("4")
 throttle = NodePath("../Throttle")
 rudder = NodePath("../Rudder")
 planes = NodePath("../Planes")
-flood_valve = NodePath("../../Ballast/FloodValve")
-blow_valve = NodePath("../../Ballast/BlowValve")
+flood_valve = NodePath("../../Ballast/Panel/FloodWheel")
+blow_valve = NodePath("../../Ballast/Panel/BlowWheel")
 holo = NodePath("../../Maps/PilotHolo")
 sit_point = NodePath("SitPoint")
 eye_height = 1.15
@@ -295,55 +312,29 @@ placements = {
 script = ExtResource("station_placement")
 station_id = &"ballast"
 placements = {
-"BlowLabel": Vector3(-0.26, 0.72, 0.25),
-"BlowValve": Vector3(-0.2, 1.0, 0.25),
-"FloodLabel": Vector3(-0.26, 0.72, -0.25),
-"FloodValve": Vector3(-0.2, 1.0, -0.25),
-"NoiseGauge": Vector3(-0.18, 1.95, 0),
-"TankGauge": Vector3(-0.26, 1.55, -0.25),
-"AirGauge": Vector3(-0.26, 1.55, 0.25)
+"Panel": Vector3(-0.225, 1.1, 0),
+"Hose": Vector3(0, 0, 0)
 }
 
-[node name="FloodValve" parent="Stations/Ballast" instance=ExtResource("2")]
+[node name="Panel" parent="Stations/Ballast" instance=ExtResource("engineering_station")]
 rotation = Vector3(0, 1.5708, 0)
-turns_full_range = 2.0
-label = "flood valve"
 
-[node name="BlowValve" parent="Stations/Ballast" instance=ExtResource("2")]
-rotation = Vector3(0, 1.5708, 0)
-turns_full_range = 2.0
-label = "blow valve"
+[node name="Hose" type="Node3D" parent="Stations/Ballast"]
 
-[node name="FloodLabel" type="Label3D" parent="Stations/Ballast"]
-rotation = Vector3(0, 1.5708, 0)
-pixel_size = 0.002
-text = "FLOOD"
-modulate = Color(0.5, 0.75, 0.95, 1)
+[node name="Drop" type="MeshInstance3D" parent="Stations/Ballast/Hose"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.075, 0.545, -0.2925)
+mesh = SubResource("hose_drop")
+surface_material_override/0 = ExtResource("hose_mat")
 
-[node name="BlowLabel" type="Label3D" parent="Stations/Ballast"]
-rotation = Vector3(0, 1.5708, 0)
-pixel_size = 0.002
-text = "BLOW"
-modulate = Color(0.95, 0.6, 0.45, 1)
+[node name="Run" type="MeshInstance3D" parent="Stations/Ballast/Hose"]
+transform = Transform3D(1, 0, 0, 0, 0, -1, 0, 1, 0, -0.075, 0.05, 0.2538)
+mesh = SubResource("hose_run")
+surface_material_override/0 = ExtResource("hose_mat")
 
-[node name="TankGauge" type="Node3D" parent="Stations/Ballast"]
-rotation = Vector3(0, 1.5708, 0)
-script = ExtResource("3")
-readout = &"tank_fraction"
-title = "TANK"
-max_value = 1.0
-sweep_deg = 180.0
-
-[node name="AirGauge" type="Node3D" parent="Stations/Ballast"]
-rotation = Vector3(0, 1.5708, 0)
-script = ExtResource("3")
-readout = &"air_fraction"
-title = "HP AIR"
-max_value = 1.0
-sweep_deg = 180.0
-
-[node name="NoiseGauge" parent="Stations/Ballast" instance=ExtResource("6")]
-rotation = Vector3(0, 1.5708, 0)
+[node name="Turn" type="MeshInstance3D" parent="Stations/Ballast/Hose"]
+transform = Transform3D(0, -1, 0, 1, 0, 0, 0, 0, 1, 0.1875, 0.05, 0.8)
+mesh = SubResource("hose_turn")
+surface_material_override/0 = ExtResource("hose_mat")
 
 [node name="Scanner" type="Node3D" parent="Stations"]
 script = ExtResource("station_placement")
@@ -375,30 +366,6 @@ placements = {
 
 [node name="Panel" parent="Stations/Engineering" instance=ExtResource("electrical_station")]
 rotation = Vector3(0, -1.5708, 0)
-
-[node name="Bilge" type="Node3D" parent="Stations"]
-script = ExtResource("station_placement")
-station_id = &"bilge"
-placements = {
-"BilgeGauge": Vector3(-0.8, 1.6, -0.3),
-"NoiseGauge": Vector3(-0.8, 1.6, 0.2),
-"Pump": Vector3(-0.75, 1.1, -0.3)
-}
-
-[node name="Pump" parent="Stations/Bilge" instance=ExtResource("8")]
-rotation = Vector3(0, 0, -1.5708)
-label = "bilge pump switch"
-
-[node name="BilgeGauge" type="Node3D" parent="Stations/Bilge"]
-rotation = Vector3(0, 1.5708, 0)
-script = ExtResource("3")
-readout = &"bilge_water_t"
-title = "BILGE"
-max_value = 8.0
-sweep_deg = 180.0
-
-[node name="NoiseGauge" parent="Stations/Bilge" instance=ExtResource("6")]
-rotation = Vector3(0, 1.5708, 0)
 
 [node name="StatusBoardPlacement" type="Node3D" parent="Stations"]
 script = ExtResource("station_placement")

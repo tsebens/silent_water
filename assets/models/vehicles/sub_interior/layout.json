@@ -36079,16 +36079,16 @@
    "compartment": "engineering",
    "kind": "panel",
    "side": "port",
-   "z": 3.275,
+   "z": 3.4,
    "footprint": [
-    0.95,
-    0.4
+    1.2,
+    0.45
    ],
    "floor_box": [
-    -1.0473,
-    -0.6473,
+    -0.9463,
+    -0.4963,
     2.8,
-    3.75
+    4.0
    ],
    "floor_y": -0.95
   },
@@ -36097,16 +36097,16 @@
    "compartment": "engineering",
    "kind": "well",
    "side": "centre",
-   "z": 4.1,
+   "z": 4.35,
    "footprint": [
-    0.7,
+    0.6,
     0.9
    ],
    "floor_box": [
     -0.45,
     0.45,
-    3.75,
-    4.45
+    4.05,
+    4.65
    ],
    "floor_y": -0.95
   },
@@ -36185,26 +36185,6 @@
     1.4085,
     1.0,
     1.4
-   ],
-   "floor_y": -0.95
-  },
-  {
-   "id": "drop_weights",
-   "compartment": "engineering",
-   "kind": "release_lever",
-   "side": "starboard",
-   "z": 3.25,
-   "footprint": [
-    0.2,
-    0.15
-   ],
-   "notes": "One-time emergency release",
-   "across the aisle from the ballast valves.": null,
-   "floor_box": [
-    1.0176,
-    1.1676,
-    3.15,
-    3.35
    ],
    "floor_y": -0.95
   },
