@@ -19,6 +19,9 @@ signal seated_changed(cradle: DecoyCradle)
 ## Where a carried decoy hangs relative to its carrier.
 @export var carry_offset: Vector3 = Vector3(0.0, -0.15, -0.5)
 
+## False for a decoy that is only scenery (a launched [DecoyBuoy]): it cannot be picked up.
+@export var pickable: bool = true
+
 var _carrier: Node3D = null
 var _cradle: DecoyCradle = null
 
@@ -47,7 +50,7 @@ func carrier() -> Node3D:
 ## Lifts the decoy out of its cradle (if seated) and hands it to [param by].
 ## Returns false when it is already carried.
 func pick_up(by: Node3D) -> bool:
-	if by == null or _carrier != null:
+	if by == null or _carrier != null or not pickable:
 		return false
 	if _cradle != null:
 		var from: DecoyCradle = _cradle
