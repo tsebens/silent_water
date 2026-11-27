@@ -64,6 +64,10 @@ var _time: float = 0.0
 var _sub_event_accum: float = 0.0
 ## Intensity of the last combined sub event's load (host only).
 var last_sub_event_load: float = 0.0
+## The last few emitted events (host only), newest last, for the developer
+## overlay: {time, position, intensity (at the emitter), kind, heard}.
+var recent_events: Array[Dictionary] = []
+const RECENT_EVENTS_MAX: int = 8
 var _rng: RandomNumberGenerator = RandomNumberGenerator.new()
 ## Tests may replace the terrain check: Callable(from_world, to_world) -> bool.
 var occlusion_override: Callable = Callable()
@@ -217,6 +221,9 @@ func emit_raw(position: Vector3, intensity: float, kind: StringName = &"", sourc
 		ev.perceived_position = position + dir * ev.uncertainty * _rng.randf()
 		det.receive(ev)
 		heard_count += 1
+	recent_events.append({"time": _time, "position": position, "intensity": intensity, "kind": kind, "heard": heard_count})
+	if recent_events.size() > RECENT_EVENTS_MAX:
+		recent_events.pop_front()
 	return heard_count
 
 
@@ -365,5 +372,6 @@ func reset() -> void:
 	_impulses.clear()
 	_sub_event_accum = 0.0
 	last_sub_event_load = 0.0
+	recent_events.clear()
 	sub_intensity = 0.0
 	ambient_intensity = NoiseLevel.from_db(OCEAN_BASE_DB)

@@ -119,7 +119,7 @@ func test_dev_overlay_stats_cover_sub_noise_and_apex() -> void:
 	controller.model.tank_water_t = controller.model.tank_capacity_t
 	await _frames(30)
 	var text: String = DevOverlay.stats_text(game)
-	for needle: String in ["depth", "speed", "buoyancy NEGATIVE", "sub ", "ocean", "APEX", "distance", "suspicion", "DIVE"]:
+	for needle: String in ["depth", "speed", "buoyancy NEGATIVE", "sub ", "ocean", "APEX", "distance", "suspicion", "DIVE", "EVENTS", "MEMORIES"]:
 		expect(text.contains(needle), "stats should mention '%s':\n%s" % [needle, text])
 
 
