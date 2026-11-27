@@ -1,0 +1,19 @@
+# Review brief for the rocker_switch kit scene (concept #700, arc #703). Pairs the concept image with its render cameras.
+station: rocker_switch
+concept:
+  images:
+    - path: assets/models/kit/concept/rocker_switch_primary.png
+      role: primary
+      view: three-quarter from slightly above; off on the left, on on the right
+      camera: concept_rocker
+    - path: assets/models/kit/concept/rocker_switch_primary.png
+      role: primary
+      view: the same image against the switch at on
+      camera: concept_rocker_on
+  compare_on:
+    - the rocker's form, its bezel, and the LED bar on the rocker's upper half
+    - which half of the rocker is pressed in for on (upper) and off (lower)
+    - colour blocking (grey plate, orange bezel, black rocker)
+  ignore:
+    - the plate's proportions and bolt placement (the base is the existing 1x2 control base)
+    - glow halos and lighting mood

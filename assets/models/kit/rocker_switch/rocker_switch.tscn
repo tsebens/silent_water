@@ -1,0 +1,45 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://src/interact/switch_lever.gd" id="1"]
+[ext_resource type="Script" path="res://src/interact/noise_profile.gd" id="2"]
+[ext_resource type="PackedScene" path="res://assets/models/kit/control_base/control_base_1x2.glb" id="3"]
+[ext_resource type="PackedScene" path="res://assets/models/kit/rocker_switch/rocker_switch_bezel.glb" id="4"]
+[ext_resource type="PackedScene" path="res://assets/models/kit/rocker_switch/rocker_switch_paddle.glb" id="5"]
+[ext_resource type="PackedScene" path="res://assets/models/kit/led_strip/led_strip.tscn" id="6"]
+
+[sub_resource type="Resource" id="noise"]
+script = ExtResource("2")
+idle_intensity = 0
+max_intensity = 0.1
+clank_rate = 1.5
+exponent = 2
+
+[sub_resource type="BoxShape3D" id="grab"]
+size = Vector3(0.032, 0.052, 0.0209173)
+
+[node name="RockerSwitch" type="Node3D" node_paths=PackedStringArray("pivot", "indicator")]
+script = ExtResource("1")
+swing_deg = 20
+noise_profile = SubResource("noise")
+pivot = NodePath("Pivot")
+indicator = NodePath("Pivot/Paddle/LedStrip")
+
+[node name="Base" parent="." instance=ExtResource("3")]
+
+[node name="Bezel" parent="." instance=ExtResource("4")]
+
+[node name="Pivot" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0.0115953)
+
+[node name="Paddle" parent="Pivot" instance=ExtResource("5")]
+
+[node name="LedStrip" parent="Pivot/Paddle" instance=ExtResource("6")]
+transform = Transform3D(0.375, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.011, 0.002)
+
+[node name="Grab" type="StaticBody3D" parent="."]
+collision_layer = 2
+collision_mask = 0
+
+[node name="Shape" type="CollisionShape3D" parent="Grab"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0.0104586)
+shape = SubResource("grab")
