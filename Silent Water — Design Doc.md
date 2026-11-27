@@ -213,12 +213,29 @@ station's active ports. Each is a perforated cylinder full of absorbent beads.
 - **Movement slows and goes erratic.** An impairment vector is added to the player's input, pushing their
   movement around drunkenly. Escalation makes it longer and swings it further from the intended direction.
 
-**O2** is one big tank. The crew can only watch its level and make sure there is enough for the dive.
-Refills may come later; low-O2 effects are not designed yet.
+**O2** is one big tank, drained by each crew member breathing; `o2_level` is its fraction. A tank lasts four
+crew about 45 minutes, and there is no refill in a dive yet.
+
+- **O2 empty:** once the tank is empty the cabin's own oxygen starts to fall. The crew get **the same
+  impairment ladder as high CO2, only faster**. The simulation supplies the falling cabin-O2 value; the
+  effects work implements the ladder.
+- **Incapacitation and rescue:** a crew member who reaches the top of the ladder (7% CO2 and above, or
+  cabin O2 run out) collapses. They are not out of the game for good: they can be **rescued** and recover once
+  the air is fixed (new canisters, fans back on, or surfacing). The effects of the ladder, collapse and
+  recovery are their own piece of work.
+- **The sub is lost once every crew member is incapacitated**, through the dive's loss path
+  (`DiveDirector.dive_lost`). A crew member who recovers before the last goes down prevents the loss.
+- **Venting at the surface:** when the sub is surfaced (`SubController.surfaced`), CO2 vents automatically back
+  to the 400 ppm baseline over about 30 seconds, whatever the fans are doing.
 
 **Alarm lamps.** The station's lamps have three levels: off, steady, flashing. CO2 goes steady at 7,000 ppm
 and flashes at 25,000 ppm. O2, as a fraction of the tank, goes steady at or below 0.25 and flashes at or
-below 0.10 (placeholders until depletion is modelled). Thresholds live in a `LifeSupportAlarmLevels` resource.
+below 0.10 (placeholders until the simulation is tuned). Thresholds live in a `LifeSupportAlarmLevels` resource.
+
+**Alarm chime.** The alarm sounds are a **quiet, distinct** chime: a gentle repeat while a lamp is steady and
+a faster, more urgent one while it flashes. It is a shared sound type (`src/noise/sound_types/`), played and
+heard, and a small noise source, so it has a small stealth cost. The station's two alarm lamps carry engraved
+**CO2** and **O2** plates, made in the station's build script.
 
 **Air volume.** The hull is about 10 m by 3.8 m by 3.0 m; after walls, bilge and equipment the free air is
 roughly 40 m³, to be measured from the blockout. In that volume 1 kg of CO2 is about 1.3% (13,000 ppm),
@@ -477,10 +494,12 @@ Steam integration and in-game voice, expeditions, cargo, divers, facilities, upg
 - ~~Whether charts stays its own station~~ Decided in M7: the map table is a shared holographic chart anyone can use; the pilot has a heading-up copy.
 - Whether to lock out crews of two. The lean is no lock, but no design effort goes toward two-person crews: target four, keep three viable.
 - Distinct sub types and hardware variants
-- Life support: what happens at incapacitating CO2; whether CO2 vents when the sub surfaces or docks;
-  whether O2 depletion and low-O2 effects are modelled; whether the storage holes angle toward the player;
-  whether the pivoting canister carriage is worth adding later; where the double-needle rate gauge sits on
-  the panel. Decided in chat: two active ports with open
+- Life support: ~~what happens at incapacitating CO2~~ (incapacitation and rescue; the sub is lost when everyone
+  is down), ~~whether CO2 vents when the sub surfaces or docks~~ (it vents at the surface in about 30 s),
+  ~~whether O2 depletion and low-O2 effects are modelled~~ (empty tank leads to the impairment ladder, faster),
+  ~~the alarm chime and the CO2/O2 lamp labels~~ (decided above); still open: whether the storage holes angle
+  toward the player; whether the pivoting canister carriage is worth adding later; where the double-needle rate
+  gauge sits on the panel. Decided in chat: two active ports with open
   cradles and six storage holes, a canister lasts four crew about 15 minutes, the station is a wall unit on
   the port-side hull of engineering carrying the O2 gauge.
 
