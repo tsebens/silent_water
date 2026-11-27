@@ -1,0 +1,53 @@
+slug: rocker_switch
+group: kit
+kind: control
+summary: 'Lit rocker switch: a low black paddle in an orange bezel on the 1x2 base. At on the upper half is pressed
+  in and the LED strip on it is lit; at off the lower half is pressed in, the upper half stands out and the bar
+  is dark. SwitchLever, nothing wired on the instance. Small swing, so a later small guard cap can cover it.'
+tags:
+- rocker
+- switch
+- toggle
+- lit
+- led
+- on-off
+- indicator
+- low-profile
+scene: res://assets/models/kit/rocker_switch/rocker_switch.tscn
+behaviour:
+  script: SwitchLever
+  values: 0 off (lower half in, bar dark), 1 on (upper half in, bar lit)
+  signal: value_changed
+  wiring: 'none: `indicator` is set to the paddle''s LedStrip'
+base: 1x2
+footprint_mm:
+- 56.0
+- 116.0
+stand_out_mm: 16.92
+swing_envelope_mm:
+  swing_deg: 20.0
+  paddle_inside_opening_mm:
+  - 24.0
+  - 42.0
+  bezel_mm:
+  - 32.0
+  - 52.0
+  - 5.0
+  bezel_top_z: 11.0
+  pivot_z: 11.6
+  paddle_extreme_z: 16.69
+mount: back on Z=0, centred; front +Z; on is the upper half (+Y) pressed in
+set_on_instance:
+  label: name at the aiming point
+uses:
+- control_base
+- led_strip
+triangles: 152
+built_by: tools/cadkit/scenes/rocker_switch.py
+files:
+- component.yaml
+- review/.gdignore
+- review/cameras.json
+- rocker_switch.tscn
+- rocker_switch_bezel.glb
+- rocker_switch_paddle.glb
