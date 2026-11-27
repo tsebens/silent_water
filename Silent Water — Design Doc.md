@@ -458,6 +458,10 @@ Decide this on day one: the crew moves in the sub's own frame of reference, so t
 
 **Decided:** the interior is a still scene. The sub's hull model moves through the outside world, and the view outside is composed from the sub's transform. Player positions sync in sub-local space, never world space.
 
+### Rendered versus physics surface
+
+Physics puts the surface at world y = 0: `is_surfaced()`, depth gauges, audio, the lighting ramp, the flood vent and leaks all read physics depth. The *drawn* sea sits lower, so that the surfaced sub looks to float with the water a third of the way up the pilot's dome and the pilot sees sky in the upper two thirds. `OceanSurface.render_offset_m()` derives the offset from the empty, fully blown sub's waterline (`SubPhysicsModel` mass and displacement through the hull section from `SubLayout`) and the dome's centre and diameter; `OceanSurface.SURFACE_Y` is the negative of it, computed once at startup, and only the ocean mesh, marine snow, the terrain lab and the dev overlay read it. **Known choice (#165):** seen from outside, the hull would ride high, because the water is drawn below where physics floats it.
+
 ### Interactables
 
 One reusable component for every physical control: a value, a range, a noise profile tied to how fast it changes, and network sync. The player moving it sees the response immediately, and the host confirms it.
