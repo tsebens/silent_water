@@ -11,7 +11,6 @@
 [ext_resource type="Script" path="res://src/map/holo_map.gd" id="15"]
 [ext_resource type="Script" path="res://src/map/map_table_observer.gd" id="obs_seat"]
 [ext_resource type="Script" path="res://src/map/map_table.gd" id="16"]
-[ext_resource type="Script" path="res://src/science/module_loadout.gd" id="loadout_script"]
 [ext_resource type="Script" path="res://src/science/science_station.gd" id="science_station"]
 [ext_resource type="PackedScene" path="res://assets/models/stations/science_bay/science_bay.tscn" id="science_bay"]
 [ext_resource type="PackedScene" path="res://src/sub/bilge_water.tscn" id="17"]
@@ -67,10 +66,6 @@ size = Vector3(1.0, 1.1, 1.0)
 
 [sub_resource type="BoxShape3D" id="observer_grab"]
 size = Vector3(0.9, 0.9, 0.9)
-
-[sub_resource type="Resource" id="science_loadout"]
-script = ExtResource("loadout_script")
-slots = Array[int]([1, 2, 4])
 
 [sub_resource type="BoxShape3D" id="science_grab"]
 size = Vector3(1.3, 1.2, 0.9)
@@ -353,7 +348,6 @@ placements = {
 rotation = Vector3(0, -1.5708, 0)
 script = ExtResource("science_station")
 sit_point = NodePath("Panel/OperatorPoint")
-loadout = SubResource("science_loadout")
 anchor_root = NodePath("Panel")
 label = "science station"
 
