@@ -324,6 +324,10 @@ button gates the button's arc and he sees the button. Leaves under a gated arc a
    `look-review`, which notifies Tristan, and ends with the arc still `claimed`. No pull request yet. An arc that changes
    the *world* (fog, palette, sky, surface, lighting) carries in-game sheets made by `tools/shot.sh --sheet` at the
    depths the concept names (default surface, 20 m, 100 m) in place of cadkit sheets; their captions name the renderer.
+   The command is `xvfb-run -a tools/shot.sh <camera> --sheet 0,20,100 --out sheet.png` (`--light night`, `--size WxH`
+   and `--renderer` are also supported; the Godot log is written beside the PNG as `sheet.log`). The sheet is committed
+   and embedded by commit permalink like any other. A world arc that cannot render says so in the review with the tail
+   of that log pasted in; it never deletes the attempt.
 3. **Tristan's answer**, given in the session the notification opens, or by hand:
    - **Approve:** a `## Look review: approved` comment (with any small notes), then remove `look-review` and add
      `look-approved`. A development run integrates `dev`, does the small notes, opens the pull request and hands it

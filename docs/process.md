@@ -117,7 +117,7 @@ Mechanical assets (controls, panels, furniture, stations) are built by the same 
 - **The gate's level is what the concept asked for.** The organizer marks the arc that delivers it (`Look gate: yes`: a station's assembly arc, or a single control's own arc), and plan review creates it with `look-gate`. That arc's build ends in a look review instead of a PR (Development agent, above); Tristan answers with `look-approved` or `look-changes`.
 - The development agent builds each scene with `cadkit` (a parametric CAD script, geometric checks, a Godot test, committed review renders). CI runs `cadkit verify`, so generated files that are stale or hand-edited fail.
 - The review agent checks the PR as usual. It judges the look from the committed renders only where Tristan has not already approved it (scenes below the gate), and does not re-judge an approved look. Tristan's feedback after a merge is a short follow-up concept.
-- Roles that work with assets get the cadkit environment on their runner (`.github/actions/setup-cadkit`); the development role also gets Xvfb and a software Vulkan driver for rendering.
+- Roles that work with assets get the cadkit environment on their runner (`.github/actions/setup-cadkit`); the development role also gets Xvfb and a software Vulkan driver for rendering (`setup-render`), which serves both `cadkit sheet` and, for a world arc's look review, `xvfb-run -a tools/shot.sh <camera> --sheet 0,20,100 --out sheet.png`.
 
 ## Issues and labels
 
