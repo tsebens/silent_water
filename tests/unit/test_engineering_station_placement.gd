@@ -66,7 +66,7 @@ func test_panel_is_at_the_program_position_on_the_port_wall() -> void:
 func test_body_stays_inside_its_footprint_and_the_hull_and_clear_of_neighbours() -> void:
 	var fp: Rect2 = _plan(_panel().get_node("Body"))
 	expect(SubLayout.footprint(&"ballast").grow(0.02).encloses(fp), "body %s inside the footprint" % fp)
-	for id: StringName in [&"life_support", &"bilge", &"scanner", &"engineering"]:
+	for id: StringName in [&"life_support", &"bilge", &"engineering"]:
 		expect(not fp.intersects(SubLayout.footprint(id).grow(-0.001)), "body clear of %s" % id)
 	var p: Vector3 = _panel().global_position
 	for dz: float in [-0.55, 0.0, 0.55]:
@@ -83,7 +83,7 @@ func test_the_pump_lever_sweep_leaves_the_aisle_clear() -> void:
 		most = maxf(most, r.end.x)
 		var well: Rect2 = SubLayout.footprint(&"bilge")
 		expect(not r.intersects(well), "the lever at %f is clear of the bilge well" % v)
-	var opposite: float = SubLayout.footprint(&"scanner").position.x
+	var opposite: float = SubLayout.footprint(&"engineering").position.x
 	expect(opposite - most >= SubLayout.clearance("aisle_min_m"), "aisle %f m with the lever out" % (opposite - most))
 
 

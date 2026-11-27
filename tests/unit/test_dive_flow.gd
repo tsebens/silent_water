@@ -18,7 +18,7 @@ func before_each() -> void:
 	controller = game.get_node("SubController") as SubController
 	scan = game.get_node("ScanObjective") as ScanObjective
 	director = game.get_node("DiveDirector") as DiveDirector
-	switch = game.get_node("Interior/Stations/Scanner/Switch") as Lever
+	switch = game.get_node("Interior/Stations/Science/Station/Panel/Bay0/Module/ArmSwitch") as Lever
 	# Keep the apex out of these tests.
 	var apex: ApexMonster = game.get_node("World/Apex") as ApexMonster
 	apex.brain_enabled = false

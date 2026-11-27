@@ -164,12 +164,11 @@ script = ExtResource("11")
 lights = NodePath("../Interior/Lights")
 players = NodePath("../Players")
 
-[node name="ScanObjective" type="Node" parent="." node_paths=PackedStringArray("controller", "switch", "target", "scanner_point")]
+[node name="ScanObjective" type="Node" parent="." node_paths=PackedStringArray("controller", "target", "scanner_point")]
 script = ExtResource("14")
 controller = NodePath("../SubController")
-switch = NodePath("../Interior/Stations/Scanner/Switch")
 target = NodePath("../World/ScanTarget")
-scanner_point = NodePath("../Interior/Stations/Scanner/Switch")
+scanner_point = NodePath("../Interior/Stations/Science/Station/Panel/Bay0/Module")
 
 [node name="Sync" type="MultiplayerSynchronizer" parent="ScanObjective"]
 replication_interval = 0.2

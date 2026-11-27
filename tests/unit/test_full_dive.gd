@@ -111,7 +111,7 @@ func test_autopilot_completes_a_dive() -> void:
 				_steer_to(HOVER)
 				_hold_depth(HOVER.y)
 				if scan.in_position():
-					_put("Scanner/Switch", 1.0)
+					_put("Science/Station/Panel/Bay0/Module/ArmSwitch", 1.0)
 					if scan_started_at < 0.0:
 						scan_started_at = t
 				if scan.complete:

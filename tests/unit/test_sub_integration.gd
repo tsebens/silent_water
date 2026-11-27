@@ -120,7 +120,7 @@ func test_the_aisle_stays_open_along_the_whole_walkway() -> void:
 	# Floor items on either side too: the trunk is flush, the ladder and lockers are reserved.
 	for id: StringName in [&"lockers", &"tower_ladder"]:
 		port.append(SubLayout.footprint(id))
-	for id: StringName in [&"countermeasures", &"science", &"scanner"]:
+	for id: StringName in [&"countermeasures", &"science"]:
 		starboard.append(SubLayout.footprint(id))
 	var aisle: float = SubLayout.clearance("aisle_min_m")
 	var z: float = SubLayout.compartment_span(&"midships").x
@@ -160,7 +160,7 @@ func test_head_clearance_above_the_walkway() -> void:
 func test_the_hand_pump_lever_clears_everything_at_both_ends_of_its_sweep() -> void:
 	var pump: HandPump = interior.get_node("Stations/Ballast/Panel/HandPump") as HandPump
 	var bilge: Rect2 = SubLayout.footprint(&"bilge")
-	var scanner: Rect2 = SubLayout.footprint(&"scanner")
+	var scanner: Rect2 = SubLayout.footprint(&"engineering")
 	var aisle: float = SubLayout.clearance("aisle_min_m")
 	for v: float in [0.0, 1.0]:
 		pump._apply_visual(v)
