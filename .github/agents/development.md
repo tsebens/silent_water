@@ -30,6 +30,16 @@ An arc that creates or changes a generated scene (its `Touches:` names `assets/m
 - **In rework mode,** a review finding about the look is fixed in the build script (a parameter, usually), then `cadkit build`, the tests and `cadkit sheet` again, so the committed sheets show the fix.
 - A behaviour arc for the asset process is ordinary code work, except that it also adds the new script to `tools/cadkit/catalogue/existing.yaml` so the library scan finds it.
 
+## World arcs
+
+An arc that changes how the *world* looks (fog, palette, sky, surface, lighting) and is `look-gate` owes Tristan in-game shots, not cadkit sheets. Render them with `tools/shot.sh` under `xvfb-run -a` (the runner already has the software Vulkan driver from `setup-render`):
+
+```
+xvfb-run -a tools/shot.sh <camera> --sheet 0,20,100 --out sheet.png      # depths the concept names; default surface, 20 m, 100 m
+```
+
+Cameras are the program's ids (`midships_forward`, `pilot_view`, ...), `pilot_eye` and `outside_<bow|stern|port|starboard|top|bottom>`; `--light night` for night. Each shot takes roughly 10 to 60 s on the runner, so keep `--size` modest (960x540) and `--frames` at its default. The sheet's captions say which renderer drew it. Commit the PNG, embed it by commit permalink in the look review, and attach nothing else. If it cannot render, say so in the review with the tail of its `.log` (next to the PNG) pasted in; never delete the attempt and say nothing.
+
 ## Build mode
 
 ### Input
