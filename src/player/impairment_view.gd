@@ -87,7 +87,8 @@ func _process(delta: float) -> void:
 	var s: float = DevSettings.forced_impairment()
 	if s < 0.0:
 		s = _impairment.impairment if _impairment != null else 0.0
-	_apply(blur_amount(s, params) * blur_envelope(s, _clock), vignette_amount(s, params))
+	var linger: float = _impairment.linger_blur if _impairment != null else 0.0
+	_apply(maxf(blur_amount(s, params) * blur_envelope(s, _clock), linger), vignette_amount(s, params))
 
 
 ## True when the tracked camera is the one rendering. Non-camera nodes count as
