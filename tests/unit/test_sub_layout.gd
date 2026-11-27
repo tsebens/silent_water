@@ -3,7 +3,7 @@ extends TestCase
 
 const STATIONS: Array[StringName] = [
 	&"pilot", &"sonar", &"sonar_seat", &"countermeasures", &"map_table", &"science",
-	&"engineering", &"life_support", &"ballast", &"bilge", &"scanner",
+	&"engineering", &"life_support", &"ballast", &"bilge",
 ]
 const FEATURES: Array[StringName] = [&"lock_out_trunk", &"tower_ladder", &"lockers", &"status_board"]
 
@@ -54,7 +54,7 @@ func test_starboard_wall_runs_sonar_science_countermeasures() -> void:
 	expect(sci.position.y >= sonar.end.y - 0.001, "science is aft of sonar")
 	expect(sci.end.y <= cm.position.y + 0.001, "science is forward of countermeasures")
 	expect_near(cm.end.y, 1.5, 0.001, "countermeasures end at the bulkhead")
-	expect(sci.size.y >= 1.8, "science takes the bulk of the wall (%f m)" % sci.size.y)
+	expect(sci.size.y >= 1.2 - 0.001, "science is the full 1.2 m panel (%f m)" % sci.size.y)
 
 
 func test_lockers_are_port_aft_of_the_map_table_and_clear_of_the_way_out() -> void:

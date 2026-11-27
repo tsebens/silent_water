@@ -110,4 +110,6 @@ func _physics_process(delta: float) -> void:
 			switch.host_set_value(0.0)
 		if module != null:
 			module.armed = false
+		if module != null:
+			module.armed = false
 		scan_completed.emit()

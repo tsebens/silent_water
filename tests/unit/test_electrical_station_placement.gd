@@ -53,7 +53,7 @@ func test_panel_clears_the_aisle_and_neighbours() -> void:
 	var fp: Rect2 = _body_footprint()
 	var allowed: Rect2 = SubLayout.footprint(&"engineering").grow(0.02)
 	expect(allowed.encloses(fp), "body %s inside the program footprint %s" % [fp, allowed])
-	for id: StringName in [&"scanner", &"lockers", &"countermeasures", &"life_support", &"ballast"]:
+	for id: StringName in [&"lockers", &"countermeasures", &"life_support", &"ballast"]:
 		expect(not fp.intersects(SubLayout.footprint(id).grow(-0.001)), "body clear of %s" % id)
 	# Controls reach out at most 0.2 m from the wall, leaving the aisle clear.
 	expect(fp.position.x > 0.6, "body does not reach toward the centre line (x %f)" % fp.position.x)

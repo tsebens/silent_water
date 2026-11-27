@@ -35975,15 +35975,15 @@
    "side": "starboard",
    "z": -1.4,
    "footprint": [
-    2.0,
-    0.5
+    1.2,
+    0.25
    ],
    "faces": "starboard",
    "floor_box": [
-    0.8339,
-    1.3339,
-    -2.4,
-    -0.4
+    1.1226,
+    1.3726,
+    -2.0,
+    -0.8
    ],
    "floor_y": -0.95
   },
@@ -36108,24 +36108,6 @@
     0.45,
     4.05,
     4.65
-   ],
-   "floor_y": -0.95
-  },
-  {
-   "id": "scanner",
-   "compartment": "engineering",
-   "kind": "panel",
-   "side": "starboard",
-   "z": 3.55,
-   "footprint": [
-    0.4,
-    0.4
-   ],
-   "floor_box": [
-    0.6473,
-    1.0473,
-    3.35,
-    3.75
    ],
    "floor_y": -0.95
   },
@@ -36355,13 +36337,13 @@
   {
    "id": "science_view",
    "pos": [
-    0.2,
+    0.95,
     0.7,
     -1.4
    ],
    "look": [
-    1.4,
-    0.4,
+    1.6,
+    0.35,
     -1.4
    ],
    "lens_mm": 18,
@@ -36369,7 +36351,7 @@
     "crew",
     "dome"
    ],
-   "notes": "Standing in the aisle at the science station's middle, looking starboard along its three bays."
+   "notes": "Standing at the science station's operator point, 0.5 m from the panel, looking starboard along its three bays."
   },
   {
    "id": "map_operator_view",
