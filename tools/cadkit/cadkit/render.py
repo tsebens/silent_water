@@ -32,11 +32,23 @@ def scene_dir(slug: str) -> Path:
     return p.parent
 
 
+def _wrap_glb(slug: str, glb: str) -> str:
+    """A throwaway scene (build/wrap/<slug>.tscn, not committed) that instances a solid set's one GLB."""
+    d = library.REPO / "build" / "wrap"
+    d.mkdir(parents=True, exist_ok=True)
+    (d / f"{slug}.tscn").write_text(
+        f'[gd_scene load_steps=2 format=3]\n\n[ext_resource type="PackedScene" path="{glb}" id="1"]\n\n'
+        f'[node name="Wrap" type="Node3D"]\n\n[node name="Solids" parent="." instance=ExtResource("1")]\n')
+    return f"res://build/wrap/{slug}.tscn"
+
+
 def render(slug: str, out: Path | None = None, cameras: Path | None = None) -> list[Path]:
     """Render the scene from its review cameras (`review/cameras.json`), or from automatic ones. Returns the PNGs."""
     entry = library.entry(slug)
     if "scene" not in entry:
-        raise ValueError(f"{slug} is a set of solids with no scene of its own; render a scene that uses it")
+        if not entry.get("glb"):
+            raise ValueError(f"{slug} is a set of solids with no scene of its own; render a scene that uses it")
+        entry = {**entry, "scene": _wrap_glb(slug, entry["glb"])}   # a lone GLB: render it in a throwaway scene
     out = out or library.REPO / "build" / "renders" / slug
     if out.exists():
         shutil.rmtree(out)
