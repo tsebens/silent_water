@@ -1,0 +1,20 @@
+# Review brief for the bat toggle (concept #700). The concept shows off on the left and on on the right.
+summary: Lit bat toggle on the 1x2 base, light-grey ridged paddle in a recessed bay with an LED loop round the bay.
+concept:
+  images:
+    - path: assets/models/kit/concept/bat_toggle_primary.png
+      role: primary
+      view: three-quarter from slightly above; off on the left, on on the right
+      camera: concept_bat
+    - path: assets/models/kit/concept/bat_toggle_primary.png
+      role: context
+      view: the same image, compared with the on render
+      camera: concept_bat_on
+  compare_on:
+    - the bat's form (a ridged paddle, not a cylinder) and its recessed bay
+    - the LED ring following the bay's border; dark when off, lit when on
+    - colour blocking (grey plate, light-grey bat)
+  ignore:
+    - the plate's proportions and bolt placement (the base is the existing 1x2 control base)
+    - the inner frame lines in the bay
+    - glow halos and lighting mood

@@ -1,0 +1,51 @@
+slug: bat_toggle
+group: kit
+kind: control
+summary: 'Lit bat toggle: a light grey paddle with deep grip ridges rocking about X in a shallow recessed bay, a
+  small swing and low stand-out. A rectangular LED loop round the bay is lit at on and dark at off, with nothing
+  wired on the instance. No round lamp.'
+tags:
+- toggle
+- switch
+- bat
+- paddle
+- lit
+- led
+- on-off
+- indicator
+- low-profile
+scene: res://assets/models/kit/bat_toggle/bat_toggle.tscn
+behaviour:
+  script: SwitchLever
+  values: 0 off (upper end out, loop dark), 1 on (upper end pressed in, loop lit)
+  signal: value_changed
+  wiring: 'none: `indicator` is set to the IndicatorLamp node'
+base: 1x2
+footprint_mm:
+- 56.0
+- 116.0
+stand_out_mm: 25
+swing_envelope:
+  swing_deg: 30.0
+  paddle_travel_deg: +/-15 about X through the centre
+  within_mm:
+  - 26.0
+  - 62.0
+  stand_out_mm: 25
+  note: the bar toggle (lit_toggle) stands 56 mm out
+mount: back on Z=0, centred; front +Z; on presses the upper (+Y) end in; the LED loop encircles the bay
+set_on_instance:
+  label: name at the aiming point
+uses:
+- control_base
+- led_strip
+triangles: 444
+built_by: tools/cadkit/scenes/bat_toggle.py
+files:
+- bat_toggle.tscn
+- bat_toggle_body.glb
+- bat_toggle_loop.glb
+- bat_toggle_paddle.glb
+- component.yaml
+- review/.gdignore
+- review/cameras.json
