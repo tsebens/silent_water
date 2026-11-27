@@ -1,0 +1,36 @@
+slug: led_strip
+group: kit
+kind: display
+summary: 'LED strip: a thin flat bar lens in the indicator_ok palette role (green); on, safe, friendly. IndicatorLamp
+  lights it from a bool, exactly as the round indicator_lamp does. Length is set on the instance. Mounts on a plate,
+  no base.'
+tags:
+- led
+- strip
+- bar
+- lamp
+- indicator
+- light
+- status
+scene: res://assets/models/kit/led_strip/led_strip.tscn
+behaviour:
+  script: IndicatorLamp
+  values: lit bool
+  signal: lit_changed
+  wire: set_lit(bool) or bind(source, signal)
+footprint_mm:
+- 40.0
+- 3.0
+stand_out_mm: 1.2
+mount: back on Z=0 (on a plate front), centred; faces +Z; runs along X (turn the node to run along Y)
+set_on_instance:
+  scale.x: length = 40 mm x scale.x; limits 10 to 120 mm (scale.x 0.25 to 3); keep scale.y and scale.z at 1
+uses: []
+triangles: 44
+built_by: tools/cadkit/scenes/led_strip.py
+files:
+- component.yaml
+- led_strip.tscn
+- led_strip_lens.glb
+- review/.gdignore
+- review/cameras.json
