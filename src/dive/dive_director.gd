@@ -39,7 +39,7 @@ SITE  KESTREL CANYON
 @export var scan: ScanObjective
 @export var status_board: Label3D
 
-## Supplies who is incapacitated; the dive is lost when everyone is. Null: never.
+## Supplies who is incapacitated; the dive is lost when everyone is. Defaults to the players' [PlayerImpairment] nodes.
 var incapacitation: CrewIncapacitation
 
 var phase: Phase = Phase.DIVING
@@ -52,6 +52,8 @@ var _surfaced_timer: float = 0.0
 
 
 func _ready() -> void:
+	if incapacitation == null:
+		incapacitation = PlayerImpairment.Crew.new(get_tree())
 	apex.contact.connect(_on_contact)
 	apex.near_miss.connect(_on_near_miss)
 	_update_board()
