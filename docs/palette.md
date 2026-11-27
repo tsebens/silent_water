@@ -41,7 +41,15 @@ swatches. `cadkit palette --sheets` renders the swatch sheets below.
   infrastructure, red threat.
 - **Map markers and pins are neon purple** (`map_marker`): outside the indicator colours and clear on a black and cyan
   chart.
-- **Infrastructure** is concrete and metal, lighter than real so it reads against the dark. Its lights are neon
+- **Creatures**
+
+| Role | Swatches | For |
+| --- | --- | --- |
+| `fish_back` | `sub_grey_dark` | A fish's darker blue-grey back |
+| `fish_flank` | `sub_control_grey` | A fish's pale silver flank and belly |
+| `fish_fin` | `infra_metal_light` | A fish's fins and tail |
+
+**Infrastructure** is concrete and metal, lighter than real so it reads against the dark. Its lights are neon
   **amber, yellow and red**; blue and green would vanish against the water.
 - **The sub's interior** is brighter on average than the world outside, so the two never blur together. Its light is
   dim and warm: bright enough to tell colours apart, only just.
