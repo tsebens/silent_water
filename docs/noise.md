@@ -1,12 +1,12 @@
 # Noise system
 
-Noise is the core system. Everything the crew does feeds one number: how loud the sub is.
+Noise is the core system. Everything the crew does feeds the sound field (events with places and times) and one continuous number for the gauges: how loud the sub is.
 
 ## Model
 
 - Every source reports **linear intensity** (proportional to pressure squared) at 1 m. Intensities add; decibels and pascals don't.
 - Scale: intensity 1.0 = **100 dB**. Conversions live in `NoiseLevel` (`to_db`, `from_db`, `attenuate`).
-- The host (`Acoustics` autoload) sums every source into `sub_intensity` each physics tick. The sub is tiny next to what's listening, so it's one number for the whole sub.
+- The host (`Acoustics` autoload) sums every source into `sub_intensity` each physics tick. The sub is tiny next to what's listening, so the gauges and `heard_at` use one number for the whole sub; creatures use the event field below.
 - Ocean background is `OCEAN_BASE_DB` (62 dB) plus any `AmbientZone`s near the sub. When the sub is quieter than the background, it is **masked** (`Acoustics.is_masked()`).
 - Clients receive both levels at 10 Hz for the gauges.
 
@@ -87,3 +87,9 @@ Spontaneous leaks are a Poisson process: the rate is `depth_factor(depth) / mean
 ## The apex hears detections (M19.3)
 
 The apex no longer calls `heard_at`. It owns a `SoundDetector` whose `threshold_db` is `-hearing_gain_db`, so it hears any sound the old model scored at SNR ≥ 0. Detections become `SoundMemory` records in `ApexMonster.memories` (lifetime 20 s on the acoustics clock; kind recorded, unused). Each tick the brain's fix (`last_heard`) is the loudest memory weighted toward the recent, so a louder event elsewhere draws it away and a stale fix is dropped (`has_heard` false once all have faded). The SNR fed to `SuspicionModel` is the strongest among detections no older than `ApexMonster.HEARD_HOLD_SEC` (1.25 s, just over the sub's 1 s event period), so steady sub noise reads as it did before and the ladder and thresholds are unchanged.
+
+## The sound field (M19.4)
+
+Overview of M19.1 to M19.3: **emitters** (`SoundEmitter`, the sub's combined event, `add_impulse`) call `Acoustics.emit_event`; each **detector** in range receives a `SoundEvent` with attenuated intensity, uncertainty and a perceived position; a listener turns events into **memories** that fade on its own clock. The continuous gauges (`sub_intensity`, `breakdown`, `top_text`) are kept alongside.
+
+Dev overlay (F1): the stats panel lists `EVENTS` (the last `Acoustics.RECENT_EVENTS_MAX` emitted events, newest first: kind, level at 1 m, position, age, detectors that heard it) and `MEMORIES` (the apex's, with level, position, uncertainty and age), with placeholders when empty. The minimap shows events as white dots and memories as orange ones. Events are recorded on the host only, so a client's list stays empty. `DevOverlay.sound_field_lines` builds the text.

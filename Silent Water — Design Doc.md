@@ -232,7 +232,7 @@ Noise is the core system, and every other system feeds into it.
 ### Noise model
 
 - **Sources:** voices, footsteps, engine speed, pumps, fans, controls moved quickly, repairs (welding is loudest), active sonar, and accidents like dropped tools or hull strikes.
-- **One number for the sub.** The sub is tiny next to the monster, so every source inside it sums to a single noise level at the sub's position. It falls off with distance and is blocked by terrain.
+- **A field of sound events.** Sources inside the sub still sum as intensity, and the sub emits that sum as a combined event about once a second at its position; one-offs (impacts) emit immediately. Each listener receives an event attenuated by distance and terrain, with an uncertain perceived position, and keeps fading memories of what it heard. The continuous gauges (one level for the sub, one for the ocean) are kept.
 - **Sum intensity, not decibels.** Sources add as acoustic intensity (proportional to sound pressure squared). Decibels and raw pascals don't add directly. Convert the total back to a level for gauges and creatures.
 - Creatures build suspicion from what they hear, which drives the escalation ladder (see Threats).
 - **The mix tells the truth.** What the crew hears inside the sub matches what creatures hear outside.
@@ -293,7 +293,7 @@ Nothing that matters can be killed. Diver tools are defensive.
 Each step must be audible or felt, so death is never unannounced.
 
 1. **Unaware:** distant calls, faint sonar traces.
-2. **Curious:** drifts toward noise it heard.
+2. **Curious:** drifts toward noise it heard (the loudest recent memory, not a live read of the sub).
 3. **Hunting:** searches where it last heard the sub.
 4. **Committed:** charges; this is the last window to break contact.
 5. **Contact:** the sub is lost.
