@@ -77,6 +77,9 @@ func _apply() -> void:
 	if _released or not _is_host():
 		return
 	_released = true
+	if session_log == null and is_inside_tree():
+		# The session log comes later in the tree than a button instanced in the interior.
+		session_log = get_tree().get_first_node_in_group(&"session_log") as SessionLog
 	var mass: float = 0.0
 	var depth: float = 0.0
 	if controller != null:

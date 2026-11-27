@@ -11,7 +11,7 @@ extends Node
 ##   Crew3 tries to grab the same lever from 2.5, once it sees Crew2 holding
 ##     it, and drags it up. The host must reject this. At 3.6 Crew3 takes the helm and holds
 ##     W (throttle ahead) and A (rudder to port) from 4.0.
-##   Crew1 (host) opens the flood valve about 1.5 turns between 2.0 and 3.0.
+##   Crew1 (host) opens the flood valve about 1.5 turns between 2.0 and 3.0 (half the 3-turn wheel).
 ##   Crew2 "talks" at 75 dB from 4.0 on (simulated mic level) and puts on
 ##   the sonar headset at 4.5 (it's on the starboard side; the cord check
 ##   uses distance, so Crew2 is moved next to it first).
@@ -57,7 +57,7 @@ func _physics_process(delta: float) -> void:
 	_t += delta
 	var me: Player = _game.local_player()
 	var lever: Interactable = _node("Pilot/Dimmer") as Interactable
-	var flood: Interactable = _node("Ballast/FloodValve") as Interactable
+	var flood: Interactable = _node("Ballast/Panel/FloodWheel") as Interactable
 	var seat: PilotSeat = _node("Pilot/Seat") as PilotSeat
 	match role:
 		"Crew2":
@@ -164,7 +164,7 @@ func _report() -> void:
 		"lever": snappedf((_node("Pilot/Dimmer") as Interactable).get_value(), 0.001),
 		"lever_holder": (_node("Pilot/Dimmer") as Interactable).state.holder,
 		"throttle": snappedf((_node("Pilot/Throttle") as Interactable).get_value(), 0.001),
-		"flood": snappedf((_node("Ballast/FloodValve") as Interactable).get_value(), 0.001),
+		"flood": snappedf((_node("Ballast/Panel/FloodWheel") as Interactable).get_value(), 0.001),
 		"rudder": snappedf((_node("Pilot/Rudder") as Interactable).get_value(), 0.001),
 		"seat_holder": seat.state.holder,
 		"seat_point": [snappedf(seat.seat_transform().origin.x, 0.01), snappedf(seat.seat_transform().origin.y, 0.01), snappedf(seat.seat_transform().origin.z, 0.01)],

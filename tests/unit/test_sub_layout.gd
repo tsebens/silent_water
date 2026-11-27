@@ -5,7 +5,7 @@ const STATIONS: Array[StringName] = [
 	&"pilot", &"sonar", &"sonar_seat", &"countermeasures", &"map_table", &"science",
 	&"engineering", &"life_support", &"ballast", &"bilge", &"scanner",
 ]
-const FEATURES: Array[StringName] = [&"lock_out_trunk", &"tower_ladder", &"lockers", &"drop_weights", &"status_board"]
+const FEATURES: Array[StringName] = [&"lock_out_trunk", &"tower_ladder", &"lockers", &"status_board"]
 
 
 func test_deck_converts_to_zero() -> void:
