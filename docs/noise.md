@@ -75,3 +75,7 @@ The two-needle noise gauge (`src/noise/noise_gauge.tscn`) reads `sub_db` (red) a
 ## Leak rate
 
 Spontaneous leaks are a Poisson process: the rate is `depth_factor(depth) / mean_interval_sec` (`LeakSystem`, `mean_interval_sec` exported, default 180 s). `depth_factor` rises linearly from 0.25 at the surface to 2.0 at the canyon floor (230 m) and stays there below that, so a leak is about eight times as likely at the floor as at the surface. After a patch (or at the start of a dive) nothing opens until the hold time has run out. Hull strikes are unchanged. F6 (dev) switches spontaneous leaks off for everyone.
+
+## Sound events (M19.1)
+
+`Acoustics.emit_event(position, intensity, kind, source)` gives a sound a place in the world. It is host-only, synchronous, and keeps nothing: each `SoundDetector` in range gets a short-lived `SoundEvent` carrying the received intensity (`NoiseLevel.attenuate` plus `OCCLUSION_LOSS_DB` behind terrain), an uncertainty (grows with distance, shrinks with the margin above `ambient_at`), a perceived position (true position plus a seeded random error within the uncertainty) and a timestamp (emission time plus distance / `SPEED_OF_SOUND`). A detector only hears events at least `threshold_db` above the background at its position. Listeners keep `SoundMemory` records in a `SoundMemory.Store`, which fades on the listener's own clock. `SoundEmitterPreset` is the tuning Resource for emitters. `heard_at` and the gauges are unchanged.

@@ -26,6 +26,14 @@ const LAYER_EXTERIOR: int = 1 << 3
 const BROADCAST_HZ: float = 10.0
 ## Voice reports older than this are treated as silence (s).
 const VOICE_TIMEOUT: float = 0.5
+## Speed of sound in water (m/s); a tuning constant.
+const SPEED_OF_SOUND: float = 1500.0
+## Position error floor (m) and growth per metre of distance at 0 dB margin.
+const UNCERTAINTY_MIN: float = 2.0
+const UNCERTAINTY_PER_M: float = 0.2
+## Every this many dB of margin above the background halves-ish the error
+## (error is divided by 1 + margin / this).
+const UNCERTAINTY_DB_SCALE: float = 6.0
 
 ## Total noise of the sub (linear intensity). Authoritative on the host,
 ## replicated to clients for gauges.
@@ -48,6 +56,9 @@ var _voice_times: Dictionary = {}
 var _impulses: Array[PackedFloat32Array] = []
 var _broadcast_accum: float = 0.0
 var _time: float = 0.0
+var _rng: RandomNumberGenerator = RandomNumberGenerator.new()
+## Tests may replace the terrain check: Callable(from_world, to_world) -> bool.
+var occlusion_override: Callable = Callable()
 
 
 func _ready() -> void:
@@ -113,6 +124,69 @@ func heard_at(world_point: Vector3, sub_frame: SubFrame) -> float:
 	if _occluded(sub_frame, sub_pos, world_point):
 		heard *= NoiseLevel.from_db(NoiseLevel.REF_DB - OCCLUSION_LOSS_DB)
 	return heard
+
+
+## Seeds the perceived-position error, for deterministic tests.
+func seed_events(seed_value: int) -> void:
+	_rng.seed = seed_value
+
+
+## The acoustics clock (s), advanced in the physics tick.
+func now() -> float:
+	return _time
+
+
+## Host only. Emits a sound at a world position and delivers it synchronously to
+## every [SoundDetector] that can hear it. Nothing is retained. Returns how many
+## detectors heard it.
+func emit_event(position: Vector3, intensity: float, kind: StringName = &"", source: Object = null) -> int:
+	if Net.is_online() and not multiplayer.is_server():
+		return 0
+	var heard_count: int = 0
+	var occl_factor: float = NoiseLevel.from_db(NoiseLevel.REF_DB - OCCLUSION_LOSS_DB)
+	for node: Node in get_tree().get_nodes_in_group(&"sound_detectors"):
+		var det: SoundDetector = node as SoundDetector
+		if det == null:
+			continue
+		var dist: float = position.distance_to(det.world_position)
+		var received: float = NoiseLevel.attenuate(intensity, dist)
+		var occluded: bool = _occluded_between(position, det.world_position)
+		if occluded:
+			received *= occl_factor
+		var ambient: float = ambient_at(det.world_position)
+		var margin_db: float = NoiseLevel.to_db(received) - NoiseLevel.to_db(ambient)
+		if margin_db < det.threshold_db:
+			continue
+		var ev: SoundEvent = SoundEvent.new()
+		ev.true_position = position
+		ev.emitted_intensity = intensity
+		ev.intensity = received
+		ev.distance = dist
+		ev.kind = kind
+		ev.source = source
+		ev.occluded = occluded
+		ev.timestamp = _time + dist / SPEED_OF_SOUND
+		ev.uncertainty = uncertainty_for(dist, margin_db)
+		var dir: Vector3 = Vector3(_rng.randfn(0.0, 1.0), _rng.randfn(0.0, 1.0), _rng.randfn(0.0, 1.0))
+		dir = dir.normalized() if dir.length() > 0.0001 else Vector3.UP
+		ev.perceived_position = position + dir * ev.uncertainty * _rng.randf()
+		det.receive(ev)
+		heard_count += 1
+	return heard_count
+
+
+## Error radius (m): grows with distance, shrinks with margin above background.
+func uncertainty_for(distance: float, margin_db: float) -> float:
+	return UNCERTAINTY_MIN + distance * UNCERTAINTY_PER_M / (1.0 + maxf(margin_db, 0.0) / UNCERTAINTY_DB_SCALE)
+
+
+func _occluded_between(from_world: Vector3, to_world: Vector3) -> bool:
+	if occlusion_override.is_valid():
+		return bool(occlusion_override.call(from_world, to_world))
+	var frame: SubFrame = get_tree().get_first_node_in_group(&"sub_frame") as SubFrame
+	if frame == null:
+		return false
+	return _occluded(frame, from_world, to_world)
 
 
 func _physics_process(delta: float) -> void:
