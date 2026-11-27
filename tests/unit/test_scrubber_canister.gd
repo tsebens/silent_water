@@ -139,3 +139,57 @@ func test_capacity_clamps() -> void:
 	c.capacity = -1.0
 	expect_near(c.capacity, 0.0)
 	c.queue_free()
+
+
+func _loaded_readouts() -> LifeSupportReadouts:
+	var src: LifeSupportReadouts = LifeSupportReadouts.new()
+	src.crew_override = 4
+	src.station = Node.new()
+	runner.add_child(src.station)
+	runner.add_child(src)
+	return src
+
+
+func test_seated_canister_capacity_falls_under_load() -> void:
+	var src: LifeSupportReadouts = _loaded_readouts()
+	var s: CanisterSlot = _slot()
+	s.reparent(src.station)
+	s.name = LifeSupportReadouts.CRADLE_A
+	var c: ScrubberCanister = _canister()
+	s.try_seat(c)
+	src.set_fans_on(true)
+	src.co2_ppm = 5000.0
+	for i: int in 20:
+		src.step(1.0)
+	expect(c.capacity < 1.0, "seated canister drained, got %s" % c.capacity)
+	src.station.queue_free()
+	src.free()
+	s.queue_free()
+	c.queue_free()
+
+
+func test_carried_and_stored_canister_capacity_stays_put() -> void:
+	var src: LifeSupportReadouts = _loaded_readouts()
+	var s: CanisterSlot = _slot()
+	s.reparent(src.station)
+	s.name = LifeSupportReadouts.CRADLE_A
+	var store: CanisterSlot = _slot()
+	store.name = &"StorageHole"
+	var seated: ScrubberCanister = _canister()
+	var carried: ScrubberCanister = _canister()
+	var stored: ScrubberCanister = _canister()
+	var who: Node3D = Node3D.new()
+	runner.add_child(who)
+	s.try_seat(seated)
+	store.try_seat(stored)
+	carried.pick_up(who)
+	src.co2_ppm = 5000.0
+	for i: int in 20:
+		src.step(1.0)
+	expect(seated.capacity < 1.0, "seated drains")
+	expect_near(carried.capacity, 1.0, 0.0001, "carried stays")
+	expect_near(stored.capacity, 1.0, 0.0001, "stored stays")
+	src.station.queue_free()
+	src.free()
+	for n: Node in [s, store, seated, carried, stored, who]:
+		n.queue_free()
