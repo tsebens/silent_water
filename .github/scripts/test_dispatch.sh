@@ -350,6 +350,36 @@ ARCS='[{"number":560,"created_at":"2026-11-26T04:13:13Z","labels":["arc","blocke
 ISSUE_STATE[557]=closed; unblock_arcs >/dev/null
 check "native open dependency blocks" 0 "$(promoted)"
 
+# 5. A malformed `Blocked by:` line blocks: not promoted, not claimed, escalated to needs-human.
+malformed_case() { # name body
+  reset_incident; BODY_OF[580]="$2"
+  ARCS='[{"number":580,"created_at":"2026-11-26T04:13:13Z","labels":["arc","blocked"],"body":""}]'
+  PROJECT_ITEMS='[{"item_id":"I580","number":580,"state":"OPEN","status":"Ready"}]'
+  unblock_arcs >/dev/null
+  check "malformed ($1): not promoted by Unblock" 0 "$(promoted)"
+  : >"$CALLS"; mirror_board_ready >/dev/null
+  check "malformed ($1): not promoted by Ready mirror" 0 "$(promoted)"
+  check "malformed ($1): needs-human added" 1 "$(grep -c -- '--add-label needs-human' "$CALLS")"
+  check "malformed ($1): tsebens assigned" 1 "$(grep -c -- '--add-assignee tsebens' "$CALLS")"
+}
+malformed_case "bare hashes" $'Blocked by: #, #\n'
+malformed_case "Arc N" $'Blocked by: #5, Arc 2\n'
+malformed_case "stray words" $'Blocked by: #1, #7 and Arc 3\n'
+reset_incident; BODY_OF[581]=$'Blocked by: #5, Arc 2\n'; ISSUE_STATE[5]=closed
+check "open_blockers_of prints the malformed token" "?malformed-blocked-by-line" "$(open_blockers_of 581)"
+# Claim step: a ready arc with a malformed line is neither claimed nor left unescalated.
+reset_incident; BODY_OF[582]=$'Blocked by: #\n'
+out=$(escalate_if_malformed 582 "$(open_blockers_of 582)"); rc=$?
+check "escalate_if_malformed: returns 0 for a malformed line" 0 $rc
+check "escalate_if_malformed: needs-human and assignee" 2 "$(grep -c 'needs-human\|add-assignee tsebens' "$CALLS")"
+# Well-formed lines still promote.
+for pair in "none|Blocked by: none" "closed|Blocked by: #5" "bold|**Blocked by:** #5, #9"; do
+  reset_incident; ISSUE_STATE[5]=closed; BODY_OF[583]="${pair#*|}"
+  ARCS='[{"number":583,"created_at":"2026-11-26T04:13:13Z","labels":["arc","blocked"],"body":""}]'
+  unblock_arcs >/dev/null
+  check "well-formed (${pair%%|*}): still promotes" 1 "$(grep -c -- '--add-label ready' "$CALLS")"
+done
+
 # ---------------------------------------------------------------------------
 # #643: an open status is never written onto a closed issue; step 5 logs reopen and merged-close anomalies.
 # ---------------------------------------------------------------------------
