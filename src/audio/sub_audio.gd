@@ -29,7 +29,6 @@ const WASH_INTENSITY: float = 0.01
 var _engine: AudioStreamPlayer3D
 var _blow: AudioStreamPlayer3D
 var _flood: AudioStreamPlayer3D
-var _strike: AudioStreamPlayer
 var _wash: AudioStreamPlayer
 var _clank_cooldowns: Dictionary = {}
 var _connected_players: Dictionary = {}
@@ -53,10 +52,6 @@ func _ready() -> void:
 	_wash.bus = AudioBuses.INSIDE
 	_wash.stream = ProceduralSounds.surface_wash()
 	add_child(_wash)
-	_strike = AudioStreamPlayer.new()
-	_strike.bus = AudioBuses.FELT
-	_strike.stream = ProceduralSounds.thud()
-	add_child(_strike)
 	if controller != null:
 		controller.hull_strike.connect(_on_hull_strike)
 
@@ -132,8 +127,23 @@ func _on_hull_strike(speed: float) -> void:
 
 @rpc("authority", "call_local", "reliable")
 func _rpc_strike(speed: float) -> void:
-	_strike.volume_db = volume_for(SubController.STRIKE_INTENSITY * speed * speed)
-	_strike.play()
+	play_strike(speed)
+
+
+## Plays the impact sound type's stream, un-positioned, at the level the strike
+## intensity calls for. Returns the player (freed when it finishes).
+func play_strike(speed: float) -> AudioStreamPlayer:
+	var type: SoundType = Acoustics.IMPACT_TYPE
+	if not type.has_stream():
+		return null
+	var p: AudioStreamPlayer = AudioStreamPlayer.new()
+	p.stream = type.stream
+	p.bus = type.bus
+	p.volume_db = volume_for(SubController.STRIKE_INTENSITY * speed * speed) + type.volume_db
+	add_child(p)
+	p.finished.connect(p.queue_free)
+	p.play()
+	return p
 
 
 func _loop(stream: AudioStream, at: Node3D) -> AudioStreamPlayer3D:

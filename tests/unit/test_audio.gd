@@ -63,3 +63,23 @@ func test_wash_gain_peaks_at_surface_and_fades_with_depth() -> void:
 
 func test_surface_wash_loops() -> void:
 	expect_eq(ProceduralSounds.surface_wash().loop_mode, AudioStreamWAV.LOOP_FORWARD)
+
+
+func test_impact_type_carries_the_thud_on_the_felt_bus() -> void:
+	var t: SoundType = Acoustics.IMPACT_TYPE
+	expect(t.has_stream(), "impact type has a stream")
+	expect_eq(t.bus, AudioBuses.FELT)
+	expect_near(t.volume_db, 0.0)
+	var thud: AudioStreamWAV = t.stream as AudioStreamWAV
+	expect(thud != null and thud.data.size() == ProceduralSounds.thud().data.size(), "stream is the thud")
+
+
+func test_strike_plays_impact_stream_at_prior_level() -> void:
+	var a: SubAudio = SubAudio.new()
+	runner.add_child(a)
+	var p: AudioStreamPlayer = a.play_strike(6.0)
+	expect(p != null, "strike player made")
+	expect(p.stream == Acoustics.IMPACT_TYPE.stream, "plays the type's stream")
+	expect_eq(p.bus, AudioBuses.FELT)
+	expect_near(p.volume_db, SubAudio.volume_for(SubController.STRIKE_INTENSITY * 36.0), 0.001)
+	a.queue_free()
