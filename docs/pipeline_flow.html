@@ -1,0 +1,232 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Silent Water Pipeline</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: one wide swimlane figure, then the dispatcher's run order, the label table and the guardrails. */
+:root {
+  --bg: #f4f5f3; --fg: #1d2321; --muted: #5d6763; --line: #c9cfcb; --node: #ffffff; --lane: #eceeeb;
+  --accent: #e0731c; --accent-soft: #fbe9d8;
+  --font: "IBM Plex Sans", "Helvetica Neue", Arial, sans-serif; --mono: "IBM Plex Mono", "SFMono-Regular", Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #171b1a; --fg: #e4e8e5; --muted: #9ca8a2; --line: #3a4542; --node: #212826; --lane: #1d2322;
+  --accent: #f08a35; --accent-soft: #3a2817; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #171b1a; --fg: #e4e8e5; --muted: #9ca8a2; --line: #3a4542; --node: #212826; --lane: #1d2322;
+  --accent: #f08a35; --accent-soft: #3a2817; color-scheme: dark }
+body { background: var(--bg); color: var(--fg); font-family: var(--font); line-height: 1.5;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 28px 48px; }
+main { max-width: 1400px; margin: 0 auto; }
+h1 { font-size: 1.7rem; font-weight: 600; margin: 0 0 4px; letter-spacing: -0.01em; text-wrap: balance; }
+h2 { font-size: 1.15rem; font-weight: 600; margin: 40px 0 10px; }
+p { max-width: 68ch; margin: 0 0 12px; }
+.lede { color: var(--muted); margin-bottom: 20px; }
+.stats { display: flex; flex-wrap: wrap; gap: 10px 28px; margin: 0 0 24px; padding: 12px 16px; border-left: 3px solid var(--accent); background: var(--lane); }
+.stats div { min-width: 0; }
+.stats b { display: block; font-size: 1.4rem; font-weight: 600; font-variant-numeric: tabular-nums; }
+.stats span { color: var(--muted); font-size: 0.85rem; }
+figure { margin: 0; }
+.scroll { overflow-x: auto; border: 1px solid var(--line); border-radius: 8px; background: var(--bg); }
+svg { display: block; min-width: 1240px; width: 100%; height: auto; color: var(--fg); font-family: var(--font); }
+figcaption { color: var(--muted); font-size: 0.9rem; margin-top: 10px; max-width: 80ch; }
+.lane { fill: var(--bg); } .lane.alt { fill: var(--lane); }
+.lane.humanlane { fill: var(--accent-soft); }
+.lane-label { font-size: 13px; font-weight: 600; fill: var(--fg); }
+.lane-sep { stroke: var(--line); stroke-width: 1; }
+.node { fill: var(--node); stroke: currentColor; stroke-width: 1.2; }
+.node.human { stroke: var(--accent); stroke-width: 2; }
+.nl { font-size: 13px; fill: var(--fg); }
+.tag { font-family: var(--mono); font-size: 11px; fill: var(--muted); }
+.edge { fill: none; stroke: currentColor; stroke-width: 1.3; }
+.edge.dashed { stroke-dasharray: 5 4; }
+.edge.loop { stroke: var(--muted); }
+.el { font-size: 12px; fill: var(--muted); paint-order: stroke; stroke: var(--bg); stroke-width: 4px; stroke-linejoin: round; }
+.humanlane ~ .el { }
+ol.steps { padding-left: 1.4em; max-width: 78ch; margin: 0; }
+ol.steps li { margin: 0 0 8px; }
+code { font-family: var(--mono); font-size: 0.86em; background: var(--lane); padding: 1px 5px; border-radius: 4px; }
+table { border-collapse: collapse; width: 100%; font-size: 0.9rem; }
+.tbl { overflow-x: auto; }
+th, td { text-align: left; padding: 7px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { font-weight: 600; font-size: 0.78rem; letter-spacing: 0.04em; text-transform: uppercase; color: var(--muted); }
+ul.guard { padding-left: 1.2em; max-width: 78ch; margin: 0; }
+ul.guard li { margin-bottom: 6px; }
+.key { display: inline-block; width: 26px; height: 0; border-top: 2px solid var(--accent); vertical-align: middle; margin-right: 6px; }
+.key.dash { border-top: 2px dashed var(--fg); }
+@media (max-width: 640px) { .stats { gap: 8px 18px; } .stats b { font-size: 1.2rem; } }
+</style>
+</head>
+<body>
+
+<main>
+<h1>Silent Water development pipeline</h1>
+<p class="lede">How an idea becomes a merge on <code>dev</code>, as specified in <code>docs/process.md</code> and implemented in <code>.github/</code>. Labels are the only state; every workflow fires on a label being added. Tristan touches the flow at the orange stops only.</p>
+<div class="stats" aria-label="Pipeline figures since 20 November 2026">
+  <div><b>239</b><span>arc PRs squash-merged into dev since 20 Nov</span></div>
+  <div><b>254</b><span>arcs closed, 32 open</span></div>
+  <div><b>83</b><span>concepts carried to completion</span></div>
+  <div><b>30</b><span>arcs that stopped for a look review</span></div>
+</div>
+
+<h2>The flow</h2>
+<figure>
+<div class="scroll">
+<svg viewBox="0 0 1672 722" role="img" aria-label="Swimlane flow chart of the Silent Water pipeline: a concept issue goes through breakdown, plan review, dispatcher, build, CI and review to a squash-merge into dev, with Tristan stopping it only at needs-human and look-review." xmlns="http://www.w3.org/2000/svg">
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="currentColor"/></marker></defs>
+<rect class="lane humanlane" x="0" y="34" width="1672" height="84"/>
+<text class="lane-label" x="14" y="80">Tristan / head developer</text>
+<rect class="lane alt" x="0" y="118" width="1672" height="84"/>
+<text class="lane-label" x="14" y="164">Organization agent</text>
+<rect class="lane" x="0" y="202" width="1672" height="84"/>
+<text class="lane-label" x="14" y="248">Plan-review agent</text>
+<rect class="lane alt" x="0" y="286" width="1672" height="84"/>
+<text class="lane-label" x="14" y="332">Dispatcher (shell)</text>
+<rect class="lane" x="0" y="370" width="1672" height="84"/>
+<text class="lane-label" x="14" y="416">Development agent</text>
+<rect class="lane alt" x="0" y="454" width="1672" height="84"/>
+<text class="lane-label" x="14" y="500">CI</text>
+<rect class="lane" x="0" y="538" width="1672" height="84"/>
+<text class="lane-label" x="14" y="584">Review agent</text>
+<rect class="lane alt" x="0" y="622" width="1672" height="84"/>
+<text class="lane-label" x="14" y="668">dev branch and board</text>
+<line class="lane-sep" x1="172" y1="34" x2="172" y2="706"/>
+<path class="edge " d="M 242 105 L 242 160 L 328 160" marker-end="url(#arrow)"/>
+<text class="el" x="250" y="127" text-anchor="start">concept added</text>
+<path class="edge " d="M 402 189 L 402 244 L 488 244" marker-end="url(#arrow)"/>
+<text class="el" x="410" y="211" text-anchor="start">plan-proposed</text>
+<path class="edge " d="M 562 215 L 562 105" marker-end="url(#arrow)"/>
+<text class="el" x="570" y="121" text-anchor="start">2nd rejection:</text>
+<text class="el" x="570" y="134" text-anchor="start">needs-human</text>
+<path class="edge loop" d="M 488 232 L 506 232 L 506 172 L 476 172" marker-end="url(#arrow)"/>
+<text class="el" x="512" y="206" text-anchor="start">plan-rejected (×1)</text>
+<path class="edge " d="M 636 244 L 648 244" marker-end="url(#arrow)"/>
+<text class="el" x="642" y="236" text-anchor="middle">plan-approved</text>
+<path class="edge " d="M 722 273 L 722 328 L 808 328" marker-end="url(#arrow)"/>
+<text class="el" x="730" y="295" text-anchor="start">blockers closed</text>
+<path class="edge dashed" d="M 882 105 L 882 299" marker-end="url(#arrow)"/>
+<text class="el" x="890" y="156" text-anchor="start">board Ready → ready</text>
+<text class="el" x="890" y="169" text-anchor="start">(only if no open blocker)</text>
+<path class="edge " d="M 956 328 L 968 328" marker-end="url(#arrow)"/>
+<text class="el" x="962" y="283" text-anchor="middle">oldest ready, in-flight &lt; WORKER_CAP,</text>
+<text class="el" x="962" y="296" text-anchor="middle">Touches clear of in-flight arcs</text>
+<path class="edge " d="M 1042 357 L 1042 412 L 1128 412" marker-end="url(#arrow)"/>
+<text class="el" x="1050" y="379" text-anchor="start">gh workflow run</text>
+<path class="edge dashed" d="M 1202 383 L 1202 105" marker-end="url(#arrow)"/>
+<text class="el" x="1210" y="154" text-anchor="start">look-gate arcs only:</text>
+<text class="el" x="1210" y="167" text-anchor="start">render, look-review</text>
+<path class="edge dashed" d="M 1172 105 L 1172 383" marker-end="url(#arrow)"/>
+<text class="el" x="1166" y="248" text-anchor="end">look-approved → open PR</text>
+<text class="el" x="1166" y="261" text-anchor="end">look-changes → look rework</text>
+<path class="edge " d="M 1202 441 L 1202 496 L 1288 496" marker-end="url(#arrow)"/>
+<text class="el" x="1194" y="463" text-anchor="end">PR into dev opened</text>
+<path class="edge " d="M 1436 496 L 1442 496 L 1442 580 L 1448 580" marker-end="url(#arrow)"/>
+<text class="el" x="1487" y="488" text-anchor="start">green: ci-green</text>
+<path class="edge " d="M 1362 467 L 1362 441" marker-end="url(#arrow)"/>
+<text class="el" x="1370" y="455" text-anchor="start">red: CI failed,</text>
+<text class="el" x="1370" y="468" text-anchor="start">changes-requested</text>
+<path class="edge" d="M 1328 441 L 1328 467" marker-end="url(#arrow)"/>
+<text class="el" x="1322" y="461" text-anchor="end">fix, push</text>
+<path class="edge " d="M 1448 580 L 1438 580 L 1438 453 L 1416 453 L 1362 441" marker-end="url(#arrow)"/>
+<text class="el" x="1432" y="535" text-anchor="end">changes requested:</text>
+<text class="el" x="1432" y="548" text-anchor="end">rework:N</text>
+<path class="edge " d="M 1522 551 L 1522 105" marker-end="url(#arrow)"/>
+<text class="el" x="1530" y="461" text-anchor="start">rework:3 already:</text>
+<text class="el" x="1530" y="474" text-anchor="start">needs-human</text>
+<path class="edge " d="M 1522 609 L 1522 635" marker-end="url(#arrow)"/>
+<text class="el" x="1530" y="627" text-anchor="start">accepted: approved</text>
+<path class="edge" d="M 1596 664 L 1614 664 L 1614 328 L 1596 328" marker-end="url(#arrow)"/>
+<text class="el" x="1620" y="500" text-anchor="start" transform="rotate(-90 1620 500)">arc closed</text>
+<rect class="node human" x="168" y="47" width="148" height="58" rx="6"/>
+<text class="nl" x="242" y="72" text-anchor="middle">Idea in chat</text>
+<text class="nl" x="242" y="88" text-anchor="middle">→ Concept issue</text>
+<rect class="node human" x="488" y="47" width="148" height="58" rx="6"/>
+<text class="nl" x="562" y="80" text-anchor="middle">Tristan decides</text>
+<rect class="node human" x="808" y="47" width="148" height="58" rx="6"/>
+<text class="nl" x="882" y="80" text-anchor="middle">Board: drag to Ready</text>
+<rect class="node human" x="1128" y="47" width="148" height="58" rx="6"/>
+<text class="nl" x="1202" y="80" text-anchor="middle">Look review</text>
+<rect class="node human" x="1448" y="47" width="148" height="58" rx="6"/>
+<text class="nl" x="1522" y="80" text-anchor="middle">Tristan decides</text>
+<rect class="node" x="328" y="131" width="148" height="58" rx="6"/>
+<text class="nl" x="402" y="164" text-anchor="middle">Breakdown proposal</text>
+<rect class="node" x="488" y="215" width="148" height="58" rx="6"/>
+<text class="nl" x="562" y="248" text-anchor="middle">Plan review</text>
+<rect class="node" x="648" y="215" width="148" height="58" rx="6"/>
+<text class="nl" x="722" y="233" text-anchor="middle">Arcs created</text>
+<text class="nl" x="722" y="248" text-anchor="middle">as sub-issues</text>
+<text class="tag" x="722" y="263" text-anchor="middle">arc + blocked</text>
+<rect class="node" x="808" y="299" width="148" height="58" rx="6"/>
+<text class="nl" x="882" y="324" text-anchor="middle">Unblock</text>
+<text class="tag" x="882" y="340" text-anchor="middle">blocked → ready</text>
+<rect class="node" x="968" y="299" width="148" height="58" rx="6"/>
+<text class="nl" x="1042" y="324" text-anchor="middle">Claim, start build</text>
+<text class="tag" x="1042" y="340" text-anchor="middle">ready → claimed</text>
+<rect class="node" x="1448" y="299" width="148" height="58" rx="6"/>
+<text class="nl" x="1522" y="324" text-anchor="middle">Close concept and</text>
+<text class="nl" x="1522" y="340" text-anchor="middle">milestone; board Done</text>
+<rect class="node" x="1128" y="383" width="148" height="58" rx="6"/>
+<text class="nl" x="1202" y="401" text-anchor="middle">Build on arc/&lt;n&gt;,</text>
+<text class="nl" x="1202" y="416" text-anchor="middle">tests, check.sh, PR</text>
+<text class="tag" x="1202" y="431" text-anchor="middle">claimed → in-review</text>
+<rect class="node" x="1288" y="383" width="148" height="58" rx="6"/>
+<text class="nl" x="1362" y="416" text-anchor="middle">Rework</text>
+<rect class="node" x="1288" y="467" width="148" height="58" rx="6"/>
+<text class="nl" x="1362" y="492" text-anchor="middle">CI: check.sh, tests,</text>
+<text class="nl" x="1362" y="508" text-anchor="middle">cadkit verify</text>
+<rect class="node" x="1448" y="551" width="148" height="58" rx="6"/>
+<text class="nl" x="1522" y="584" text-anchor="middle">Review</text>
+<rect class="node" x="1448" y="635" width="148" height="58" rx="6"/>
+<text class="nl" x="1522" y="660" text-anchor="middle">Squash-merge into dev,</text>
+<text class="nl" x="1522" y="676" text-anchor="middle">arc closed</text>
+</svg>
+</div>
+<figcaption>Each row is an actor; each box is a job or a state, with the label it sets underneath. Orange boxes are the only places a person acts. Dashed arrows are optional paths: Tristan promoting from the board, and the look gate that asset arcs take before their PR. <span class="key"></span>human stop &nbsp; <span class="key dash"></span>optional path</figcaption>
+</figure>
+
+<h2>What the dispatcher does on every run</h2>
+<p>It is plain shell, not Claude. It runs within seconds of any label change or close on an issue or PR, and every 30 minutes as a backstop. Each run, in order:</p>
+<ol class="steps">
+  <li><b>Pause check.</b> Exits if the repository variable <code>PIPELINE_PAUSED</code> is true.</li>
+  <li><b>Mirror the board.</b> An arc dragged to Ready gets the <code>ready</code> label, but only if none of its blockers is open.</li>
+  <li><b>Unblock.</b> A <code>blocked</code> arc whose <code>Blocked by:</code> issues and native dependencies are all closed becomes <code>ready</code>. A missing or malformed blocker line stops the arc with <code>needs-human</code>.</li>
+  <li><b>Recover orphans.</b> A <code>claimed</code> arc whose build run died goes back to <code>ready</code> once; a second time it gets <code>needs-human</code>.</li>
+  <li><b>Claim.</b> While in-flight arcs are below <code>WORKER_CAP</code>, take the oldest <code>ready</code> arc whose <code>Touches:</code> overlap nothing in flight, mark it <code>claimed</code> and start a development run.</li>
+  <li><b>Close finished concepts</b>, and finished milestones once their last sub-issue has been closed for 24 hours.</li>
+  <li><b>Project labels onto the board.</b> It is the only writer of board Status: blocked → Backlog, ready → Ready, claimed → In progress, in-review → In review, closed → Done.</li>
+  <li><b>Log anomalies</b>: a PR stuck in <code>changes-requested</code>, an arc closed and reopened, an open arc whose PR already merged.</li>
+</ol>
+
+<h2>Labels, and who moves them</h2>
+<div class="tbl"><table>
+<thead><tr><th>Label</th><th>On</th><th>Set by (starts)</th><th>Cleared by</th></tr></thead>
+<tbody>
+<tr><td><code>design</code></td><td>issue</td><td>Head developer. Inert: a draft</td><td>Head developer, when it becomes <code>concept</code></td></tr>
+<tr><td><code>concept</code></td><td>issue</td><td>Head developer (starts organization)</td><td>never</td></tr>
+<tr><td><code>plan-proposed</code> / <code>plan-rejected</code></td><td>concept</td><td>Organization agent (starts plan review) / plan review (starts organization again)</td><td>The other agent, on the next round</td></tr>
+<tr><td><code>plan-approved</code></td><td>concept</td><td>Plan-review agent, with the arcs created</td><td>never; the concept closes with its last arc</td></tr>
+<tr><td><code>arc</code>, <code>blocked</code></td><td>arc</td><td>Plan-review agent</td><td>Dispatcher clears <code>blocked</code></td></tr>
+<tr><td><code>ready</code> → <code>claimed</code></td><td>arc</td><td>Dispatcher (claim starts the build)</td><td>Development agent, when its PR opens</td></tr>
+<tr><td><code>in-review</code></td><td>arc</td><td>Development agent</td><td>Dispatcher, when the arc closes</td></tr>
+<tr><td><code>look-gate</code> → <code>look-review</code></td><td>arc</td><td>Plan review marks the gate; the build applies <code>look-review</code> and stops</td><td>Tristan answers with <code>look-approved</code> or <code>look-changes</code></td></tr>
+<tr><td><code>ci-green</code></td><td>PR</td><td>CI, on a passing head (starts review)</td><td>CI, on the next push</td></tr>
+<tr><td><code>changes-requested</code>, <code>rework:N</code></td><td>PR</td><td>Review agent, or CI on a red arc PR (starts rework)</td><td>Rework clears <code>changes-requested</code> before it pushes</td></tr>
+<tr><td><code>approved</code></td><td>PR</td><td>Review agent, then squash-merge</td><td>never</td></tr>
+<tr><td><code>needs-human</code></td><td>any</td><td>Any agent, with Tristan assigned (notifies him)</td><td>Tristan, who re-applies the label that should fire next</td></tr>
+</tbody></table></div>
+
+<h2>Bounded loops and guardrails</h2>
+<ul class="guard">
+  <li>Two plan rejections, three review rounds, or three CI failures in a row each end in <code>needs-human</code>, never a fourth attempt.</li>
+  <li>The dispatcher is the only thing that starts builds; <code>ready</code> is a queue marker, not a trigger. The worker cap and the <code>Touches:</code> overlap check are what make parallel arcs safe.</li>
+  <li>Jobs that hold the PAT run only code from <code>dev</code>. A PR is fetched as content, never as instructions, so it cannot rewrite the agent reviewing it.</li>
+  <li>Agents never create labels and never write board Status. Role prompts, workflows and the process doc change only through PRs into <code>dev</code>, and the review agent flags any weakened guardrail.</li>
+  <li>An audit agent reads the pipeline's own runs every six hours and reports on the standing Pipeline health issue; it files findings as unlabelled concepts for Tristan and never acts.</li>
+</ul>
+</main>
+
+</body>
+</html>
