@@ -293,6 +293,16 @@ initial_value = 1.0
 [node name="CabinLightSwitch" parent="Stations/Pilot/Anchors"]
 initial_value = 1.0
 
+[node name="Co2LampDriver" parent="Stations/Pilot/Drivers"]
+source_group = &"life_support_readouts"
+readout = &"co2_ppm"
+threshold = 7000.0
+
+[node name="LowO2LampDriver" parent="Stations/Pilot/Drivers"]
+source_group = &"life_support_readouts"
+readout = &"o2_level"
+threshold = 0.25
+
 [node name="HeadlightSwitch" type="Node" parent="Stations/Pilot" node_paths=PackedStringArray("light", "power", "colour")]
 script = ExtResource("headlight_switch")
 light = NodePath("../../../Lights/Headlight")
