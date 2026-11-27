@@ -48,6 +48,8 @@ func get_stream() -> AudioStream:
 			return ProceduralSounds.gurgle()
 		&"scanner":
 			return ProceduralSounds.scanner()
+		&"alarm_chime":
+			return ProceduralSounds.alarm_chime()
 	return null
 
 

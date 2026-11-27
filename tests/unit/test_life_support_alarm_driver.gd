@@ -81,3 +81,45 @@ func test_gauges_read_the_source() -> void:
 		var g: Gauge = st.get_node(n) as Gauge
 		expect(g.source_group == LifeSupportReadouts.GROUP, "%s reads the life support source" % n)
 		expect(float(src.readout(g.readout)) > 0.0, "%s readout is nonzero" % n)
+
+
+func _run(seconds: float) -> void:
+	for i: int in int(seconds / 0.02):
+		drv.advance(0.02)
+
+
+func test_chime_type_is_small_with_a_stream() -> void:
+	var t: SoundType = load(LifeSupportAlarmDriver.CHIME_PATH) as SoundType
+	expect(t.has_stream(), "chime has a stream")
+	expect(t.intensity > 0.0 and t.intensity <= 0.005, "chime is a small noise source")
+
+
+func test_chime_silent_when_off() -> void:
+	_run(6.0)
+	expect_eq(drv.chime_count, 0)
+
+
+func test_chime_steady_then_faster_when_flashing() -> void:
+	src.co2_ppm = 7000.0
+	_run(5.0)
+	var steady: int = drv.chime_count
+	expect(steady >= 2 and steady <= 3, "gentle repeat while steady (%d in 5 s)" % steady)
+	src.co2_ppm = 25000.0
+	drv.chime_count = 0
+	_run(5.0)
+	expect(drv.chime_count >= 7, "faster while flashing (%d in 5 s)" % drv.chime_count)
+	src.co2_ppm = 400.0
+	_run(0.1)
+	drv.chime_count = 0
+	_run(5.0)
+	expect_eq(drv.chime_count, 0)
+
+
+func test_chime_counts_as_noise() -> void:
+	Acoustics.recent_events.clear()
+	src.o2_level = 0.2
+	drv.advance(0.02)
+	expect(not Acoustics.recent_events.is_empty(), "chime emitted a noise event")
+	if not Acoustics.recent_events.is_empty():
+		var t: SoundType = load(LifeSupportAlarmDriver.CHIME_PATH) as SoundType
+		expect_near(float(Acoustics.recent_events.back()["intensity"]), t.intensity, 0.00001, "event carries the chime intensity")

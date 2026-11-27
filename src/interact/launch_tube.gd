@@ -126,6 +126,8 @@ func fire() -> bool:
 	if emitter != null:
 		emitter.world_position = at
 		emitter.fire()
+	if _online():
+		_rpc_play_launch.rpc(at)
 	_empty_tube()
 	_set_primed(false)
 	fired.emit(at)
@@ -224,6 +226,23 @@ func _rpc_state(primed: bool) -> void:
 		drawer.locked = primed
 	_sync_lever()
 	_refresh()
+
+
+## Clients: hear the launch thump. Plays only; the noise event is the host's.
+@rpc("authority", "call_remote", "reliable")
+func _rpc_play_launch(at: Vector3) -> void:
+	play_launch_sound(at)
+
+
+## Plays the launch thump at [param at] without emitting a field noise event.
+func play_launch_sound(at: Vector3) -> void:
+	if emitter == null:
+		return
+	var was: bool = emitter.field_events
+	emitter.field_events = false
+	emitter.world_position = at
+	emitter.fire()
+	emitter.field_events = was
 
 
 func _on_peer_joined(peer_id: int) -> void:
