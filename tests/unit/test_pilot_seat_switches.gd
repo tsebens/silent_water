@@ -47,12 +47,12 @@ func test_seated_pilot_cannot_grab_other_controls() -> void:
 	var me: Player = game.local_player()
 	var seat: PilotSeat = _seat()
 	me.sit_in(seat)
-	var other: Interactable = game.get_node("Interior/Stations/Pilot/Dimmer") as Interactable
-	expect(not seat.allow_grab(other), "dimmer not allowed")
+	var other: Interactable = game.get_node("Interior/Stations/Pilot/Throttle") as Interactable
+	expect(not seat.allow_grab(other), "throttle not allowed")
 	var before: float = other.get_value()
 	me.press_interact(other)
 	me.release_interact()
-	expect_eq(other.get_value(), before, "dimmer untouched")
+	expect_eq(other.get_value(), before, "throttle untouched")
 	expect(me.held_control() == null, "nothing held")
 	me.stand_up()
 

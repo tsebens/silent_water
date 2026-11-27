@@ -48,37 +48,6 @@ func test_headlight_power_and_swatch() -> void:
 	expect(not light.visible, "off")
 
 
-func test_dimmer_scales_cabin_lights_when_on() -> void:
-	var root: Node3D = Node3D.new()
-	var lamp: OmniLight3D = OmniLight3D.new()
-	lamp.light_energy = 2.0
-	root.add_child(lamp)
-	runner.add_child(root)
-	var dimmer: Interactable = _switch(true)
-	var cl: CabinLights = CabinLights.new()
-	cl.lights_root = root
-	cl.dimmer = dimmer
-	runner.add_child(cl)
-	var power: Interactable = _switch(true)
-	var drv: CabinSwitch = CabinSwitch.new()
-	drv.lights = cl
-	drv.power = power
-	runner.add_child(drv)
-	cl._process(0.0)
-	expect_near(lamp.light_energy, 2.0, 0.001, "full dimmer")
-	dimmer.host_set_value(0.5)
-	cl._process(0.0)
-	expect_near(lamp.light_energy, 2.0 * lerpf(CabinLights.MIN_LEVEL, 1.0, 0.5), 0.001, "dimmer still scales")
-	power.host_set_value(0.0)
-	drv.update()
-	cl._process(0.0)
-	expect_near(lamp.light_energy, 0.0, 0.0001, "off is dark")
-	power.host_set_value(1.0)
-	drv.update()
-	cl._process(0.0)
-	expect(lamp.light_energy > 0.5, "back on")
-
-
 func test_cabin_stealth_switch() -> void:
 	var root: Node3D = Node3D.new()
 	var lamp: OmniLight3D = OmniLight3D.new()

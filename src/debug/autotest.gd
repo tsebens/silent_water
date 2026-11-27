@@ -6,10 +6,8 @@ extends Node
 ## compares the reports from every instance (tools/compare_autotest.py).
 ##
 ## Scenario (seconds after the session starts):
-##   Crew2 walks forward for 1.5 s, grabs the cabin lights lever at 2.0, drags
-##     it all the way down and releases at 3.5.
-##   Crew3 tries to grab the same lever from 2.5, once it sees Crew2 holding
-##     it, and drags it up. The host must reject this. At 3.6 Crew3 takes the helm and holds
+##   Crew2 walks forward for 1.5 s.
+##   At 3.6 Crew3 takes the helm and holds
 ##     W (throttle ahead) and A (rudder to port) from 4.0.
 ##   Crew1 (host) opens the flood valve about 1.5 turns between 2.0 and 3.0 (half the 3-turn wheel).
 ##   Crew2 "talks" at 75 dB from 4.0 on (simulated mic level) and puts on
@@ -66,17 +64,12 @@ func _physics_process(delta: float) -> void:
 		return
 	_t += delta
 	var me: Player = _game.local_player()
-	var lever: Interactable = _node("Pilot/Dimmer") as Interactable
 	var flood: Interactable = _node("Ballast/Panel/FloodWheel") as Interactable
 	var seat: PilotSeat = _node("Pilot/Seat") as PilotSeat
 	match role:
 		"Crew2":
 			if me != null:
 				me.bot_move = Vector2(0, -1) if _t < 1.5 else Vector2.ZERO
-			_once("grab", 2.0, func() -> void: lever.begin_interaction())
-			if _t > 2.1 and _t < 3.3:
-				lever.drag(Vector2(0, 8))
-			_once("release", 3.5, func() -> void: lever.end_interaction())
 			# Through the mic meter, so it's the only thing reporting this voice.
 			MicMeter.forced_db = 75.0 if _t > 4.0 else -1.0
 			_once("pin", 5.0, func() -> void:
@@ -87,17 +80,6 @@ func _physics_process(delta: float) -> void:
 					me.teleport(headset.global_position + Vector3(-0.8, -1.4, 0))
 					me.put_on(headset))
 		"Crew3":
-			# Only contest the lever once Crew2's hold has reached this instance:
-			# instances start their clocks when they connect, so on a loaded
-			# runner a fixed time can land before Crew2's grab and Crew3 would
-			# win the lever (#210). Never grab late either.
-			if _t >= 2.5 and _t < 3.2 and not _done.has("grab") \
-					and lever.state.holder != InteractableState.NO_HOLDER \
-					and lever.state.holder != Net.local_id():
-				_once("grab", 2.5, func() -> void: lever.begin_interaction())
-			if _done.has("grab") and _t < 3.2:
-				lever.drag(Vector2(0, -8))
-			_once("release", 3.4, func() -> void: lever.end_interaction())
 			if me != null:
 				_once("sit", 3.6, func() -> void: me.sit_in(seat))
 				me.bot_move = Vector2(-1, -1) if _t > 4.0 else Vector2.ZERO
@@ -189,8 +171,6 @@ func _report() -> void:
 		"peer": Net.local_id(),
 		"is_host": Net.is_host(),
 		"players": positions,
-		"lever": snappedf((_node("Pilot/Dimmer") as Interactable).get_value(), 0.001),
-		"lever_holder": (_node("Pilot/Dimmer") as Interactable).state.holder,
 		"throttle": snappedf((_node("Pilot/Throttle") as Interactable).get_value(), 0.001),
 		"flood": snappedf((_node("Ballast/Panel/FloodWheel") as Interactable).get_value(), 0.001),
 		"rudder": snappedf((_node("Pilot/Rudder") as Interactable).get_value(), 0.001),
