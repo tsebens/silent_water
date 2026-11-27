@@ -189,7 +189,7 @@ func test_surface_node_tracks_sub() -> void:
 	await runner.get_tree().process_frame
 	expect(absf(surface.position.x - 300.0) <= surface.size / 40.0, "follows x")
 	expect(absf(surface.position.z + 500.0) <= surface.size / 40.0, "follows z")
-	expect_near(surface.position.y, 0.0)
+	expect_near(surface.position.y, OceanSurface.SURFACE_Y)
 	game.end_session()
 	game.free()
 
@@ -252,3 +252,48 @@ func test_no_surface_inside_hull_at_waterline() -> void:
 	expect(OceanSurface.inside_hull(Vector3(4.0, 0.0, 0.0), centre, half, rot), "rotated hull covers +x")
 	expect(not OceanSurface.inside_hull(Vector3(0.0, 0.0, 4.0), centre, half, rot), "rotated hull frees +z")
 	surface.free()
+
+
+func test_render_offset_puts_waterline_a_third_up_the_dome() -> void:
+	var offset: float = OceanSurface.render_offset_m()
+	var model: SubPhysicsModel = SubPhysicsModel.new()
+	model.tank_water_t = 0.0
+	var frac: float = model.total_mass_t() / model.displacement_t
+	var waterline: float = SubPhysicsModel.hull_bottom() + frac * (SubPhysicsModel.hull_top() - SubPhysicsModel.hull_bottom())
+	var dome: Dictionary = SubLayout.dome()
+	var dome_bottom: float = (dome["centre"] as Vector3).y - float(dome["radius"])
+	var up: float = waterline - offset - dome_bottom
+	expect_near(up, 2.0 * float(dome["radius"]) / 3.0, 0.05)
+
+
+func test_render_offset_in_range_and_drives_surface() -> void:
+	var offset: float = OceanSurface.render_offset_m()
+	expect(offset >= 1.4 and offset <= 1.8, "offset %f" % offset)
+	expect_near(OceanSurface.SURFACE_Y, -offset)
+
+
+func test_snow_density_zero_above_rendered_surface() -> void:
+	# Depth below the rendered plane: world y above SURFACE_Y is negative depth.
+	expect_near(OceanSurface.snow_density(OceanSurface.SURFACE_Y - (OceanSurface.SURFACE_Y + 0.5)), 0.0)
+	expect_near(OceanSurface.snow_density(OceanSurface.SURFACE_Y - (OceanSurface.SURFACE_Y - 0.5)), 1.0)
+
+
+## Only these files may read the rendered surface; everything else stays on physics depth.
+func test_only_allowed_files_read_rendered_surface() -> void:
+	var allowed: PackedStringArray = ["src/world/ocean_surface.gd", "src/world/marine_snow.gd", "src/lab/terrain_lab.gd", "src/debug/dev_overlay.gd"]
+	var offenders: PackedStringArray = []
+	var stack: Array[String] = ["res://src"]
+	while not stack.is_empty():
+		var dir: String = stack.pop_back()
+		for sub: String in DirAccess.get_directories_at(dir):
+			stack.append(dir + "/" + sub)
+		for f: String in DirAccess.get_files_at(dir):
+			if not f.ends_with(".gd"):
+				continue
+			var path: String = dir + "/" + f
+			if allowed.has(path.trim_prefix("res://")):
+				continue
+			var text: String = FileAccess.get_file_as_string(path)
+			if text.contains("SURFACE_Y") or text.contains("render_offset_m"):
+				offenders.append(path)
+	expect(offenders.is_empty(), "reads rendered surface: %s" % ", ".join(offenders))
