@@ -1,0 +1,27 @@
+slug: octopus
+group: organics
+kind: element
+summary: 'The octopus: a rounded faceted mantle raised and set back from the arms'' root, two eyes on short bulges
+  facing +Z with pupil slits, eight curling octopus_arm instances at even angles, small flat teal spots. Static;
+  no script. About 0.40 m across.'
+tags:
+- octopus
+- creature
+- organic
+- static
+scene: res://assets/models/organics/octopus/octopus.tscn
+footprint_mm:
+- 377.2
+- 377.2
+stand_out_mm: 104.0
+mount: floor at Y=0, centred; eyes face +Z
+uses:
+- octopus_arm
+triangles: 4256
+built_by: tools/cadkit/scenes/octopus.py
+files:
+- component.yaml
+- octopus.glb
+- octopus.tscn
+- review/.gdignore
+- review/cameras.json
