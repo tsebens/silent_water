@@ -39,6 +39,9 @@ SITE  KESTREL CANYON
 @export var scan: ScanObjective
 @export var status_board: Label3D
 
+## Supplies who is incapacitated; the dive is lost when everyone is. Null: never.
+var incapacitation: CrewIncapacitation
+
 var phase: Phase = Phase.DIVING
 ## Seconds since the dive started (host clock, replicated with phase changes).
 var dive_time: float = 0.0
@@ -65,6 +68,9 @@ func _physics_process(delta: float) -> void:
 		Phase.DIVING:
 			dive_time += delta
 			max_depth = maxf(max_depth, controller.depth)
+			if incapacitation != null and incapacitation.all_incapacitated():
+				_lose()
+				return
 			if scan.complete and controller.surfaced:
 				_surfaced_timer += delta
 				if _surfaced_timer >= SURFACED_HOLD_SEC:
@@ -120,6 +126,10 @@ func _finish() -> void:
 
 
 func _on_contact() -> void:
+	_lose()
+
+
+func _lose() -> void:
 	if phase != Phase.DIVING:
 		return
 	phase = Phase.LOST
