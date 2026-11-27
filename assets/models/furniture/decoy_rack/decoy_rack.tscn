@@ -1,0 +1,60 @@
+[gd_scene format=3]
+
+[ext_resource type="PackedScene" path="res://assets/models/furniture/decoy_rack/decoy_rack_body.glb" id="1"]
+[ext_resource type="Script" path="res://src/interact/decoy_cradle.gd" id="2"]
+[ext_resource type="PackedScene" path="res://assets/models/furniture/decoy/decoy.tscn" id="3"]
+
+[sub_resource type="BoxShape3D" id="rack"]
+size = Vector3(0.32, 2.22822, 0.444)
+
+[node name="DecoyRack" type="Node3D"]
+
+[node name="Body" parent="." instance=ExtResource("1")]
+
+[node name="Collision" type="StaticBody3D" parent="."]
+
+[node name="Column" type="CollisionShape3D" parent="Collision"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.11411, 0.222)
+shape = SubResource("rack")
+
+[node name="Cradle1" type="Node3D" parent="."]
+script = ExtResource("2")
+transform = Transform3D(1, 0, 0, 0, 0.601815, -0.798636, 0, 0.798636, 0.601815, 0, 0.310761, 0.214131)
+
+[node name="Decoy1" parent="." instance=ExtResource("3")]
+transform = Transform3D(1, 0, 0, 0, 0.601815, -0.798636, 0, 0.798636, 0.601815, 0, 0.310761, 0.214131)
+
+[node name="Cradle2" type="Node3D" parent="."]
+script = ExtResource("2")
+transform = Transform3D(1, 0, 0, 0, 0.601815, -0.798636, 0, 0.798636, 0.601815, 0, 0.636442, 0.214131)
+
+[node name="Decoy2" parent="." instance=ExtResource("3")]
+transform = Transform3D(1, 0, 0, 0, 0.601815, -0.798636, 0, 0.798636, 0.601815, 0, 0.636442, 0.214131)
+
+[node name="Cradle3" type="Node3D" parent="."]
+script = ExtResource("2")
+transform = Transform3D(1, 0, 0, 0, 0.601815, -0.798636, 0, 0.798636, 0.601815, 0, 0.962124, 0.214131)
+
+[node name="Decoy3" parent="." instance=ExtResource("3")]
+transform = Transform3D(1, 0, 0, 0, 0.601815, -0.798636, 0, 0.798636, 0.601815, 0, 0.962124, 0.214131)
+
+[node name="Cradle4" type="Node3D" parent="."]
+script = ExtResource("2")
+transform = Transform3D(1, 0, 0, 0, 0.601815, -0.798636, 0, 0.798636, 0.601815, 0, 1.28781, 0.214131)
+
+[node name="Decoy4" parent="." instance=ExtResource("3")]
+transform = Transform3D(1, 0, 0, 0, 0.601815, -0.798636, 0, 0.798636, 0.601815, 0, 1.28781, 0.214131)
+
+[node name="Cradle5" type="Node3D" parent="."]
+script = ExtResource("2")
+transform = Transform3D(1, 0, 0, 0, 0.601815, -0.798636, 0, 0.798636, 0.601815, 0, 1.61349, 0.214131)
+
+[node name="Decoy5" parent="." instance=ExtResource("3")]
+transform = Transform3D(1, 0, 0, 0, 0.601815, -0.798636, 0, 0.798636, 0.601815, 0, 1.61349, 0.214131)
+
+[node name="Cradle6" type="Node3D" parent="."]
+script = ExtResource("2")
+transform = Transform3D(1, 0, 0, 0, 0.601815, -0.798636, 0, 0.798636, 0.601815, 0, 1.93917, 0.214131)
+
+[node name="Decoy6" parent="." instance=ExtResource("3")]
+transform = Transform3D(1, 0, 0, 0, 0.601815, -0.798636, 0, 0.798636, 0.601815, 0, 1.93917, 0.214131)

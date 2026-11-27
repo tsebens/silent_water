@@ -1,0 +1,41 @@
+slug: decoy_rack
+group: furniture
+kind: furniture
+summary: 'Decoy rack: a flat grey column of six tilted cradles one above another, each a DecoyCradle seating a decoy
+  (nose up toward the wall, tail out), with a hazard-striped plinth, an engraved plate and an orange grab rail.
+  An empty cradle is a bare tray with a tail stop.'
+tags:
+- decoy
+- rack
+- cradle
+- countermeasure
+- furniture
+- column
+scene: res://assets/models/furniture/decoy_rack/decoy_rack.tscn
+behaviour:
+  wire:
+    cradles: Cradle1..Cradle6, bottom to top (DecoyCradle; the decoy lies along its -Z, handle up +Y)
+    decoys: Decoy1..Decoy6 (DecoyItem), each placed at its cradle; call try_seat on the cradle to seat it
+footprint_mm:
+- 378
+- 448
+stand_out_mm: 448
+mount: floor at Y=0, back against the hull on Z=0, centred on the column, cradles face +Z
+uses:
+- decoy
+triangles: 1704
+triangle_budget: 4000
+triangles_by_part:
+  body: 264
+  decoys: 1440
+checks:
+  width_mm: 378.0
+  depth_mm: 448.0
+  height_mm: 2228.2
+  pitch_mm: 325.7
+  tilt_deg: 53.0
+built_by: tools/cadkit/scenes/decoy_rack.py
+files:
+- component.yaml
+- decoy_rack.tscn
+- decoy_rack_body.glb
