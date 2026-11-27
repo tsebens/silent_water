@@ -83,3 +83,7 @@ Spontaneous leaks are a Poisson process: the rate is `depth_factor(depth) / mean
 ## Emitters (M19.2)
 
 `SoundEmitter` (a node with a `sound_type`, `scale`, `world_position`) emits one event per `SoundType.period` while active; a one-off type (period 0) emits through `fire()`. The sub is the same: `Acoustics` sums every continuous system (sources and voices) and emits one combined event per period of `sub_combined.tres` (1 s) at `SubFrame.sub_transform.origin`; the type's intensity is the unit that sum is multiplied by. `add_impulse` also emits once, immediately, using `impact.tres`. `sub_intensity`, `breakdown`, `top_text` and the gauges stay continuous and unchanged.
+
+## The apex hears detections (M19.3)
+
+The apex no longer calls `heard_at`. It owns a `SoundDetector` whose `threshold_db` is `-hearing_gain_db`, so it hears any sound the old model scored at SNR ≥ 0. Detections become `SoundMemory` records in `ApexMonster.memories` (lifetime 20 s on the acoustics clock; kind recorded, unused). Each tick the brain's fix (`last_heard`) is the loudest memory weighted toward the recent, so a louder event elsewhere draws it away and a stale fix is dropped (`has_heard` false once all have faded). The SNR fed to `SuspicionModel` is the strongest among detections no older than `ApexMonster.HEARD_HOLD_SEC` (1.25 s, just over the sub's 1 s event period), so steady sub noise reads as it did before and the ladder and thresholds are unchanged.

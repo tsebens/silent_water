@@ -38,6 +38,9 @@ const CALL_INTERVALS: Dictionary = {
 }
 ## Swimming noise at 1 m: this at 2 m/s, +20 dB per tenfold speed.
 const SWIM_DB_AT_2MS: float = 100.0
+## A detection counts toward suspicion for this long (s): a little over the
+## sub's event period, so steady noise reads as continuous.
+const HEARD_HOLD_SEC: float = 1.25
 
 @export var tuning: SuspicionTuning
 ## Where the monster lives; it never leaves this box (world space).
@@ -70,6 +73,12 @@ var brain: SuspicionModel
 ## Host can disable the brain (tests drive it directly).
 var brain_enabled: bool = true
 
+## What it has heard, fading on the acoustics clock. The apex chases the
+## loudest of these, weighted toward the recent.
+var memories: SoundMemory.Store = SoundMemory.Store.new()
+## Its ears: registered with [Acoustics], threshold set from the tuning.
+var detector: SoundDetector
+
 var _sub_frame: SubFrame
 var _target: Vector3 = Vector3.ZERO
 var _retarget_timer: float = 0.0
@@ -83,6 +92,14 @@ func _ready() -> void:
 	if tuning == null:
 		tuning = SuspicionTuning.new()
 	brain = SuspicionModel.new(tuning)
+	detector = SoundDetector.new()
+	detector.name = "Hearing"
+	# Its hearing gain is the threshold: it hears anything within hearing_gain_db
+	# below the background, so a sound the old model scored at SNR >= 0 is heard.
+	detector.threshold_db = -tuning.hearing_gain_db
+	detector.world_position = position
+	detector.heard.connect(_on_heard)
+	add_child(detector)
 	_rng.randomize()
 	add_to_group(&"apex")
 	add_to_group(&"outside_sources")
@@ -100,6 +117,7 @@ func reset_to_spawn() -> void:
 	sync_alertness = brain.alertness
 	speed = 0.0
 	brain.reset()
+	memories.clear()
 	sync_state = brain.state
 	_target = spawn_position
 	_retarget_timer = 0.0
@@ -163,10 +181,9 @@ func _physics_process(delta: float) -> void:
 		speed = 0.0
 		return
 	var sub_pos: Vector3 = _sub_frame.sub_transform.origin
+	detector.world_position = position
 	if brain_enabled:
-		var heard: float = Acoustics.heard_at(position, _sub_frame)
-		var background: float = Acoustics.ambient_at(position)
-		brain.update(delta, brain.snr_db(heard, background), sub_pos, position)
+		_listen(delta)
 	if brain.state != sync_state:
 		var previous: int = sync_state
 		sync_state = brain.state
@@ -187,6 +204,44 @@ func _physics_process(delta: float) -> void:
 
 
 # --- Sound -------------------------------------------------------------------
+
+func _on_heard(event: SoundEvent) -> void:
+	if active and multiplayer.is_server():
+		memories.add(event, Acoustics.now())
+
+
+## The memory the apex chases: loudest, weighted toward the recent. Null when
+## everything has faded.
+func loudest_memory() -> SoundMemory:
+	return memories.loudest(Acoustics.now())
+
+
+## Strongest SNR (dB) among detections still fresh enough to count toward
+## suspicion; -100 when there are none.
+func fresh_snr_db() -> float:
+	var now: float = Acoustics.now()
+	var background: float = Acoustics.ambient_at(position)
+	var best: float = -100.0
+	for m: SoundMemory in memories.memories:
+		if now - m.time <= HEARD_HOLD_SEC:
+			best = maxf(best, brain.snr_db(m.intensity, background))
+	return best
+
+
+func _listen(delta: float) -> void:
+	var best: SoundMemory = loudest_memory()
+	if best != null:
+		brain.has_heard = true
+		brain.last_heard = best.position
+	else:
+		brain.has_heard = false
+	var fix: Vector3 = best.position if best != null else position
+	brain.update(delta, fresh_snr_db(), fix, position, true)
+	# update() only moves the fix on a conclusive signal; the chase follows the
+	# loudest memory regardless.
+	if best != null:
+		brain.last_heard = best.position
+
 
 ## Outside-audio hook: swimming noise, louder the faster it goes.
 func outside_db() -> float:

@@ -45,8 +45,10 @@ func snr_db(heard_intensity: float, background_intensity: float) -> float:
 
 ## Advances the model. [param snr]: from [method snr_db]. [param sub_pos]: true
 ## sub position (used only to place the noisy last-heard estimate).
-## [param monster_pos]: for the commit range check.
-func update(delta: float, snr: float, sub_pos: Vector3, monster_pos: Vector3) -> void:
+## [param monster_pos]: for the commit range check. With [param exact_fix] the
+## position is already a perceived one (from a sound detection): it is taken
+## as the fix as it stands, with no further error added.
+func update(delta: float, snr: float, sub_pos: Vector3, monster_pos: Vector3, exact_fix: bool = false) -> void:
 	if state == State.CONTACT:
 		return
 	last_snr_db = snr
@@ -55,8 +57,11 @@ func update(delta: float, snr: float, sub_pos: Vector3, monster_pos: Vector3) ->
 	if snr >= tuning.conclusive_snr_db:
 		time_since_conclusive = 0.0
 		has_heard = true
-		var err: float = maxf(tuning.position_error_at_0db - tuning.position_error_per_db * snr, tuning.position_error_min)
-		last_heard = sub_pos + _random_offset(err)
+		if exact_fix:
+			last_heard = sub_pos
+		else:
+			var err: float = maxf(tuning.position_error_at_0db - tuning.position_error_per_db * snr, tuning.position_error_min)
+			last_heard = sub_pos + _random_offset(err)
 	else:
 		time_since_conclusive += delta
 		if time_since_conclusive > tuning.grace_sec:
