@@ -80,6 +80,9 @@ func step(delta: float, held: bool) -> void:
 
 
 func _bail(tonnes: float) -> void:
+	if leaks == null and is_inside_tree():
+		# The leak system comes later in the tree than a panel instanced in the interior, so it had not joined its group at _ready.
+		leaks = get_tree().get_first_node_in_group(&"leak_system")
 	if tonnes > 0.0 and leaks != null and leaks.has_method(&"manual_bail"):
 		leaks.call(&"manual_bail", tonnes)
 

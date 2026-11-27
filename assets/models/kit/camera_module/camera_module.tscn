@@ -1,0 +1,38 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://src/science/camera_module.gd" id="1"]
+[ext_resource type="PackedScene" path="res://assets/models/kit/science_module_frame/science_module_frame.tscn" id="2"]
+[ext_resource type="PackedScene" path="res://assets/models/kit/camera_module/camera_module_face.glb" id="3"]
+[ext_resource type="PackedScene" path="res://assets/models/kit/linear_gauge/linear_gauge.tscn" id="4"]
+[ext_resource type="PackedScene" path="res://assets/models/kit/push_button/push_button.tscn" id="5"]
+
+[node name="CameraModule" type="Node3D"]
+script = ExtResource("1")
+
+[node name="Frame" parent="." instance=ExtResource("2")]
+
+[node name="Face" parent="." instance=ExtResource("3")]
+
+[node name="LightMeter" parent="." instance=ExtResource("4")]
+transform = Transform3D(0, 1, 0, -1, 0, 0, 0, 0, 1, -0.13, -0.047, 0.056)
+source_group = &"camera_modules"
+readout = &"light"
+min_value = 0
+max_value = 1
+warn_at = 0.5
+alarm_at = 0.15
+descending = true
+
+[node name="StillnessMeter" parent="." instance=ExtResource("4")]
+transform = Transform3D(0, 1, 0, -1, 0, 0, 0, 0, 1, -0.13, -0.091, 0.056)
+source_group = &"camera_modules"
+readout = &"stillness"
+min_value = 0
+max_value = 1
+warn_at = 0.5
+alarm_at = 0.15
+descending = true
+
+[node name="Shutter" parent="." instance=ExtResource("5")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.112, 0.046, 0.058)
+label = "shutter"

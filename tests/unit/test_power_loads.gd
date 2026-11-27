@@ -32,7 +32,7 @@ func _frames(n: int) -> void:
 
 
 func _pump_lever() -> Lever:
-	return game.get_node("Interior/Stations/Bilge/Pump") as Lever
+	return game.get_node("Interior/Stations/Ballast/Panel/BilgeSwitch") as Lever
 
 
 func test_cabin_breaker_darkens_cabin_lights() -> void:
