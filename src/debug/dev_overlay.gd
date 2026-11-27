@@ -68,6 +68,10 @@ func _unhandled_input(event: InputEvent) -> void:
 		DevSettings.toggle_night()
 		print("[dev] light preset: %s" % ("night" if DevSettings.night else "day"))
 		get_viewport().set_input_as_handled()
+	elif event.is_action_pressed(&"dev_impairment_level"):
+		var lvl: int = DevSettings.cycle_impairment_level()
+		print("[dev] bad-air view: %s" % ("off (real)" if lvl < 0 else "level %d (strength %.2f)" % [lvl + 1, DevSettings.forced_impairment()]))
+		get_viewport().set_input_as_handled()
 	elif event.is_action_pressed(&"dev_toggle_apex") and game != null:
 		var apex: ApexMonster = game.get_node_or_null("World/Apex") as ApexMonster
 		if apex != null:
@@ -320,6 +324,7 @@ static func stats_text(g: Game) -> String:
 	var b_word: String = "NEUTRAL" if absf(b) < 0.02 else ("POSITIVE (rising)" if b > 0.0 else "NEGATIVE (sinking)")
 	lines.append("MODE  %s  (F5)" % ("single-player: helm runs ballast" if DevSettings.single_player else "crew"))
 	lines.append("LIGHT  %s  (F7)" % ("night" if DevSettings.night else "day"))
+	lines.append("BAD-AIR VIEW  %s  (F8)" % ("real" if DevSettings.impairment_level < 0 else "forced level %d" % (DevSettings.impairment_level + 1)))
 	lines.append("SUB")
 	lines.append("  depth %.1f m   speed %+.2f m/s   heading %03.0f   pitch %+.0f°" % [c.depth, c.speed, c.heading_deg, c.pitch_deg])
 	lines.append("  vertical %+.2f m/s   buoyancy %s %+.2f m/s²" % [c.vertical_speed, b_word, b])
