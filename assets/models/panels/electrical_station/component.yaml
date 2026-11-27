@@ -29,7 +29,7 @@ behaviour:
 footprint_mm:
 - 1000.0
 - 1300.0
-stand_out_mm: 86.0
+stand_out_mm: 101.0
 mount: back on Z=0 against the hull, centred on the board (X and Y); controls toward +Z; the board's centre stands
   1.1 m above the floor (Y -650 is knee height, Y +650 head height)
 operator_eye_m:
@@ -105,7 +105,7 @@ uses:
 - indicator_lamp
 - gauge
 - linear_gauge
-triangles: 3664
+triangles: 3852
 triangles_by_part:
   body: 312
 checks:
@@ -119,7 +119,7 @@ checks:
     BreakerFans: 691.7
     BreakerHelm: 631.4
     BreakerDisplays: 625.4
-    GeneratorToggle: 607.0
+    GeneratorToggle: 596.8
   sight_lines: 18
   reach_limit_mm: 1100.0
 built_by: tools/cadkit/scenes/electrical_station.py

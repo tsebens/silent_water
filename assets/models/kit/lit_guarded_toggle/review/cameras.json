@@ -1,60 +1,136 @@
 [
  {
-  "name": "front_dark",
+  "name": "closed_three_quarter",
+  "pos": [
+   0.12,
+   0.12000000000000001,
+   0.2
+  ],
+  "look_at": [
+   0,
+   0.02,
+   0.03
+  ],
+  "fov": 45.0
+ },
+ {
+  "name": "closed_operator_eye",
   "pos": [
    0,
-   0,
+   0.5700000000000001,
    0.5
   ],
   "look_at": [
    0,
-   0,
-   0
+   0.02,
+   0.03
   ],
-  "ortho": 0.2
+  "fov": 14.0
  },
  {
-  "name": "lamp_dark",
+  "name": "closed_side",
   "pos": [
-   0.03,
-   0.07,
-   0.1
+   0.35,
+   0.02,
+   0.03
   ],
   "look_at": [
    0,
-   0.056,
-   0.005
+   0.02,
+   0.03
   ],
-  "fov": 40
+  "fov": 45.0
  },
  {
-  "name": "front_on",
+  "name": "closed_red",
+  "pos": [
+   0.12,
+   0.12000000000000001,
+   0.2
+  ],
+  "look_at": [
+   0,
+   0.02,
+   0.03
+  ],
+  "fov": 45.0,
+  "light": "red"
+ },
+ {
+  "name": "lifted_three_quarter",
+  "pos": [
+   0.12,
+   0.12000000000000001,
+   0.2
+  ],
+  "look_at": [
+   0,
+   0.02,
+   0.03
+  ],
+  "fov": 45.0,
+  "cap_open": true
+ },
+ {
+  "name": "lifted_operator_eye",
   "pos": [
    0,
-   0,
+   0.5700000000000001,
    0.5
   ],
   "look_at": [
    0,
-   0,
-   0
+   0.02,
+   0.03
   ],
-  "ortho": 0.2,
-  "on": true
+  "fov": 14.0,
+  "cap_open": true
  },
  {
-  "name": "lamp_lit",
+  "name": "lifted_side",
   "pos": [
-   0.03,
-   0.07,
-   0.1
+   0.35,
+   0.02,
+   0.06
   ],
   "look_at": [
    0,
-   0.056,
-   0.005
+   0.02,
+   0.06
   ],
-  "fov": 40,
-  "on": true
+  "fov": 45.0,
+  "cap_open": true
+ },
+ {
+  "name": "on_three_quarter",
+  "pos": [
+   0.12,
+   0.12000000000000001,
+   0.2
+  ],
+  "look_at": [
+   0,
+   0.02,
+   0.03
+  ],
+  "fov": 45.0,
+  "on": true,
+  "cap_open": true
+ },
+ {
+  "name": "on_side",
+  "pos": [
+   0.35,
+   0.02,
+   0.06
+  ],
+  "look_at": [
+   0,
+   0.02,
+   0.06
+  ],
+  "fov": 45.0,
+  "on": true,
+  "cap_open": true
  }
 ]

@@ -1,33 +1,40 @@
 slug: lit_guarded_toggle
 group: kit
 kind: control
-summary: Guarded two-position toggle on a tall plate; light grey bat swings +/-40 deg and snaps to on or off. A
-  real indicator lamp above the guard is lit while the switch is on and dark while off, with nothing to wire.
+summary: Guarded two-position toggle under a hinged cap, on a tall plate. Click lifts the cap, a second click sets
+  the switch on and the cap stays open; click from on sets it off and closes the cap; a lifted cap over an off switch
+  drops after 5 s. A real indicator lamp above the cap is lit while the switch is on and dark while off, visible
+  with the cap closed, with nothing to wire.
 tags:
 - toggle
 - switch
 - guarded
+- cap
+- cover
 - on-off
 - lamp
 - lit
 - safety
 scene: res://assets/models/kit/lit_guarded_toggle/lit_guarded_toggle.tscn
 behaviour:
-  script: SwitchLever
-  values: 0 off (bat down, lamp dark), 1 on (bat up, lamp lit)
+  script: GuardedSwitch
+  values: 0 off (bat down, cap closed, lamp dark), 1 on (bat up, cap open, lamp lit)
   signal: value_changed
+  cap: child node `Cap` (hinge pivot), closed by default; cap_changed(open)
 base: 1x3
 footprint_mm:
 - 56.0
 - 176.0
-stand_out_mm: 56.0
-mount: back on Z=0, centred; front +Z; on is toward +Y
+stand_out_mm: 71.0
+stand_out_open_mm: 138.0
+mount: back on Z=0, centred; front +Z; on is toward +Y; the cap's hinge is along its top edge, +Y
 set_on_instance:
   label: name at the aiming point
-triangles: 320
+triangles: 508
 built_by: tools/cadkit/scenes/lit_guarded_toggle.py
 files:
 - component.yaml
 - lit_guarded_toggle.tscn
 - lit_guarded_toggle_bat.glb
 - lit_guarded_toggle_body.glb
+- lit_guarded_toggle_cap.glb

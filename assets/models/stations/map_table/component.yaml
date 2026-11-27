@@ -55,7 +55,7 @@ uses:
 - guarded_toggle
 - indicator_lamp
 - gauge
-triangles: 4306
+triangles: 4494
 triangles_by_part:
   body: 1632
 checks:

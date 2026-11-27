@@ -394,7 +394,8 @@ the panel module). Read an existing script of the same kind before writing one:
 | --- | --- |
 | Shared solids | `control_base.py`, `gauge.py` |
 | Element (no base) | `push_button.py` |
-| Control on a base, with a moving part | `guarded_toggle.py`, `trackball.py` |
+| Control on a base, with a moving part | `trackball.py`, `guarded_toggle.py` |
+| Control under a hinged cap or guard (its own GLB, a pivot node on the hinge, closed by default; the entry declares `stand_out_open_mm`) | `guarded_toggle.py`, `drop_weights_button.py` |
 | Control group | `map_keypad.py` |
 | Furniture | `operator_seat.py` |
 | Station | `sonar_console.py` |
