@@ -13,7 +13,7 @@ footprint_mm:
 - 60
 - 250.0
 mount: centred on the origin, Y up, nose toward +Z
-triangles: 440
+triangles: 544
 built_by: tools/cadkit/scenes/herring.py
 files:
 - component.yaml

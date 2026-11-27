@@ -20,7 +20,7 @@ NOSE_Z, TAIL_Z = 125.0, -125.0
 MAX_TRIANGLES = 8000
 # (z, half height, half width, y offset) of the body's cross sections, tail to nose
 SECTIONS = [(-92, 7.5, 4.0, 0.0), (-62, 15.0, 7.5, 0.0), (-25, 25.0, 12.0, 0.0), (15, 30.0, 14.5, 0.0),
-            (55, 28.5, 14.0, -0.5), (88, 22.0, 11.0, -1.5), (110, 12.0, 7.0, -3.0), (125, 3.0, 2.5, -5.0)]
+            (55, 28.5, 14.0, -0.5), (73, 26.0, 13.0, -1.0), (75, 22.5, 11.6, -1.2), (88, 21.0, 10.8, -1.5), (110, 12.0, 7.0, -3.0), (125, 3.0, 2.5, -5.0)]
 RING = 12                                       # points round a section, 30 degrees apart
 BACK_SIN = 0.5                                  # the back is the part of a section above sin(angle) >= this
 FIN_T = 1.6
@@ -28,6 +28,8 @@ TAIL_PTS = [(7, -86), (15, -98), (25, -111), (38, -125), (27, -121), (14, -113),
             (-14, -113), (-27, -121), (-38, -125), (-25, -111), (-15, -98), (-7, -86)]       # (y, z)
 DORSAL_PTS = [(24, 30), (36, 17), (50, 0), (34, -4), (24, -12)]
 PECT_PTS = [(-10, 84), (-17, 66), (-28, 44), (-19, 55), (-12, 72)]
+# operculum (gill cover): a crescent plate on each side of the head, its rear edge on the step in the body
+GILL_PTS = [(13, 75), (13, 82), (6, 88), (-4, 89), (-13, 85), (-19, 78), (-21, 75)]
 PELVIC_PTS = [(-25, 10), (-40, -6), (-27, -9)]
 
 
@@ -66,11 +68,12 @@ def solids() -> list[Solid]:
     dorsal = _plate(DORSAL_PTS)
     pect = _paired(PECT_PTS, 9.0, 28.0)
     pelvic = _paired(PELVIC_PTS, 3.5, 30.0)
+    gills = [at(_plate(GILL_PTS), x=11.3 * s) for s in (1, -1)]
     eyes_ring = [at(prism(8, 6.5, 1.8), x=8.4 * s, y=4.0, z=100.0, ry=90 * s) for s in (1, -1)]
     eyes_pupil = [at(prism(8, 3.6, 2.6), x=8.4 * s, y=4.0, z=100.0, ry=90 * s) for s in (1, -1)]
 
     parts = [(back, "fish_back"), (flank, "fish_flank"), (tail, "fish_fin"), (dorsal, "fish_fin"),
-             *[(f, "fish_fin") for f in pect + pelvic], *[(e, "fish_flank") for e in eyes_ring],
+             *[(f, "fish_fin") for f in pect + pelvic], *[(g, "fish_fin") for g in gills], *[(e, "fish_flank") for e in eyes_ring],
              *[(e, "trim_black") for e in eyes_pupil]]
     # centre the whole fish on the origin in X and Y (Z is designed about it)
     lo = [min(bbox_mm(p)[0][i] for p, _ in parts) for i in range(3)]
