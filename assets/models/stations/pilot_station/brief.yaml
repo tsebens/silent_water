@@ -54,7 +54,7 @@ functions:
   # Left wing, from the gap outward.
   - id: depth_finder
     display: a small digital 2D trace of the sea floor under and ahead of the sub, like a modern echo sounder, in a letterbox bezel
-    status: control only; new display behaviour. DROPPED from the strip by #605 (the true hemisphere leaves each wing about 520 mm; #633 restores it). Also in #605 (stopgap, restored by #633): the speed and noise gauges shrink to radius 0.055 m and stack on one left-wing facet (the noise repeater moves left), the switch pitch is 66 mm, and the three lamps sit over the four switches on one right-wing facet.
+    status: control only; new display behaviour. Restored by #686 as the first instrument from the gap on the left wing, with the hologram above it, then the speed/throttle gauge and noise repeater stacked on one facet (the #605 stopgap is gone). The wings are equal in length; the apex gap is at least 400 mm (the glass sets where the wings can start, so the entry reports the real figure).
   - id: hologram
     display: the pilot's small hologram, immediately above the depth finder, up and to the side of the gap; the map table's display model, always centred on the sub, about 20 cm
     binds: HoloMap (PilotHolo); zoom on the mouse wheel while seated at the helm
@@ -74,11 +74,11 @@ functions:
     display: the existing noise repeater gauge
     status: implemented
   - id: warning_lamps
-    display: three indicator lamps in a row beside the switches, each lit when its condition holds; BILGE above a quarter of SubPhysicsModel.max_surfaceable_bilge_t() (about 2.5 t); CO2 at 0.75% (half the 1.5% first-impairment level in the design doc's Life support table); LOW O2 below 20% of the O2 tank
+    display: three indicator lamps in one row along the top edge of the right wing, below the hologram's top, each lit when its condition holds; BILGE above a quarter of SubPhysicsModel.max_surfaceable_bilge_t() (about 2.5 t); CO2 at 0.75% (half the 1.5% first-impairment level in the design doc's Life support table); LOW O2 below 20% of the O2 tank
     binds: bilge from SubController.bilge_water_t; CO2 and O2 from the life support model
     status: bilge can be wired now; CO2 and O2 are designed but not simulated (build and place their lamps, unwired)
   - id: light_switches
-    control: four toggles at the right wing's end; external lights on/off; external light colour, halogen or red; cabin lights on/off; cabin light colour, standard or red
+    control: four lit_toggle instances at the seat's armrest anchors (#685), under their existing node names, not on the strip; external lights on/off; external light colour, halogen or red; cabin lights on/off; cabin light colour, standard or red
     binds: the Headlight (SpotLight3D with a PaletteLight) and CabinLights (its stealth property swaps cabin lights to light_stealth_red)
     status: CabinLights.stealth exists but nothing switches it; headlight on/off and colour are new; the cabin dimmer lever stays as it is (it sets the level, the switch turns them on and off)
 
@@ -87,6 +87,7 @@ constraints:
   frame: floor at Y=0 (the cockpit floor, one step below the main deck), seat on the centreline, pilot facing -Z (forward, toward the dome)
   seated_eye_height_m: 1.15   # PilotSeat's eye height today
   reach_m: 0.75
+  forward_view: the depth finder, hologram, navball and multidisplay centres lie within 70 degrees of the seated eye's forward axis (centre-based; the entry reports each centre and worst-corner angle). The limit moved from 35 to 60 to 70 because a strip lying along a 2.2 m hemisphere, 0.25 to 0.5 m below the eye and 0.9 m ahead, cannot do better, so 35 is out of reach (the best first instruments are 53 degrees, the multidisplay 67.5 at its centre). The speed gauge, lamps and noise repeater are exempt.
   sight_line: nothing crosses the gap at the apex, and nothing on the strip rises into the forward view above the hologram's top
   context: the dome glass and rim ring from the hull (assets/models/vehicles/sub_interior), so the strip is checked against the glass it sits against
   triangle_budget: 12000

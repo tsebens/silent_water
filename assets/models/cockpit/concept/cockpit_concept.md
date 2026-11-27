@@ -90,16 +90,16 @@ full specification is on #446.
   `pilot_strip_primary.png` (a tilted fascia with orange-edged end caps either side of the gap).
   `pilot_strip_reference.png` shows the hologram up and to the side beside a letterbox depth finder.
 - **Left wing, from the gap outward:** the **depth finder** (a 2D digital trace of the sea floor) with the
-  **hologram** immediately above it; the **multidisplay**; the **speed / throttle** gauge.
-- **Right wing, from the gap outward:** the **navball**; the **noise repeater**; three **warning lamps**
-  (BILGE, CO2, LOW O2); the four **light switches** (external on/off, external colour halogen or red, cabin
-  on/off, cabin colour standard or red).
-- **As built against the true hemisphere (#605, a stopgap until #633):** each wing has about 520 mm of facet
-  along the glass, so the strip is shorter than drawn. Dropped: the **depth finder** (the hologram now stands
-  above the multidisplay). Shrunk: the speed and noise gauges (radius 0.055 m, was 0.10 and 0.11 m), the
-  switch pitch (66 mm, was 84 mm) and the facet margins (14 mm, was 30 mm). Stacked: the speed gauge over the
-  noise repeater on one facet of the left wing, and the three lamps over the four switches on one facet of
-  the right wing. The noise repeater therefore moved from the right wing to the left.
+  **hologram** immediately above it; then the **speed / throttle** gauge and the **noise repeater** stacked on one facet.
+- **Right wing, from the gap outward:** the **navball**, then the **multidisplay**; the three **warning lamps**
+  (BILGE, CO2, LOW O2) run in one row along its top edge.
+- **Light switches:** the four toggles (external on/off, external colour halogen or red, cabin on/off, cabin colour
+  standard or red) are `lit_toggle`s at the seat's armrest anchors, not on the strip.
+- **As built against the true hemisphere (#686, replacing the #605 stopgap):** two equal wings with an apex gap of at
+  least 400 mm (about 700 mm as built, because the glass sets where the wings can start), the larger multidisplay and
+  navball, and a forward-view check: the depth finder, hologram, navball and multidisplay centres lie within 70 degrees
+  of the seated eye's forward axis. The limit moved from 35 to 60 to 70 because the strip lies along a 2.2 m
+  hemisphere, 0.25 to 0.5 m below the eye; 35 was out of reach.
 - **Speed / throttle:** two needles, centred, the speed scale at plus and minus the sub's top forward speed,
   computed from the physics model so it follows tuning.
 - **Multidisplay (#458):** a configurable round display, with four widget slots, rate chevrons and a
