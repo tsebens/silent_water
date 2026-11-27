@@ -1,0 +1,27 @@
+slug: anglerfish
+group: organics
+kind: organic
+summary: 'A faceted static anglerfish about 20 cm long: bulky head, open mouth with separate teeth, lure stalk and
+  bulb, fins.'
+tags:
+- organic
+- creature
+- anglerfish
+- static
+- faceted
+scene: res://assets/models/organics/anglerfish/anglerfish.tscn
+size_m:
+- 0.094
+- 0.173
+- 0.2
+frame: centred on the origin, Y up, mouth toward +Z
+mount: 'none: free-standing, centred on the origin (no mount face)'
+triangles: 654
+teeth: 24
+built_by: tools/cadkit/scenes/anglerfish.py
+files:
+- anglerfish.tscn
+- anglerfish_body.glb
+- component.yaml
+- review/.gdignore
+- review/cameras.json

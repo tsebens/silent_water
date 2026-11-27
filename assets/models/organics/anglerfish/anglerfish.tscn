@@ -1,0 +1,7 @@
+[gd_scene format=3]
+
+[ext_resource type="PackedScene" path="res://assets/models/organics/anglerfish/anglerfish_body.glb" id="1"]
+
+[node name="Anglerfish" type="Node3D"]
+
+[node name="Body" parent="." instance=ExtResource("1")]
