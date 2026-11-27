@@ -76,6 +76,12 @@ func _ready() -> void:
 	add_to_group(&"noise_sources")
 
 
+## Host: spends [param tonnes] of ballast air for something other than blowing
+## (a decoy launch). False, nothing spent, when there is not enough.
+func spend_air(tonnes: float) -> bool:
+	return model.spend_air(tonnes)
+
+
 ## Host: back to the start of the dive with every control at rest.
 func reset_dive() -> void:
 	model = SubPhysicsModel.new()

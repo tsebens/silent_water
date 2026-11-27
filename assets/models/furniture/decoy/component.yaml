@@ -1,0 +1,30 @@
+slug: decoy
+group: furniture
+kind: furniture
+summary: 'Noisemaker decoy: a stubby round-nosed torpedo in hazard yellow with a black band, finned tail cap, NOISEMAKER
+  label plate and an orange carry handle. DecoyItem carries it; DecoyCradle seats it.'
+tags:
+- decoy
+- noisemaker
+- torpedo
+- countermeasure
+- carried
+scene: res://assets/models/furniture/decoy/decoy.tscn
+behaviour:
+  script: DecoyItem
+  values: carried/seated state
+  signal: carried_changed
+  wire: seat in a DecoyCradle (rack slot or launch drawer)
+footprint_mm:
+- 160
+- 550.0
+stand_out_mm: 160
+mount: lies along -Z (nose -Z), centred on the origin with its axis through it, handle up (+Y)
+set_on_instance:
+  lift_height, carry_offset: carry motion
+triangles: 240
+built_by: tools/cadkit/scenes/decoy.py
+files:
+- component.yaml
+- decoy.glb
+- decoy.tscn
