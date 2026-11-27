@@ -24,6 +24,7 @@
 [ext_resource type="PackedScene" path="res://assets/models/stations/pilot_station/pilot_station.tscn" id="pilot_station"]
 [ext_resource type="PackedScene" path="res://assets/models/panels/electrical_station/electrical_station.tscn" id="electrical_station"]
 [ext_resource type="PackedScene" path="res://assets/models/panels/engineering_station/engineering_station.tscn" id="engineering_station"]
+[ext_resource type="PackedScene" path="res://assets/models/stations/life_support/life_support.tscn" id="life_support_station"]
 [ext_resource type="Material" path="res://assets/palette/roles/trim_black.tres" id="hose_mat"]
 [ext_resource type="Script" path="res://src/interact/joystick_indicator.gd" id="joy_ind"]
 [ext_resource type="Script" path="res://src/sub/headlight_switch.gd" id="headlight_switch"]
@@ -303,10 +304,11 @@ colour = NodePath("../Anchors/ExternalColourSwitch")
 script = ExtResource("station_placement")
 station_id = &"sonar"
 placements = {
-"../Sonar": Vector3(0.135, 0, -0.35)
+"../Sonar": Vector3(0.438, 0, 0)
 }
 
 [node name="Sonar" parent="Stations" instance=ExtResource("sonar_console")]
+transform = Transform3D(0, 0, -1, 0, 1, 0, 1, 0, 0, 0, 0, 0)
 
 [node name="Ballast" type="Node3D" parent="Stations"]
 script = ExtResource("station_placement")
@@ -366,6 +368,16 @@ placements = {
 
 [node name="Panel" parent="Stations/Engineering" instance=ExtResource("electrical_station")]
 rotation = Vector3(0, -1.5708, 0)
+
+[node name="LifeSupport" type="Node3D" parent="Stations"]
+script = ExtResource("station_placement")
+station_id = &"life_support"
+placements = {
+"Station": Vector3(-0.25, 0, 0)
+}
+
+[node name="Station" parent="Stations/LifeSupport" instance=ExtResource("life_support_station")]
+rotation = Vector3(0, 1.5708, 0)
 
 [node name="StatusBoardPlacement" type="Node3D" parent="Stations"]
 script = ExtResource("station_placement")

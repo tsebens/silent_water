@@ -40,10 +40,32 @@ func test_sonar_and_seat_positions() -> void:
 	expect(s.x > 0.8 and s.x < 1.3, "sonar is starboard, got %s" % s.x)
 	expect_near(s.z, -2.95)
 	expect_near(s.y, 0.0)
+	expect_eq(String(SubLayout.record(&"sonar")["faces"]), "starboard", "sonar faces the starboard hull")
 	var seat: Vector3 = SubLayout.position(&"sonar_seat")
-	expect_near(seat.z, -2.3)
-	expect(seat.z > s.z, "the seat is aft of the desk")
-	expect(seat.x > 0.0, "the seat is starboard")
+	expect_near(seat.z, s.z, 0.001, "the seat is level with the desk along the hull")
+	expect(seat.x > 0.0 and seat.x < s.x, "the seat is on the aisle side of the desk")
+
+
+func test_starboard_wall_runs_sonar_science_countermeasures() -> void:
+	var sonar: Rect2 = SubLayout.footprint(&"sonar")
+	var sci: Rect2 = SubLayout.footprint(&"science")
+	var cm: Rect2 = SubLayout.footprint(&"countermeasures")
+	expect(SubLayout.position(&"science").x > 0.0, "science is starboard")
+	expect(sci.position.y >= sonar.end.y - 0.001, "science is aft of sonar")
+	expect(sci.end.y <= cm.position.y + 0.001, "science is forward of countermeasures")
+	expect_near(cm.end.y, 1.5, 0.001, "countermeasures end at the bulkhead")
+	expect(sci.size.y >= 1.8, "science takes the bulk of the wall (%f m)" % sci.size.y)
+
+
+func test_lockers_are_port_aft_of_the_map_table_and_clear_of_the_way_out() -> void:
+	expect(SubLayout.position(&"lockers").x < 0.0, "lockers are port")
+	expect(SubLayout.position(&"lockers").z > SubLayout.position(&"map_table").z, "lockers are aft of the map table")
+	var lk: Rect2 = SubLayout.footprint(&"lockers")
+	expect(not lk.grow(-0.001).intersects(SubLayout.footprint(&"tower_ladder")), "lockers clear of the tower ladder")
+	expect(not lk.grow(-0.001).intersects(SubLayout.footprint(&"lock_out_trunk")), "lockers clear of the lock-out trunk")
+	expect_near(SubLayout.position(&"lock_out_trunk").x, 0.0, 0.001, "the hatch is on the centreline")
+	expect_near(SubLayout.position(&"lock_out_trunk").z, 0.5, 0.001, "the hatch is at z 0.5")
+	expect(not SubLayout.has(&"science") or SubLayout.position(&"science").x > 0.0, "no port science reservation")
 
 
 func test_map_table_position() -> void:
