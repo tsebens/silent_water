@@ -1,15 +1,15 @@
 ok   pilot            z=-3.90  deck 0.85 m  end of the hull, no aisle needed (widest gap 0.07 m)  headroom 2.43 m
-ok   sonar            z=-2.95  deck 2.36 m  widest free aisle 1.89 m (need 0.8)  headroom 2.31 m
-ok   sonar_seat       z=-2.30  deck 2.62 m  widest free aisle 1.47 m (need 0.8)  headroom 2.32 m
-ok   countermeasures  z=-1.35  deck 2.77 m  widest free aisle 1.70 m (need 0.8)  headroom 2.33 m
-ok   map_table        z=-1.25  deck 2.68 m  widest free aisle 1.47 m (need 0.8); hologram 0.70 m of 1.25 m available  headroom 2.33 m
-ok   science          z=+0.45  deck 2.85 m  widest free aisle 0.97 m (need 0.8)  headroom 2.33 m
+ok   sonar            z=-2.95  deck 2.36 m  widest free aisle 1.42 m (need 0.8)  headroom 2.31 m
+ok   sonar_seat       z=-2.95  deck 2.38 m  widest free aisle 1.44 m (need 0.8)  headroom 2.31 m
+ok   science          z=-1.40  deck 2.67 m  widest free aisle 1.60 m (need 0.8)  headroom 2.33 m
+ok   countermeasures  z=+1.25  deck 2.81 m  widest free aisle 2.01 m (need 0.8)  headroom 2.33 m
+ok   map_table        z=-1.25  deck 2.68 m  widest free aisle 1.60 m (need 0.8); hologram 0.70 m of 1.25 m available  headroom 2.33 m
 ok   engineering      z=+2.30  deck 2.52 m  widest free aisle 1.31 m (need 0.8)  headroom 2.32 m
 ok   life_support     z=+2.30  deck 2.56 m  widest free aisle 1.59 m (need 0.8)  headroom 2.32 m
 ok   ballast          z=+3.40  deck 1.89 m  widest free aisle 1.14 m (need 0.8)  headroom 2.28 m
 ok   bilge            z=+4.35  deck 0.93 m  end of the hull, no aisle needed (widest gap 0.01 m)  headroom 2.14 m
 ok   scanner          z=+3.55  deck 2.09 m  widest free aisle 1.14 m (need 0.8)  headroom 2.27 m
 ok   lock_out_trunk   z=+0.50  deck 2.85 m  widest free aisle 0.97 m (need 0.8)  headroom 2.33 m
-ok   tower_ladder     z=+1.20  deck 2.82 m  widest free aisle 2.02 m (need 0.8)  headroom 2.33 m
-ok   lockers          z=+1.20  deck 2.82 m  widest free aisle 2.02 m (need 0.8)  headroom 2.33 m
+ok   tower_ladder     z=+1.20  deck 2.82 m  widest free aisle 2.01 m (need 0.8)  headroom 2.33 m
+ok   lockers          z=+0.40  deck 2.86 m  widest free aisle 0.98 m (need 0.8)  headroom 2.33 m
 0 problem(s)
