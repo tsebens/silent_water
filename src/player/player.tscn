@@ -1,8 +1,10 @@
-[gd_scene load_steps=11 format=3]
+[gd_scene load_steps=12 format=3]
 
 [ext_resource type="Script" path="res://src/player/player.gd" id="1"]
 [ext_resource type="Script" path="res://src/player/underwater_view.gd" id="2"]
 [ext_resource type="Shader" path="res://src/player/underwater_view.gdshader" id="3"]
+
+[ext_resource type="Script" path="res://src/life_support/player_impairment.gd" id="4"]
 
 [sub_resource type="CapsuleShape3D" id="shape"]
 radius = 0.3
@@ -78,3 +80,6 @@ mesh = SubResource("uw_quad")
 [node name="Sync" type="MultiplayerSynchronizer" parent="."]
 replication_interval = 0.033
 replication_config = SubResource("repl")
+
+[node name="Impairment" type="Node" parent="."]
+script = ExtResource("4")
