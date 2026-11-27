@@ -8,8 +8,9 @@ This document is the spec for asset work. The role prompts in `.github/agents/` 
 document disagree, this document wins. The evidence behind each rule is in
 [`research/scene_assembly_spike.md`](research/scene_assembly_spike.md).
 
-Out of scope: organic assets (creatures, terrain), which use the image-to-3D route in Asset Studio
-([`asset_pipeline.md`](asset_pipeline.md)), and the hull, which is generated from `program.yaml` by a parametric script.
+Organic assets (creatures, terrain) keep the image-to-3D route in Asset Studio ([`asset_pipeline.md`](asset_pipeline.md))
+for production; building them through cadkit (the `organics` group) is an experiment under M20. The hull is out of scope:
+it is generated from `program.yaml` by a parametric script.
 
 ## 1. The split
 
@@ -38,6 +39,7 @@ Frames (metres in Godot, millimetres in CAD): X right, Y up, Z out of the mount 
 | `panels` | A board of controls that mounts on something (a rail, a wall, a desk) | As a kit part: back on Z=0, centred |
 | `furniture` | Seats and the like | On the floor at Y=0; an occupant faces -Z |
 | `stations` | Floor-standing, with an operator's position | Floor at Y=0, back on Z=0, operator at +Z facing -Z |
+| `organics` | Creatures and other organic forms (M20 experiment) | Centred on the origin, Y up, nose toward +Z; no mount face or floor, no mount checks |
 
 ## 2. The library, and scanning it
 
@@ -112,7 +114,7 @@ Refinements:
 - **A solid that needs more than a handful of CAD operations, or blows its triangle budget, is split.**
 
 Budgets (triangles, everything a scene instances included): kit 1,500; furniture 3,000; panels 4,000; stations
-12,000. `cadkit build` fails a scene over its group's budget. A scene whose look gate approved a larger budget
+12,000; organics 8,000 (the creature class). `cadkit build` fails a scene over its group's budget. A scene whose look gate approved a larger budget
 records it as `triangle_budget` in its catalogue entry (the life_support station: 24,000; the navball: 10,000, #467), and that replaces the group's.
 
 ## 4. When a part needs to differ: three tiers
@@ -385,7 +387,7 @@ need it; locally, `uv run --project tools/cadkit cadkit ...`.
 | `cadkit render <slug>` | PNGs of a scene from its review cameras, into `build/renders/<slug>/` (not committed) |
 | `cadkit sheet <slug>` | Review sheets in `<scene>/review/` (committed) |
 
-A build script (`tools/cadkit/scenes/<slug>.py`) declares `SLUG`, `GROUP` (`kit`, `furniture`, `stations`), `USES`
+A build script (`tools/cadkit/scenes/<slug>.py`) declares `SLUG`, `GROUP` (`kit`, `furniture`, `panels`, `stations`, `organics`), `USES`
 and `build()`. There is no list of scenes: adding a scene adds files and edits none. The helpers are in
 `cadkit.solids` (shapes, `expect`, GLB export), `cadkit.tscn` (the scene writer) and `cadkit.library` (paths, entries,
 the panel module). Read an existing script of the same kind before writing one:
