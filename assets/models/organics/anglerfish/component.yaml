@@ -11,13 +11,13 @@ tags:
 - faceted
 scene: res://assets/models/organics/anglerfish/anglerfish.tscn
 size_m:
-- 0.094
-- 0.173
+- 0.084
+- 0.1462
 - 0.2
 frame: centred on the origin, Y up, mouth toward +Z
 mount: 'none: free-standing, centred on the origin (no mount face)'
-triangles: 654
-teeth: 24
+triangles: 3936
+teeth: 27
 built_by: tools/cadkit/scenes/anglerfish.py
 files:
 - anglerfish.tscn

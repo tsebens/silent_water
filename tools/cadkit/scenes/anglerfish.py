@@ -17,6 +17,7 @@ import math
 
 import build123d as bd
 import numpy as np
+from scipy.interpolate import PchipInterpolator
 from scipy.spatial import ConvexHull
 
 from cadkit.solids import Solid, expect, bbox_mm, export_solids_glb
@@ -28,10 +29,30 @@ USES: list[str] = []
 LENGTH_MM = 200.0
 BODY, CAVITY, FIN, TOOTH = "interior_dark", "trim_black", "infra_metal", "concrete"
 
-HEAD_C = (0.0, 6.0, 138.0)             # head ellipsoid centre and radii
-HEAD_R = (44.0, 50.0, 62.0)
-MOUTH_UP_Y, MOUTH_LO_Y = 0.0, -22.0   # the upper lip's underside and the lower jaw's top, at the front; the gap is the open mouth
-TEETH_UP, TEETH_LO = 13, 11
+# body profile stations (z, half width, half height, centre y): one continuous teardrop from the tail root to the snout
+PZ = [0.0, 22.0, 48.0, 76.0, 104.0, 132.0, 158.0, 184.0, 206.0, 222.0]
+PRX = [6.0, 8.0, 13.0, 25.0, 38.0, 48.0, 52.0, 48.0, 36.0, 18.0]
+PRY = [9.0, 12.0, 20.0, 36.0, 56.0, 70.0, 74.0, 68.0, 52.0, 28.0]
+PCY = [3.0, 3.0, 3.0, 5.0, 7.0, 8.0, 8.0, 6.0, 3.0, 0.0]
+HEAD_Z = 120.0                         # where the head starts (the head is about half the length)
+YL = 14.0                              # the upper lip's underside
+ZB = 150.0                             # the underside flattens to the lip from here forward
+SLANT = 0.45                           # the upper face's backward lean per mm of height above the lip
+TEETH_UP, TEETH_LO = 14, 13
+
+
+def prof(z: float) -> tuple[float, float, float]:
+    return (float(PchipInterpolator(PZ, PRX)(z)), float(PchipInterpolator(PZ, PRY)(z)), float(PchipInterpolator(PZ, PCY)(z)))
+
+
+def lip_y(z: float) -> float:
+    """The upper lip's underside: sloping down toward the front, so the gape is a wedge, wide at the back and nearly shut at the tip."""
+    return 24.0 - 0.10 * (z - 150.0)
+
+
+def floor_y(z: float) -> float:
+    """The lower jaw's top surface: rising toward the tip, so the jaw is upturned."""
+    return -28.0 + 0.25 * max(0.0, z - 120.0)
 
 
 def hull(points) -> bd.Solid:
@@ -98,62 +119,110 @@ def cone(base_c, tip, r: float, sides: int = 4, phase: float = 0.0) -> bd.Solid:
     return hull(np.array(ring + [tip]))
 
 
-def teeth(upper: bool) -> list[bd.Solid]:
-    """A row of teeth round the front of a jaw, pointing across the mouth. Spacing and length vary a little."""
-    n = TEETH_UP if upper else TEETH_LO
+def loft(zs, rx_of, ry_of, cy_of, segs: int, jitter: float, seed: int) -> np.ndarray:
+    """Elliptical rings at the stations `zs`, each ring offset half a step from the last, jittered along the radius."""
+    rng = np.random.default_rng(seed)
+    pts = []
+    for i, z in enumerate(zs):
+        for j in range(segs):
+            th = 2 * math.pi * (j + 0.5 * (i % 2)) / segs
+            k = 1.0 + jitter * rng.uniform(-1, 1)
+            pts.append((rx_of(z) * k * math.cos(th), cy_of(z) + ry_of(z) * k * math.sin(th), z))
+    return np.array(pts)
+
+
+def chunks(pts: np.ndarray, segs: int, size: int, step: int) -> list[bd.Solid]:
+    """Hulls of overlapping runs of `size` consecutive rings, so the surface can be concave along its length (the neck
+    between head and tail) while each solid stays convex."""
+    rings = len(pts) // segs
     out = []
-    cz = HEAD_C[2] - 8.0
-    for k in range(n):
-        t = math.radians(-78 + 156 * k / (n - 1))        # round the front: -78 to +78 degrees from straight ahead
-        rx = (HEAD_R[0] - 7.0) if upper else (HEAD_R[0] - 4.0)
-        rz = (HEAD_R[2] - 7.0) if upper else (HEAD_R[2] - 4.0)
-        x, z = rx * math.sin(t), cz + rz * math.cos(t)
-        if upper:
-            ln = 15.0 + 5.0 * (1 + math.cos(k * 1.9)) / 2          # 12 to 16 mm
-            base = (x, MOUTH_UP_Y + 1.0, z)
-            tip = (x * 0.96, MOUTH_UP_Y - ln, z - 1.5)
-        else:
-            ln = 12.0 + 6.0 * (1 + math.cos(k * 2.3 + 1)) / 2        # 9 to 14 mm
-            base = (x, MOUTH_LO_Y - 1.0, z + 3.0)
-            tip = (x * 0.96, MOUTH_LO_Y + ln, z + 1.5)
-        out.append(cone(base, tip, 2.3 if k % 2 else 2.0, 4, phase=0.4 * k))
+    i = 0
+    while True:
+        j = min(i + size, rings)
+        k = i
+        while True:                    # a run squashed flat by the mouth cuts is widened until it is a solid
+            try:
+                out.append(hull(pts[k * segs:j * segs]))
+                break
+            except Exception:
+                k = max(0, k - 2)
+        if j >= rings:
+            return out
+        i += step
+
+
+def teeth(upper: np.ndarray, lower: np.ndarray) -> list[bd.Solid]:
+    """Rows of teeth round the front of each jaw rim, pointing across the mouth. Spacing and length vary a little."""
+    out = []
+    for is_up, rim, n in ((True, upper, TEETH_UP), (False, lower, TEETH_LO)):
+        xz = rim[:, [0, 2]]
+        hv = xz[ConvexHull(xz).vertices]
+        c = hv.mean(axis=0)
+        ang = np.arctan2(hv[:, 0] - c[0], hv[:, 1] - c[1])         # 0 = straight ahead (+Z)
+        order = np.argsort(ang)
+        arc = [(a, p) for a, p in zip(ang[order], hv[order]) if abs(a) <= math.radians(82)]
+        a_arr = np.array([a for a, _ in arc])
+        p_arr = np.array([p for _, p in arc])
+        for k in range(n):
+            t = math.radians(-78 + 156 * k / (n - 1))
+            x = float(np.interp(t, a_arr, p_arr[:, 0]))
+            z = float(np.interp(t, a_arr, p_arr[:, 1]))
+            x, z = x * 0.93, c[1] + (z - c[1]) * 0.93                  # a little inside the rim
+            if is_up:
+                ln = 15.0 + 6.0 * (1 + math.cos(k * 1.9)) / 2
+                y0 = lip_y(z) + 1.0
+                out.append(cone((x, y0, z), (x * 0.95, lip_y(z) - ln, z - 3.0), 2.3 if k % 2 else 2.0, 4, phase=0.4 * k))
+            else:
+                ln = 12.0 + 7.0 * (1 + math.cos(k * 2.3 + 1)) / 2
+                y0 = floor_y(z) - 1.0
+                out.append(cone((x, y0, z), (x * 0.95, floor_y(z) + ln, z + 3.0), 2.4 if k % 2 else 2.1, 4, phase=0.4 * k))
     return out
 
 
 def raw_solids() -> tuple[list[tuple[str, bd.Solid]], dict]:
     """Every part, as (role, solid), in the modelling frame (Z from the tail tip up to the mouth)."""
-    cx, cy, cz = HEAD_C
-    rx, ry, rz = HEAD_R
+    rx_of = lambda z: prof(z)[0]
+    ry_of = lambda z: prof(z)[1]
+    cy_of = lambda z: prof(z)[2]
     parts: list[tuple[str, bd.Solid]] = []
 
-    # head: an ellipsoid cloud, flattened onto the upper lip plane below and jittered into uneven facets
-    hp = ellipsoid(HEAD_C, HEAD_R, 6, 11, 0.04, seed=3)
-    upper = hp.copy()
-    upper[:, 1] = np.maximum(upper[:, 1], MOUTH_UP_Y)
-    # lower jaw: a shallower ellipsoid that sits lower and pokes further forward than the lip, flat on top
-    lp = ellipsoid((0.0, MOUTH_LO_Y - 10.0, cz + 6.0), (rx - 1.0, 36.0, rz + 2.0), 4, 9, 0.05, seed=5)
-    lower = lp.copy()
-    lower[:, 1] = np.minimum(lower[:, 1], MOUTH_LO_Y)
-    # the cavity: the dark inside of the mouth, shrunk so it shows only as the gap's depth
-    cav = ellipsoid((0.0, (MOUTH_UP_Y + MOUTH_LO_Y) / 2, cz - 6.0), (rx - 8.0, 10.0, rz - 8.0), 3, 8, 0.0)
-    cav[:, 1] = np.clip(cav[:, 1], MOUTH_LO_Y - 1.0, MOUTH_UP_Y + 1.0)
-    parts += [(BODY, hull(upper)), (BODY, hull(lower)), (CAVITY, hull(cav))]
+    # body and head: one continuous teardrop loft, denser over the head. The mouth end is cut by a slanted face (the upper
+    # lip projects furthest at the bottom and the forehead leans back) and the underside is flattened to the lip plane.
+    zs = list(np.linspace(0.0, 112.0, 30)) + list(np.linspace(118.0, 222.0, 44))
+    bp = loft(zs, rx_of, ry_of, cy_of, 40, 0.02, seed=3)
+    lipv = np.array([lip_y(z) for z in bp[:, 2]])
+    bp[:, 1] = np.where(bp[:, 2] >= ZB, np.maximum(bp[:, 1], lipv), bp[:, 1])
+    z_lip = 216.0                                                     # the lip tip's z, at the lip plane
+    zcut = z_lip - SLANT * (bp[:, 1] - YL)
+    bp[:, 1] = np.maximum(bp[:, 1], np.where(bp[:, 2] >= ZB, lipv, -1e9))
+    bp[:, 2] = np.minimum(bp[:, 2], zcut)
+    upper_rim = bp[(bp[:, 1] <= np.array([lip_y(z) for z in bp[:, 2]]) + 0.01) & (bp[:, 2] >= ZB)]
+    parts += [(BODY, h) for h in chunks(bp, 40, 6, 5)]
 
-    # body: three rings tapering from the head back to the tail root; sparse facets
-    ring = lambda z, x_r, y_r, n=7, off=0.0: [(x_r * math.cos(2 * math.pi * k / n + off), 4.0 + y_r * math.sin(2 * math.pi * k / n + off), z)
-                                              for k in range(n)]
-    body = ring(118.0, 40.0, 42.0) + ring(82.0, 30.0, 33.0, off=0.2) + ring(46.0, 12.0, 14.0)
-    parts.append((BODY, hull(np.array(body))))
+    # lower jaw: an upturned scoop that reaches past the lip, its top following the rising floor
+    jz = list(np.linspace(100.0, 240.0, 44))
+    jrx = lambda z: float(PchipInterpolator([100.0, 150.0, 200.0, 240.0], [36.0, 48.0, 40.0, 17.0])(z))
+    jbot = lambda z: float(PchipInterpolator([100.0, 150.0, 200.0, 240.0], [-56.0, -60.0, -50.0, -30.0])(z))   # the chin line, rising to the tip
+    jtop = lambda z: floor_y(z)
+    jp = loft(jz, jrx, lambda z: (jtop(z) - jbot(z)) / 2, lambda z: (jtop(z) + jbot(z)) / 2, 24, 0.03, seed=5)
+    lower_rim = np.array([(x, y, z) for (x, y, z) in jp if y > jtop(z) - 0.8 and z >= 150.0])
+    parts += [(BODY, h) for h in chunks(jp, 36, 6, 5)]
+
+    # the dark inside of the mouth
+    cz = 170.0
+    cav = np.array([(sx * w, y, z) for sx in (-1, 1) for (w, y, z) in
+                    ((30.0, lip_y(140.0) + 2.0, 140.0), (26.0, lip_y(196.0) + 2.0, 196.0), (30.0, floor_y(140.0) - 1.0, 140.0), (26.0, floor_y(196.0) - 1.0, 196.0))])
+    parts.append((CAVITY, hull(cav)))
 
     # fins: tail (fan), dorsal, ventral, a pectoral on each side
-    parts.append((FIN, disc((0.0, 4.0, 22.0), 0, 26.0, 34.0, 5.0, 9)))
-    parts.append((FIN, disc((0.0, 38.0, 82.0), 0, 22.0, 18.0, 5.0, 8)))
-    parts.append((FIN, disc((0.0, -22.0, 70.0), 0, 14.0, 11.0, 5.0, 7)))
+    parts.append((FIN, disc((0.0, 3.0, 8.0), 0, 30.0, 40.0, 5.0, 10)))
+    zd = 78.0
+    parts.append((FIN, disc((0.0, cy_of(zd) + ry_of(zd) + 8.0, zd), 0, 26.0, 24.0, 5.0, 10)))
+    zv = 70.0
+    parts.append((FIN, disc((0.0, cy_of(zv) - ry_of(zv) - 4.0, zv), 0, 14.0, 12.0, 5.0, 8)))
+    zp = 132.0
     for sx in (-1, 1):
-        stub = hull(np.array([(sx * 30.0, -4.0 + dy, 98.0 + dz) for dy in (-4.0, 4.0) for dz in (-4.0, 4.0)]
-                             + [(sx * 44.0, -4.0 + dy, 98.0 + dz) for dy in (-3.0, 3.0) for dz in (-3.0, 3.0)]))
-        parts.append((BODY, stub))
-        parts.append((FIN, disc((sx * 47.0, -4.0, 94.0), 0, 18.0, 20.0, 5.0, 9)))
+        parts.append((FIN, disc((sx * (rx_of(zp) + 5.0), -6.0, zp), 0, 22.0, 26.0, 5.0, 10)))
 
     # lure: a stalk up from the forehead, bent forward over the mouth, ending in a bulb
     def stick(a, b, r):
@@ -164,18 +233,20 @@ def raw_solids() -> tuple[list[tuple[str, bd.Solid]], dict]:
         ring_a = [a + r * (math.cos(2 * math.pi * k / 5) * u + math.sin(2 * math.pi * k / 5) * v) for k in range(5)]
         ring_b = [b + (r * 0.8) * (math.cos(2 * math.pi * k / 5) * u + math.sin(2 * math.pi * k / 5) * v) for k in range(5)]
         return hull(np.array(ring_a + ring_b))
-    forehead = (0.0, cy + ry - 6.0, cz + 4.0)
-    knee = (0.0, 108.0, cz - 14.0)
-    end = (0.0, 112.0, cz + 18.0)
-    parts.append((BODY, stick(forehead, knee, 4.2)))
-    parts.append((BODY, stick(knee, end, 3.4)))
-    parts.append((FIN, hull(ellipsoid((end[0], end[1] - 4.0, end[2] + 4.0), (8.0, 9.0, 10.0), 2, 6, 0.0))))
+    zf = 176.0
+    forehead = (0.0, cy_of(zf) + ry_of(zf) - 4.0, zf)
+    knee = (0.0, forehead[1] + 40.0, zf + 12.0)
+    end = (0.0, knee[1] + 8.0, zf + 52.0)
+    parts.append((BODY, stick(forehead, knee, 3.6)))
+    parts.append((BODY, stick(knee, end, 3.0)))
+    parts.append((FIN, hull(ellipsoid((end[0], end[1] - 2.0, end[2] + 4.0), (7.0, 8.0, 10.0), 2, 6, 0.0))))
 
     # eyes: small facets on each side of the upper head
+    ze = 192.0
     for sx in (-1, 1):
-        parts.append((FIN, hull(ellipsoid((sx * 31.0, 28.0, cz + 38.0), (4.5, 4.5, 4.5), 2, 5, 0.0))))
+        parts.append((FIN, hull(ellipsoid((sx * rx_of(ze) * 0.78, cy_of(ze) + ry_of(ze) * 0.45, ze), (4.5, 4.5, 4.5), 2, 5, 0.0))))
 
-    tooth = [(TOOTH, t) for t in teeth(True) + teeth(False)]
+    tooth = [(TOOTH, t) for t in teeth(upper_rim, lower_rim)]
     return parts + tooth, {"teeth": len(tooth)}
 
 
@@ -202,10 +273,10 @@ def solids() -> list[Solid]:
     tail = next(s for s in out if s.role == FIN)
     expect(tooth_z > 0, "the teeth are not toward +Z")
     expect(bbox_mm(tail.shape)[1][2] < 0.0, "the tail fin is not in the -Z half")
-    # the head is about half the body length: the head solid spans its share of the Z length
-    head = out[0]
-    hz = bbox_mm(head.shape)
-    expect(0.40 <= (hz[1][2] - hz[0][2]) / length <= 0.65, f"head is {(hz[1][2] - hz[0][2]) / length:.2f} of the length; the brief says about half")
+    # one continuous body: the main solid runs from the tail root to the snout, with its girth peak (the head) about half way
+    bzs = [bbox_mm(b.shape) for b in out if b.role == BODY]
+    expect((max(b[1][2] for b in bzs) - min(b[0][2] for b in bzs)) / length >= 0.7, "the body does not run the length of the fish")
+    expect(0.45 <= (HEAD_Z + 0.5 * (PZ[-1] - HEAD_Z) - PZ[0]) / PZ[-1] <= 0.85, "the head is not about half the length")
 
     teeth_solids = [s for s in out if s.role == TOOTH]
     expect(len(teeth_solids) >= 16, f"{len(teeth_solids)} teeth; the concept shows about twenty")
