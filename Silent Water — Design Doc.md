@@ -206,19 +206,70 @@ station's active ports. Each is a perforated cylinder full of absorbent beads.
 | 2.5% (25,000 ppm) | 1-hour emergency exposure limit | blur periods longer and more frequent; the edges of vision start to close in; movement slows and wanders |
 | 3% (30,000 ppm) | headache, laboured breathing, impaired judgement | clearly impaired |
 | 4% (40,000 ppm) | immediately dangerous to life (IDLH); dizziness, confusion | severe: most of the screen obscured, movement barely controllable |
-| 7% and above | unconsciousness within minutes | incapacitation (exact handling open) |
+| 7% and above | unconsciousness within minutes | incapacitation: the player drops (see *Collapse and rescue*) |
 
 - **Vision blurs** in periods that fade in and out. Escalation raises their frequency and length.
 - **Vision narrows** from the outside in; escalation obscures more of the screen.
 - **Movement slows and goes erratic.** An impairment vector is added to the player's input, pushing their
   movement around drunkenly. Escalation makes it longer and swings it further from the intended direction.
 
-**O2** is one big tank. The crew can only watch its level and make sure there is enough for the dive.
-Refills may come later; low-O2 effects are not designed yet.
+**O2** is one big tank, drained by each crew member breathing; `o2_level` is its fraction. A tank lasts four
+crew about 45 minutes, and there is no refill in a dive yet.
+
+- **O2 empty:** once the tank is empty the cabin's own oxygen starts to fall. The crew get **the same
+  impairment ladder as high CO2, only faster**. The simulation supplies the falling cabin-O2 value; the
+  effects work implements the ladder.
+- **Incapacitation and rescue:** a crew member who reaches the top of the ladder (7% CO2 and above, or
+  cabin O2 run out) collapses. They are not out of the game for good: they can be **rescued** and recover once
+  the air is fixed (new canisters, fans back on, or surfacing). See *Bad-air effects as built* below.
+- **The sub is lost once every crew member is incapacitated**, through the dive's loss path
+  (`DiveDirector.dive_lost`). A crew member who recovers before the last goes down prevents the loss.
+- **Venting at the surface:** when the sub is surfaced (`SubController.surfaced`), CO2 vents automatically back
+  to the 400 ppm baseline over about 30 seconds, whatever the fans are doing.
+
+**Bad-air effects as built.** Effects are per player and seen only by that player. The host runs one
+`ImpairmentModel` per player (`PlayerImpairment`, a child of the player) against the shared cabin air and
+replicates the strength and the incapacitated flag to every peer. All tunables are in one Resource,
+`ImpairmentParams` (`src/life_support/impairment_params.tres`); the values below are its shipped defaults.
+
+- **The ladder.** An effect strength from 0 to 1 is interpolated linearly between points on the CO2 scale,
+  so effects rise and fall smoothly:
+
+  | CO2 | 1.5% | 2.5% | 3% | 4% | 7% |
+  | --- | --- | --- | --- | --- | --- |
+  | Strength | 0 | 0.35 | 0.55 | 0.85 | 1.0 |
+
+  Below 1.5% there is nothing; above 7% it stays at 1.
+- **What strength drives.** *Blur* (`ImpairmentView`, a full-screen quad on the local camera, with no field-of-view
+  change or lens distortion): periods that fade in and out, with the period shrinking from 40 s to 9 s and
+  each period lengthening from 2 s to 7 s as strength goes 0 to 1; peak blur follows the strength. *Vignette*:
+  narrows from the edges, starting at strength 0.2 (about 2.5%) and reaching 0.9 at full strength.
+  *Movement* (`player.gd`): starting at strength 0.2, walking speed falls by up to 70% and a smooth wander is
+  added to the input, swinging up to 0.8 of its magnitude. A player at a station keeps the visual effects, but
+  station input is not scrambled. A dev toggle (F8) forces each level for tuning.
+- **Low O2 maps onto the same ladder.** Once the tank is empty and cabin O2 falls, the deficit (1 minus cabin
+  O2) is mapped linearly onto the ladder's CO2 axis: nothing up to a 2% deficit, the top of the ladder
+  (equivalent 7%) at a 50% deficit. Strength is the larger of the CO2 and O2 sources, so low oxygen runs the
+  same ladder faster than CO2 alone.
+- **Collapse.** When the equivalent CO2 (the larger of real CO2 and the O2 equivalent) reaches **7%
+  (70,000 ppm)**, the player drops: the camera falls to the floor and the body tilts flat, input is ignored,
+  and they cannot move, interact or operate anything. They can still look about a little and speak on voice.
+  Other players see the body down.
+- **Rescue and hysteresis.** A fallen player recovers only when the equivalent CO2 is below **4% (40,000 ppm)**.
+  The gap between 7% and 4% stops flicker. Recovery stands them up over a short animation and leaves a
+  **lingering blur**, full strength at first and fading to nothing over 12 s. Rescue is by fixing the air: new
+  canisters, fans back on, the breaker restored, or surfacing.
+- **Loss.** `DiveDirector` reads each player's flag through `CrewIncapacitation`; the dive is lost
+  (`dive_lost`) when every crew member is incapacitated, and not if one recovers first.
 
 **Alarm lamps.** The station's lamps have three levels: off, steady, flashing. CO2 goes steady at 7,000 ppm
 and flashes at 25,000 ppm. O2, as a fraction of the tank, goes steady at or below 0.25 and flashes at or
-below 0.10 (placeholders until depletion is modelled). Thresholds live in a `LifeSupportAlarmLevels` resource.
+below 0.10 (placeholders until the simulation is tuned). Thresholds live in a `LifeSupportAlarmLevels` resource.
+
+**Alarm chime.** The alarm sounds are a **quiet, distinct** chime: a gentle repeat while a lamp is steady and
+a faster, more urgent one while it flashes. It is a shared sound type (`src/noise/sound_types/`), played and
+heard, and a small noise source, so it has a small stealth cost. The station's two alarm lamps carry engraved
+**CO2** and **O2** plates, made in the station's build script.
 
 **Air volume.** The hull is about 10 m by 3.8 m by 3.0 m; after walls, bilge and equipment the free air is
 roughly 40 m³, to be measured from the blockout. In that volume 1 kg of CO2 is about 1.3% (13,000 ppm),
@@ -477,10 +528,12 @@ Steam integration and in-game voice, expeditions, cargo, divers, facilities, upg
 - ~~Whether charts stays its own station~~ Decided in M7: the map table is a shared holographic chart anyone can use; the pilot has a heading-up copy.
 - Whether to lock out crews of two. The lean is no lock, but no design effort goes toward two-person crews: target four, keep three viable.
 - Distinct sub types and hardware variants
-- Life support: what happens at incapacitating CO2; whether CO2 vents when the sub surfaces or docks;
-  whether O2 depletion and low-O2 effects are modelled; whether the storage holes angle toward the player;
-  whether the pivoting canister carriage is worth adding later; where the double-needle rate gauge sits on
-  the panel. Decided in chat: two active ports with open
+- Life support: ~~what happens at incapacitating CO2~~ (incapacitation and rescue; the sub is lost when everyone
+  is down), ~~whether CO2 vents when the sub surfaces or docks~~ (it vents at the surface in about 30 s),
+  ~~whether O2 depletion and low-O2 effects are modelled~~ (empty tank leads to the impairment ladder, faster),
+  ~~the alarm chime and the CO2/O2 lamp labels~~ (decided above); still open: whether the storage holes angle
+  toward the player; whether the pivoting canister carriage is worth adding later; where the double-needle rate
+  gauge sits on the panel. Decided in chat: two active ports with open
   cradles and six storage holes, a canister lasts four crew about 15 minutes, the station is a wall unit on
   the port-side hull of engineering carrying the O2 gauge.
 

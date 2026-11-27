@@ -61,6 +61,13 @@ def main() -> int:
         for r in reports:
             if r["headset_holder"] != by_role["Crew2"]["peer"]:
                 errors.append(f"{r['role']} thinks the headset is on {r['headset_holder']}, expected Crew2")
+    for r in reports:
+        if not r.get("saw_collapse"):
+            errors.append(f"{r['role']} never saw Crew1 collapse")
+        elif not r.get("saw_rescue"):
+            errors.append(f"{r['role']} saw Crew1 collapse but never stand up again")
+        if r.get("crew1_down"):
+            errors.append(f"{r['role']} still sees Crew1 down at report time")
     if reports:
         ref = reports[0]
         for r in reports[1:]:

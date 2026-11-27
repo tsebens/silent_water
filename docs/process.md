@@ -6,6 +6,8 @@ The pipeline runs entirely as **GitHub Actions**. Each Claude role is a workflow
 
 Tracked by [#62](https://github.com/tsebens/silent_water/issues/62); the migration to Actions by [#93](https://github.com/tsebens/silent_water/issues/93).
 
+A one-page flow chart of this process, with the dispatcher's steps, the label table and the guardrails, is [`pipeline_flow.html`](pipeline_flow.html) (open it in a browser).
+
 ## Principles
 
 - **The repo is the source of truth.** Roles, labels, the state machine, the dispatcher and every trigger live in version control and change through pull requests into `dev`. A change to the pipeline deploys when it merges to `dev`.
