@@ -5,7 +5,12 @@ extends MeshInstance3D
 ## sum of Gerstner waves (sharp crests, flat troughs) displaces the mesh; the
 ## GDScript functions below mirror the shader exactly.
 
-const SURFACE_Y: float = 0.0
+## Where on the dome the rendered waterline sits, as a fraction of the dome's height from its lowest point.
+const WATERLINE_DOME_FRACTION: float = 1.0 / 3.0
+
+## The rendered sea's height (world y). Physics keeps the surface at y = 0; the sea is drawn this far below it so the
+## surfaced sub looks to float with water a third of the way up the pilot's dome. Computed once at startup.
+static var SURFACE_Y: float = -render_offset_m()
 const WAVE_SHADER: Shader = preload("res://src/world/ocean_surface.gdshader")
 
 ## Largest wave count the shader's uniform arrays hold.
@@ -144,6 +149,21 @@ static func pack_waves(waves: Array[Wave]) -> Array[PackedVector4Array]:
 func build_waves() -> Array[Wave]:
 	return generate_waves(wind_direction_deg, wave_count, steepness, min_wavelength, max_wavelength,
 		amplitude, wind_spread_deg, speed)
+
+
+## How far (m) the rendered sea sits below the physics surface. The empty, fully blown sub floats with its hull
+## submerged by mass / displacement; that waterline (through the hull section from SubLayout) is where physics puts
+## the surface. The render puts it a third of the way up the dome (centre and radius from SubLayout.dome()) instead.
+static func render_offset_m() -> float:
+	var model: SubPhysicsModel = SubPhysicsModel.new()
+	model.tank_water_t = 0.0
+	model.bilge_water_t = 0.0
+	var floating_fraction: float = clampf(model.total_mass_t() / model.displacement_t, 0.0, 1.0)
+	var physics_waterline_y: float = SubPhysicsModel.hull_bottom() + floating_fraction * (SubPhysicsModel.hull_top() - SubPhysicsModel.hull_bottom())
+	var dome: Dictionary = SubLayout.dome()
+	var dome_bottom_y: float = (dome["centre"] as Vector3).y - float(dome["radius"])
+	var rendered_waterline_y: float = dome_bottom_y + WATERLINE_DOME_FRACTION * 2.0 * float(dome["radius"])
+	return physics_waterline_y - rendered_waterline_y
 
 
 ## Marine snow density multiplier at a world depth (m, positive below the

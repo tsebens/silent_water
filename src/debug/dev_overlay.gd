@@ -326,6 +326,7 @@ static func stats_text(g: Game) -> String:
 	lines.append("LIGHT  %s  (F7)" % ("night" if DevSettings.night else "day"))
 	lines.append("BAD-AIR VIEW  %s  (F8)" % ("real" if DevSettings.impairment_level < 0 else "forced level %d" % (DevSettings.impairment_level + 1)))
 	lines.append("SUB")
+	lines.append("  rendered sea %.2f m below physics surface" % OceanSurface.render_offset_m())
 	lines.append("  depth %.1f m   speed %+.2f m/s   heading %03.0f   pitch %+.0f°" % [c.depth, c.speed, c.heading_deg, c.pitch_deg])
 	lines.append("  vertical %+.2f m/s   buoyancy %s %+.2f m/s²" % [c.vertical_speed, b_word, b])
 	lines.append("  engine %+.0f%%   tank %.0f%%   air %.0f%%   bilge %.1f t%s" % [

@@ -1,0 +1,50 @@
+[gd_scene format=3]
+
+[ext_resource type="PackedScene" path="res://assets/models/panels/decoy_loader/decoy_loader_body.glb" id="1"]
+[ext_resource type="PackedScene" path="res://assets/models/kit/loader_drawer/loader_drawer.tscn" id="2"]
+[ext_resource type="PackedScene" path="res://assets/models/kit/led_strip_warn/led_strip_warn.tscn" id="3"]
+[ext_resource type="PackedScene" path="res://assets/models/kit/led_strip/led_strip.tscn" id="4"]
+[ext_resource type="PackedScene" path="res://assets/models/kit/led_strip_alarm/led_strip_alarm.tscn" id="5"]
+[ext_resource type="PackedScene" path="res://assets/models/kit/prime_lever/prime_lever.tscn" id="6"]
+[ext_resource type="Script" path="res://src/interact/launch_tube.gd" id="7"]
+[ext_resource type="Script" path="res://src/interact/tube_lamps.gd" id="8"]
+
+[node name="DecoyLoader" type="Node3D"]
+
+[node name="Body" parent="." instance=ExtResource("1")]
+
+[node name="Drawer" parent="." instance=ExtResource("2")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.15, 0)
+
+[node name="EmptyLamp" parent="." instance=ExtResource("3")]
+transform = Transform3D(2, 0, 0, 0, 1, 0, 0, 0, 1, -0.305, 0.21, 0.156)
+
+[node name="LoadedLamp" parent="." instance=ExtResource("4")]
+transform = Transform3D(2, 0, 0, 0, 1, 0, 0, 0, 1, -0.215, 0.21, 0.156)
+
+[node name="PrimedLamp" parent="." instance=ExtResource("5")]
+transform = Transform3D(2, 0, 0, 0, 1, 0, 0, 0, 1, -0.125, 0.21, 0.156)
+
+[node name="PrimeLever" parent="." instance=ExtResource("6")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.16, 0.125, 0.152)
+
+[node name="Exit" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.15, 0.02)
+
+[node name="Tube" type="Node" parent="." node_paths=PackedStringArray("drawer", "cradle", "prime_lever", "exit_point")]
+script = ExtResource("7")
+tube_name = "FORE TUBE"
+drawer = NodePath("../Drawer")
+cradle = NodePath("../Drawer/Slide/Cradle")
+prime_lever = NodePath("../PrimeLever")
+exit_point = NodePath("../Exit")
+
+[node name="Lamps" type="Node" parent="." node_paths=PackedStringArray("tube", "empty_lamp", "loaded_lamp", "primed_lamp")]
+script = ExtResource("8")
+tube = NodePath("../Tube")
+empty_lamp = NodePath("../EmptyLamp")
+loaded_lamp = NodePath("../LoadedLamp")
+primed_lamp = NodePath("../PrimedLamp")
+
+[node name="OperatorEye" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.65, 0.5)
