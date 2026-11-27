@@ -1,0 +1,49 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://src/interact/switch_lever.gd" id="1"]
+[ext_resource type="Script" path="res://src/interact/noise_profile.gd" id="2"]
+[ext_resource type="PackedScene" path="res://assets/models/kit/control_base/control_base_1x2.glb" id="3"]
+[ext_resource type="PackedScene" path="res://assets/models/kit/bat_toggle/bat_toggle_body.glb" id="4"]
+[ext_resource type="PackedScene" path="res://assets/models/kit/bat_toggle/bat_toggle_paddle.glb" id="5"]
+[ext_resource type="Script" path="res://src/interact/indicator_lamp.gd" id="6"]
+[ext_resource type="PackedScene" path="res://assets/models/kit/bat_toggle/bat_toggle_loop.glb" id="7"]
+
+[sub_resource type="Resource" id="noise"]
+script = ExtResource("2")
+idle_intensity = 0
+max_intensity = 0.1
+clank_rate = 2
+exponent = 2
+
+[sub_resource type="BoxShape3D" id="grab"]
+size = Vector3(0.056, 0.116, 0.03011)
+
+[node name="BatToggle" type="Node3D" node_paths=PackedStringArray("pivot", "indicator")]
+script = ExtResource("1")
+swing_deg = 60
+noise_profile = SubResource("noise")
+pivot = NodePath("Pivot")
+indicator = NodePath("IndicatorLamp")
+
+[node name="Base" parent="." instance=ExtResource("3")]
+
+[node name="Body" parent="." instance=ExtResource("4")]
+
+[node name="Pivot" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0.011)
+
+[node name="Paddle" parent="Pivot" instance=ExtResource("5")]
+
+[node name="IndicatorLamp" type="Node3D" parent="." node_paths=PackedStringArray("lamp")]
+script = ExtResource("6")
+lamp = NodePath("Lens/BatToggleLoop")
+
+[node name="Lens" parent="IndicatorLamp" instance=ExtResource("7")]
+
+[node name="Grab" type="StaticBody3D" parent="."]
+collision_layer = 2
+collision_mask = 0
+
+[node name="Shape" type="CollisionShape3D" parent="Grab"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0.015055)
+shape = SubResource("grab")
