@@ -177,8 +177,8 @@ func test_no_visible_strip_meshes_under_the_lights() -> void:
 func test_helm_runs_the_ballast() -> void:
 	var me: Player = game.local_player()
 	var helm: PilotSeat = game.get_node("Interior/Stations/Pilot/Seat") as PilotSeat
-	var blow: Interactable = game.get_node("Interior/Stations/Ballast/BlowValve") as Interactable
-	var flood: Interactable = game.get_node("Interior/Stations/Ballast/FloodValve") as Interactable
+	var blow: Interactable = game.get_node("Interior/Stations/Ballast/Panel/BlowWheel") as Interactable
+	var flood: Interactable = game.get_node("Interior/Stations/Ballast/Panel/FloodWheel") as Interactable
 	me.sit_in(helm)
 	me.bot_ballast = 1.0
 	await _frames(40)

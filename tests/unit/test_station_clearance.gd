@@ -6,7 +6,7 @@ const INTERIOR_SCENE: PackedScene = preload("res://src/sub/interior.tscn")
 
 ## Floor space the program reserves for stations and features that other arcs build (the map table is M12.8).
 const RESERVED: Array[StringName] = [
-	&"countermeasures", &"life_support", &"lock_out_trunk", &"tower_ladder", &"lockers", &"drop_weights", &"map_table",
+	&"countermeasures", &"life_support", &"lock_out_trunk", &"tower_ladder", &"lockers", &"map_table",
 	&"science",
 ]
 
@@ -57,7 +57,7 @@ func test_the_science_stations_footprint_is_reserved_and_empty() -> void:
 
 
 func test_program_footprints_do_not_overlap_each_other() -> void:
-	var ids: Array[StringName] = [&"scanner", &"engineering", &"life_support", &"ballast", &"bilge", &"drop_weights", &"lockers", &"countermeasures", &"lock_out_trunk", &"tower_ladder", &"sonar"]
+	var ids: Array[StringName] = [&"scanner", &"engineering", &"life_support", &"ballast", &"bilge", &"lockers", &"countermeasures", &"lock_out_trunk", &"tower_ladder", &"sonar"]
 	for i: int in ids.size():
 		for j: int in range(i + 1, ids.size()):
 			# Shrunk by a millimetre: footprints that touch end to end are not overlapping (float rounding).

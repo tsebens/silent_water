@@ -87,10 +87,13 @@ stations:
   - {id: science,         compartment: midships,    kind: panel, side: port,      z: 0.45, footprint: [0.9, 0.5]}
   - {id: engineering,     compartment: engineering, kind: panel, side: starboard, z: 2.3, footprint: [1.2, 0.45]}
   - {id: life_support,    compartment: engineering, kind: panel, side: port,      z: 2.3, footprint: [1.0, 0.5]}
-  - {id: ballast,         compartment: engineering, kind: panel, side: port,      z: 3.275, footprint: [0.95, 0.4]}
-  - {id: bilge,           compartment: engineering, kind: well,  side: centre,    z: 4.1, footprint: [0.7, 0.9]}
-  # The scanner's wall panel (switch and SCAN gauge). The engineering panel and the drop weights fill the starboard
-  # wall beside the hatch, so it sits aft of the drop weights, ahead of the bilge well.
+  # The engineering station (#530, placed by #572): the FLOOD and BLOW wheels on the ballast pipework, the drop-weights
+  # button under its flip guard, the bilge switch and hand pump. z 3.4 (was 3.275) so the 1.2 m panel clears life support
+  # (ends z 2.8); its pump lever ends toward the bow and a hose runs aft to the bilge well.
+  - {id: ballast,         compartment: engineering, kind: panel, side: port,      z: 3.4, footprint: [1.2, 0.45]}
+  - {id: bilge,           compartment: engineering, kind: well,  side: centre,    z: 4.35, footprint: [0.6, 0.9]}
+  # The scanner's wall panel (switch and SCAN gauge). The engineering (electrical) panel fills the starboard
+  # wall beside the hatch, so it sits aft of it, ahead of the bilge well.
   - {id: scanner,         compartment: engineering, kind: panel, side: starboard, z: 3.55, footprint: [0.4, 0.4]}
 
 features:
@@ -108,8 +111,6 @@ features:
      notes: Up into the conning tower and its top hatch, for docking at the ship or a station.}
   - {id: lockers, compartment: midships, kind: storage, side: starboard, z: 1.2, footprint: [0.4, 0.45],
      notes: Patches, scrubber canisters, cargo.}
-  - {id: drop_weights, compartment: engineering, kind: release_lever, side: starboard, z: 3.25, footprint: [0.2, 0.15],
-     notes: One-time emergency release, across the aisle from the ballast valves.}
   # Wall-mounted: takes no floor (`mounted`), so it is left out of the clearance report. The mission orders and
   # dive status, on the forward face of the bulkhead above the hatch (lintel 1.85 m), readable from the map table.
   - {id: status_board, compartment: bulkhead, kind: wall_display, side: centre, z: 1.5, footprint: [0.05, 1.0],
@@ -131,7 +132,7 @@ design_notes:
   - Crew standing behind the pilot look over one head, out through the dome and down to the sea floor.
   - Countermeasures faces the map table across the aisle, so its operator watches their decoys on the hologram.
   - Rounds are an engineering job, behind the bulkhead, away from the table's chatter.
-  - Ballast and the drop-weight release face each other across the aft aisle; both are about staying afloat.
+  - The ballast wheels, the drop-weight release and the bilge pumps share one port-wall station, all about staying afloat.
 
 # Fixed cameras for the blockout renders, and later for the paint-over concepts and the build-vs-concept comparison.
 # Sub-local metres: x starboard, y up from the hull's centre (the main deck is at y = -0.95), z toward the stern.
