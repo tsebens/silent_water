@@ -15,6 +15,7 @@ extends Node
 ##   uses distance, so Crew2 is moved next to it first).
 ##   Crew1 then tours every placed station (TOUR) from 3.2 s, one per TOUR_STEP seconds: it stands in the aisle beside
 ##   each one, logs `AUTOTEST_VISIT <id>` and lists it under `visits` in its report (#581).
+##   Crew1 collapses at COLLAPSE_AT (host forces its CO2 past 7%) and is rescued at RESCUE_AT; each instance reports whether it saw both.
 ##   At 10.0 (engine fully spooled, so noise is steady) the host tells every
 ##   instance to report at once; clients then quit, and the host quits once
 ##   they are gone. The host holds the report for up to REPORT_GRACE while any
@@ -35,6 +36,10 @@ const TOUR_STEP: float = 0.9
 ## How far into the aisle (m) the visitor stands from a station's floor position, and the longest it may end up from it.
 const TOUR_STAND_OFF: float = 0.7
 const TOUR_REACH: float = 1.6
+## Crew1 collapses (CO2 forced past 7%) and is rescued (forced back down): every instance must see both (#808).
+const COLLAPSE_AT: float = 7.9
+const RESCUE_AT: float = 8.7
+const COLLAPSE_CO2_PPM: float = 90000.0
 const STATIONS: String = "Interior/Stations/"
 
 var role: String = ""
@@ -42,6 +47,8 @@ var _game: Game
 var _t: float = -1.0
 var _done: PackedStringArray = PackedStringArray()
 var _visits: PackedStringArray = PackedStringArray()
+var _saw_collapse: bool = false
+var _saw_rescue: bool = false
 
 
 func setup(game: Game, player_name: String) -> void:
@@ -91,10 +98,13 @@ func _physics_process(delta: float) -> void:
 				var r: float = 120.0
 				flood.drag(Vector2(-sin(a), cos(a)) * r * TAU * 1.5 * delta)
 			_once("release", 3.0, func() -> void: flood.end_interaction())
+			_once("collapse", COLLAPSE_AT, func() -> void: _force_crew1_co2(COLLAPSE_CO2_PPM))
+			_once("rescue", RESCUE_AT, func() -> void: _force_crew1_co2(-1.0))
 			if me != null:
 				for i: int in TOUR.size():
 					var id: StringName = TOUR[i]
 					_once("visit_" + String(id), TOUR_START + TOUR_STEP * float(i), func() -> void: _visit(me, id))
+	_watch_collapse()
 	# The host tells everyone when to report so all snapshots are simultaneous.
 	if Net.is_host() and not _done.has("report"):
 		var ages: Array[float] = []
@@ -104,6 +114,28 @@ func _physics_process(delta: float) -> void:
 			_rpc_report.rpc()
 	if role == "Crew1" and _done.has("report") and multiplayer.get_peers().is_empty():
 		_once("quit", 0.0, func() -> void: get_tree().quit(0))
+
+
+func _crew1() -> Player:
+	return _game.players.get_node_or_null("1") as Player
+
+
+## Host: pushes Crew1's own air past the incapacitation line, or back to the cabin's.
+func _force_crew1_co2(ppm: float) -> void:
+	var p: Player = _crew1()
+	if p != null:
+		(p.get_node("Impairment") as PlayerImpairment).force_co2_ppm = ppm
+
+
+## Every instance notes whether it saw Crew1 lie down and then stand back up.
+func _watch_collapse() -> void:
+	var p: Player = _crew1()
+	if p == null:
+		return
+	if p.is_down() and p.down_blend > 0.5:
+		_saw_collapse = true
+	elif _saw_collapse and not p.is_down():
+		_saw_rescue = true
 
 
 ## Whether the host should snapshot now, given the session time and how long
@@ -187,6 +219,9 @@ func _report() -> void:
 		"apex_pos": _vec((_game.get_node("World/Apex") as ApexMonster).position),
 		"ambient_db": snappedf(Acoustics.ambient_db(), 0.01),
 		"visits": Array(_visits),
+		"saw_collapse": _saw_collapse,
+		"saw_rescue": _saw_rescue,
+		"crew1_down": _crew1() != null and _crew1().is_down(),
 	}
 	if Net.is_host():
 		var voices: Dictionary = {}

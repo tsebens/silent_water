@@ -46,3 +46,14 @@ func test_client_does_not_simulate() -> void:
 	client._physics_process(10.0)
 	expect_near(client.co2_ppm, 400.0)
 	client.free()
+
+
+func test_client_reads_the_hosts_cabin_o2() -> void:
+	var host: LifeSupportReadouts = _make(false)
+	var client: LifeSupportReadouts = _make(true)
+	host.cabin_o2 = 0.62
+	client.apply_snapshot(host.snapshot())
+	expect_near(client.cabin_o2, 0.62)
+	expect_near(client.readout(&"cabin_o2"), 0.62)
+	host.free()
+	client.free()
