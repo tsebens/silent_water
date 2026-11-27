@@ -25,12 +25,12 @@ MODELS = REPO / "assets" / "models"
 MODELS_RES = "res://assets/models"
 PALETTE_FILE = REPO / "assets" / "palette" / "palette.tres"
 ROLES_DIR = REPO / "assets" / "palette" / "roles"
-GROUPS = ("kit", "furniture", "panels", "stations")
+GROUPS = ("kit", "furniture", "panels", "stations", "organics")
 
 MODULE_MM = 60.0          # the control-panel module: bases come in whole modules
 BASE_GAP_MM = 4.0         # a base is a module minus this, so neighbouring bases never touch
 PLATE_T_MM = 6.0          # base plate thickness: controls mount their parts at Z = PLATE_T_MM
-TRIANGLE_BUDGET = {"kit": 1500, "furniture": 3000, "panels": 4000, "stations": 12000}   # per scene, by group
+TRIANGLE_BUDGET = {"kit": 1500, "furniture": 3000, "panels": 4000, "stations": 12000, "organics": 8000}   # per scene, by group
 
 _root: Path = MODELS
 _written: list[Path] = []
