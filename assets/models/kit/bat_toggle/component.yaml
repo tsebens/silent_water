@@ -24,14 +24,14 @@ base: 1x2
 footprint_mm:
 - 56.0
 - 116.0
-stand_out_mm: 28
+stand_out_mm: 27
 swing_envelope:
-  swing_deg: 30.0
-  paddle_travel_deg: +/-15 about X; the lever tip travels along Y
+  swing_deg: 60.0
+  paddle_travel_deg: +/-30 about X; the lever tip travels along Y
   within_mm:
   - 26.0
   - 62.0
-  stand_out_mm: 28
+  stand_out_mm: 27
   note: the bar toggle (lit_toggle) stands 56 mm out
 mount: back on Z=0, centred; front +Z; on flips the lever toward +Y; the LED loop encircles the bay
 set_on_instance:

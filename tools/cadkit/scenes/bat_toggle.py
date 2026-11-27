@@ -23,7 +23,7 @@ LOOP_BAR, LOOP_GAP, LOOP_Z = 3.0, 0.5, 1.2         # LED loop round the frame
 PAD_W, PAD_T, PAD_BOT, PAD_LEN = 21.0, 7.0, -2.0, 16.0   # paddle in its own frame: wide in X, thick in Y, standing out along +Z from the pivot on the X axis
 GROOVES, GROOVE_W, GROOVE_D = 4, 2.0, 1.6
 HINGE_Z = PLATE_T_MM + FLOOR_Z + 4.0
-SWING_DEG = 30.0                                   # total; +/-15 degrees about X
+SWING_DEG = 60.0                                   # total; +/-30 degrees about X
 MAX_STAND_OUT = 30.0                               # lit_toggle stands 56 mm out; this is about half
 
 
@@ -117,7 +117,7 @@ def build() -> dict:
         "base": f"{BASE[0]}x{BASE[1]}",
         "footprint_mm": [w, h],
         "stand_out_mm": math.ceil(stand),
-        "swing_envelope": {"swing_deg": SWING_DEG, "paddle_travel_deg": "+/-15 about X; the lever tip travels along Y",
+        "swing_envelope": {"swing_deg": SWING_DEG, "paddle_travel_deg": "+/-30 about X; the lever tip travels along Y",
                            "within_mm": [BAY_W, BAY_H_Y], "stand_out_mm": math.ceil(stand),
                            "note": "the bar toggle (lit_toggle) stands 56 mm out"},
         "mount": "back on Z=0, centred; front +Z; on flips the lever toward +Y; the LED loop encircles the bay",

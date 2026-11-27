@@ -16,11 +16,11 @@ clank_rate = 2
 exponent = 2
 
 [sub_resource type="BoxShape3D" id="grab"]
-size = Vector3(0.056, 0.116, 0.0311)
+size = Vector3(0.056, 0.116, 0.03011)
 
 [node name="BatToggle" type="Node3D" node_paths=PackedStringArray("pivot", "indicator")]
 script = ExtResource("1")
-swing_deg = 30
+swing_deg = 60
 noise_profile = SubResource("noise")
 pivot = NodePath("Pivot")
 indicator = NodePath("IndicatorLamp")
@@ -45,5 +45,5 @@ collision_layer = 2
 collision_mask = 0
 
 [node name="Shape" type="CollisionShape3D" parent="Grab"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0.01555)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0.015055)
 shape = SubResource("grab")
