@@ -55,7 +55,30 @@ func test_the_bays_hold_the_default_modules_and_the_scan_module_is_the_objective
 
 
 func test_the_station_adds_no_second_set_of_modules() -> void:
-	expect_eq(_station().fitted().size(), 0, "no script-only modules beside the scene's")
+	var st: ScienceStation = _station()
+	expect_eq(st.fitted().size(), 3, "the three bays of the scene are adopted")
+	expect(st.active_module() is ScanModule, "SCAN is the active module")
+	for i: int in 3:
+		expect_eq(st.get_node("Panel/Bay%d" % i).get_child_count() > 0, true, "bay %d is the scene's own" % i)
+		expect_eq(st.bays[i].get_children().filter(func(c: Node) -> bool: return c is ScienceModule).size() <= 1, true, "bay %d holds no second module" % i)
+
+
+func test_the_operator_can_select_and_arm_the_scan_module() -> void:
+	var st: ScienceStation = _station()
+	var scan: ScienceModule = st.active_module()
+	expect(scan is ScanModule, "starts on SCAN")
+	var f: InputEventKey = InputEventKey.new()
+	f.keycode = ScienceStation.ARM_KEY
+	f.pressed = true
+	expect(st.handle_event(f), "F is used")
+	expect(scan.armed, "SCAN armed")
+	var d: InputEventAction = InputEventAction.new()
+	d.action = &"move_right"
+	d.pressed = true
+	st.handle_event(d)
+	expect(st.active_module() is SweepModule, "D selects SWEEP")
+	st.select_step(-1)
+	expect(st.active_module() == scan, "A returns to SCAN")
 
 
 func test_the_station_spans_the_reservations_length() -> void:
