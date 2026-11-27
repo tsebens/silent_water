@@ -20,6 +20,12 @@ var readouts_override: LifeSupportReadouts
 var impairment: float = 0.0
 var incapacitated: bool = false
 var model: ImpairmentModel
+## Blur left after standing up (1 just after, fading to 0). Tracked on every
+## peer from the replicated flag, so the owner's view can use it.
+var linger_blur: float = 0.0
+## Test seam (host): use this CO2 (ppm) instead of the cabin's when it is 0 or more.
+var force_co2_ppm: float = -1.0
+var _linger_left: float = 0.0
 var _timer: float = 0.0
 
 
@@ -51,6 +57,7 @@ func _online() -> bool:
 
 
 func _physics_process(delta: float) -> void:
+	tick_linger(delta)
 	if not _is_host():
 		return
 	var r: LifeSupportReadouts = readouts_override
@@ -58,7 +65,7 @@ func _physics_process(delta: float) -> void:
 		r = get_tree().get_first_node_in_group(LifeSupportReadouts.GROUP) as LifeSupportReadouts
 	if r == null:
 		return
-	step(delta, r.co2_ppm, r.cabin_o2)
+	step(delta, r.co2_ppm if force_co2_ppm < 0.0 else force_co2_ppm, r.cabin_o2)
 	if _online():
 		_timer += delta
 		if _timer >= SNAPSHOT_INTERVAL:
@@ -70,7 +77,26 @@ func _physics_process(delta: float) -> void:
 func step(delta: float, co2_ppm: float, cabin_o2: float) -> void:
 	model.step(delta, co2_ppm, cabin_o2)
 	impairment = model.strength
-	incapacitated = model.incapacitated
+	_set_incapacitated(model.incapacitated)
+
+
+## Counts the lingering blur down.
+func tick_linger(delta: float) -> void:
+	if incapacitated or _linger_left <= 0.0:
+		return
+	_linger_left = maxf(_linger_left - delta, 0.0)
+	linger_blur = params.linger_blur_start * _linger_left / maxf(params.linger_blur_seconds, 0.0001)
+
+
+## Sets the flag; standing up starts the lingering blur.
+func _set_incapacitated(value: bool) -> void:
+	if incapacitated and not value:
+		linger_blur = params.linger_blur_start
+		_linger_left = params.linger_blur_seconds
+	elif value:
+		linger_blur = 0.0
+		_linger_left = 0.0
+	incapacitated = value
 
 
 func snapshot() -> Dictionary:
@@ -79,7 +105,7 @@ func snapshot() -> Dictionary:
 
 func apply_snapshot(snap: Dictionary) -> void:
 	impairment = float(snap["impairment"])
-	incapacitated = bool(snap["incapacitated"])
+	_set_incapacitated(bool(snap["incapacitated"]))
 
 
 @rpc("authority", "call_remote", "unreliable_ordered")
