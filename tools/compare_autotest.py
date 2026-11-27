@@ -32,8 +32,8 @@ def main() -> int:
             errors.append(f"{who} cabin lights lever still held by {r['lever_holder']}")
         if r["throttle"] < 0.9:
             errors.append(f"{who} throttle={r['throttle']} (Crew3 held W from the helm)")
-        if not near(r["flood"], 0.75, 0.1):
-            errors.append(f"{who} flood={r['flood']} (expected ~0.75)")
+        if not near(r["flood"], 0.5, 0.1):
+            errors.append(f"{who} flood={r['flood']} (expected ~0.5)")
         if r["rudder"] > -0.8:
             errors.append(f"{who} rudder={r['rudder']} (expected hard to port)")
         if r["engine"] <= 0.2:
