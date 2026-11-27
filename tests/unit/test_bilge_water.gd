@@ -60,3 +60,22 @@ func test_floor_follows_the_program_bilge_well() -> void:
 	w.set_tonnage(0.0)
 	expect_near(w.position.y, SubLayout.position(&"bilge").y, 0.0001, "dry surface at the well floor")
 	w.free()
+
+
+func test_pump_emitter_active_only_when_pump_on() -> void:
+	var game: Game = GAME_SCENE.instantiate() as Game
+	runner.add_child(game)
+	var leaks: LeakSystem = game.get_node("LeakSystem") as LeakSystem
+	expect(not leaks.pump_emitter().field_events, "pump emitter emits no field events")
+	expect_eq(leaks.pump_emitter().sound_type.procedural, &"gurgle")
+	leaks._process(0.0)
+	expect_eq(leaks.pump_emitter().active, leaks.pump_on())
+	(game.get_node("Interior/PowerSystem") as PowerSystem).set_breaker(PowerSystem.Circuit.BILGE_PUMP, true)
+	leaks.pump.host_set_value(1.0)
+	leaks._process(0.0)
+	expect(leaks.pump_on(), "pump on")
+	expect(leaks.pump_emitter().active, "emitter active with pump")
+	leaks.pump.host_set_value(0.0)
+	leaks._process(0.0)
+	expect(not leaks.pump_emitter().active, "emitter idle with pump off")
+	game.free()

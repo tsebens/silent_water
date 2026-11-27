@@ -83,7 +83,7 @@ func _update_loop() -> void:
 		_loop_player = AudioStreamPlayer3D.new()
 		add_child(_loop_player)
 		_loop_player.finished.connect(_on_loop_finished)
-	var restart: bool = _loop_player.stream != sound_type.stream
+	var restart: bool = _loop_player.stream != sound_type.get_stream()
 	sound_type.apply_to(_loop_player)
 	_place(_loop_player)
 	if restart or not _loop_player.playing:

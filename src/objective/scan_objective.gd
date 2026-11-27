@@ -10,6 +10,7 @@ signal scan_completed
 
 ## Scanner running (~83 dB): the loud final step.
 const SCAN_INTENSITY: float = 0.02
+const SCAN_SOUND_PATH: String = "res://src/noise/sound_types/scanner.tres"
 const SCAN_TIME_SEC: float = 25.0
 const MAX_RANGE_M: float = 30.0
 const MAX_SPEED: float = 0.6
@@ -26,7 +27,7 @@ var module: ScienceModule
 var progress: float = 0.0
 var complete: bool = false
 
-var _audio: AudioStreamPlayer3D
+var _emitter: SoundEmitter
 var _was_on: bool = false
 
 
@@ -34,11 +35,12 @@ func _ready() -> void:
 	add_to_group(&"noise_sources")
 	add_to_group(&"scan_readouts")
 	add_to_group(&"scan_objectives")
-	_audio = AudioStreamPlayer3D.new()
-	_audio.stream = ProceduralSounds.scanner()
-	_audio.bus = AudioBuses.INSIDE
-	_audio.unit_size = SubAudio.UNIT_SIZE
-	(scanner_point if scanner_point != null else self as Node).add_child(_audio)
+	_emitter = SoundEmitter.new()
+	_emitter.name = "ScannerEmitter"
+	_emitter.sound_type = load(SCAN_SOUND_PATH) as SoundType  # load, not preload (script dependency cycle)
+	_emitter.field_events = false  # the sub's combined load already carries it
+	_emitter.active = false
+	add_child(_emitter)
 
 
 func scanner_on() -> bool:
@@ -85,12 +87,14 @@ func reset() -> void:
 
 
 func _process(_delta: float) -> void:
-	var on: bool = scanner_on()
-	if on and not _audio.playing:
-		_audio.volume_db = SubAudio.volume_for(SCAN_INTENSITY)
-		_audio.play()
-	elif not on and _audio.playing:
-		_audio.stop()
+	_emitter.active = scanner_on()
+	if scanner_point != null and scanner_point.is_inside_tree():
+		_emitter.world_position = scanner_point.global_position
+
+
+## The scanner's emitter (sound only; no field events).
+func scanner_emitter() -> SoundEmitter:
+	return _emitter
 
 
 func _physics_process(delta: float) -> void:
