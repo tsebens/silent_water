@@ -78,6 +78,9 @@ ROW_A, ROW_B = 230.0, 68.0
 O2_AT, CO2_AT, RATE_AT, NOISE_AT = -310.0, -105.0, 105.0, 310.0
 GAUGE_R, NOISE_R = 0.055, 0.055            # dial radii (m)
 O2_ALARM_AT, CO2_ALARM_AT = -310.0, -105.0
+# Engraved labels under the two alarm lamps: text height, cut depth, and the label's centre below the lamp row (v up the slope).
+LABEL_H, LABEL_DEPTH, LABEL_V = 14.0, 1.0, 34.0
+LABELS = (("O2", O2_ALARM_AT), ("CO2", CO2_ALARM_AT))
 # The fan switch: the upper-right corner of the storage shelf, (u across, s up the slope), (its run lamp is part of the scene).
 TOGGLE_U, TOGGLE_S = 352.0, 294.0
 # The operator.
@@ -174,6 +177,48 @@ def _pocket_cutter() -> bd.Part:
     return bd.extrude(bd.Plane.XY * bd.Polygon(*pts, align=None), amount=POCKET_DEPTH + 1.0)
 
 
+# A plain stroke font for the engraved labels (cell 6 wide, 10 tall; polylines). Font glyphs do not survive the export's mesh.
+GLYPHS = {
+    "O": [(0, 1), (1, 0), (5, 0), (6, 1), (6, 9), (5, 10), (1, 10), (0, 9), (0, 1)],
+    "C": [(6, 9), (5, 10), (1, 10), (0, 9), (0, 1), (1, 0), (5, 0), (6, 1)],
+    "2": [(0, 9), (1, 10), (5, 10), (6, 9), (6, 6), (0, 1), (0, 0), (6, 0)],
+}
+LABEL_STROKE = 1.6                          # stroke width (mm)
+LABEL_ADVANCE = 8.0                         # cell pitch in glyph units (6 wide + 2 gap)
+
+
+def _label_text(text: str, depth: float | None = None) -> bd.Shape:
+    """The label's glyphs centred on the origin in XY, LABEL_H tall, extruded `depth` mm (default LABEL_DEPTH + 1) along +Z."""
+    k = (LABEL_H - LABEL_STROKE) / 10.0
+    d = LABEL_DEPTH + 1.0 if depth is None else depth
+    total = (len(text) * LABEL_ADVANCE - 2.0) * k
+    parts = []
+    for i, ch in enumerate(text):
+        pts = GLYPHS[ch]
+        for (x0, y0), (x1, y1) in zip(pts, pts[1:]):
+            ax, ay = -total / 2 + (i * LABEL_ADVANCE + x0) * k, (y0 - 5.0) * k
+            bx, by = -total / 2 + (i * LABEL_ADVANCE + x1) * k, (y1 - 5.0) * k
+            ln = math.hypot(bx - ax, by - ay)
+            parts.append(at(box(ln + LABEL_STROKE, LABEL_STROKE, d), x=(ax + bx) / 2, y=(ay + by) / 2,
+                            rz=math.degrees(math.atan2(by - ay, bx - ax))))
+    out = parts[0]
+    for q in parts[1:]:
+        out = out + q
+    return out
+
+
+def _label_origin(u: float) -> np.ndarray:
+    """On the plate, centred at (u, LABEL_V), LABEL_DEPTH below its face."""
+    o = PANEL_O + PANEL_T * LABEL_V + PANEL_N * (PLATE_T - LABEL_DEPTH)
+    o[0] = u
+    return o
+
+
+def _label_cutter(text: str, u: float) -> bd.Shape:
+    """The label's cutter: LABEL_DEPTH into the plate and a millimetre clear of its face."""
+    return _along(_label_text(text), _label_origin(u), PANEL_N)
+
+
 def solids() -> list[Solid]:
     shell = _yz_extrude(_profile(), -W / 2, W / 2)
     shell = bd.chamfer(shell.edges(), BODY_CHAMFER)
@@ -203,8 +248,13 @@ def solids() -> list[Solid]:
         guard = at(box(2 * CRADLE_R - 20.0, GUARD_H, GUARD_T, chamfer_mm=3.0), x=cx, y=CARR_Y0 + GUARD_H / 2, z=ZP + GUARD_T / 2)
         out += [Solid(seat, "trim_black"), Solid(guard, "control_grey")]
     # The panel plate, on the sloping face.
-    plate = _along(box(2 * PANEL_HALF_W, PANEL_L - 4.0, PLATE_T, chamfer_mm=3.0), PANEL_O + PANEL_T * (PANEL_L / 2) + PANEL_N * (PLATE_T / 2), PANEL_N)
+    plate = _along(box(2 * PANEL_HALF_W, PANEL_L - 4.0, PLATE_T, chamfer_mm=3.0, base_z=False), PANEL_O + PANEL_T * (PANEL_L / 2) + PANEL_N * (PLATE_T / 2), PANEL_N)
+    for text, u in LABELS:
+        plate = plate - _label_cutter(text, u)
     out.append(Solid(plate, "control_grey"))
+    # The engraving is filled with dark paint to half its depth, so the letters read against the grey plate.
+    for text, u in LABELS:
+        out.append(Solid(_along(_label_text(text, LABEL_DEPTH / 2), _label_origin(u), PANEL_N), "trim_black"))
     # A trim ring round each hole's mouth.
     for u, s in _holes():
         ring = prism(HOLE_SIDES, HOLE_RING_R, HOLE_RING_H) - prism(HOLE_SIDES, HOLE_R, HOLE_RING_H)
@@ -348,6 +398,23 @@ def _check_panel(sol: list[Solid]) -> dict:
         for ln, (lx, ly, lr) in lamps.items():
             if abs(lx - x) < ph * r + lr:
                 expect(low_v >= ly + lr + 4.0, f"{name}'s title plate ({low_v:.0f}) clear of the {ln}")
+    # The engraved labels: each under its own lamp, clear of the lamp, the other label and the plate's edges, cut into the plate.
+    lamp_by = {"O2": O2_ALARM_AT, "CO2": CO2_ALARM_AT}
+    boxes = {}
+    for text, u in LABELS:
+        bb = _label_text(text).bounding_box()
+        hw, hh = (bb.max.X - bb.min.X) / 2, (bb.max.Y - bb.min.Y) / 2
+        boxes[text] = (u, hw)
+        expect(u == lamp_by[text], f"the {text} label is centred under the {text} lamp")
+        expect(LABEL_V + hh <= ROW_B - lw - 6.0, f"the {text} label ({LABEL_V + hh:.0f}) clears its lamp (bottom at {ROW_B - lw:.0f}) by {ROW_B - lw - LABEL_V - hh:.0f} mm")
+        expect(LABEL_V - hh >= 8.0, f"the {text} label stays {LABEL_V - hh:.0f} mm above the plate's lower edge")
+        expect(u - hw >= -PANEL_HALF_W + 5.0 and u + hw <= PANEL_HALF_W - 5.0, f"the {text} label inside the plate")
+        expect(0.3 <= LABEL_DEPTH <= PLATE_T / 2, f"the {text} label is engraved {LABEL_DEPTH:.1f} mm into a {PLATE_T:.0f} mm plate")
+        for name, (x, y, rr) in dials.items():
+            expect(y - pb * (rn if name == "noise dial" else r) >= LABEL_V + hh + 4.0 or abs(x - u) > hw + ph * r,
+                   f"the {text} label clear of the {name}'s title plate")
+    (ua, wa), (ub, wb) = boxes["O2"], boxes["CO2"]
+    expect(ub - wb - (ua + wa) >= 20.0, f"the two labels {ub - wb - ua - wa:.0f} mm apart")
     # Reach from the standing eye: the fan toggle and every dial, and the stored canisters' tops.
     def at_panel(u: float, v: float, out: float) -> np.ndarray:
         return np.array([u, *(PANEL_O + PANEL_T * v + PANEL_N * (PLATE_T + out))[1:]])
@@ -465,6 +532,7 @@ def _cameras(d) -> None:
         {"name": "concept_swap_view", "pos": [-0.9, 1.5, 2.0], "look_at": [0.1, 1.45, 0.3], "fov": 62.0},
         {"name": "concept_canister_pair", "pos": [0.0, 1.65, 1.3], "look_at": [0.0, 1.65, 0.3], "fov": 40.0},
         {"name": "concept_storage_tops", "pos": [0.0, 1.95, 1.0], "look_at": [0.0, 1.3, 0.35], "fov": 45.0},
+        {"name": "panel_labels", "pos": [-0.207, 1.5245, 0.593], "look_at": [-0.207, 1.878, 0.2397], "ortho": 0.3},
         {"name": "operator_eye", "pos": eye, "look_at": [0.0, 1.7, 0.2], "fov": 75.0},
         {"name": "operator_eye_red", "pos": eye, "look_at": [0.0, 1.7, 0.2], "fov": 75.0, "light": "red"},
         {"name": "profile_right", "pos": [3.5, 1.2, 0.3], "look_at": [0.0, 1.2, 0.3], "ortho": 2.7},
