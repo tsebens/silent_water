@@ -108,6 +108,15 @@ func shed_drop_weights() -> float:
 	return drop_weights_t
 
 
+## Spends [param tonnes] of high-pressure air (a decoy launch, say). Refused,
+## with nothing spent, when less than that is left. Returns whether it was spent.
+func spend_air(tonnes: float) -> bool:
+	if tonnes < 0.0 or air_t < tonnes:
+		return false
+	air_t -= tonnes
+	return true
+
+
 ## Bilge tonnage at which, with the tank fully blown, buoyancy at the surface
 ## can no longer lift the hull above the waterline: the reserve buoyancy
 ## (displacement minus dry mass and payload). 10.0 t with the default hull.
