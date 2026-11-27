@@ -23,20 +23,49 @@ func test_neutral_near_half_tank() -> void:
 func test_full_tank_sinks_empty_tank_rises() -> void:
 	m.tank_water_t = m.tank_capacity_t
 	_run(30.0)
-	expect(m.velocity.y < -0.5, "full tank sink rate %f" % m.velocity.y)
-	expect(m.velocity.y > -1.5, "sink rate should be capped by drag, got %f" % m.velocity.y)
+	expect(m.velocity.y < -3.0, "full tank sink rate %f" % m.velocity.y)
+	expect(m.velocity.y > -5.5, "sink rate should be capped by drag, got %f" % m.velocity.y)
 	before_each()
 	m.tank_water_t = 0.0
+	m.position = Vector3(0, -250, 0)
 	_run(30.0)
-	expect(m.velocity.y > 0.5, "empty tank rise rate %f" % m.velocity.y)
+	expect(m.velocity.y > 3.0, "empty tank rise rate %f" % m.velocity.y)
+
+
+func test_straight_drop_reaches_250m_in_about_60s() -> void:
+	m.position = Vector3.ZERO
+	m.tank_water_t = m.tank_capacity_t
+	_run(60.0)
+	print("[drop] y after 60 s: %.1f, vy %.2f" % [m.position.y, m.velocity.y])
+	expect(m.position.y < -250.0, "full tank passes 250 m in 60 s (y=%f)" % m.position.y)
+	expect(m.position.y > -330.0, "but not absurdly fast (y=%f)" % m.position.y)
+	expect_near(m.angles.x, 0.0, 0.01, "no nose-over on a straight drop")
+	expect_near(m.forward_speed(), 0.0, 0.05, "no forward speed gained")
+
+
+func test_full_blow_from_250m_surfaces_in_comparable_time() -> void:
+	m.position = Vector3(0, -250, 0)
+	m.tank_water_t = m.tank_capacity_t
+	var t: float = 0.0
+	while t < 120.0 and not m.is_surfaced():
+		m.step(DT, 0.0, 0.0, 0.0, 0.0, 1.0)
+		t += DT
+	print("[rise] surfaced after %.1f s" % t)
+	expect(t > 30.0 and t < 90.0, "full blow from 250 m surfaces in about a minute (%f s)" % t)
+	_run(30.0, 0.0, 0.0, 0.0, 0.0, 1.0)
+	expect(m.position.y <= 0.0, "never flies out of the water (y=%f)" % m.position.y)
+	expect(m.position.y > -3.0, "settles riding at the surface (y=%f)" % m.position.y)
+	expect(absf(m.velocity.y) < 0.2, "surface damping settles the bob (vy=%f)" % m.velocity.y)
 
 
 func test_heavier_payload_slows_climb() -> void:
 	m.tank_water_t = 0.0
+	m.position = Vector3(0, -250, 0)
 	_run(30.0)
 	var light: float = m.velocity.y
 	before_each()
 	m.tank_water_t = 0.0
+	m.position = Vector3(0, -250, 0)
 	m.payload_t += 5.0
 	_run(30.0)
 	expect(m.velocity.y < light - 0.1, "salvage weight should slow the climb (%f vs %f)" % [m.velocity.y, light])
@@ -45,6 +74,12 @@ func test_heavier_payload_slows_climb() -> void:
 func test_full_ahead_top_speed_about_3() -> void:
 	_run(120.0, 1.0)
 	expect_near(m.forward_speed(), 3.0, 0.2, "top speed")
+
+
+func test_vertical_drag_retune_leaves_forward_drag_alone() -> void:
+	expect_near(m.drag.z, 0.0333, 0.00001, "drag.z unchanged")
+	expect_near(m.drag.x, 0.5, 0.00001, "sideways drag unchanged")
+	expect_near(m.top_forward_speed(), 3.0, 0.05, "terminal forward speed")
 
 
 func test_engine_spools_slowly() -> void:
