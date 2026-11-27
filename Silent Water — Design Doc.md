@@ -41,6 +41,8 @@ Hull damage and supplies carry from dive to dive within an expedition; repairs a
 
 One descent, the objectives, and an ascent to the expedition ship. A dive ends when the sub surfaces or is lost.
 
+**Descent target (decision 2026-11-27, #877):** a fully flooded sub with no thrust or planes drops straight to 250 m in roughly 60 s (terminal sink about 4.7 m/s), and a full blow from depth rises in a comparable time (about 60 s from 250 m). Only vertical drag (`drag.y`, now 0.028) changed; buoyancy, tank capacity and forward and sideways drag are as before (top forward speed still about 3 m/s). Tristan expects to retune after play: how the compressed pressure audio sounds, and whether 60 s feels right.
+
 ### Expedition
 
 - The crew picks a region, each with a difficulty, and loads the expedition ship's limited cargo.

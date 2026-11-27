@@ -49,7 +49,8 @@ func _hover_over_array() -> void:
 
 
 func test_dive_starts_floating_at_the_surface() -> void:
-	await _frames(120)
+	# The sub settles from its spawn height; vertical drag is lower since #877, so the dunk takes ~6 s.
+	await _frames(600)
 	expect(controller.surfaced, "starts at the surface (depth %f)" % controller.depth)
 	expect_eq(controller.model.tank_water_t, 0.0, "tanks empty")
 	expect_eq(director.phase, DiveDirector.Phase.DIVING)
