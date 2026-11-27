@@ -37,7 +37,6 @@ func _pump_lever() -> Lever:
 
 func test_cabin_breaker_darkens_cabin_lights() -> void:
 	lights.enabled = true
-	lights.dimmer = null
 	await _frames(2)
 	var l: Light3D = lights.cabin_lights()[0]
 	expect(l.light_energy > 0.0, "lit when powered")

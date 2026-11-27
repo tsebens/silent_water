@@ -7,6 +7,9 @@ import json
 import sys
 
 
+TOUR = ["pilot", "sonar", "map_table", "engineering", "ballast", "life_support"]
+
+
 def near(a, b, tol):
     return abs(a - b) <= tol
 
@@ -26,10 +29,6 @@ def main() -> int:
         who = r["role"]
         if len(r["players"]) != expected:
             errors.append(f"{who} sees {len(r['players'])} players, expected {expected}")
-        if not near(r["lever"], 0.0, 0.001):
-            errors.append(f"{who} cabin lights lever={r['lever']} (expected 0: Crew3 must be rejected)")
-        if r["lever_holder"] != 0:
-            errors.append(f"{who} cabin lights lever still held by {r['lever_holder']}")
         if r["throttle"] < 0.9:
             errors.append(f"{who} throttle={r['throttle']} (Crew3 held W from the helm)")
         if not near(r["flood"], 0.5, 0.1):
@@ -65,7 +64,7 @@ def main() -> int:
     if reports:
         ref = reports[0]
         for r in reports[1:]:
-            for key, tol in (("lever", 0.001), ("throttle", 0.01), ("flood", 0.005), ("rudder", 0.05), ("depth", 0.5), ("tank", 0.02), ("sub_db", 1.5), ("ambient_db", 0.1)):
+            for key, tol in (("throttle", 0.01), ("flood", 0.005), ("rudder", 0.05), ("depth", 0.5), ("tank", 0.02), ("sub_db", 1.5), ("ambient_db", 0.1)):
                 if not near(r[key], ref[key], tol):
                     errors.append(f"{key} disagrees: {ref['role']}={ref[key]} {r['role']}={r[key]}")
             if r["apex_state"] != ref["apex_state"]:
@@ -80,6 +79,12 @@ def main() -> int:
                 dist = sum((a - b) ** 2 for a, b in zip(pos, other)) ** 0.5
                 if dist > 0.1:
                     errors.append(f"player {pid} position disagrees by {dist:.2f} m ({ref['role']} vs {r['role']})")
+    # Crew1 tours every placed station (src/debug/autotest.gd TOUR); the other instances tour nothing.
+    if "Crew1" in by_role:
+        visits = by_role["Crew1"].get("visits", [])
+        for station in TOUR:
+            if station not in visits:
+                errors.append(f"Crew1 never visited {station} (visits: {visits})")
     for e in errors:
         print("  " + e)
     return 1 if errors else 0

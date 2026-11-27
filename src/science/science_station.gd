@@ -17,6 +17,10 @@ const ARM_KEY: Key = KEY_F
 		if is_inside_tree():
 			refit()
 
+## Optional: a node (under this station) whose children Bay0..Bay2 hold the module scenes already placed, e.g. the
+## science_bay scene. The bays then adopt those modules instead of building their own.
+@export var anchor_root: NodePath
+
 var bays: Array[ScienceBay] = []
 ## Index of the active bay (always a fitted one while any is fitted), else -1.
 var active: int = -1
@@ -44,6 +48,10 @@ func refit() -> void:
 			bay.name = "Bay%d" % i
 			add_child(bay)
 			bays.append(bay)
+			var root: Node = get_node_or_null(anchor_root) if not anchor_root.is_empty() else null
+			var anchor: Node3D = root.get_node_or_null("Bay%d" % i) as Node3D if root != null else null
+			if anchor != null:
+				bay.adopt(anchor)
 		bays[i].fit(loadout.type_at(i) if loadout != null else ModuleLoadout.Type.NONE)
 	if active < 0 or active >= bays.size() or bays[active].is_empty():
 		_set_active(_first_fitted())

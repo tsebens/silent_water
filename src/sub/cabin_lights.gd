@@ -1,17 +1,13 @@
 class_name CabinLights
 extends Node
-## Interior lighting: the dimmer lever sets the level for every cabin light,
+## Interior lighting: every cabin light holds a fixed level of 1.0 while on,
 ## and threat cues add flicker on top. The headlight is not a cabin light
 ## and is left alone.
 
-## Lowest level the dimmer reaches: near dark, controls still faintly visible.
-const MIN_LEVEL: float = 0.03
-
 @export var lights_root: Node3D
-@export var dimmer: Interactable
 ## Small emergency lights: on at blackout and whenever CABIN LTS is unpowered.
 @export var emergency_root: Node3D
-## Lights the dimmer doesn't touch (the headlight).
+## Lights this doesn't touch (the headlight).
 @export var excluded: Array[Light3D] = []
 
 ## Multiplier from threat cues; 1.0 = steady. Per-light, by instance id.
@@ -19,7 +15,7 @@ var flicker: Dictionary = {}
 
 var _base: Dictionary = {}
 
-## Master switch: off, every cabin light is dark whatever the dimmer says.
+## Master switch: off, every cabin light is dark regardless of level.
 var enabled: bool = true
 
 ## Stealth (red light) mode: cabin lights take `light_stealth_red` instead of `light_cabin`.
@@ -51,10 +47,9 @@ func cabin_lights() -> Array[Light3D]:
 	return out
 
 
-## Current dimmer level, MIN_LEVEL..1.
+## Fixed cabin light level.
 func level() -> float:
-	var v: float = dimmer.get_normalized() if dimmer != null else 1.0
-	return lerpf(MIN_LEVEL, 1.0, v)
+	return 1.0
 
 
 ## True when CABIN LTS has power (no [PowerSystem] counts as powered).

@@ -7,8 +7,10 @@ extends CanvasLayer
 ##   left       console: engine output, warnings, errors and game events
 ##              (host events reach clients too)
 ##   top right  3D minimap: water surface, canyon, sub (green), apex (red),
-##              array (yellow), slowly orbiting
-##   right      live stats for the sub, the noise, the apex and the dive
+##              array (yellow), recent sound events (white), the apex's
+##              memories (orange), slowly orbiting
+##   right      live stats for the sub, the noise (with recent sound events
+##              and the apex's memories), the apex and the dive
 ## A setting to lock it away comes later; for now dev builds always allow it.
 
 const MAP_SIZE: Vector2i = Vector2i(360, 270)
@@ -33,6 +35,8 @@ var _sub_blip: MeshInstance3D
 var _apex_blip: MeshInstance3D
 var _array_blip: MeshInstance3D
 var _map_world_root: Node3D
+var _event_blips: Array[MeshInstance3D] = []
+var _memory_blips: Array[MeshInstance3D] = []
 var _map_built: bool = false
 var _seen_revision: int = -1
 var _orbit: float = 30.0
@@ -210,6 +214,26 @@ func _update_map(delta: float) -> void:
 	var target: Node3D = game.get_node_or_null("World/ScanTarget") as Node3D
 	if target != null:
 		_array_blip.position = target.position
+	var event_positions: Array[Vector3] = []
+	for e: Dictionary in Acoustics.recent_events:
+		event_positions.append(e["position"] as Vector3)
+	_place_blips(_event_blips, event_positions, Color(0.9, 0.95, 1.0), 3.0)
+	var memory_positions: Array[Vector3] = []
+	var apex_node: ApexMonster = game.get_node_or_null("World/Apex") as ApexMonster
+	if apex_node != null:
+		for m: SoundMemory in apex_node.memories.memories:
+			memory_positions.append(m.position)
+	_place_blips(_memory_blips, memory_positions, Color(1.0, 0.6, 0.2), 5.0)
+
+
+## Shows one pooled blip per position, growing the pool as needed.
+func _place_blips(pool: Array[MeshInstance3D], positions: Array[Vector3], color: Color, radius: float) -> void:
+	while pool.size() < positions.size():
+		pool.append(_blip(color, radius))
+	for i: int in pool.size():
+		pool[i].visible = i < positions.size()
+		if i < positions.size():
+			pool[i].position = positions[i]
 
 
 func _blip(color: Color, radius: float) -> MeshInstance3D:
@@ -264,6 +288,30 @@ func _update_stats() -> void:
 	_stats.text = stats_text(game)
 
 
+## The sound field section: recent events (newest first) and the apex's
+## memories, each with a placeholder when empty. Static for tests.
+static func sound_field_lines(events: Array[Dictionary], memories: Array[SoundMemory], now: float) -> PackedStringArray:
+	var lines: PackedStringArray = PackedStringArray()
+	lines.append("EVENTS")
+	if events.is_empty():
+		lines.append("  none yet")
+	for i: int in range(events.size() - 1, -1, -1):
+		var e: Dictionary = events[i]
+		var p: Vector3 = e["position"] as Vector3
+		lines.append("  %s  %.0f dB  at (%.0f, %.0f, %.0f)  %.1f s ago  heard by %d" % [
+			String(e["kind"]) if String(e["kind"]) != "" else "sound", NoiseLevel.to_db(float(e["intensity"])),
+			p.x, p.y, p.z, now - float(e["time"]), int(e["heard"])])
+	lines.append("MEMORIES")
+	if memories.is_empty():
+		lines.append("  none")
+	for i: int in range(memories.size() - 1, -1, -1):
+		var m: SoundMemory = memories[i]
+		lines.append("  %s  %.0f dB  at (%.0f, %.0f, %.0f)  ±%.0f m  %.1f s ago" % [
+			String(m.kind) if String(m.kind) != "" else "sound", NoiseLevel.to_db(m.intensity),
+			m.position.x, m.position.y, m.position.z, m.uncertainty, now - m.time])
+	return lines
+
+
 ## The stats panel's text. Static so tests can check it without rendering.
 static func stats_text(g: Game) -> String:
 	var c: SubController = g.get_node("SubController") as SubController
@@ -294,6 +342,10 @@ static func stats_text(g: Game) -> String:
 		lines.append("  distance %.0f m   speed %.1f m/s   depth %.0f m" % [dist, apex.speed, -apex.position.y])
 		lines.append("  suspicion %.0f   last SNR %s   alertness %.2f" % [
 			apex.sync_suspicion, ("%+.1f dB" % apex.sync_snr) if apex.sync_snr > -99.0 else "none", apex.sync_alertness])
+	var mems: Array[SoundMemory] = []
+	if apex != null:
+		mems = apex.memories.memories
+	lines.append_array(sound_field_lines(Acoustics.recent_events, mems, Acoustics.now()))
 	var leak_system: LeakSystem = g.get_node_or_null("LeakSystem") as LeakSystem
 	if leak_system != null:
 		lines.append("LEAKS  spontaneous %s  (F6 to %s)" % [

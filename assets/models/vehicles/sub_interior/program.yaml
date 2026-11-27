@@ -83,7 +83,7 @@ stations:
   - {id: sonar_seat,      compartment: midships,    kind: chair, side: starboard, z: -2.95, footprint: [0.6, 0.6], inboard_of: sonar, faces: starboard}
   # The science station (#529, reserved here by #598): a long starboard wall station, three module bays over a hand ledge,
   # taking the bulk of the wall between sonar and countermeasures. The operator stands in the aisle facing starboard.
-  - {id: science,         compartment: midships,    kind: panel, side: starboard, z: -1.4, footprint: [2.0, 0.5], faces: starboard}
+  - {id: science,         compartment: midships,    kind: panel, side: starboard, z: -1.4, footprint: [1.2, 0.25], faces: starboard}
   # Countermeasures: the aft end of the starboard wall, against the bulkhead (footprint ends at z 1.5). Kept 0.5 m long so it does
   # not run alongside the lock-out trunk (z 0.05 to 0.95): the trunk keeps a clear 0.98 m of deck on its starboard side.
   - {id: countermeasures, compartment: midships,    kind: panel, side: starboard, z: 1.25, footprint: [0.5, 0.45]}
@@ -97,9 +97,6 @@ stations:
   # (ends z 2.8); its pump lever ends toward the bow and a hose runs aft to the bilge well.
   - {id: ballast,         compartment: engineering, kind: panel, side: port,      z: 3.4, footprint: [1.2, 0.45]}
   - {id: bilge,           compartment: engineering, kind: well,  side: centre,    z: 4.35, footprint: [0.6, 0.9]}
-  # The scanner's wall panel (switch and SCAN gauge). The engineering (electrical) panel fills the starboard
-  # wall beside the hatch, so it sits aft of it, ahead of the bilge well.
-  - {id: scanner,         compartment: engineering, kind: panel, side: starboard, z: 3.55, footprint: [0.4, 0.4]}
 
 features:
   - id: lock_out_trunk
@@ -133,7 +130,7 @@ displays:
     under the overhead. The operator's console is level with the table top and reached from the leaning eye.
 
 design_notes:
-  - "The operational core shares one volume: the pilot in the dome, sonar turned to the starboard hull just aft of the dome, the science station along the same wall, countermeasures at its aft end, and the map table across the aisle. Nobody is more than a few steps from anyone else."
+  - "The operational core shares one volume: the pilot in the dome, sonar turned to the starboard hull just aft of the dome, the science station along the same wall, countermeasures at its aft end, and the map table on the port wall. Nobody is more than a few steps from anyone else."
   - Crew standing behind the pilot look over one head, out through the dome and down to the sea floor.
   - Countermeasures sits at the aft end of the starboard wall against the bulkhead, away from the table, so its operator works with their back to the quiet end of the boat.
   - Sonar gives up its forward view: its operator sits facing the hull, not past the pilot into the dome (#586).
@@ -156,8 +153,8 @@ cameras:
      notes: The pilot's view out of the dome, the small hologram up and to the side of the apex gap, above the depth finder.}
   - {id: sonar_view, seat: sonar_seat, look_dir: [1.0, -0.35, 0.0], lens_mm: 18, hide: [crew, dome],
      notes: Seated at the sonar console facing outboard, the screen ahead against the starboard hull.}
-  - {id: science_view, pos: [0.2, 0.70, -1.4], look: [1.4, 0.4, -1.4], lens_mm: 18, hide: [crew, dome],
-     notes: "Standing in the aisle at the science station's middle, looking starboard along its three bays."}
+  - {id: science_view, pos: [0.95, 0.70, -1.4], look: [1.6, 0.35, -1.4], lens_mm: 18, hide: [crew, dome],
+     notes: "Standing at the science station's operator point, 0.5 m from the panel, looking starboard along its three bays."}
   - {id: map_operator_view, pos: [0.05, 0.75, -0.7], look: [-1.25, -0.15, -1.4], lens_mm: 20, hide: [crew, dome],
      notes: "Over the standing operator's shoulder: the hologram slab ahead, the cowl above."}
   - {id: map_observer_view, pos: [0.65, 0.70, -0.2], look: [-1.25, -0.25, -1.45], lens_mm: 18, hide: [crew, dome],

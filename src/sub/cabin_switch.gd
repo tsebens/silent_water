@@ -1,7 +1,6 @@
 class_name CabinSwitch
 extends Node
-## Drives [CabinLights] from two switches: `power` turns the cabin lights on or off (the dimmer keeps setting
-## the level while they are on), and `stealth_switch` sets [member CabinLights.stealth]. A switch counts as
+## Drives [CabinLights] from two switches: `power` turns the cabin lights on or off, and `stealth_switch` sets [member CabinLights.stealth]. A switch counts as
 ## "on" in the upper half of its range.
 
 @export var lights: CabinLights

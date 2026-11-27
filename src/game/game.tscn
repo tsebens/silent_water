@@ -164,12 +164,11 @@ script = ExtResource("11")
 lights = NodePath("../Interior/Lights")
 players = NodePath("../Players")
 
-[node name="ScanObjective" type="Node" parent="." node_paths=PackedStringArray("controller", "switch", "target", "scanner_point")]
+[node name="ScanObjective" type="Node" parent="." node_paths=PackedStringArray("controller", "target", "scanner_point")]
 script = ExtResource("14")
 controller = NodePath("../SubController")
-switch = NodePath("../Interior/Stations/Scanner/Switch")
 target = NodePath("../World/ScanTarget")
-scanner_point = NodePath("../Interior/Stations/Scanner/Switch")
+scanner_point = NodePath("../Interior/Stations/Science/Station/Panel/Bay0/Module")
 
 [node name="Sync" type="MultiplayerSynchronizer" parent="ScanObjective"]
 replication_interval = 0.2
@@ -194,10 +193,9 @@ leaks = NodePath("../LeakSystem")
 scan = NodePath("../ScanObjective")
 director = NodePath("../DiveDirector")
 
-[node name="CabinLights" type="Node" parent="." node_paths=PackedStringArray("lights_root", "dimmer", "excluded", "emergency_root")]
+[node name="CabinLights" type="Node" parent="." node_paths=PackedStringArray("lights_root", "excluded", "emergency_root")]
 script = ExtResource("17")
 lights_root = NodePath("../Interior/Lights")
-dimmer = NodePath("../Interior/Stations/Pilot/Dimmer")
 excluded = [NodePath("../Interior/Lights/Headlight")]
 emergency_root = NodePath("../Interior/EmergencyLights")
 

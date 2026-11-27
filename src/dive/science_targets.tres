@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="ScienceTargets" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://src/dive/science_targets.gd" id="1_targets"]
+
+[resource]
+script = ExtResource("1_targets")
+sweep_center = Vector3(0, -150, -200)
+sweep_size = Vector2(100, 100)
+sweep_fraction = 0.6
+probe_names = PackedStringArray("Vent A", "Vent B")
+probe_positions = PackedVector3Array(10, -120, -150, -10, -140, -260)
+photo_names = PackedStringArray("Wreck", "Tube Worms")
+photo_positions = PackedVector3Array(-20, -130, -180, 25, -150, -240)

@@ -3,22 +3,22 @@
 [ext_resource type="Script" path="res://src/power/power_system.gd" id="power_system"]
 [ext_resource type="PackedScene" path="res://src/sub/sub_model.tscn" id="1"]
 [ext_resource type="PackedScene" path="res://src/interact/valve.tscn" id="2"]
-[ext_resource type="Script" path="res://src/interact/gauge.gd" id="3"]
 [ext_resource type="Script" path="res://src/interact/pilot_seat.gd" id="4"]
 [ext_resource type="Script" path="res://src/interact/spring_axis.gd" id="5"]
 [ext_resource type="PackedScene" path="res://src/noise/noise_gauge.tscn" id="6"]
 [ext_resource type="PackedScene" path="res://src/damage/leak.tscn" id="7"]
 [ext_resource type="PackedScene" path="res://src/power/junction_box.tscn" id="junction_box"]
-[ext_resource type="PackedScene" path="res://src/interact/bilge_pump.tscn" id="8"]
-[ext_resource type="PackedScene" path="res://src/interact/lever.tscn" id="12"]
 [ext_resource type="Script" path="res://src/map/holo_map.gd" id="15"]
 [ext_resource type="Script" path="res://src/map/map_table_observer.gd" id="obs_seat"]
 [ext_resource type="Script" path="res://src/map/map_table.gd" id="16"]
+[ext_resource type="Script" path="res://src/science/science_station.gd" id="science_station"]
+[ext_resource type="PackedScene" path="res://assets/models/stations/science_bay/science_bay.tscn" id="science_bay"]
 [ext_resource type="PackedScene" path="res://src/sub/bilge_water.tscn" id="17"]
 [ext_resource type="Script" path="res://src/sub/palette_light.gd" id="palette_light"]
 [ext_resource type="Script" path="res://src/life_support/life_support_readouts.gd" id="ls_readouts"]
 [ext_resource type="Script" path="res://src/life_support/life_support_alarm_driver.gd" id="ls_driver"]
 [ext_resource type="Script" path="res://src/sub/station_placement.gd" id="station_placement"]
+[ext_resource type="Script" path="res://src/sub/cable_trays.gd" id="cable_trays"]
 [ext_resource type="PackedScene" path="res://assets/models/stations/sonar_console/sonar_console.tscn" id="sonar_console"]
 [ext_resource type="PackedScene" path="res://assets/models/stations/map_table/map_table.tscn" id="map_table"]
 [ext_resource type="PackedScene" path="res://assets/models/stations/pilot_station/pilot_station.tscn" id="pilot_station"]
@@ -66,6 +66,9 @@ size = Vector3(1.0, 1.1, 1.0)
 
 [sub_resource type="BoxShape3D" id="observer_grab"]
 size = Vector3(0.9, 0.9, 0.9)
+
+[sub_resource type="BoxShape3D" id="science_grab"]
+size = Vector3(1.3, 1.2, 0.9)
 
 [sub_resource type="BoxShape3D" id="table_grab"]
 size = Vector3(0.9, 0.9, 0.9)
@@ -237,7 +240,7 @@ follow = {
 "../Maps/PilotHolo": "Anchors/HologramAnchor"
 }
 
-[node name="Seat" parent="Stations/Pilot" node_paths=PackedStringArray("throttle", "rudder", "planes", "flood_valve", "blow_valve", "holo", "sit_point")]
+[node name="Seat" parent="Stations/Pilot" node_paths=PackedStringArray("throttle", "rudder", "planes", "flood_valve", "blow_valve", "holo", "switches", "sit_point")]
 script = ExtResource("4")
 throttle = NodePath("../Throttle")
 rudder = NodePath("../Rudder")
@@ -245,6 +248,7 @@ planes = NodePath("../Planes")
 flood_valve = NodePath("../../Ballast/Panel/FloodWheel")
 blow_valve = NodePath("../../Ballast/Panel/BlowWheel")
 holo = NodePath("../../Maps/PilotHolo")
+switches = [NodePath("../Anchors/ExternalLightSwitch"), NodePath("../Anchors/ExternalColourSwitch"), NodePath("../Anchors/CabinLightSwitch"), NodePath("../Anchors/CabinColourSwitch")]
 sit_point = NodePath("SitPoint")
 eye_height = 1.15
 label = "pilot seat"
@@ -283,16 +287,21 @@ label = "rudder"
 script = ExtResource("5")
 label = "dive planes"
 
-[node name="Dimmer" parent="Stations/Pilot" instance=ExtResource("12")]
-position = Vector3(-0.62, 0.3, 0.1)
-initial_value = 1.0
-label = "cabin lights"
-
 [node name="ExternalLightSwitch" parent="Stations/Pilot/Anchors"]
 initial_value = 1.0
 
 [node name="CabinLightSwitch" parent="Stations/Pilot/Anchors"]
 initial_value = 1.0
+
+[node name="Co2LampDriver" parent="Stations/Pilot/Drivers"]
+source_group = &"life_support_readouts"
+readout = &"co2_ppm"
+threshold = 7000.0
+
+[node name="LowO2LampDriver" parent="Stations/Pilot/Drivers"]
+source_group = &"life_support_readouts"
+readout = &"o2_level"
+threshold = 0.25
 
 [node name="HeadlightSwitch" type="Node" parent="Stations/Pilot" node_paths=PackedStringArray("light", "power", "colour")]
 script = ExtResource("headlight_switch")
@@ -338,26 +347,29 @@ transform = Transform3D(0, -1, 0, 1, 0, 0, 0, 0, 1, 0.1875, 0.05, 0.8)
 mesh = SubResource("hose_turn")
 surface_material_override/0 = ExtResource("hose_mat")
 
-[node name="Scanner" type="Node3D" parent="Stations"]
+[node name="Science" type="Node3D" parent="Stations"]
 script = ExtResource("station_placement")
-station_id = &"scanner"
+station_id = &"science"
 placements = {
-"Switch": Vector3(0.5, 1.1, 0),
-"ProgressGauge": Vector3(0.4, 1.6, 0)
+"Station": Vector3(0.36, 1.1, 0)
 }
 
-[node name="Switch" parent="Stations/Scanner" instance=ExtResource("8")]
-rotation = Vector3(0, 0, 1.5708)
-label = "scanner switch"
-
-[node name="ProgressGauge" type="Node3D" parent="Stations/Scanner"]
+[node name="Station" type="Node3D" parent="Stations/Science" node_paths=PackedStringArray("sit_point")]
 rotation = Vector3(0, -1.5708, 0)
-script = ExtResource("3")
-source_group = &"scan_readouts"
-readout = &"progress"
-title = "SCAN"
-max_value = 1.0
-sweep_deg = 180.0
+script = ExtResource("science_station")
+sit_point = NodePath("Panel/OperatorPoint")
+anchor_root = NodePath("Panel")
+label = "science station"
+
+[node name="Panel" parent="Stations/Science/Station" instance=ExtResource("science_bay")]
+
+[node name="Grab" type="StaticBody3D" parent="Stations/Science/Station"]
+collision_layer = 2
+collision_mask = 0
+
+[node name="Shape" type="CollisionShape3D" parent="Stations/Science/Station/Grab"]
+position = Vector3(0, 0.2, 0.5)
+shape = SubResource("science_grab")
 
 [node name="Engineering" type="Node3D" parent="Stations"]
 script = ExtResource("station_placement")
@@ -533,6 +545,11 @@ script = ExtResource("ls_driver")
 
 [node name="PowerSystem" type="Node" parent="."]
 script = ExtResource("power_system")
+
+[node name="CableTrays" type="Node3D" parent="."]
+script = ExtResource("cable_trays")
+board = NodePath("../Stations/Engineering/Panel")
+boxes = NodePath("../JunctionBoxes")
 
 [node name="JunctionBoxes" type="Node3D" parent="."]
 
