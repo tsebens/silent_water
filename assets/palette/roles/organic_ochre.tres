@@ -1,0 +1,9 @@
+[gd_resource type="StandardMaterial3D" script_class="RoleMaterial" format=3]
+
+[ext_resource type="Script" path="res://src/palette/role_material.gd" id="1_oc4re"]
+
+[resource]
+resource_name = "organic_ochre"
+roughness = 0.9
+script = ExtResource("1_oc4re")
+swatch = &"sub_yellow"

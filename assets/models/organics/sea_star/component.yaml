@@ -1,0 +1,26 @@
+slug: sea_star
+group: organics
+kind: element
+summary: 'Sea star: a static faceted creature about 25 cm across, domed disc, five tapered arms with curled tips,
+  tubercles on the ochre top and a ridged umber underside. Lies on the floor, one arm toward +Z. No script.'
+tags:
+- sea star
+- starfish
+- organic
+- creature
+- seabed
+- static
+scene: res://assets/models/organics/sea_star/sea_star.tscn
+footprint_mm:
+- 247
+- 247
+stand_out_mm: 32
+mount: lies on the floor at Y=0, centred on X/Z, one arm toward +Z
+triangles: 768
+built_by: tools/cadkit/scenes/sea_star.py
+files:
+- component.yaml
+- review/.gdignore
+- review/cameras.json
+- sea_star.glb
+- sea_star.tscn
