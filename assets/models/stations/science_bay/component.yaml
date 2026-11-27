@@ -1,0 +1,97 @@
+slug: science_bay
+group: stations
+kind: panel
+summary: 'Science bay: a long low raked housing with three module bays at chest height over a sloped hand ledge,
+  a SCIENCE BAY plate and running strip above, the shared noise repeater on the ledge. Each bay is an anchor (Bay0..Bay2)
+  whose child `Module` is a module scene (default SCAN, SWEEP, CAMERA); any of the four module scenes fits any bay,
+  and an empty bay is a dark pocket.'
+tags:
+- panel
+- station
+- science
+- bay
+- module
+- scan
+- sweep
+- probe
+- camera
+- ledge
+- standing
+scene: res://assets/models/stations/science_bay/science_bay.tscn
+behaviour:
+  wire:
+    bays: 'Bay0..Bay2: each holds a module scene as its child `Module` (a ScienceModule root); to change the fit
+      replace that child with another module scene (any of the four fits any bay)'
+    operator: 'no script on the panel: the placement arc wraps it in ScienceStation (as the map table is wrapped)
+      with OperatorPoint (feet) and OperatorEye (the standing eye, 0.5 m out, 0.55 m above the centre)'
+    noise: NoiseGauge (acoustics_readouts) on the ledge
+footprint_mm:
+- 1200.0
+- 440.0
+stand_out_mm: 440.0
+mount: back on Z=0 against the starboard hull (X along the hull, Z out into the aisle); the station's centre stands
+  1.1 m above the floor (Y -1100 is the floor); the bay face is raked back 12 degrees so screens face the eye
+operator_eye_m:
+- 0.0
+- 0.55
+- 0.5
+reach_m: 1.1
+mounts:
+- anchor: Bay0
+  scene: scan_module
+  offset_mm: 2.0
+  host_face: pocket floor of bay 0
+- anchor: Bay1
+  scene: sweep_module
+  offset_mm: 2.0
+  host_face: pocket floor of bay 1
+- anchor: Bay2
+  scene: camera_module
+  offset_mm: 2.0
+  host_face: pocket floor of bay 2
+- anchor: NoiseGauge
+  scene: gauge
+  offset_mm: 12.0
+  host_face: ledge top
+uses:
+- scan_module
+- sweep_module
+- camera_module
+- probe_module
+- science_module_frame
+- gauge
+triangles: 3516
+triangle_budget: 4000
+triangles_by_part:
+  body: 160
+checks:
+  reach_mm:
+    scan_module@0: 738.0
+    scan_module@1: 541.0
+    scan_module@2: 738.0
+    sweep_module@0: 738.0
+    sweep_module@1: 541.0
+    sweep_module@2: 738.0
+    camera_module@0: 738.0
+    camera_module@1: 541.0
+    camera_module@2: 738.0
+    probe_module@0: 738.0
+    probe_module@1: 541.0
+    probe_module@2: 738.0
+    NoiseGauge: 693.2
+  reach_limit_mm: 1100.0
+  sight_lines: 10
+  along_hull_mm: 1200.0
+  deep_mm: 440.0
+  module_y_mm:
+  - 0.6
+  - 298.2
+  worst_face_deg: 49.3
+  triangles_heaviest_fit: 3808
+built_by: tools/cadkit/scenes/science_bay.py
+files:
+- component.yaml
+- review/.gdignore
+- review/cameras.json
+- science_bay.tscn
+- science_bay_body.glb
