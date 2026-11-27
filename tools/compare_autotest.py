@@ -7,6 +7,9 @@ import json
 import sys
 
 
+TOUR = ["pilot", "sonar", "map_table", "engineering", "ballast", "life_support"]
+
+
 def near(a, b, tol):
     return abs(a - b) <= tol
 
@@ -80,6 +83,12 @@ def main() -> int:
                 dist = sum((a - b) ** 2 for a, b in zip(pos, other)) ** 0.5
                 if dist > 0.1:
                     errors.append(f"player {pid} position disagrees by {dist:.2f} m ({ref['role']} vs {r['role']})")
+    # Crew1 tours every placed station (src/debug/autotest.gd TOUR); the other instances tour nothing.
+    if "Crew1" in by_role:
+        visits = by_role["Crew1"].get("visits", [])
+        for station in TOUR:
+            if station not in visits:
+                errors.append(f"Crew1 never visited {station} (visits: {visits})")
     for e in errors:
         print("  " + e)
     return 1 if errors else 0

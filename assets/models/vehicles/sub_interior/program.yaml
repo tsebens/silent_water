@@ -133,7 +133,7 @@ displays:
     under the overhead. The operator's console is level with the table top and reached from the leaning eye.
 
 design_notes:
-  - "The operational core shares one volume: the pilot in the dome, sonar turned to the starboard hull just aft of the dome, the science station along the same wall, countermeasures at its aft end, and the map table across the aisle. Nobody is more than a few steps from anyone else."
+  - "The operational core shares one volume: the pilot in the dome, sonar turned to the starboard hull just aft of the dome, the science station along the same wall, countermeasures at its aft end, and the map table on the port wall. Nobody is more than a few steps from anyone else."
   - Crew standing behind the pilot look over one head, out through the dome and down to the sea floor.
   - Countermeasures sits at the aft end of the starboard wall against the bulkhead, away from the table, so its operator works with their back to the quiet end of the boat.
   - Sonar gives up its forward view: its operator sits facing the hull, not past the pilot into the dome (#586).

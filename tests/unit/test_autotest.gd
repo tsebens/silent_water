@@ -57,3 +57,13 @@ func test_acoustics_voice_age() -> void:
 	expect_eq(Acoustics.voice_age(me + 1), INF, "another peer never reported")
 	Acoustics.reset()
 	expect_eq(Acoustics.voice_age(me), INF, "reset forgets the report")
+
+
+func test_tour_covers_every_placed_station_and_stands_clear_of_it() -> void:
+	expect_eq(Autotest.TOUR.size(), 6, "pilot, sonar, map table, electrical, engineering, life support")
+	for id: StringName in Autotest.TOUR:
+		expect(SubLayout.has(id), "%s is in the program" % id)
+		var p: Vector3 = Autotest.stand_point(id)
+		expect(SubLayout.inside_hull(p.x, p.y + 1.0, p.z), "%s stand point %s is inside the hull" % [id, p])
+		expect(p.distance_to(SubLayout.position(id)) <= Autotest.TOUR_REACH, "%s stand point is within reach" % id)
+	expect(Autotest.TOUR_START + Autotest.TOUR_STEP * float(Autotest.TOUR.size()) < Autotest.REPORT_AT, "the tour ends before the report")
