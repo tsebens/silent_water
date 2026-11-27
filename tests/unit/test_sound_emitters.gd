@@ -148,3 +148,90 @@ func test_changing_sub_types_changes_sub_events() -> void:
 	Acoustics.emit_load(t, Vector3(10, 0, 0), 0.01)
 	t.intensity = old
 	expect_near(got[1].emitted_intensity, got[0].emitted_intensity * 2.0, 1e-12)
+
+
+func _stream_type(period: float) -> SoundType:
+	var t: SoundType = _type(NoiseLevel.from_db(130.0), period)
+	t.stream = AudioStreamGenerator.new()
+	return t
+
+
+func _players(e: Node) -> Array[AudioStreamPlayer3D]:
+	var out: Array[AudioStreamPlayer3D] = []
+	for c: Node in e.get_children():
+		if c is AudioStreamPlayer3D:
+			out.append(c)
+	return out
+
+
+func test_one_off_plays_stream_at_position() -> void:
+	var t: SoundType = _stream_type(0.0)
+	t.volume_db = -6.0
+	var e: SoundEmitter = _emitter(t)
+	e.fire()
+	var ps: Array[AudioStreamPlayer3D] = _players(e)
+	expect_eq(ps.size(), 1)
+	expect(ps[0].stream == t.stream)
+	expect_near(ps[0].global_position.x, 10.0, 1e-6)
+	expect_near(ps[0].volume_db, -6.0, 1e-6)
+	expect_near(ps[0].unit_size, SubAudio.UNIT_SIZE, 1e-6)
+	expect(ps[0].bus == AudioBuses.INSIDE)
+	e.free()
+
+
+func test_loop_player_runs_while_active_without_restart() -> void:
+	var e: SoundEmitter = _emitter(_stream_type(1.0))
+	e._physics_process(0.1)
+	var p: AudioStreamPlayer3D = e.loop_player()
+	expect(p != null)
+	expect(p.playing)
+	for i: int in range(30):
+		e._physics_process(0.1)
+	expect(e.loop_player() == p)
+	expect_eq(_players(e).size(), 1)
+	e.active = false
+	e._physics_process(0.1)
+	expect(e.loop_player() == null)
+	e.free()
+
+
+func test_no_stream_means_no_player() -> void:
+	var e: SoundEmitter = _emitter(_type(NoiseLevel.from_db(130.0), 1.0))
+	e._physics_process(0.1)
+	e.fire()
+	expect(e.loop_player() == null)
+	expect_eq(_players(e).size(), 0)
+	var e2: SoundEmitter = _emitter(_type(NoiseLevel.from_db(130.0), 0.0))
+	e2.fire()
+	expect_eq(_players(e2).size(), 0)
+	e.free()
+	e2.free()
+
+
+func test_type_volume_change_reaches_every_emitter() -> void:
+	var t: SoundType = _stream_type(1.0)
+	var e1: SoundEmitter = _emitter(t)
+	var e2: SoundEmitter = _emitter(t)
+	e1._physics_process(0.1)
+	e2._physics_process(0.1)
+	t.volume_db = -12.0
+	e1._physics_process(0.1)
+	e2._physics_process(0.1)
+	expect_near(e1.loop_player().volume_db, -12.0, 1e-6)
+	expect_near(e2.loop_player().volume_db, -12.0, 1e-6)
+	e1.free()
+	e2.free()
+
+
+func test_field_events_false_plays_but_emits_nothing() -> void:
+	var t: SoundType = _stream_type(1.0)
+	var e: SoundEmitter = _emitter(t)
+	e.field_events = false
+	e.fire()
+	expect_eq(e.advance(3.0), 3)
+	expect_eq(got.size(), 0)
+	expect_eq(_players(e).size(), 1)
+	e.field_events = true
+	e.fire()
+	expect_eq(got.size(), 1)
+	e.free()
