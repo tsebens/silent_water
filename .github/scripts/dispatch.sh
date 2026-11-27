@@ -124,6 +124,10 @@ open_blockers_of() { # number
   if [ -z "$line" ]; then echo "?no-blocked-by-line"; return 0; fi
   rest=$(sed -E 's/^\**[Bb]locked by:?\**:?//; s/[*[:space:]]+//g' <<<"$line")
   if [ -z "$rest" ]; then echo "?blank-blocked-by-line"; return 0; fi
+  # Every entry must be `none` or `#<digits>`; a bare `#`, `Arc 3` or stray words make the line unreadable.
+  for b in $(sed -E 's/^\**[Bb]locked by:?\**:?//; s/\*//g; s/,/ /g' <<<"$line"); do
+    if ! grep -qiE '^(none|#[0-9]+)$' <<<"$b"; then echo "?malformed-blocked-by-line"; return 0; fi
+  done
   deps=$(gh api "repos/$REPO/issues/$1/dependencies/blocked_by" --jq '.[].number' 2>/dev/null) || { echo "?dependencies-unreadable"; return 0; }
   for b in $( { grep -oE '#[0-9]+' <<<"$line" | tr -d '#' || true; echo "$deps"; } | grep -E '^[0-9]+$' | sort -un); do
     issue_is_closed "$b" || echo "#$b"
@@ -372,6 +376,16 @@ close_finished_milestones() { # same arguments as closable_milestones
 # Run.
 # ---------------------------------------------------------------------------
 
+# A malformed `Blocked by:` line cannot be trusted either way: escalate once (needs-human is terminal, so later
+# passes skip the arc). $2 is the open_blockers_of output.
+escalate_if_malformed() { # number open-blockers
+  case "$2" in *'?malformed-blocked-by-line'*) ;; *) return 1 ;; esac
+  log "  #$1 has a malformed Blocked by: line; escalating"
+  add_label "$1" needs-human
+  act gh issue edit "$1" -R "$REPO" --add-assignee tsebens >/dev/null
+  return 0
+}
+
 # Step 1. A board Status of Ready puts an arc on the radar but never overrides open blockers, whoever set it.
 mirror_board_ready() {
   local n open
@@ -379,6 +393,7 @@ mirror_board_ready() {
     arc_has "$n" arc || continue   # not an open arc (closed, or not labeled arc)
     if arc_has "$n" needs-human || arc_has "$n" claimed || arc_has "$n" in-review || arc_has "$n" ready; then continue; fi
     open=$(open_blockers_of "$n" | tr '\n' ' ')
+    if escalate_if_malformed "$n" "$open"; then continue; fi
     if [ -n "$open" ]; then
       log "  #$n is Ready on the board but has open blockers (${open% }); not promoting, leaving it blocked"
       arc_has "$n" blocked || add_label "$n" blocked
@@ -396,6 +411,7 @@ unblock_arcs() {
   for n in $(arcs_with blocked); do
     arc_has "$n" needs-human && continue
     open=$(open_blockers_of "$n" | tr '\n' ' ')
+    if escalate_if_malformed "$n" "$open"; then continue; fi
     if [ -z "$open" ]; then
       log "  #$n: all blockers closed"
       remove_label "$n" blocked
@@ -514,6 +530,7 @@ for n in $(arcs_with ready); do
   [ "$in_flight_count" -lt "$WORKER_CAP" ] || continue
   arc_has "$n" needs-human && continue
   open=$(open_blockers_of "$n" | tr '\n' ' ')
+  if escalate_if_malformed "$n" "$open"; then continue; fi
   if [ -n "$open" ]; then log "  #$n is ready but has open blockers (${open% }); not claiming"; continue; fi
   t=$(touches_of "$n")
   if [ -z "$t" ]; then log "  #$n has no Touches: line; treating as touching everything"; t="."; fi
