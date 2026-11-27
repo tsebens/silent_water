@@ -35,6 +35,11 @@ const UNCERTAINTY_PER_M: float = 0.2
 ## (error is divided by 1 + margin / this).
 const UNCERTAINTY_DB_SCALE: float = 6.0
 
+## The sub's combined periodic event and one-off impacts use these shared types.
+## Their intensity is the unit the live load (sum of systems) is multiplied by.
+const SUB_COMBINED_TYPE: SoundType = preload("res://src/noise/sound_types/sub_combined.tres")
+const IMPACT_TYPE: SoundType = preload("res://src/noise/sound_types/impact.tres")
+
 ## Total noise of the sub (linear intensity). Authoritative on the host,
 ## replicated to clients for gauges.
 var sub_intensity: float = 0.0
@@ -56,6 +61,9 @@ var _voice_times: Dictionary = {}
 var _impulses: Array[PackedFloat32Array] = []
 var _broadcast_accum: float = 0.0
 var _time: float = 0.0
+var _sub_event_accum: float = 0.0
+## Intensity of the last combined sub event's load (host only).
+var last_sub_event_load: float = 0.0
 var _rng: RandomNumberGenerator = RandomNumberGenerator.new()
 ## Tests may replace the terrain check: Callable(from_world, to_world) -> bool.
 var occlusion_override: Callable = Callable()
@@ -93,6 +101,8 @@ func add_impulse(intensity: float, duration: float = 1.0) -> void:
 	if not multiplayer.is_server():
 		return
 	_impulses.append(PackedFloat32Array([intensity, duration, duration]))
+	# A one-off also emits once, now, where the sub is.
+	emit_load(IMPACT_TYPE, _sub_position(), intensity, self)
 
 
 ## Called on every peer by its local mic meter. Forwards to the host.
@@ -124,6 +134,34 @@ func heard_at(world_point: Vector3, sub_frame: SubFrame) -> float:
 	if _occluded(sub_frame, sub_pos, world_point):
 		heard *= NoiseLevel.from_db(NoiseLevel.REF_DB - OCCLUSION_LOSS_DB)
 	return heard
+
+
+## Host only. Like [method emit_event], but for a load that is computed live (the
+## sub's summed systems, an impulse): the event's intensity is the type's
+## intensity times [param load_intensity]. Kind comes from the type.
+func emit_load(type: SoundType, position: Vector3, load_intensity: float, source: Object = null) -> int:
+	return emit_raw(position, type.intensity * maxf(load_intensity, 0.0), type.kind, source)
+
+
+func _sub_position() -> Vector3:
+	var frame: SubFrame = get_tree().get_first_node_in_group(&"sub_frame") as SubFrame
+	return frame.sub_transform.origin if frame != null else Vector3.ZERO
+
+
+## Advances the sub's combined-event clock; emits one event per period with the
+## given continuous load. Returns the number of events emitted.
+func advance_sub_events(delta: float, load_intensity: float) -> int:
+	var period: float = SUB_COMBINED_TYPE.period
+	if period <= 0.0:
+		return 0
+	_sub_event_accum += delta
+	var n: int = 0
+	while _sub_event_accum >= period:
+		_sub_event_accum -= period
+		last_sub_event_load = load_intensity
+		emit_load(SUB_COMBINED_TYPE, _sub_position(), load_intensity, self)
+		n += 1
+	return n
 
 
 ## Seeds the perceived-position error, for deterministic tests.
@@ -216,6 +254,7 @@ func _physics_process(delta: float) -> void:
 		else:
 			var label: String = _label_for(node)
 			breakdown[label] = float(breakdown.get(label, 0.0)) + i_src
+	var continuous_total: float = total
 	var impulse_total: float = 0.0
 	for i: int in range(_impulses.size() - 1, -1, -1):
 		var imp: PackedFloat32Array = _impulses[i]
@@ -235,7 +274,9 @@ func _physics_process(delta: float) -> void:
 		if v > 0.0:
 			breakdown["voice:%d" % peer] = v
 		total += v
+		continuous_total += v
 	sub_intensity = total
+	advance_sub_events(delta, continuous_total)
 	ambient_intensity = _ambient_at_sub()
 	top_text = _top_text()
 	levels_changed.emit(sub_db(), ambient_db())
@@ -322,5 +363,7 @@ func reset() -> void:
 	_voices.clear()
 	_voice_times.clear()
 	_impulses.clear()
+	_sub_event_accum = 0.0
+	last_sub_event_load = 0.0
 	sub_intensity = 0.0
 	ambient_intensity = NoiseLevel.from_db(OCEAN_BASE_DB)
