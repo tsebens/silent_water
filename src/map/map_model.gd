@@ -9,12 +9,12 @@ signal changed
 ## The transient sonar marks changed (added, pruned or replaced by the host).
 signal marks_changed
 
-enum Kind { WAYPOINT, DANGER, APEX, NOTE, CONTACT }
+enum Kind { WAYPOINT, DANGER, APEX, NOTE, CONTACT, DECOY }
 
-const KIND_NAMES: PackedStringArray = ["WAYPOINT", "DANGER", "LAST SEEN: APEX", "NOTE", "SONAR CONTACT"]
+const KIND_NAMES: PackedStringArray = ["WAYPOINT", "DANGER", "LAST SEEN: APEX", "NOTE", "SONAR CONTACT", "DECOY"]
 ## Palette swatch per [enum Kind] (docs/palette.md): markers and pins are purple, threats alarm red, a sonar
 ## contact is "unknown" yellow until contact classes (#359) say otherwise.
-const KIND_SWATCHES: Array[StringName] = [&"light_marker", &"light_alarm", &"light_alarm", &"light_marker", &"light_warn"]
+const KIND_SWATCHES: Array[StringName] = [&"light_marker", &"light_alarm", &"light_alarm", &"light_marker", &"light_warn", &"light_marker"]
 const MAX_PINS: int = 64
 
 ## [{id, pos (world), kind, author}], oldest first.
@@ -182,7 +182,7 @@ func _rpc_remove(id: int) -> void:
 
 
 func _host_add(world_pos: Vector3, kind: int, author: int) -> void:
-	pins.append({"id": _next_id, "pos": world_pos, "kind": clampi(kind, 0, Kind.CONTACT), "author": author})
+	pins.append({"id": _next_id, "pos": world_pos, "kind": clampi(kind, 0, Kind.DECOY), "author": author})
 	_next_id += 1
 	while pins.size() > MAX_PINS:
 		pins.remove_at(0)

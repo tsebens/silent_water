@@ -1,0 +1,46 @@
+slug: prime_lever
+group: kit
+kind: control
+summary: 'Prime lever: a long flat grey arm with an orange cross grip on a small pivot block, swinging about X.
+  SwitchLever: pull it down to set on (primed) and it stays down; click from on lifts it back to off.'
+tags:
+- lever
+- prime
+- lock
+- pull-down
+- decoy
+- loader
+- switch
+scene: res://assets/models/kit/prime_lever/prime_lever.tscn
+behaviour:
+  script: SwitchLever
+  values: 0 off (arm up), 1 on / primed (arm down, stays down)
+  signal: value_changed
+footprint_mm:
+- 84.0
+- 291.6
+stand_out_mm: 281.18
+handle_tip_mm:
+  up_yz:
+  - 160.87
+  - 196.99
+  down_yz:
+  - -105.0
+  - 243.87
+swing_envelope:
+  swing_deg: 80.0
+  arm_elevation_deg:
+  - -30.0
+  - 50.0
+  arm_length_mm: 210.0
+  note: scene swing_deg is negative so that on is down
+mount: back on Z=0, centred; front +Z; the arm runs out along +Z and swings in the YZ plane (up is +Y)
+set_on_instance:
+  label: name at the aiming point
+triangles: 284
+built_by: tools/cadkit/scenes/prime_lever.py
+files:
+- component.yaml
+- prime_lever.tscn
+- prime_lever_arm.glb
+- prime_lever_body.glb
