@@ -2,12 +2,18 @@ extends Node3D
 ## Renders a scene from several cameras to PNGs, for asset review (needs a display server):
 ##   xvfb-run -a godot --path . --rendering-driver vulkan res://tests/scene_shot.tscn -- <scene.tscn> <out_dir> [cameras.json]
 ## Without cameras.json the scene is framed automatically: a three-quarter view, front, right side and top.
-## cameras.json is a list of {name, pos: [x,y,z], look_at: [x,y,z], fov (deg) or ortho (m), light: "white"|"red"},
-## in the scene's own frame (metres), plus optional "on": true, which drives a switch scene to its on end before the shot (put these last), and "cap_open": true, which lifts a guarded switch's cap first (after "on", so "on" with the cap open is a switch thrown). Lighting is neutral and dim, close to the sub's interior; red is the sub's red light.
+## cameras.json is a list of {name, pos: [x,y,z], look_at: [x,y,z], fov (deg) or ortho (m), light: "white"|"red"|"sea", reach (m, sea only)},
+## in the scene's own frame (metres), plus optional "on": true, which drives a switch scene to its on end before the shot (put these last), and "cap_open": true, which lifts a guarded switch's cap first (after "on", so "on" with the cap open is a switch thrown). Lighting is neutral and dim, close to the sub's interior; red is the sub's red light. "sea" is the game outside: dark teal ambient and fog with about 100 m reach (`reach` overrides it), a white work light from the sub's side, and glow so infrastructure neon shows.
 
 var _env: WorldEnvironment
 var _key: DirectionalLight3D
 var _fill: OmniLight3D
+var _work: OmniLight3D
+
+## The sea preset's fog reach in metres (the game's fog_density 0.018 gives 83% fog at about 100 m).
+## A scene whose bounding box diagonal is longer than this (m) also gets a sea-lit camera.
+const LARGE_SCENE: float = 20.0
+const SEA_REACH: float = 100.0
 
 
 func _ready() -> void:
@@ -27,7 +33,7 @@ func _ready() -> void:
 	add_child(cam)
 	cam.current = true
 	for spec: Dictionary in cams:
-		_set_light(String(spec.get("light", "white")))
+		_set_light(String(spec.get("light", "white")), float(spec.get("reach", SEA_REACH)))
 		if bool(spec.get("on", false)) and scene.has_method("host_set_value"):
 			scene.call("host_set_value", scene.get("max_value"))
 		if bool(spec.get("cap_open", false)) and scene.has_method("_set_cap_local"):
@@ -72,16 +78,51 @@ func _lights() -> void:
 	_fill.position = Vector3(1.5, 2.2, 2.5)
 	_fill.omni_range = 8.0
 	add_child(_fill)
+	_work = OmniLight3D.new()
+	_work.visible = false
+	add_child(_work)
 
 
-func _set_light(kind: String) -> void:
+func _set_light(kind: String, reach: float = SEA_REACH) -> void:
+	var env: Environment = _env.environment
+	var sea: bool = kind == "sea"
+	_work.visible = sea
+	env.fog_enabled = sea
+	env.glow_enabled = sea
+	if sea:
+		_sea_light(env, reach)
+		return
 	var red: bool = kind == "red"
 	var c: Color = Color(1.0, 0.12, 0.08) if red else Color(1.0, 0.97, 0.92)
+	env.background_color = Color(0.02, 0.05, 0.06)
 	_key.light_color = c
 	_key.light_energy = 0.9 if red else 1.1
 	_fill.light_color = c
 	_fill.light_energy = 0.8 if red else 0.6
-	_env.environment.ambient_light_color = Color(0.35, 0.05, 0.04) if red else Color(0.55, 0.6, 0.62)
+	env.ambient_light_energy = 0.45
+	env.ambient_light_color = Color(0.35, 0.05, 0.04) if red else Color(0.55, 0.6, 0.62)
+
+
+## The game outside at depth. Colours are palette swatches, as SurfaceLighting uses them below its ramp:
+## background env_abyss, ambient env_teal, fog env_deep (OceanSurface.fog_color), the work light light_work_white
+## (the day LightPreset's light swatch). Fog density follows game.tscn (0.018 per 100 m), scaled by `reach`.
+func _sea_light(env: Environment, reach: float) -> void:
+	var pal: Palette = Palette.main()
+	env.background_color = pal.color(&"env_abyss")
+	env.ambient_light_color = pal.color(&"env_teal")
+	env.ambient_light_energy = 0.3
+	env.fog_light_color = OceanSurface.fog_color()
+	env.fog_density = 1.8 / maxf(reach, 1.0)
+	env.fog_sky_affect = 0.0
+	env.glow_intensity = 0.8
+	var white: Color = pal.color(&"light_work_white")
+	_key.light_color = pal.color(&"env_teal")
+	_key.light_energy = 0.15
+	_fill.light_energy = 0.0
+	_work.light_color = white
+	_work.light_energy = 6.0
+	_work.omni_range = 40.0
+	_work.position = Vector3(8.0, 1.0, 4.0)
 
 
 func _auto_cameras(scene: Node3D) -> Array:
@@ -89,12 +130,16 @@ func _auto_cameras(scene: Node3D) -> Array:
 	var c: Vector3 = box.get_center()
 	var r: float = maxf(box.size.length() * 0.5, 0.02)
 	var d: float = r / sin(deg_to_rad(25.0)) * 1.05
-	return [
+	var cams: Array = [
 		{"name": "three_quarter", "pos": _arr(c + Vector3(0.6, 0.45, 1.0).normalized() * d), "look_at": _arr(c), "fov": 50.0},
 		{"name": "front", "pos": _arr(c + Vector3(0, 0, d)), "look_at": _arr(c), "ortho": r * 2.2},
 		{"name": "right", "pos": _arr(c + Vector3(d, 0, 0)), "look_at": _arr(c), "ortho": r * 2.2},
 		{"name": "three_quarter_red", "pos": _arr(c + Vector3(0.6, 0.45, 1.0).normalized() * d), "look_at": _arr(c), "fov": 50.0, "light": "red"},
 	]
+	if box.size.length() > LARGE_SCENE:
+		# A scene tens of metres across: the sea light, with fog far enough out to leave the whole scene clear.
+		cams.append({"name": "three_quarter_sea", "pos": _arr(c + Vector3(0.6, 0.45, 1.0).normalized() * d), "look_at": _arr(c), "fov": 50.0, "light": "sea", "reach": d * 3.0})
+	return cams
 
 
 func _aabb(node: Node) -> AABB:

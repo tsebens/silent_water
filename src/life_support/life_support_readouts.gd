@@ -105,7 +105,7 @@ func step(delta: float) -> void:
 		if slot != null and slot.canister() != null:
 			seated.append(slot.canister())
 			caps.append(slot.canister().capacity)
-	model.step(delta, crew_inside(), fans_running(), _surfaced(), caps)
+	model.step(delta, breathers(), fans_running(), _surfaced(), caps)
 	for i: int in seated.size():
 		seated[i].capacity = caps[i]
 	co2_ppm = model.co2_ppm()
@@ -128,7 +128,18 @@ func step(delta: float) -> void:
 				saturation_b = sat
 
 
-## Players in the sub. All of them count today (no diving gear, no outside).
+## Everyone breathing the cabin air: [method crew_inside] plus the survivors aboard.
+## Only this feeds the CO2 and O2 draw; incapacitation and the loss rule count players.
+func breathers() -> int:
+	var n: int = crew_inside()
+	if is_inside_tree():
+		var sv: SurvivorsAboard = get_tree().get_first_node_in_group(SurvivorsAboard.GROUP) as SurvivorsAboard
+		if sv != null:
+			n += sv.count
+	return n
+
+
+## Players in the sub ([member crew_override] replaces the count in tests). All of them count today (no diving gear, no outside).
 func crew_inside() -> int:
 	if crew_override >= 0:
 		return crew_override

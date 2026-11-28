@@ -5,6 +5,8 @@
 [resource]
 script = ExtResource("1_8mbnv")
 paint = Dictionary[StringName, Color]({
+&"creature_bone": Color(0.78, 0.72, 0.62, 1),
+&"creature_rust": Color(0.52, 0.25, 0.16, 1),
 &"env_abyss": Color(0.039215688, 0.07058824, 0.07058824, 1),
 &"env_deep": Color(0.0627451, 0.18039216, 0.18039216, 1),
 &"env_teal": Color(0.19607843, 0.29411766, 0.2901961, 1),

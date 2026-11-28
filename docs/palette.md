@@ -67,6 +67,8 @@ Tristan to tune, are: `env_water`, `life_jade`, `infra_metal_light`, `sub_contro
 
 | Paint swatch | What it is |
 | --- | --- |
+| `creature_rust` | Creatures: muted rust-brown (the crab's carapace and legs) |
+| `creature_bone` | Creatures: bone (the crab's claws and underside) |
 | `env_abyss` | Background: the darkest water, far fog |
 | `env_deep` | Background: deep water; the ocean fog colour |
 | `env_teal` | Background: lit water, near fog |
@@ -174,6 +176,11 @@ Tristan to tune, are: `env_water`, `life_jade`, `infra_metal_light`, `sub_contro
 | `organic_umber` | `infra_concrete_dark` | Undersides of cadkit organics. Stand-in, as above |
 | `anemone_column` | `env_teal` | The sea anemone's column, base and oral disc |
 | `anemone_tentacle` | `flora_sage` | The sea anemone's tentacles (the nearest existing pale teal) |
+| `seaweed_frond` | `flora_deep` | The seaweed clump's strap fronds |
+| `seaweed_bladder` | `flora_sage` | The seaweed clump's bladders |
+| `seaweed_stipe` | `floor_rock_black` | The seaweed clump's holdfast and stipes (the darkest existing umber) |
+| `creature_shell` | `creature_rust` | The crab's carapace and walking legs. `creature_rust` is a new muted rust-brown paint swatch |
+| `creature_bone` | `creature_bone` | The crab's claws, underside and eye stalks. `creature_bone` is a new bone paint swatch. Decision #371 (roles for organics) stays open |
 
 **Life**
 

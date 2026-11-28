@@ -1,0 +1,26 @@
+slug: crab
+group: organics
+kind: organic
+summary: 'Crab, about 20 cm across the legs, claws toward +Z: a rust faceted carapace, 8 jointed walking legs, 2
+  bone claws, a bone underside plate and two eye stalks. Static; no script.'
+tags:
+- organic
+- crab
+- creature
+- static
+- claws
+- legs
+scene: res://assets/models/organics/crab/crab.tscn
+footprint_mm:
+- 200.2
+- 201.7
+stand_out_mm: 71.5
+mount: stands on Y=0, centred on X, carapace centred on Z=0; claws toward +Z; static, no behaviour
+triangles: 1696
+built_by: tools/cadkit/scenes/crab.py
+files:
+- component.yaml
+- crab.glb
+- crab.tscn
+- review/.gdignore
+- review/cameras.json

@@ -1,0 +1,16 @@
+# Brief for the seaweed clump (concept #776, scene arc #785). Only the part the review sheets read is kept here; the full brief is on #776.
+asset: seaweed
+concept:
+  images:
+    - {path: assets/models/organics/seaweed/concept/seaweed_primary.png, role: primary, camera: concept_primary, view: three-quarter}
+    - {path: assets/models/organics/seaweed/concept/seaweed_front.png, role: context, camera: concept_front, view: orthographic front}
+    - {path: assets/models/organics/seaweed/concept/seaweed_side.png, role: context, camera: concept_side, view: orthographic side}
+    - {path: assets/models/organics/seaweed/concept/seaweed_top.png, role: context, camera: concept_top, view: orthographic top}
+    - {path: assets/models/organics/seaweed/concept/seaweed_bottom.png, role: context, camera: concept_bottom, view: orthographic bottom}
+  compare_on:
+    - overall silhouette (a tall clump leaning toward +X, fronds fanning out)
+    - strap-like ruffled fronds, thin stipes, small round bladders
+    - colour blocking (umber holdfast and stipes, dark olive fronds)
+  ignore:
+    - the exact frond count and ruffle pattern, facet layout, lighting, background
+functions: []
