@@ -31,6 +31,7 @@ The same server carries the `labels` toolset (`list_label`, `get_label`, `label_
 
 - **Mechanical and industrial assets** (controls, displays, panels, furniture, stations) are generated: parametric CAD scripts make the solids, Godot scenes assemble them, and the pipeline builds a station from a brief and concept art. The spec is [`docs/asset_process.md`](docs/asset_process.md). Read it before touching `assets/models/kit`, `furniture`, `stations` or `tools/cadkit/`.
 - **Never hand-edit a generated file** (anything listed under `files` in a scene folder's `component.yaml`). Change its build script in `tools/cadkit/scenes/` and run `cadkit build`.
+- **Facilities** (buildings, tunnels, docking arms) are built from a brief and a floorplan program under the same process: [`docs/asset_process.md`](docs/asset_process.md), section 10, and `cadkit plan`.
 - **Scan the asset library before designing or reusing anything:** `cadkit catalogue`. It changes with every merge.
 - Organic assets (creatures, terrain) use the image-to-3D route in Asset Studio ([`docs/asset_pipeline.md`](docs/asset_pipeline.md)). The sub's hull is generated from `assets/models/vehicles/sub_interior/program.yaml` by a parametric script, to palette roles and triangle budgets. Onshape remains only as the source of the legacy `assets/sub/sub_model.glb` until the hull arc (#396) replaces it.
 
