@@ -64,3 +64,29 @@ Kept for reference:
   pinned to Godot versions and its own region and material systems.
 
 Still open: tile size, and lazy detail versus generating everything at load behind a progress screen.
+
+## When detail runs (decided), and what a tile costs in GDScript
+
+Decided (Tristan, 2026-11-28, #976): **background fill, nearest first.** Macro, gate and placement at load;
+the per-tile detail pass then runs on worker threads from the sub's start outward; the dive starts once the
+start area is ready; queries on unfinished tiles use the 10 m macro heights.
+
+`bench/tile_bench.gd` times one 64 x 64 tile (2 m cells, 4-cell margin) in GDScript. It sits behind a
+`.gdignore`; to run it, copy it into the git-ignored `.asset_work/scratch/` and run
+`godot --headless --path . -s res://.asset_work/scratch/tile_bench.gd`. Results in this container (headless
+editor binary, so an exported game should be no slower):
+
+| Step | ms per tile |
+| --- | --- |
+| Noise, 7 layers, sampled per cell | 4.5 |
+| Noise, 7 layers, filled by the engine in batches | 3.5 |
+| Combine (materials, crags, strata, rugosity, ripples) | 3.1 |
+| Slump, three 8-neighbour passes | 10.0 |
+| Mesh build | 1.7 |
+| Collision shape | 0.3 |
+| **Total** | **about 19** |
+
+The whole map is 286 tiles: about 5 s on one thread. Batched noise saves only about 1 ms and the engine's
+batch output is 8-bit, so per-cell sampling (full precision) is the better choice. The slump is the costliest
+step. Not yet timed: the macro stage in GDScript (flow routing and sediment routing over about 47,000 cells,
+ten passes), which has the heaviest loops of the pipeline.
