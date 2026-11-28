@@ -112,7 +112,7 @@
    },
    "base_y": 15.5,
    "height": 2.5,
-   "notes": "Hears the sub's coded acoustic command to switch on and off."
+   "notes": "Hears the coded acoustic command from the sub's countermeasures station that switches it on and off."
   }
  ],
  "cables": [],
@@ -147,7 +147,7 @@
     "objective_reset"
    ],
    "notes": "Reset and arm. Once armed",
-   "the sub switches it on and off from a distance.": null
+   "the sub's countermeasures station switches it on and off from a distance.": null
   }
  ],
  "sub_hover": {

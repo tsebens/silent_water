@@ -1,6 +1,6 @@
 slug: deterrent_pylon
 issue: 927
-stage: concept
+stage: locked
 description: 'A Raindrop deterrent pylon: an unmanned monument on the open seafloor
   that calls with the voice of the apex predator, so that lesser predators flee it
   and the apex itself comes to it. The site is ONLY this: a heavy square concrete
@@ -676,8 +676,24 @@ lineage:
   views: []
   options: {}
   source: {}
-locked: null
-decisions: []
+locked:
+  variant: v7
+  decision: approved
+  reviewer: Tristan
+  notes: Locked 2026-11-28 as the deterrent pylon's primary concept (looking up from
+    its foot). v1 (approach), v5 (front), v6 (three-quarter) and v4 (a diver at the
+    cell bay and arming panel) are companion views. Control moves to the countermeasures
+    station (Tristan).
+  at: '2026-11-28T05:52:40Z'
+decisions:
+- variant: v7
+  decision: approved
+  reviewer: Tristan
+  notes: Locked 2026-11-28 as the deterrent pylon's primary concept (looking up from
+    its foot). v1 (approach), v5 (front), v6 (three-quarter) and v4 (a diver at the
+    cell bay and arming panel) are companion views. Control moves to the countermeasures
+    station (Tristan).
+  at: '2026-11-28T05:52:40Z'
 brief: null
 cleanups: []
 checks: []

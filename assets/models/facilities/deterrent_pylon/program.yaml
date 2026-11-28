@@ -30,13 +30,13 @@ elements:
   - {id: emitter,     role: emitter, cylinder: {at: [0, 0], radius: 2.2}, base_y: 13.5, height: 2.0,
      notes: The emitter head, a ring of transducers. Calls with the apex's voice.}
   - {id: receiver,    role: mast,   cylinder: {at: [0, 0], radius: 0.25}, base_y: 15.5, height: 2.5,
-     notes: Hears the sub's coded acoustic command to switch on and off.}
+     notes: Hears the coded acoustic command from the sub's countermeasures station that switches it on and off.}
 
 service_points:
   - {id: cell_bay,  element: column, at: [-0.7, -1.6], y: 2.6, stand_y: 1.5, faces: south, tags: [objective_power_cell],
      notes: On the clear south face (the buttresses stand on the other three); the dead cell out, a fresh one in.}
   - {id: arm_panel, element: column, at: [0.7, -1.6], y: 2.6, stand_y: 1.5, faces: south, tags: [objective_reset],
-     notes: Reset and arm. Once armed, the sub switches it on and off from a distance.}
+     notes: Reset and arm. Once armed, the sub's countermeasures station switches it on and off from a distance.}
 
 sub_hover: {at: [0, -16], heading: x}             # a little off, in front: the call is loud close to
 approach: {from: [0, -80], to: [0, -16]}
