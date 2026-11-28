@@ -10,10 +10,12 @@ var breached: Dictionary = {}
 var flooded: Dictionary = {}
 ## Door key -> bool, for doors whose state differs from [FloodZones]' default for their kind.
 var door_open: Dictionary = {}
+## Zone id -> water level 0..1 for zones being pumped out; a flooded zone without an entry is full (1.0).
+var level: Dictionary = {}
 
 
 func to_dict() -> Dictionary:
-	return {"breached": breached.duplicate(), "flooded": flooded.duplicate(), "door_open": door_open.duplicate()}
+	return {"breached": breached.duplicate(), "flooded": flooded.duplicate(), "door_open": door_open.duplicate(), "level": level.duplicate()}
 
 
 static func from_dict(d: Dictionary) -> FloodZoneState:
@@ -21,4 +23,5 @@ static func from_dict(d: Dictionary) -> FloodZoneState:
 	s.breached = (d.get("breached", {}) as Dictionary).duplicate()
 	s.flooded = (d.get("flooded", {}) as Dictionary).duplicate()
 	s.door_open = (d.get("door_open", {}) as Dictionary).duplicate()
+	s.level = (d.get("level", {}) as Dictionary).duplicate()
 	return s
