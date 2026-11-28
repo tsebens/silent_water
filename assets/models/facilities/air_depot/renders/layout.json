@@ -1,0 +1,381 @@
+{
+ "kind": "site",
+ "site": {
+  "pad_margin_m": 5.0,
+  "sub": {
+   "length_m": 10.0,
+   "width_m": 3.8,
+   "height_m": 3.0,
+   "tower_m": 1.5
+  }
+ },
+ "elements": [
+  {
+   "id": "yard_plinth",
+   "role": "plinth",
+   "box": [
+    -12,
+    12,
+    0,
+    14
+   ],
+   "height": 1.0
+  },
+  {
+   "id": "tank_w",
+   "role": "tank",
+   "cylinder": {
+    "at": [
+     -8,
+     9
+    ],
+    "radius": 2.4
+   },
+   "base_y": 1.0,
+   "height": 5.0
+  },
+  {
+   "id": "tank_c",
+   "role": "tank",
+   "cylinder": {
+    "at": [
+     0,
+     9
+    ],
+    "radius": 2.4
+   },
+   "base_y": 1.0,
+   "height": 5.0
+  },
+  {
+   "id": "tank_e",
+   "role": "tank",
+   "cylinder": {
+    "at": [
+     8,
+     9
+    ],
+    "radius": 2.4
+   },
+   "base_y": 1.0,
+   "height": 5.0
+  },
+  {
+   "id": "valve_house",
+   "role": "node",
+   "box": [
+    -4,
+    4,
+    2,
+    5.5
+   ],
+   "base_y": 1.0,
+   "height": 3.5,
+   "notes": "The valves and the reserve gauges. Reserves are about three times the sub's capacity."
+  },
+  {
+   "id": "charger",
+   "role": "cable_bay",
+   "box": [
+    6,
+    10,
+    2,
+    5
+   ],
+   "base_y": 1.0,
+   "height": 2.5,
+   "notes": "The charging unit",
+   "fed by the network cable; it charges the sub's battery while docked.": null
+  },
+  {
+   "id": "leg_w_front",
+   "role": "gantry",
+   "box": [
+    -8.5,
+    -7,
+    -10.5,
+    -9.5
+   ],
+   "height": 7.5
+  },
+  {
+   "id": "leg_w_back",
+   "role": "gantry",
+   "box": [
+    -8.5,
+    -7,
+    -6.5,
+    -5.5
+   ],
+   "height": 7.5
+  },
+  {
+   "id": "leg_e_front",
+   "role": "gantry",
+   "box": [
+    7,
+    8.5,
+    -10.5,
+    -9.5
+   ],
+   "height": 7.5
+  },
+  {
+   "id": "leg_e_back",
+   "role": "gantry",
+   "box": [
+    7,
+    8.5,
+    -6.5,
+    -5.5
+   ],
+   "height": 7.5
+  },
+  {
+   "id": "arm",
+   "role": "node",
+   "box": [
+    -9,
+    9,
+    -10.5,
+    -5.5
+   ],
+   "base_y": 7.5,
+   "height": 2.5,
+   "notes": "The docking arm. The collar is in its underside; the sub hangs beneath it while it fills."
+  },
+  {
+   "id": "chamber",
+   "role": "chamber",
+   "box": [
+    -2.5,
+    2.5,
+    -10,
+    -6
+   ],
+   "base_y": 10.0,
+   "height": 3.0,
+   "tags": [
+    "objective_supply_locker"
+   ],
+   "notes": "The dry transfer chamber up through the collar",
+   "with the supply locker.": null
+  },
+  {
+   "id": "gas_main",
+   "role": "gantry",
+   "box": [
+    -0.6,
+    0.6,
+    -5.5,
+    2
+   ],
+   "base_y": 7.5,
+   "height": 1.0,
+   "notes": "The gas main from the valve house to the arm",
+   "carried overhead.": null
+  },
+  {
+   "id": "main_post",
+   "role": "gantry",
+   "box": [
+    -0.5,
+    0.5,
+    -1.2,
+    -0.2
+   ],
+   "height": 7.5
+  },
+  {
+   "id": "work_light_w",
+   "role": "light",
+   "cylinder": {
+    "at": [
+     -11,
+     -3
+    ],
+    "radius": 0.25
+   },
+   "height": 3.0
+  },
+  {
+   "id": "work_light_e",
+   "role": "light",
+   "cylinder": {
+    "at": [
+     11,
+     -3
+    ],
+    "radius": 0.25
+   },
+   "height": 3.0
+  }
+ ],
+ "cables": [
+  {
+   "id": "power_in",
+   "from": "charger",
+   "to": "offsite",
+   "path": [
+    [
+     10,
+     3.5
+    ],
+    [
+     30,
+     10
+    ],
+    [
+     70,
+     30
+    ]
+   ],
+   "notes": "Power from the network",
+   "toward the nearest junction. A dead depot may mean a cut here.": null
+  }
+ ],
+ "service_points": [
+  {
+   "id": "gauges",
+   "element": "valve_house",
+   "at": [
+    -1.5,
+    2
+   ],
+   "y": 2.4,
+   "stand_y": 1.0,
+   "faces": "south",
+   "tags": [
+    "objective_read_reserves"
+   ],
+   "notes": "The reserve gauges",
+   "one per gas and one for charge.": null
+  },
+  {
+   "id": "valve_panel",
+   "element": "valve_house",
+   "at": [
+    1.5,
+    2
+   ],
+   "y": 2.2,
+   "stand_y": 1.0,
+   "faces": "south",
+   "tags": [
+    "objective_reset"
+   ]
+  },
+  {
+   "id": "power_cell",
+   "element": "charger",
+   "at": [
+    8,
+    2
+   ],
+   "y": 2.0,
+   "stand_y": 1.0,
+   "faces": "south",
+   "tags": [
+    "objective_power_cell"
+   ],
+   "notes": "For a depot run on a sealed cell rather than the network."
+  }
+ ],
+ "sub_hover": {
+  "at": [
+   0,
+   -8
+  ],
+  "heading": "x",
+  "dock": {
+   "element": "arm",
+   "collar_at": [
+    0,
+    -8
+   ]
+  },
+  "keel_y": 3.0
+ },
+ "sub": {
+  "length_m": 10.0,
+  "width_m": 3.8,
+  "height_m": 3.0,
+  "tower_m": 1.5
+ },
+ "cameras": [
+  {
+   "id": "approach",
+   "pos": [
+    16,
+    4,
+    -52
+   ],
+   "look": [
+    0,
+    6,
+    -4
+   ],
+   "lens": 28
+  },
+  {
+   "id": "three_quarter",
+   "pos": [
+    -32,
+    14,
+    -36
+   ],
+   "look": [
+    0,
+    5,
+    -2
+   ],
+   "lens": 28
+  },
+  {
+   "id": "docked",
+   "pos": [
+    10,
+    1.6,
+    -20
+   ],
+   "look": [
+    0,
+    6.5,
+    -8
+   ],
+   "lens": 22,
+   "notes": "The sub filling under the arm, seen from the seabed: the moment of exposure."
+  },
+  {
+   "id": "diver_gauges",
+   "pos": [
+    -2.6,
+    2.6,
+    0.2
+   ],
+   "look": [
+    0.6,
+    2.3,
+    2
+   ],
+   "lens": 20,
+   "hide": [
+    "sub"
+   ]
+  },
+  {
+   "id": "overview",
+   "pos": [
+    0,
+    40,
+    -36
+   ],
+   "look": [
+    0,
+    3,
+    0
+   ],
+   "lens": 30
+  }
+ ]
+}

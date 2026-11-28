@@ -1,0 +1,26 @@
+ok   needs a flat pad 34 x 34 m (x -17..17, z -16..19), front toward -z
+ok   service point gauges sits on valve_house
+ok   service point gauges: 1.4 m above where the diver hangs (band 0.6-1.8)
+ok   service point gauges is within valve_house's height
+ok   service point gauges: 1.5 m of clear water in front
+ok   service point valve_panel sits on valve_house
+ok   service point valve_panel: 1.2 m above where the diver hangs (band 0.6-1.8)
+ok   service point valve_panel is within valve_house's height
+ok   service point valve_panel: 1.5 m of clear water in front
+ok   service point power_cell sits on charger
+ok   service point power_cell: 1.0 m above where the diver hangs (band 0.6-1.8)
+ok   service point power_cell is within charger's height
+ok   service point power_cell: 1.5 m of clear water in front
+ok   cable power_in starts at charger
+ok   the collar at [0, -8] is in arm's underside
+ok   the sub's hatch is under the collar
+ok   docked, the sub's keel is at y = 3.0 m with 2.0 m clear beneath
+ok   docked, the keel (3.0 m) clears the seabed by 2.0 m
+ok   approach from (0, -80) to (0, -8), 8 m wide at the sub's height, is clear
+
+# swims
+gauges (read_reserves): 10 m swim from the sub's lock-out
+valve_panel (reset): 10 m swim from the sub's lock-out
+power_cell (power_cell): 13 m swim from the sub's lock-out
+
+0 problem(s)
