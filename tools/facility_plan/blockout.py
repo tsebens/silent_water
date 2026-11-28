@@ -31,7 +31,7 @@ COL = {
     "concrete_dark": (0.40, 0.41, 0.41), "floor": (0.30, 0.32, 0.34), "wall_work": (0.42, 0.52, 0.62),
     "wall_live": (0.66, 0.56, 0.44), "wall_keep": (0.66, 0.38, 0.34), "wall_corridor": (0.50, 0.51, 0.53),
     "objective": (0.95, 0.78, 0.20), "sub": (0.85, 0.48, 0.12), "strut": (0.36, 0.37, 0.38),
-    "neon_amber": (1.0, 0.62, 0.20),
+    "neon_amber": (1.0, 0.62, 0.20), "window": (1.0, 0.82, 0.52), "frame": (0.16, 0.17, 0.18),
 }
 KEEP_ALIVE = {"life_support", "reactor_control", "reactor_hall", "switchgear", "refuge", "lockout", "dock_airlock",
               "workshop", "dive_locker", "spares", "maint_hall", "dock_passage"}
@@ -210,6 +210,36 @@ def exterior(s: dict) -> None:
             mx, mz = m["at"]
             hw = m["width_m"] / 2
             box(f"{sid}_{key}", mx - hw, mx + hw, top, top + m["height_m"], mz - hw, mz + hw, mat_name, "exterior")
+    win = ex.get("windows")
+    if win:  # lit slots in a dark frame, standing just proud of the face
+        for face in win["faces"]:
+            fixed = {"south": Z0, "north": Z1, "west": X0, "east": X1}[face]
+            out = 1 if face in ("north", "east") else -1
+            lo_a, hi_a = (X0, X1) if face in ("south", "north") else (Z0, Z1)
+            for row in win["rows"]:
+                k, a = 0, lo_a + win["spacing_m"] / 2
+                while a + win["length_m"] / 2 < hi_a:
+                    a0, a1 = a - win["length_m"] / 2, a + win["length_m"] / 2
+                    y0, y1 = row["y_m"], row["y_m"] + row["h_m"]
+                    for kind, grow, proud, m in (("frame", 0.12, 0.06, "frame"), ("glass", 0.0, 0.10, "window")):
+                        c0, c1 = sorted((fixed, fixed + out * proud))
+                        if face in ("south", "north"):
+                            box(f"{sid}_win_{face}_{y0:g}_{k}_{kind}", a0 - grow, a1 + grow, y0 - grow, y1 + grow, c0, c1, m, "exterior")
+                        else:
+                            box(f"{sid}_win_{face}_{y0:g}_{k}_{kind}", c0, c1, y0 - grow, y1 + grow, a0 - grow, a1 + grow, m, "exterior")
+                    a += win["spacing_m"]
+                    k += 1
+    tw = ex.get("tier_windows")
+    if tw and tier:
+        tz0 = Z0 - tier["chasm_m"]
+        tx0, tx1 = X0 - tier["sides_m"], X1 + tier["sides_m"]
+        y0 = hi + tier["height_m"] * 0.22
+        k, a = 0, tx0 + tw["spacing_m"] / 2
+        while a + tw["length_m"] / 2 < tx1:
+            box(f"{sid}_tierwin_{k}_frame", a - tw["length_m"] / 2 - 0.12, a + tw["length_m"] / 2 + 0.12, y0 - 0.12, y0 + tw["h_m"] + 0.12, tz0 - 0.06, tz0, "frame", "exterior")
+            box(f"{sid}_tierwin_{k}", a - tw["length_m"] / 2, a + tw["length_m"] / 2, y0, y0 + tw["h_m"], tz0 - 0.10, tz0, "window", "exterior")
+            a += tw["spacing_m"]
+            k += 1
     keel = ex.get("keel_m")
     if keel:
         for k, x in enumerate((X0 + 1.0, X1 - 1.0)):
@@ -266,12 +296,24 @@ def build(layout: dict) -> None:
     hatch = next((d for d in layout["doors"] if "sub" in d["between"]), None)
     if hatch:
         hx, hz = hatch["at"]
+        dock = next((s for s in layout["structures"] if s.get("exterior", {}).get("collar_m")), None)
+        collar = dock["exterior"]["collar_m"] if dock else 0.0
+        top = -0.6 - collar  # the arm's underside, then the collar's trunk
+        if collar:
+            bm = bmesh.new()
+            bmesh.ops.create_cone(bm, cap_ends=True, segments=16, radius1=1.0, radius2=1.0, depth=collar)
+            bmesh.ops.translate(bm, vec=B(hx, -0.6 - collar / 2, hz), verts=bm.verts)
+            obj_from("collar_trunk", bm, "concrete_dark", "exterior")
+            bm = bmesh.new()
+            bmesh.ops.create_cone(bm, cap_ends=True, segments=24, radius1=1.6, radius2=1.6, depth=0.15)
+            bmesh.ops.translate(bm, vec=B(hx, -0.68, hz), verts=bm.verts)
+            obj_from("collar_ring", bm, "neon_amber", "exterior")
         bm = bmesh.new()
         bmesh.ops.create_uvsphere(bm, u_segments=24, v_segments=12, radius=1.0)
         bmesh.ops.scale(bm, vec=Vector((5.0, 1.9, 1.5)), verts=bm.verts)  # x along the ledge, 10 m long
-        bmesh.ops.translate(bm, vec=B(hx, -0.9 - 1.2 - 1.5, hz), verts=bm.verts)
+        bmesh.ops.translate(bm, vec=B(hx, top - 1.5 - 1.5, hz), verts=bm.verts)
         obj_from("sub_hull", bm, "sub", "sub")
-        box("sub_tower", hx - 0.6, hx + 0.6, -2.1, -0.6, hz - 0.6, hz + 0.6, "sub", "sub")
+        box("sub_tower", hx - 0.6, hx + 0.6, top - 1.5, top, hz - 0.6, hz + 0.6, "sub", "sub")
 
 
 def setup() -> None:

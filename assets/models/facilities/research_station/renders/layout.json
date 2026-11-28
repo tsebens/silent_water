@@ -35,7 +35,7 @@
      "sides_m": 2.0,
      "height_m": 4.5,
      "rib_spacing_m": 2.0,
-     "rib_depth_m": 1.0
+     "rib_depth_m": 1.6
     },
     "struts": {
      "face": "south",
@@ -59,6 +59,30 @@
      ],
      "height_m": 20.0,
      "width_m": 1.2
+    },
+    "windows": {
+     "faces": [
+      "south",
+      "west",
+      "east"
+     ],
+     "rows": [
+      {
+       "y_m": 1.5,
+       "h_m": 0.5
+      },
+      {
+       "y_m": 5.1,
+       "h_m": 0.45
+      }
+     ],
+     "length_m": 3.0,
+     "spacing_m": 4.0
+    },
+    "tier_windows": {
+     "h_m": 0.35,
+     "length_m": 5.0,
+     "spacing_m": 6.0
     },
     "neon": [
      "tier_front",
@@ -100,6 +124,19 @@
      "depth_m": 3.0,
      "thick_m": 1.0
     },
+    "windows": {
+     "faces": [
+      "south"
+     ],
+     "rows": [
+      {
+       "y_m": 2.6,
+       "h_m": 0.45
+      }
+     ],
+     "length_m": 2.5,
+     "spacing_m": 4.0
+    },
     "neon": [
      "plinth_front"
     ]
@@ -126,6 +163,7 @@
    "exterior": {
     "wall_m": 1.0,
     "keel_m": 2.5,
+    "collar_m": 2.5,
     "neon": [
      "arm_edges"
     ]

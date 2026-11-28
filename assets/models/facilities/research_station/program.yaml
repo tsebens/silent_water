@@ -27,10 +27,16 @@ structures:
     exterior:                 # the shell is far bigger than the rooms: that is where the presence comes from
       wall_m: 1.5
       plinth: {out_m: 2.5, height_m: 2.0}
-      tier: {chasm_m: 6.0, sides_m: 2.0, height_m: 4.5, rib_spacing_m: 2.0, rib_depth_m: 1.0}   # plant level, cantilevered toward the chasm
+      tier: {chasm_m: 6.0, sides_m: 2.0, height_m: 4.5, rib_spacing_m: 2.0, rib_depth_m: 1.6}   # plant level, cantilevered toward the chasm
       struts: {face: south, spacing_m: 7.0, width_m: 1.2}        # splayed struts from the plinth up to the tier's front edge
       fins: {faces: [west, east, north], spacing_m: 4.0, depth_m: 3.5, thick_m: 1.0}
       mast: {at: [-9, 17], height_m: 20.0, width_m: 1.2}           # the comms line's mast
+      windows:                  # thin lit slots set in the concrete: one row per level, segments between the fins
+        faces: [south, west, east]
+        rows: [{y_m: 1.5, h_m: 0.5}, {y_m: 5.1, h_m: 0.45}]
+        length_m: 3.0
+        spacing_m: 4.0
+      tier_windows: {h_m: 0.35, length_m: 5.0, spacing_m: 6.0}       # a slot band along the tier's front
       neon: [tier_front, plinth_front]
   - id: maintenance
     name: Maintenance
@@ -42,6 +48,7 @@ structures:
       wall_m: 1.5
       plinth: {out_m: 1.5, height_m: 1.5}
       fins: {faces: [east, north, west], spacing_m: 4.0, depth_m: 3.0, thick_m: 1.0}
+      windows: {faces: [south], rows: [{y_m: 2.6, h_m: 0.45}], length_m: 2.5, spacing_m: 4.0}
       neon: [plinth_front]
   - id: dock
     name: Docking arm
@@ -52,6 +59,7 @@ structures:
     exterior:
       wall_m: 1.0
       keel_m: 2.5               # a deep beam along the arm's underside, either side of the collar
+      collar_m: 2.5             # the docking collar's trunk below the arm floor: the sub hangs this far below
       neon: [arm_edges]
   - id: power
     name: Power building
