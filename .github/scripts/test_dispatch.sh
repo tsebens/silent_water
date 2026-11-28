@@ -372,6 +372,11 @@ reset_incident; BODY_OF[582]=$'Blocked by: #\n'
 out=$(escalate_if_malformed 582 "$(open_blockers_of 582)"); rc=$?
 check "escalate_if_malformed: returns 0 for a malformed line" 0 $rc
 check "escalate_if_malformed: needs-human and assignee" 2 "$(grep -c 'needs-human\|add-assignee tsebens' "$CALLS")"
+# The escalation comment suggests the concept's other arcs.
+reset_incident; BODY_OF[590]=$'Blocked by: Arc 2\nConcept: #936\n'
+ARCS='[{"number":590,"title":"A","labels":["arc"],"body":"Blocked by: Arc 2\nConcept: #936\n"},{"number":591,"title":"M1.2 · Sibling","labels":["arc"],"body":"Concept: #936\n"},{"number":592,"title":"Other","labels":["arc"],"body":"Concept: #9360\n"}]'
+escalate_if_malformed 590 "$(open_blockers_of 590)" >/dev/null
+check "escalation comment suggests sibling arcs only" "1:0:0" "$(grep -c -- '- #591 M1.2 · Sibling' "$CALLS"):$(grep -c -- '- #592' "$CALLS"):$(grep -c -- '- #590' "$CALLS")"
 # Well-formed lines still promote.
 for pair in "none|Blocked by: none" "closed|Blocked by: #5" "bold|**Blocked by:** #5, #9"; do
   reset_incident; ISSUE_STATE[5]=closed; BODY_OF[583]="${pair#*|}"
