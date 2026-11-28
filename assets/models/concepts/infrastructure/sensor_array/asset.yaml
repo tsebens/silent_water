@@ -1,6 +1,6 @@
 slug: sensor_array
 issue: 927
-stage: concept
+stage: locked
 description: 'A Raindrop sensor array: an unmanned listening site on the seafloor,
   one of the commonest and loneliest structures in the network. A central node vault,
   a heavy ribbed concrete block on a plinth, with a tall steel mast carrying a red
@@ -815,8 +815,22 @@ lineage:
   views: []
   options: {}
   source: {}
-locked: null
-decisions: []
+locked:
+  variant: v7
+  decision: approved
+  reviewer: Tristan
+  notes: Locked 2026-11-28 as the sensor array's primary concept (three-quarter).
+    v8 (overview), v3 (a diver at the node) and v4 (a diver at a post) are companion
+    views. A good place to start (Tristan).
+  at: '2026-11-28T05:00:27Z'
+decisions:
+- variant: v7
+  decision: approved
+  reviewer: Tristan
+  notes: Locked 2026-11-28 as the sensor array's primary concept (three-quarter).
+    v8 (overview), v3 (a diver at the node) and v4 (a diver at a post) are companion
+    views. A good place to start (Tristan).
+  at: '2026-11-28T05:00:27Z'
 brief: null
 cleanups: []
 checks: []
