@@ -30,14 +30,51 @@ func test_day_and_night_differ_and_day_is_default() -> void:
 	node.free()
 
 
-func test_dev_setting_toggles_preset() -> void:
-	var before: bool = DevSettings.night
-	DevSettings.night = false
-	expect(DevSettings.toggle_night(), "day -> night")
-	expect(not DevSettings.toggle_night(), "night -> day")
+func test_dives_start_in_day_and_no_key_toggles_it() -> void:
+	InputSetup.ensure_actions()
+	expect(not InputMap.has_action(&"dev_toggle_night"), "no night toggle action")
 	expect(SurfaceLighting.other(SurfaceLighting.DAY) == SurfaceLighting.NIGHT, "other of day")
 	expect(SurfaceLighting.other(SurfaceLighting.NIGHT) == SurfaceLighting.DAY, "other of night")
-	DevSettings.night = before
+
+
+func test_sky_fog_affect_ramp() -> void:
+	expect_near(SurfaceLighting.sky_fog_affect(0.0), 0.0)
+	expect_near(SurfaceLighting.sky_fog_affect(SurfaceLighting.RAMP_DEPTH), 1.0)
+	expect_near(SurfaceLighting.sky_fog_affect(500.0), 1.0)
+	var prev: float = -1.0
+	var d: float = -2.0
+	while d <= SurfaceLighting.RAMP_DEPTH + 20.0:
+		var a: float = SurfaceLighting.sky_fog_affect(d)
+		expect(a >= prev - 0.000001, "fog_sky_affect decreased with depth at %.1f" % d)
+		prev = a
+		d += 0.5
+
+
+func test_presets_use_the_sky_swatch_and_only_day_has_a_sun_disc() -> void:
+	expect(SurfaceLighting.DAY.sky_swatch == &"sky_day", "day sky is sky_day")
+	expect(Palette.main().has(&"sky_day"), "sky_day exists")
+	expect(SurfaceLighting.DAY.sun_disc_size > 0.0, "day has a disc")
+	expect_near(SurfaceLighting.NIGHT.sun_disc_size, 0.0)
+	expect_near(SurfaceLighting.NIGHT.sun_glow, 0.0)
+
+
+func test_sky_material_follows_preset() -> void:
+	var env: Environment = Environment.new()
+	env.sky = Sky.new()
+	var m: ShaderMaterial = ShaderMaterial.new()
+	m.shader = load("res://src/world/sky.gdshader") as Shader
+	env.sky.sky_material = m
+	var we: WorldEnvironment = WorldEnvironment.new()
+	we.environment = env
+	var node: SurfaceLighting = SurfaceLighting.new()
+	node.environment_node = we
+	node.set_preset(SurfaceLighting.DAY)
+	expect(m.get_shader_parameter(&"sky_color") == SurfaceLighting.DAY.sky_color, "day sky colour")
+	expect(float(m.get_shader_parameter(&"sun_disc_size")) > 0.0, "day disc")
+	node.set_preset(SurfaceLighting.NIGHT)
+	expect_near(float(m.get_shader_parameter(&"sun_disc_size")), 0.0)
+	node.free()
+	we.free()
 
 
 func test_preset_sun_reaches_surface_material() -> void:

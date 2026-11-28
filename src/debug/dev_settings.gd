@@ -6,14 +6,8 @@ extends RefCounted
 ## Numpad 2 flood). Toggle with F5, or start with `--solo`.
 static var single_player: bool = OS.get_cmdline_user_args().has("--solo")
 
-## Night light preset instead of day (F7, or start with `--night`).
+## Night light preset instead of day. Dives start in day; only `--night` selects night.
 static var night: bool = OS.get_cmdline_user_args().has("--night")
-
-
-## Flips the day/night preset; returns the new value of `night`.
-static func toggle_night() -> bool:
-	night = not night
-	return night
 
 
 ## Forces the local bad-air view to a ladder level (F8 cycles): -1 follows the

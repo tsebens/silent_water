@@ -9,6 +9,7 @@ paint = Dictionary[StringName, Color]({
 &"creature_rust": Color(0.52, 0.25, 0.16, 1),
 &"env_abyss": Color(0.012, 0.102, 0.141, 1),
 &"env_deep": Color(0.031, 0.341, 0.404, 1),
+&"sky_day": Color(0.29, 0.62, 0.9, 1),
 &"env_teal": Color(0.42, 0.78, 0.78, 1),
 &"env_water": Color(0.051, 0.541, 0.722, 1),
 &"floor_rock": Color(0.2627451, 0.27058825, 0.27058825, 1),

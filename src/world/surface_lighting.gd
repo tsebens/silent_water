@@ -35,6 +35,17 @@ static func light_color_at(p: LightPreset, depth: float) -> Color:
 	return Color.BLACK.lerp(p.light_color, ramp(depth))
 
 
+## `Environment.fog_sky_affect` at a depth: 0 at the surface (sky shows), 1 at and below RAMP_DEPTH
+## (the depth colour hides the sky completely); monotonically non-decreasing with depth.
+static func sky_fog_affect(depth: float) -> float:
+	return 1.0 - ramp(depth)
+
+
+## The horizon haze colour for a preset: the sky colour lifted toward the light colour.
+static func haze_color(p: LightPreset) -> Color:
+	return p.sky_color.lerp(p.light_color, 0.45)
+
+
 ## The other preset.
 static func other(p: LightPreset) -> LightPreset:
 	return NIGHT if p == DAY else DAY
@@ -43,10 +54,6 @@ static func other(p: LightPreset) -> LightPreset:
 func set_preset(p: LightPreset) -> void:
 	preset = p
 	_apply_surface_colors()
-
-
-func toggle_preset() -> void:
-	set_preset(other(preset))
 
 
 func _ready() -> void:
@@ -81,18 +88,37 @@ func _apply(depth: float) -> void:
 		_captured = true
 		_base_ambient_energy = env.ambient_light_energy
 	var pal: Palette = Palette.main()
-	env.background_color = pal.color(&"env_abyss").lerp(preset.sky_color, r)
+	env.fog_sky_affect = sky_fog_affect(depth)
 	env.ambient_light_color = pal.color(&"env_teal").lerp(preset.light_color, r)
 	env.ambient_light_energy = lerpf(_base_ambient_energy, preset.ambient_energy, r)
 	env.fog_light_color = OceanSurface.fog_color().lerp(preset.sky_color * 0.5, r)
 
 
 func _apply_surface_colors() -> void:
+	_apply_sky()
 	if surface != null:
 		surface.set_colors(preset.surface_top_color, preset.surface_under_color, preset.sky_color)
 		surface.set_sun(preset.sun_direction, preset.light_color, preset.sun_energy)
 	if _sun != null:
 		_aim_sun()
+
+
+## Pushes the preset to the sky shader.
+func _apply_sky() -> void:
+	if environment_node == null or environment_node.environment == null:
+		return
+	var sky: Sky = environment_node.environment.sky
+	if sky == null:
+		return
+	var m: ShaderMaterial = sky.sky_material as ShaderMaterial
+	if m == null:
+		return
+	m.set_shader_parameter(&"sky_color", preset.sky_color)
+	m.set_shader_parameter(&"haze_color", haze_color(preset))
+	m.set_shader_parameter(&"sun_color", preset.light_color)
+	m.set_shader_parameter(&"sun_direction", preset.sun_direction.normalized())
+	m.set_shader_parameter(&"sun_disc_size", preset.sun_disc_size)
+	m.set_shader_parameter(&"sun_glow", preset.sun_glow)
 
 
 ## Points the directional light along the preset's sun direction (the light

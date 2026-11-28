@@ -22,6 +22,7 @@
 [ext_resource type="PackedScene" path="res://src/sub/interior.tscn" id="4"]
 [ext_resource type="Script" path="res://src/sub/cabin_switch.gd" id="cabin_switch"]
 [ext_resource type="PackedScene" path="res://src/site/canyon_site.tscn" id="5"]
+[ext_resource type="Shader" path="res://src/world/sky.gdshader" id="sky_shader_res"]
 
 [sub_resource type="SceneReplicationConfig" id="sub_repl"]
 properties/0/path = NodePath(".:sub_transform")
@@ -74,8 +75,16 @@ properties/1/path = NodePath(".:complete")
 properties/1/spawn = true
 properties/1/replication_mode = 2
 
+
+[sub_resource type="ShaderMaterial" id="sky_mat"]
+shader = ExtResource("sky_shader_res")
+
+[sub_resource type="Sky" id="sky"]
+sky_material = SubResource("sky_mat")
+
 [sub_resource type="Environment" id="env"]
-background_mode = 1
+background_mode = 2
+sky = SubResource("sky")
 ambient_light_source = 2
 ambient_light_energy = 0.15
 tonemap_mode = 2

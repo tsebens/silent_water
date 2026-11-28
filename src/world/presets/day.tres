@@ -5,8 +5,10 @@
 [resource]
 script = ExtResource("1")
 preset_name = "day"
-sky_swatch = &"env_teal"
+sky_swatch = &"sky_day"
 light_swatch = &"light_work_white"
+sun_disc_size = 0.045
+sun_glow = 0.6
 sun_energy = 1.2
 ambient_energy = 0.7
 surface_top_swatch = &"env_water"

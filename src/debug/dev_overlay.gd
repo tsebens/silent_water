@@ -64,10 +64,6 @@ func _unhandled_input(event: InputEvent) -> void:
 		DevSettings.single_player = not DevSettings.single_player
 		print("[dev] single-player mode %s" % ("on" if DevSettings.single_player else "off"))
 		get_viewport().set_input_as_handled()
-	elif event.is_action_pressed(&"dev_toggle_night"):
-		DevSettings.toggle_night()
-		print("[dev] light preset: %s" % ("night" if DevSettings.night else "day"))
-		get_viewport().set_input_as_handled()
 	elif event.is_action_pressed(&"dev_impairment_level"):
 		var lvl: int = DevSettings.cycle_impairment_level()
 		print("[dev] bad-air view: %s" % ("off (real)" if lvl < 0 else "level %d (strength %.2f)" % [lvl + 1, DevSettings.forced_impairment()]))
@@ -323,7 +319,7 @@ static func stats_text(g: Game) -> String:
 	var b: float = c.buoyancy
 	var b_word: String = "NEUTRAL" if absf(b) < 0.02 else ("POSITIVE (rising)" if b > 0.0 else "NEGATIVE (sinking)")
 	lines.append("MODE  %s  (F5)" % ("single-player: helm runs ballast" if DevSettings.single_player else "crew"))
-	lines.append("LIGHT  %s  (F7)" % ("night" if DevSettings.night else "day"))
+	lines.append("LIGHT  %s  (--night)" % ("night" if DevSettings.night else "day"))
 	lines.append("BAD-AIR VIEW  %s  (F8)" % ("real" if DevSettings.impairment_level < 0 else "forced level %d" % (DevSettings.impairment_level + 1)))
 	lines.append("SUB")
 	lines.append("  rendered sea %.2f m below physics surface" % OceanSurface.render_offset_m())

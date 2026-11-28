@@ -15,6 +15,10 @@ extends Resource
 ## Swatches for the water surface seen from above and from below at the surface.
 @export var surface_top_swatch: StringName = &"env_water"
 @export var surface_under_swatch: StringName = &"env_teal"
+## Angular radius of the sun disc in radians; 0 draws no disc (night has no moon).
+@export var sun_disc_size: float = 0.045
+## Strength of the glow around the disc (0 = none).
+@export var sun_glow: float = 0.6
 ## Direction towards the sun / moon (need not be unit length).
 @export var sun_direction: Vector3 = Vector3(0.4, 0.8, 0.45)
 
