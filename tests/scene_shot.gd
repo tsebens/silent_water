@@ -1,6 +1,7 @@
 extends Node3D
 ## Renders a scene from several cameras to PNGs, for asset review (needs a display server):
-##   xvfb-run -a godot --path . --rendering-driver vulkan res://tests/scene_shot.tscn -- <scene.tscn> <out_dir> [cameras.json]
+##   xvfb-run -a godot --path . --rendering-driver vulkan res://tests/scene_shot.tscn -- <scene.tscn> <out_dir> [cameras.json | --top]
+## (--top, instead of cameras.json, adds a top-down orthographic view to the automatic ones.)
 ## Without cameras.json the scene is framed automatically: a three-quarter view, front, right side and top.
 ## cameras.json is a list of {name, pos: [x,y,z], look_at: [x,y,z], fov (deg) or ortho (m), light: "white"|"red"|"sea", reach (m, sea only)},
 ## in the scene's own frame (metres), plus optional "on": true, which drives a switch scene to its on end before the shot (put these last), and "cap_open": true, which lifts a guarded switch's cap first (after "on", so "on" with the cap open is a switch thrown). Lighting is neutral and dim, close to the sub's interior; red is the sub's red light. "sea" is the game outside: dark teal ambient and fog with about 100 m reach (`reach` overrides it), a white work light from the sub's side, and glow so infrastructure neon shows.
@@ -27,7 +28,10 @@ func _ready() -> void:
 	add_child(scene)
 	_sample_source(args[0])
 	_lights()
-	var cams: Array = _auto_cameras(scene) if args.size() < 3 else JSON.parse_string(FileAccess.get_file_as_string(args[2])) as Array
+	var cams: Array = _auto_cameras(scene) if args.size() < 3 or args[2] == "--top" else JSON.parse_string(FileAccess.get_file_as_string(args[2])) as Array
+	if args.has("--top") and args.size() < 4:      # a posed render: add a top-down view, where a bend in the body reads
+		var box: AABB = _aabb(scene)
+		cams.append({"name": "top", "pos": _arr(box.get_center() + Vector3(0, box.size.length() * 1.2, 0)), "look_at": _arr(box.get_center()), "ortho": box.size.length() * 1.1})
 	DirAccess.make_dir_recursive_absolute(args[1])
 	var cam: Camera3D = Camera3D.new()
 	add_child(cam)

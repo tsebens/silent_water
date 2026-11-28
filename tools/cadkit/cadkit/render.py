@@ -128,6 +128,8 @@ def render(slug: str, out: Path | None = None, cameras: Path | None = None,
     cmd = [godot(), "--path", str(library.REPO), "--rendering-driver", "vulkan", SHOT_SCENE, "--", entry["scene"], str(out)]
     if cams.is_file():
         cmd.append(str(cams))
+    elif pose:
+        cmd.append("--top")                   # a posed render also gets a top-down view
     if not os.environ.get("DISPLAY"):
         if not shutil.which("xvfb-run"):
             raise RuntimeError("no display and no xvfb-run: install xvfb and mesa-vulkan-drivers")
@@ -207,9 +209,11 @@ def sheet(slug: str, renders: Path | None = None, pose: dict[str, tuple[float, f
     rest = [p for p in sorted(renders.glob("*.png")) if p.stem not in paired]
     if pose:                                  # one extra view: the skinned mesh with the bones rotated
         posed = render(slug, library.REPO / "build" / "renders" / f"{slug}_posed", pose=pose)
-        rest.append(next((p for p in posed if p.stem == "three_quarter"), posed[0]))   # the view that shows a bend
+        # the three-quarter view, and the top-down one where a bend in the body reads best
+        rest += [next((p for p in posed if p.stem == name), posed[0]) for name in ("three_quarter", "top")]
+        posed_views = set(rest[-2:])
     if rest:
-        tiles = [_label(Image.open(p).convert("RGB").resize((480, 300)), "posed" if pose and p == rest[-1] else p.stem)
+        tiles = [_label(Image.open(p).convert("RGB").resize((480, 300)), f"posed: {p.stem}" if pose and p in posed_views else p.stem)
                  for p in rest]
         cols = 2
         g = Image.new("RGB", (cols * 480, ((len(tiles) + cols - 1) // cols) * 300))
