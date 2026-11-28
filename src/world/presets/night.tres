@@ -6,7 +6,7 @@
 script = ExtResource("1")
 preset_name = "night"
 sky_swatch = &"env_abyss"
-light_swatch = &"env_teal"
+light_swatch = &"env_deep"
 sun_energy = 0.15
 ambient_energy = 0.22
 surface_top_swatch = &"env_abyss"

@@ -74,7 +74,7 @@ Tristan to tune, are: `env_water`, `life_jade`, `infra_metal_light`, `sub_contro
 | `env_teal` | Background: lit water, near fog |
 | `env_water` | Ocean water, before light sources modulate it |
 | `floor_sand` | Sea floor: light sand |
-| `floor_silt` | Sea floor: dark silt (same value as env_teal in the notes) |
+| `floor_silt` | Sea floor: dark silt (deliberately kept at the old muted teal-grey value, 0.196 / 0.294 / 0.290; it no longer follows `env_teal`, which lifted to lit turquoise, because silt is sediment and must stay dark and dull) |
 | `floor_rock` | Sea floor: rock |
 | `floor_rock_light` | Sea floor: weathered rock |
 | `floor_rock_black` | Sea floor: dark rock |
