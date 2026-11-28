@@ -121,6 +121,12 @@ func connected_to_sea(zone: StringName) -> bool:
 	return _connected_to_sea_set().has(String(zone))
 
 
+## True when the zone can be pumped dry: no breach in it and no open path (through open doors) to a breach
+## or to the sea. Unknown zones cannot be pumped.
+func can_pump(zone: StringName) -> bool:
+	return has_zone(zone) and not connected_to_sea(zone)
+
+
 ## Flood every zone the sea can reach: from breached zones, zones with an open door to the sea, and zones
 ## already holding water, through open doors. Flooding stays until [method drain].
 func spread() -> void:
