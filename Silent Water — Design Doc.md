@@ -497,13 +497,13 @@ Draft (#927). Machines people visit, not places people live: the commonest sites
 
 How each site could help (to tune in play):
 
-- **Sensor array:** while live, contacts within its range appear on the map table as Raindrop marks, a few seconds old and only roughly placed: an extra pair of ears, which the sonar operator still has to confirm. Its pinger gives a fixed point to navigate by.
-- **Deterrent pylon:** a deep pulse every few seconds within about 100 m. Lesser creatures keep out of the radius; the pulse also masks the sub's own noise for a moment, so a crew can time a loud job to the pulses. It may draw the apex's attention: a safe zone that is not quite safe. Its cell drains over the dive.
+- **Sensor array:** once restored, for the rest of the dive, contacts within its range appear on the map table as Raindrop marks, a few seconds old and only roughly placed: an extra pair of ears, which the sonar operator still has to confirm. Its pinger gives a fixed point to navigate by.
+- **Deterrent pylon:** a deep pulse every few seconds within about 100 m. Lesser creatures keep out of the radius; the pulse also masks the sub's own noise for a moment, so a crew can time a loud job to the pulses. It may draw the apex's attention: a safe zone that is not quite safe. Its help is temporary: the cell drains.
 - **Air depot:** O2 and ballast air while docked or plugged in, at a rate; the longer the top-up, the longer the crew sits still beside a lit structure.
 - **Junction:** powers the sites, lights and doors downstream; a station whose own plant is dead can be powered from outside.
 - **Drone bay:** a relaunched drone sweeps an area and adds its terrain and any sites it finds to the map table.
 
-Open questions (#927): whether restored sites stay restored for later dives in the same region, so an expedition can push the network back and the region gets easier; whether a site can be wrecked again mid-dive; how long help lasts.
+- **Within one dive** (#949). Dive maps are ephemeral: a dive's map and its sites are built for that dive and torn down after, with no fixed place in the regional map and no state carried between dives. A restored site is not wrecked again mid-dive (that would turn into whack-a-mole). How long help lasts depends on the site: the deterrent's is temporary (its cell drains); the sensor array's feed lasts the rest of the dive. Continuity between dives, if wanted later, would be a points tally of effort and success, not a persistent map.
 
 ## Audio direction
 
