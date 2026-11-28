@@ -166,6 +166,15 @@ Tristan to tune, are: `env_water`, `life_jade`, `infra_metal_light`, `sub_contro
 | `infra_metal` | `infra_metal` | Infrastructure metal |
 | `infra_metal_light` | `infra_metal_light` | Infrastructure metal, lighter |
 
+**Life**
+
+| Role | Swatches | For |
+| --- | --- | --- |
+| `octopus_skin` | `floor_rock_light` | Octopus arm skin |
+| `octopus_sucker` | `infra_concrete_dark` | Octopus arm suckers |
+| `octopus_spot` | `env_teal` | Octopus small flat teal spots on mantle and arms |
+| `octopus_eye` | `info_black` | Octopus pupil slits |
+
 Environment, sea floor, life and flora have swatches but no roles yet: those assets come from the image-to-3D route
 with vertex colours. Moving them onto the palette is part of the migration (M13).
 

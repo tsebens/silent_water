@@ -49,10 +49,10 @@ uses:
 - gauge
 - lit_guarded_toggle
 - indicator_lamp
-triangles: 13328
+triangles: 14980
 triangle_budget: 24000
 triangles_by_part:
-  body: 2436
+  body: 4088
 checks:
   aisle_m: 0.849
   toggle_reach_mm: 631

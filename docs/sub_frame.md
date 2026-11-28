@@ -32,7 +32,7 @@ Players collide with layers 1 and 3 only, so exterior geometry moving through re
 
 - **Sub physics (M2)** is a custom integrator on `sub_transform`. For collisions with terrain, cast the hull shape from the origin along the sub's velocity (rotated into render space) against layer 4. In render space the sub is always at the origin.
 - **Audio (M3/M4):** world sound sources live under `World`. The listener is the local player's camera in the interior. Both share render space, so 3D audio positions are correct with no extra work.
-- **Exterior particles** such as marine snow must be anchored in world space. A particle system emitting in render space would travel with the sub.
+- **Exterior particles** such as marine snow must be anchored in world space. A particle system emitting in render space would travel with the sub. Their density is `(depth / SurfaceLighting.RAMP_DEPTH)^2`, clamped, with depth measured from the rendered surface (`OceanSurface.snow_density`): empty at the surface and full where the light ramp ends.
 - **Floating point:** the sub's absolute world position stays small in prototype maps. Large maps may need origin shifting of `sub_transform`.
 
 ## Clients
@@ -96,3 +96,5 @@ The engineering station panel (`Stations/Ballast/Panel`, port, z 3.4: the FLOOD 
 The science station (`science`: the `science_bay` panel on the starboard wall between sonar and countermeasures; its SCAN module replaced the old engineering-wall scanner switch and gauge) and the wall-mounted status board (forward face of the bulkhead, above the hatch) are program entries (`science`, `status_board`; a `mounted: true` item takes no floor). The interior's lights and fascia sit inside the hull; `tests/unit/test_station_clearance.gd` checks that nothing built overlaps a reserved footprint.
 
 The map table (`Interior/Stations/Maps/MapTable`, a `MapTable` over the generated `map_table` station) is placed by a `StationPlacement` (`Stations/MapTablePlacement`): its back sits on the hull end of the program's `top_box` for `map_table`, turned 90 degrees so the operator side faces the aisle, and the two work lamps (`Lights/WorkLamp*`, cabin lights) are offset from the same station. `tests/unit/test_map_table_placement.gd` checks the footprint against the bay and `aisle_min_m`.
+
+The countermeasures station (`countermeasures`: the `countermeasures_station` panel and decoy rack on the starboard wall at the aft end of midships, against the bulkhead) fills its reservation, the full 1.0 m along the hull by 0.45 m deep (z 0.5 to 1.5; #767). It runs alongside the lock-out trunk, whose hatch is flush with the deck and on the centreline, so `plan.py` treats a `floor_hatch` as taking no aisle (it still checks its own). Its FIRE buttons and lamp sets name their tubes by node path (`ForeLoader/Tube`, `AftLoader/Tube`, siblings of `Countermeasures` under `Stations`), which resolve once the decoy loaders are placed there (#777).

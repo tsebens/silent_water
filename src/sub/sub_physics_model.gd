@@ -58,8 +58,11 @@ var thrust_accel: float = 0.3
 
 # --- Hydrodynamics -----------------------------------------------------------
 ## Quadratic drag coefficients in the body frame: x = sideways, y = vertical,
-## z = fore/aft. Chosen for ~3 m/s top speed and ~1 m/s terminal sink rate.
-var drag: Vector3 = Vector3(0.5, 0.6, 0.0333)
+## z = fore/aft. Chosen for ~3 m/s top speed. drag.y was 0.6 (~1 m/s terminal
+## sink) until #877. At 0.028 a full tank sinks at a terminal ~4.7 m/s: a full
+## tank passes 250 m after ~57 s (265 m at 60 s, measured from rest), and a full
+## blow from 250 m reaches the surface in ~62 s.
+var drag: Vector3 = Vector3(0.5, 0.028, 0.0333)
 ## Yaw acceleration per unit rudder per m/s of forward speed (rad/s² ).
 var rudder_authority: float = 0.02
 ## Yaw acceleration from the side thrusters at full rudder input (rad/s²).

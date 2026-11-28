@@ -1,0 +1,54 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://src/interact/fire_button.gd" id="1"]
+[ext_resource type="PackedScene" path="res://assets/models/kit/control_base/control_base_2x2.glb" id="2"]
+[ext_resource type="PackedScene" path="res://assets/models/kit/fire_button/fire_button_body.glb" id="3"]
+[ext_resource type="PackedScene" path="res://assets/models/kit/push_button/push_button.tscn" id="4"]
+[ext_resource type="Script" path="res://src/interact/switch_lever.gd" id="5"]
+[ext_resource type="Script" path="res://src/interact/noise_profile.gd" id="6"]
+[ext_resource type="PackedScene" path="res://assets/models/kit/fire_button/fire_button_guard.glb" id="7"]
+
+[sub_resource type="Resource" id="noise"]
+script = ExtResource("6")
+idle_intensity = 0
+max_intensity = 0.2
+clank_rate = 2
+exponent = 2
+
+[sub_resource type="BoxShape3D" id="grab"]
+size = Vector3(0.072, 0.072, 0.014)
+
+[node name="FireButton" type="Node3D" node_paths=PackedStringArray("guard", "button")]
+script = ExtResource("1")
+guard = NodePath("Guard")
+button = NodePath("Button")
+
+[node name="Base" parent="." instance=ExtResource("2")]
+
+[node name="Body" parent="." instance=ExtResource("3")]
+
+[node name="Button" parent="." instance=ExtResource("4")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0.006)
+
+[node name="Guard" type="Node3D" parent="." node_paths=PackedStringArray("pivot")]
+script = ExtResource("5")
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.036, 0.024)
+swing_deg = 160
+noise_profile = SubResource("noise")
+pivot = NodePath("Pivot")
+label = "guard"
+
+[node name="Pivot" type="Node3D" parent="Guard"]
+
+[node name="Lid" type="Node3D" parent="Guard/Pivot"]
+transform = Transform3D(1, 0, 0, 0, 0.173648, 0.984808, 0, -0.984808, 0.173648, 0, 0, 0)
+
+[node name="GuardMesh" parent="Guard/Pivot/Lid" instance=ExtResource("7")]
+
+[node name="Grab" type="StaticBody3D" parent="Guard/Pivot/Lid"]
+collision_layer = 2
+collision_mask = 0
+
+[node name="Shape" type="CollisionShape3D" parent="Guard/Pivot/Lid/Grab"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.036, 0.005)
+shape = SubResource("grab")
