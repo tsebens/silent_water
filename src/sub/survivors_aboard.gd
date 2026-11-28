@@ -20,11 +20,15 @@ const GROUP: StringName = &"survivors_aboard"
 		if is_equal_approx(v, mass_per_survivor_kg):
 			return
 		mass_per_survivor_kg = v
-		_changed()
+		if not _applying:
+			_changed()
 ## Test seam: behave as a client even where the peer is offline (offline counts as host).
 var simulate_client: bool = false
 
 var count: int = 0
+
+## True while apply_snapshot sets the mass, so it emits [signal changed] once itself.
+var _applying: bool = false
 
 
 func _ready() -> void:
@@ -79,7 +83,10 @@ func apply_snapshot(snap: Dictionary) -> void:
 	if c == count and is_equal_approx(m, mass_per_survivor_kg):
 		return
 	count = c
-	mass_per_survivor_kg = m  # its setter emits changed
+	_applying = true
+	mass_per_survivor_kg = m
+	_applying = false
+	changed.emit(count)
 
 
 @rpc("authority", "call_remote", "reliable")

@@ -62,3 +62,16 @@ func test_snapshot_round_trip() -> void:
 	c.add(2)
 	expect_eq(c.count, 4)
 	c.free()
+
+
+func test_snapshot_count_only_emits_changed() -> void:
+	var c: SurvivorsAboard = SurvivorsAboard.new()
+	runner.add_child(c)
+	c.simulate_client = true
+	var got: Array[int] = []
+	c.changed.connect(func(n: int) -> void: got.append(n))
+	c.apply_snapshot({"count": 3, "mass": c.mass_per_survivor_kg})
+	expect_eq(got, [3] as Array[int])
+	c.apply_snapshot({"count": 3, "mass": c.mass_per_survivor_kg})
+	expect_eq(got.size(), 1)
+	c.free()
