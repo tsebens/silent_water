@@ -66,8 +66,8 @@ ok   post_3 is cabled to the node
 ok   post_4 is cabled to the node
 ok   post_5 is cabled to the node
 ok   post_6 is cabled to the node
-ok   approach from (0, -78) to (0, -8), 8 m wide, is clear
 ok   sub hovers at [0, -8] with its keel at y = 2.0 m over open seabed
+ok   approach from (0, -78) to (0, -8), 8 m wide at the sub's height, is clear
 
 # swims
 data_coil (data_coil): 6 m swim from the sub's lock-out
