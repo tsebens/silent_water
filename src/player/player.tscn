@@ -1,4 +1,4 @@
-[gd_scene load_steps=15 format=3]
+[gd_scene load_steps=18 format=3]
 
 [ext_resource type="Script" path="res://src/player/player.gd" id="1"]
 [ext_resource type="Script" path="res://src/player/underwater_view.gd" id="2"]
@@ -7,6 +7,9 @@
 [ext_resource type="Script" path="res://src/life_support/player_impairment.gd" id="4"]
 [ext_resource type="Script" path="res://src/player/impairment_view.gd" id="5"]
 [ext_resource type="Shader" path="res://src/player/impairment_view.gdshader" id="6"]
+
+[ext_resource type="Script" path="res://src/player/dive_suit_view.gd" id="7"]
+[ext_resource type="Shader" path="res://src/player/dive_suit_view.gdshader" id="8"]
 
 [sub_resource type="CapsuleShape3D" id="shape"]
 radius = 0.3
@@ -29,6 +32,10 @@ shader = ExtResource("3")
 [sub_resource type="ShaderMaterial" id="iv_mat"]
 render_priority = 11
 shader = ExtResource("6")
+
+[sub_resource type="ShaderMaterial" id="ds_mat"]
+render_priority = 12
+shader = ExtResource("8")
 
 [sub_resource type="SceneReplicationConfig" id="repl"]
 properties/0/path = NodePath(".:sync_position")
@@ -90,6 +97,15 @@ script = ExtResource("5")
 visible = false
 extra_cull_margin = 16384.0
 material_override = SubResource("iv_mat")
+mesh = SubResource("uw_quad")
+
+[node name="DiveSuitView" type="Node3D" parent="Head/Camera3D"]
+script = ExtResource("7")
+
+[node name="Quad" type="MeshInstance3D" parent="Head/Camera3D/DiveSuitView"]
+visible = false
+extra_cull_margin = 16384.0
+material_override = SubResource("ds_mat")
 mesh = SubResource("uw_quad")
 
 [node name="Sync" type="MultiplayerSynchronizer" parent="."]

@@ -6,6 +6,7 @@
     cadkit verify                          the same, then report generated files that are stale or hand-edited
     cadkit render <slug> [--out DIR] [--cameras FILE]    PNGs of a scene (default out: build/renders/<slug>/)
     cadkit sheet <slug>                    render afresh, then write review sheets in <scene>/review/
+    cadkit plan <program.yaml> [out_dir]   check a facility floorplan program, write its plan images and report.txt
     cadkit palette [--sheets] [--out DIR]  swatches with their values and roles with their swatches; --sheets renders
                                            the swatch sheets (default out: docs/images/palette/)
 
@@ -35,6 +36,9 @@ def main(argv: list[str] | None = None) -> int:
     r.add_argument("--cameras", type=Path)
     s = sub.add_parser("sheet")
     s.add_argument("slug")
+    pl = sub.add_parser("plan")
+    pl.add_argument("program", type=Path)
+    pl.add_argument("out", nargs="?", type=Path)
     pp = sub.add_parser("palette")
     pp.add_argument("--sheets", action="store_true")
     pp.add_argument("--out", type=Path)
@@ -47,6 +51,11 @@ def main(argv: list[str] | None = None) -> int:
             cat = catalogue.search(cat, args.words)
         print(json.dumps(cat, indent=1) if args.json else catalogue.table(cat))
         return 0
+    if args.cmd == "plan":
+        from cadkit import facility
+        failed, lines, out = facility.run(args.program, args.out)
+        print(json.dumps({"ok": not failed, "out": str(out), "failures": failed, "problems": len(failed)}, indent=1))
+        return 1 if failed else 0
     if args.cmd == "palette":
         if args.sheets:
             from cadkit import render

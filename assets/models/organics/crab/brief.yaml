@@ -1,0 +1,16 @@
+# Brief for the crab (concept #772, scene arc #789). Only the part the review sheets read is kept here; the full brief is on #772.
+asset: crab
+concept:
+  images:
+    - {path: assets/models/organics/crab/concept/crab_primary.png, role: primary, camera: concept_primary, view: three-quarter from the front left, above}
+    - {path: assets/models/organics/crab/concept/crab_front.png, role: context, camera: concept_front, view: orthographic front, claws toward the camera}
+    - {path: assets/models/organics/crab/concept/crab_side.png, role: context, camera: concept_side, view: orthographic left side, claws to the right}
+    - {path: assets/models/organics/crab/concept/crab_top.png, role: context, camera: concept_top, view: orthographic top, claws toward the bottom of the image}
+    - {path: assets/models/organics/crab/concept/crab_bottom.png, role: context, camera: concept_bottom, view: orthographic bottom, claws toward the top of the image}
+  compare_on:
+    - overall silhouette in every view (carapace outline, claw size, leg spread and joint count)
+    - the legs as jointed segments, each segment a faceted solid, repeated and mirrored
+    - colour blocking (rust carapace and legs, bone claws and underside)
+  ignore:
+    - the exact facet layout, lighting, background; the front, side and top views were drawn from text and differ slightly in render
+functions: []
