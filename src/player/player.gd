@@ -120,6 +120,22 @@ static func impaired_speed(speed: float, model: ImpairmentModel) -> float:
 	return speed * (1.0 - model.movement_slowdown())
 
 
+## Walking [param speed] after the impairment slowdown and the worn suit's
+## multiplier. Either model may be null.
+static func walk_speed(speed: float, impairment_model: ImpairmentModel, suit_model: DiveSuitModel) -> float:
+	var out: float = speed
+	if impairment_model != null:
+		out = impaired_speed(out, impairment_model)
+	if suit_model != null:
+		out *= suit_model.speed_multiplier()
+	return out
+
+
+## The dive suit this player wears, or null.
+func worn_suit() -> DiveSuit:
+	return _worn as DiveSuit
+
+
 ## True while this player is incapacitated (the host-decided, replicated flag).
 func is_down() -> bool:
 	var impairment: PlayerImpairment = get_node_or_null(^"Impairment") as PlayerImpairment
@@ -305,7 +321,8 @@ func _simulate(delta: float) -> void:
 	if impairment != null and impairment.model != null:
 		impairment.model.strength = impairment.impairment
 		input = impaired_input(input, impairment.model, Time.get_ticks_msec() / 1000.0)
-		speed = impaired_speed(speed, impairment.model)
+	var suit: DiveSuit = worn_suit()
+	speed = walk_speed(speed, impairment.model if impairment != null else null, suit.model if suit != null else null)
 	# Part of gravity along the deck. The deck is flat in the sub frame, so the
 	# physics engine never sees a slope; tilt is handled here instead.
 	var along_deck: Vector3 = Vector3(gravity.x, 0.0, gravity.z)

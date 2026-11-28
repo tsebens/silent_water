@@ -65,12 +65,25 @@ func _physics_process(delta: float) -> void:
 		r = get_tree().get_first_node_in_group(LifeSupportReadouts.GROUP) as LifeSupportReadouts
 	if r == null:
 		return
-	step(delta, r.co2_ppm if force_co2_ppm < 0.0 else force_co2_ppm, r.cabin_o2)
+	var co2: float = r.co2_ppm if force_co2_ppm < 0.0 else force_co2_ppm
+	var air: Array[float] = ambient_for_wearer(co2, r.cabin_o2)
+	step(delta, air[0], air[1])
 	if _online():
 		_timer += delta
 		if _timer >= SNAPSHOT_INTERVAL:
 			_timer = 0.0
 			_rpc_snapshot.rpc(snapshot())
+
+
+## The air this player breathes: the suit's while they wear one with air in it,
+## else the cabin's. Returns [co2_ppm, o2].
+func ambient_for_wearer(co2_ppm: float, cabin_o2: float) -> Array[float]:
+	if is_inside_tree():
+		for n: Node in get_tree().get_nodes_in_group(DiveSuit.GROUP):
+			var suit: DiveSuit = n as DiveSuit
+			if suit.wearer() == crew_id() and suit.model != null:
+				return suit.model.filter_ambient(co2_ppm, cabin_o2)
+	return [co2_ppm, cabin_o2]
 
 
 ## Host: advance this player's model with the cabin air.
