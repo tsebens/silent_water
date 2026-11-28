@@ -2587,6 +2587,873 @@ lineage:
   views: []
   options: {}
   source: {}
+- id: v31
+  kind: concept
+  path: .asset_work/research_hub/concept/v31.png
+  provider: google-pro
+  model: gemini-3-pro-image
+  prompt: 'Silent Water: a dark, deep-ocean world. Everything humans built feels industrial,
+    utilitarian and competent: overbuilt, honest, worn by age and pressure but never
+    sloppy. Nature is soft, irregular and organic. Low-poly forms with flat shading
+    and strong, readable silhouettes; shape matters more than texture or detail.
+
+
+    Presentation: a scene, not a single subject. Keep the reference''s camera, perspective
+    and framing exactly, wide angle included. The full environment is in frame and
+    is the subject; nothing is isolated on a background. In-world light sources (cove
+    lighting, lit screens, holograms, indicator lamps) may light the space, drawn
+    as part of the scene; no bloom, glow halos, lens flare or other lens effects.
+    People appear only when the brief asks for them.
+
+
+    Raindrop''s infrastructure in brutalist concrete and steel: massive, honest, overbuilt,
+    built to outlast the people who made it. Heavy horizontal slabs, stepped and cantilevered
+    tiers, deep overhangs with ribbed or coffered undersides, repeated vertical fins
+    and ribs, thick columns and splayed struts that show the load path. Long ribbon
+    windows and slots set deep in the mass; glass is a small recessed exception. Identical
+    repeated bays and modules. Board-marked or poured concrete, steel frames, trusses
+    and railings, with matte surfaces and low-contrast wear. Neon is thin lines, strips
+    and slots in soft amber, yellow or red, drawn as flat colour, not glow; emission
+    is added in the engine.
+
+
+    Paint over the attached greybox reference. KEEP its composition, camera, wide-angle
+    low perspective, proportions and every mass exactly as drawn. Change only materials,
+    surface detail, colour and lighting. Scene: Raindrop''s research hub seen from
+    below and slightly to the side, a huge brutalist concrete tier cantilevering far
+    out over a black chasm. Its underside is a deep ribbed, coffered soffit of repeated
+    concrete teeth, with blunt buttress fins hanging beneath it. Paint the grey slabs
+    as board-marked poured concrete: matte, low-contrast wear, faint formwork lines,
+    pressure stains. The thick slanted piers under the docking arm are splayed A-frame
+    concrete struts that show the load path. Add heavy fillets and joints where they
+    meet the slab. The small orange capsule hanging under the arm is the crew''s 10
+    m sub, docked with its dorsal hatch mated to a collar in the arm''s floor. Redraw
+    it as a small, modern, low-poly research submarine in burnt orange with a dark
+    hatch collar, tiny against the arm. The long pale strips on the wall are deep-set
+    ribbon window slots with a little recessed glass, and the thin amber lines are
+    flat-colour neon strips along the slab edges: amber, a few yellow accents, red
+    on secondary edges, fading fast into the dark. The tall thin post is a comms mast
+    of weathered steel truss. Background water is deep teal at the top, falling to
+    black. The ground and cliff below the ledge are black, bottomless chasm with only
+    the near edge faintly readable. Marine snow drifts as small flat specks. No water
+    surface, no glow halos, no bloom, no railings, no floodlighting. Flat-shaded low-poly
+    look with strong, readable silhouettes. Lonely, overbuilt and stable.
+
+
+    Avoid:
+
+    - baked-in lighting that is not from an in-world source, strong highlights, glossy
+    reflections
+
+    - text, logos, labels, watermarks, signatures
+
+    - bloom, glow halos, lens flare, lens effects
+
+    - bright, sunlit, tropical or cartoon ocean
+
+    - photographic grain, noise, blur, depth of field
+
+    - a changed camera, perspective or framing, or a cropped or isolated environment
+
+    - sleek, smooth, rounded shapes; large glass domes or glazed walls
+
+    - cyberpunk look, magenta-and-cyan neon, signage, floodlighting, glow and bloom
+
+    - ornament, gothic or art deco detail
+
+    - pristine new surfaces, or sloppy random damage
+
+    - structures that read as rock'
+  parent: null
+  created: '2026-11-28T02:31:26Z'
+  writer: claude-cli:claude-sonnet-5-5
+  references:
+  - .asset_work/research_hub/references/a8976c235919.png
+  reference:
+    name: chasm_approach.jpg
+    sha256: a8976c23591913904306172325b9e732f74f518f94d927527bf33285cafd50c7
+  mode: paint-over
+  presentation: scene
+  task_id: ''
+  views: []
+  options: {}
+  source: {}
+- id: v32
+  kind: concept
+  path: .asset_work/research_hub/concept/v32.png
+  provider: google-pro
+  model: gemini-3-pro-image
+  prompt: 'Silent Water: a dark, deep-ocean world. Everything humans built feels industrial,
+    utilitarian and competent: overbuilt, honest, worn by age and pressure but never
+    sloppy. Nature is soft, irregular and organic. Low-poly forms with flat shading
+    and strong, readable silhouettes; shape matters more than texture or detail.
+
+
+    Presentation: a scene, not a single subject. Keep the reference''s camera, perspective
+    and framing exactly, wide angle included. The full environment is in frame and
+    is the subject; nothing is isolated on a background. In-world light sources (cove
+    lighting, lit screens, holograms, indicator lamps) may light the space, drawn
+    as part of the scene; no bloom, glow halos, lens flare or other lens effects.
+    People appear only when the brief asks for them.
+
+
+    Raindrop''s infrastructure in brutalist concrete and steel: massive, honest, overbuilt,
+    built to outlast the people who made it. Heavy horizontal slabs, stepped and cantilevered
+    tiers, deep overhangs with ribbed or coffered undersides, repeated vertical fins
+    and ribs, thick columns and splayed struts that show the load path. Long ribbon
+    windows and slots set deep in the mass; glass is a small recessed exception. Identical
+    repeated bays and modules. Board-marked or poured concrete, steel frames, trusses
+    and railings, with matte surfaces and low-contrast wear. Neon is thin lines, strips
+    and slots in soft amber, yellow or red, drawn as flat colour, not glow; emission
+    is added in the engine.
+
+
+    Paint over the attached greybox reference. KEEP its composition, camera, wide-angle
+    framing, proportions and every mass exactly as drawn; change only materials, surface
+    detail, colour and lighting. Scene: the same Raindrop research hub, rendered as
+    a dim, near-monochrome study in dark teal and charcoal. The mass is a fortified
+    brutalist wall: the big upper tier is blank board-marked concrete, its ribbed
+    underside is a row of deep coffered cells in near-black shadow, and heavy vertical
+    buttress fins run down the wall beneath it. The lower connecting block and the
+    cantilevered docking arm are poured concrete slabs with thick chamfered edges.
+    Below the arm, two splayed concrete struts form an A-frame, with a small weathered-steel
+    truss brace tying them back. The orange capsule is the crew''s 10 m submarine,
+    docked beneath the arm with its hatch mated to a collar. Draw it as a compact
+    modern research sub: rounded-faceted hull, a small sail, a thruster shroud, and
+    a muted orange-ochre body that is the one warm mass in the picture. Light comes
+    only from in-world sources: thin flat-colour neon strips in soft amber along the
+    slab edges, with yellow accents and red on the lower edges. They fade out within
+    a short distance and light only the concrete nearest them. The ribbon slots on
+    the upper wall are small, deep-set and dim. The tall thin post is a steel comms
+    mast with a small red lamp at its top. The chasm below and to the left is pure
+    black, with a faint hint of the ledge lip. Water is dark teal above, drifting
+    with sparse marine snow. Fully submerged, no surface. No bloom, no halos, no lens
+    effects, no railings, nothing sleek. Flat-shaded low-poly forms with strong silhouettes;
+    isolated, heavy and lonely.
+
+
+    Avoid:
+
+    - baked-in lighting that is not from an in-world source, strong highlights, glossy
+    reflections
+
+    - text, logos, labels, watermarks, signatures
+
+    - bloom, glow halos, lens flare, lens effects
+
+    - bright, sunlit, tropical or cartoon ocean
+
+    - photographic grain, noise, blur, depth of field
+
+    - a changed camera, perspective or framing, or a cropped or isolated environment
+
+    - sleek, smooth, rounded shapes; large glass domes or glazed walls
+
+    - cyberpunk look, magenta-and-cyan neon, signage, floodlighting, glow and bloom
+
+    - ornament, gothic or art deco detail
+
+    - pristine new surfaces, or sloppy random damage
+
+    - structures that read as rock'
+  parent: null
+  created: '2026-11-28T02:31:41Z'
+  writer: claude-cli:claude-sonnet-5-5
+  references:
+  - .asset_work/research_hub/references/a8976c235919.png
+  reference:
+    name: chasm_approach.jpg
+    sha256: a8976c23591913904306172325b9e732f74f518f94d927527bf33285cafd50c7
+  mode: paint-over
+  presentation: scene
+  task_id: ''
+  views: []
+  options: {}
+  source: {}
+- id: v33
+  kind: concept
+  path: .asset_work/research_hub/concept/v33.png
+  provider: google-pro
+  model: gemini-3-pro-image
+  prompt: 'Silent Water: a dark, deep-ocean world. Everything humans built feels industrial,
+    utilitarian and competent: overbuilt, honest, worn by age and pressure but never
+    sloppy. Nature is soft, irregular and organic. Low-poly forms with flat shading
+    and strong, readable silhouettes; shape matters more than texture or detail.
+
+
+    Presentation: a scene, not a single subject. Keep the reference''s camera, perspective
+    and framing exactly, wide angle included. The full environment is in frame and
+    is the subject; nothing is isolated on a background. In-world light sources (cove
+    lighting, lit screens, holograms, indicator lamps) may light the space, drawn
+    as part of the scene; no bloom, glow halos, lens flare or other lens effects.
+    People appear only when the brief asks for them.
+
+
+    Raindrop''s infrastructure in brutalist concrete and steel: massive, honest, overbuilt,
+    built to outlast the people who made it. Heavy horizontal slabs, stepped and cantilevered
+    tiers, deep overhangs with ribbed or coffered undersides, repeated vertical fins
+    and ribs, thick columns and splayed struts that show the load path. Long ribbon
+    windows and slots set deep in the mass; glass is a small recessed exception. Identical
+    repeated bays and modules. Board-marked or poured concrete, steel frames, trusses
+    and railings, with matte surfaces and low-contrast wear. Neon is thin lines, strips
+    and slots in soft amber, yellow or red, drawn as flat colour, not glow; emission
+    is added in the engine.
+
+
+    Paint over the attached greybox render: KEEP its composition, camera, wide-angle
+    perspective, proportions and every mass exactly as drawn; change only materials,
+    surface detail, colour and lighting. A low three-quarter view along the seafloor
+    ledge: the big flat-topped concrete slab with its comms mast rising behind it,
+    the row of splayed, kinked concrete struts and stepped base plinths beneath it,
+    the short docking arm cantilevered out past the ledge on the right with its A-frame
+    strut, and the near black cliff face dropping into the chasm. Render everything
+    as Raindrop brutalist concrete: heavy board-marked poured concrete on the big
+    upper slab with faint horizontal formwork lines, deep ribbed and coffered shadow
+    on the undersides, thick buttress-like struts with chamfered edges, matte low-contrast
+    wear and pressure staining, flat-shaded low-poly faces with crisp readable silhouettes.
+    Thin flat amber neon strips run along the slab edges and the ribbon slots, a few
+    yellow accents and red on secondary edges, drawn as flat colour fading quickly
+    into the dark. The small orange capsule under the arm is the crew''s 10 m sub,
+    docked with its dorsal hatch mated to a collar in the arm floor: draw it as a
+    small modern research submarine, tiny beside the station. Deep teal water fading
+    to near black, drifting marine snow, no surface, the chasm below black and bottomless.
+    Lonely, overbuilt, isolated outpost. No floodlighting, no glow halos, no lens
+    effects, no people.
+
+
+    Avoid:
+
+    - baked-in lighting that is not from an in-world source, strong highlights, glossy
+    reflections
+
+    - text, logos, labels, watermarks, signatures
+
+    - bloom, glow halos, lens flare, lens effects
+
+    - bright, sunlit, tropical or cartoon ocean
+
+    - photographic grain, noise, blur, depth of field
+
+    - a changed camera, perspective or framing, or a cropped or isolated environment
+
+    - sleek, smooth, rounded shapes; large glass domes or glazed walls
+
+    - cyberpunk look, magenta-and-cyan neon, signage, floodlighting, glow and bloom
+
+    - ornament, gothic or art deco detail
+
+    - pristine new surfaces, or sloppy random damage
+
+    - structures that read as rock'
+  parent: null
+  created: '2026-11-28T02:32:10Z'
+  writer: claude-cli:claude-sonnet-5-5
+  references:
+  - .asset_work/research_hub/references/89624d9ca920.png
+  reference:
+    name: edge_profile.jpg
+    sha256: 89624d9ca920c140ae06ca5fa2e624768b7d44342c57231d1ec547d627480609
+  mode: paint-over
+  presentation: scene
+  task_id: ''
+  views: []
+  options: {}
+  source: {}
+- id: v34
+  kind: concept
+  path: .asset_work/research_hub/concept/v34.png
+  provider: google-pro
+  model: gemini-3-pro-image
+  prompt: 'Silent Water: a dark, deep-ocean world. Everything humans built feels industrial,
+    utilitarian and competent: overbuilt, honest, worn by age and pressure but never
+    sloppy. Nature is soft, irregular and organic. Low-poly forms with flat shading
+    and strong, readable silhouettes; shape matters more than texture or detail.
+
+
+    Presentation: a scene, not a single subject. Keep the reference''s camera, perspective
+    and framing exactly, wide angle included. The full environment is in frame and
+    is the subject; nothing is isolated on a background. In-world light sources (cove
+    lighting, lit screens, holograms, indicator lamps) may light the space, drawn
+    as part of the scene; no bloom, glow halos, lens flare or other lens effects.
+    People appear only when the brief asks for them.
+
+
+    Raindrop''s infrastructure in brutalist concrete and steel: massive, honest, overbuilt,
+    built to outlast the people who made it. Heavy horizontal slabs, stepped and cantilevered
+    tiers, deep overhangs with ribbed or coffered undersides, repeated vertical fins
+    and ribs, thick columns and splayed struts that show the load path. Long ribbon
+    windows and slots set deep in the mass; glass is a small recessed exception. Identical
+    repeated bays and modules. Board-marked or poured concrete, steel frames, trusses
+    and railings, with matte surfaces and low-contrast wear. Neon is thin lines, strips
+    and slots in soft amber, yellow or red, drawn as flat colour, not glow; emission
+    is added in the engine.
+
+
+    Paint over the attached greybox render: KEEP its composition, camera, wide-angle
+    perspective, proportions and every mass exactly as drawn; change only materials,
+    surface detail, colour and lighting. Same framing: the overhanging upper slab
+    with the mast, the angled struts and stepped plinths, the cantilevered docking
+    arm at right with its diagonal brace, and the sheer black cliff below. Treat it
+    as a cold, heavy, nearly monochrome study in poured concrete and weathered steel:
+    the upper slab''s blank wall is a vast uninterrupted board-marked face with vertical
+    formwork seams, the dark upper-level side wall carries deep-set slot windows and
+    thin ribbon strips of recessed glass lit a dim amber from inside, the splayed
+    struts read as massive chevron piers showing the load path, the docking arm has
+    a deep ribbed underside and a lit framed opening on its inboard face. Secondary
+    weathered steel truss and gantry detail on the arm and mast only, never the main
+    mass. Neon is thin flat lines in soft amber with yellow accents and red on lesser
+    edges, no glow, fading into darkness within a few metres. The orange capsule beneath
+    the arm is the crew''s 10 m submarine, dorsal hatch mated to a collar in the arm''s
+    floor, drawn as a small modern research submarine and dwarfed by the arm. Fully
+    submerged: deep teal-to-black water, sparse marine snow, a dark seabed of soft
+    irregular silt on the left, the cliff dropping away black. Low-poly flat shading,
+    strong silhouettes, solid fortified mass, no railings, stairs or terraces, nothing
+    sleek or rounded, no people, no lens effects.
+
+
+    Avoid:
+
+    - baked-in lighting that is not from an in-world source, strong highlights, glossy
+    reflections
+
+    - text, logos, labels, watermarks, signatures
+
+    - bloom, glow halos, lens flare, lens effects
+
+    - bright, sunlit, tropical or cartoon ocean
+
+    - photographic grain, noise, blur, depth of field
+
+    - a changed camera, perspective or framing, or a cropped or isolated environment
+
+    - sleek, smooth, rounded shapes; large glass domes or glazed walls
+
+    - cyberpunk look, magenta-and-cyan neon, signage, floodlighting, glow and bloom
+
+    - ornament, gothic or art deco detail
+
+    - pristine new surfaces, or sloppy random damage
+
+    - structures that read as rock'
+  parent: null
+  created: '2026-11-28T02:32:23Z'
+  writer: claude-cli:claude-sonnet-5-5
+  references:
+  - .asset_work/research_hub/references/89624d9ca920.png
+  reference:
+    name: edge_profile.jpg
+    sha256: 89624d9ca920c140ae06ca5fa2e624768b7d44342c57231d1ec547d627480609
+  mode: paint-over
+  presentation: scene
+  task_id: ''
+  views: []
+  options: {}
+  source: {}
+- id: v35
+  kind: concept
+  path: .asset_work/research_hub/concept/v35.png
+  provider: google-pro
+  model: gemini-3-pro-image
+  prompt: 'Silent Water: a dark, deep-ocean world. Everything humans built feels industrial,
+    utilitarian and competent: overbuilt, honest, worn by age and pressure but never
+    sloppy. Nature is soft, irregular and organic. Low-poly forms with flat shading
+    and strong, readable silhouettes; shape matters more than texture or detail.
+
+
+    Presentation: a scene, not a single subject. Keep the reference''s camera, perspective
+    and framing exactly, wide angle included. The full environment is in frame and
+    is the subject; nothing is isolated on a background. In-world light sources (cove
+    lighting, lit screens, holograms, indicator lamps) may light the space, drawn
+    as part of the scene; no bloom, glow halos, lens flare or other lens effects.
+    People appear only when the brief asks for them.
+
+
+    Raindrop''s infrastructure in brutalist concrete and steel: massive, honest, overbuilt,
+    built to outlast the people who made it. Heavy horizontal slabs, stepped and cantilevered
+    tiers, deep overhangs with ribbed or coffered undersides, repeated vertical fins
+    and ribs, thick columns and splayed struts that show the load path. Long ribbon
+    windows and slots set deep in the mass; glass is a small recessed exception. Identical
+    repeated bays and modules. Board-marked or poured concrete, steel frames, trusses
+    and railings, with matte surfaces and low-contrast wear. Neon is thin lines, strips
+    and slots in soft amber, yellow or red, drawn as flat colour, not glow; emission
+    is added in the engine.
+
+
+    Paint over the attached greybox render of the Raindrop research hub. KEEP its
+    composition, camera, wide-angle high three-quarter view, proportions and every
+    major mass exactly: the large main slab on the ledge, the second slab behind it,
+    the smaller satellite tier with its fins at upper left, the connecting bridge,
+    the two tall thin comms masts, the cantilevered docking arm projecting out over
+    the chasm at right with the small orange submarine docked beneath it, and the
+    black cliff dropping away to the lower right. Change only materials, surface detail,
+    colour and lighting. Render everything as massive brutalist poured and board-marked
+    concrete, matte, with low-contrast wear and faint vertical formwork lines on the
+    slab edges, in a low-poly flat-shaded style with strong silhouettes. The splayed
+    buttress fins along the main slab''s face become heavy angled concrete struts
+    and chevron piers that show the load path. Deep ribbed, coffered undersides under
+    the overhanging slabs. The long ribbon strip under the main roof edge becomes
+    a deep-set slot window with a small recessed glass strip. The walls are otherwise
+    blank concrete. The docking arm becomes a big framed hangar mouth lit from inside,
+    with a collar in its floor mated to the sub''s dorsal hatch. Draw the orange sub
+    as a small modern research submarine. The masts and a few secondary gantries are
+    weathered steel trusses, small against the concrete. Thin flat amber neon lines
+    run along the slab edges and slots, with a few yellow accents and red on secondary
+    edges, drawn as flat colour with no glow, fading quickly into the dark. The cliff
+    face and chasm below are pure black and bottomless. Fully submerged: deep teal
+    to near-black water, drifting marine snow, no water surface, no floodlighting,
+    no lens effects, no people. Isolated, lonely, overbuilt and stable.
+
+
+    Avoid:
+
+    - baked-in lighting that is not from an in-world source, strong highlights, glossy
+    reflections
+
+    - text, logos, labels, watermarks, signatures
+
+    - bloom, glow halos, lens flare, lens effects
+
+    - bright, sunlit, tropical or cartoon ocean
+
+    - photographic grain, noise, blur, depth of field
+
+    - a changed camera, perspective or framing, or a cropped or isolated environment
+
+    - sleek, smooth, rounded shapes; large glass domes or glazed walls
+
+    - cyberpunk look, magenta-and-cyan neon, signage, floodlighting, glow and bloom
+
+    - ornament, gothic or art deco detail
+
+    - pristine new surfaces, or sloppy random damage
+
+    - structures that read as rock'
+  parent: null
+  created: '2026-11-28T02:32:53Z'
+  writer: claude-cli:claude-sonnet-5-5
+  references:
+  - .asset_work/research_hub/references/4edc0d1e6aeb.png
+  reference:
+    name: overview.jpg
+    sha256: 4edc0d1e6aeba1237e590e60342ad756639e2ce8d721ab8329883702e059f61a
+  mode: paint-over
+  presentation: scene
+  task_id: ''
+  views: []
+  options: {}
+  source: {}
+- id: v36
+  kind: concept
+  path: .asset_work/research_hub/concept/v36.png
+  provider: google-pro
+  model: gemini-3-pro-image
+  prompt: 'Silent Water: a dark, deep-ocean world. Everything humans built feels industrial,
+    utilitarian and competent: overbuilt, honest, worn by age and pressure but never
+    sloppy. Nature is soft, irregular and organic. Low-poly forms with flat shading
+    and strong, readable silhouettes; shape matters more than texture or detail.
+
+
+    Presentation: a scene, not a single subject. Keep the reference''s camera, perspective
+    and framing exactly, wide angle included. The full environment is in frame and
+    is the subject; nothing is isolated on a background. In-world light sources (cove
+    lighting, lit screens, holograms, indicator lamps) may light the space, drawn
+    as part of the scene; no bloom, glow halos, lens flare or other lens effects.
+    People appear only when the brief asks for them.
+
+
+    Raindrop''s infrastructure in brutalist concrete and steel: massive, honest, overbuilt,
+    built to outlast the people who made it. Heavy horizontal slabs, stepped and cantilevered
+    tiers, deep overhangs with ribbed or coffered undersides, repeated vertical fins
+    and ribs, thick columns and splayed struts that show the load path. Long ribbon
+    windows and slots set deep in the mass; glass is a small recessed exception. Identical
+    repeated bays and modules. Board-marked or poured concrete, steel frames, trusses
+    and railings, with matte surfaces and low-contrast wear. Neon is thin lines, strips
+    and slots in soft amber, yellow or red, drawn as flat colour, not glow; emission
+    is added in the engine.
+
+
+    Paint over the attached greybox render of the Raindrop research hub. KEEP its
+    composition, camera, wide-angle elevated three-quarter view, proportions and every
+    major mass exactly: main slab and second slab on the seafloor ledge, the fin-ribbed
+    satellite tier at upper left with its bridge to the main building, the two thin
+    tall masts, the docking arm cantilevered out over the chasm at right with the
+    orange sub docked beneath it, and the black drop of the cliff in the foreground.
+    Change only materials, surface detail, colour and lighting. Emphasise a darker,
+    heavier, more fortified mood. The concrete reads as cold, dense board-marked poured
+    concrete with soft, low-contrast staining, lit only by the station''s own thin
+    neon lines and the lit hangar interior, so the seafloor and upper surfaces fall
+    mostly into deep teal shadow with flat shaded planes and crisp silhouettes. The
+    row of splayed fins under the main slab edge reads as a rhythm of identical buttress
+    fins and X and A-frame concrete struts bearing the cantilever. The roof edges
+    and undersides have deep coffered ribbing. Windows are only small deep slots and
+    one thin ribbon strip; walls stay blank. The docking arm is a heavy framed hangar
+    mouth, lit warm amber inside, with room for several subs, and the small orange
+    10 m sub is drawn as a modern research submarine mated by its dorsal hatch to
+    a collar in the arm''s floor, tiny beside the mouth. Weathered steel truss masts
+    and a short gantry stay secondary. Neon is thin flat amber strips along slab edges,
+    a few yellow accents, red on secondary edges, no glow or halos, fading fast into
+    black. Below the ledge the chasm is black and bottomless. Fully submerged deep
+    teal-to-black water with sparse marine snow, no water surface, no floodlights,
+    no lens effects, no people. Lonely, stable, competent outpost in an alien world.
+
+
+    Avoid:
+
+    - baked-in lighting that is not from an in-world source, strong highlights, glossy
+    reflections
+
+    - text, logos, labels, watermarks, signatures
+
+    - bloom, glow halos, lens flare, lens effects
+
+    - bright, sunlit, tropical or cartoon ocean
+
+    - photographic grain, noise, blur, depth of field
+
+    - a changed camera, perspective or framing, or a cropped or isolated environment
+
+    - sleek, smooth, rounded shapes; large glass domes or glazed walls
+
+    - cyberpunk look, magenta-and-cyan neon, signage, floodlighting, glow and bloom
+
+    - ornament, gothic or art deco detail
+
+    - pristine new surfaces, or sloppy random damage
+
+    - structures that read as rock'
+  parent: null
+  created: '2026-11-28T02:33:06Z'
+  writer: claude-cli:claude-sonnet-5-5
+  references:
+  - .asset_work/research_hub/references/4edc0d1e6aeb.png
+  reference:
+    name: overview.jpg
+    sha256: 4edc0d1e6aeba1237e590e60342ad756639e2ce8d721ab8329883702e059f61a
+  mode: paint-over
+  presentation: scene
+  task_id: ''
+  views: []
+  options: {}
+  source: {}
+- id: v37
+  kind: concept
+  path: .asset_work/research_hub/concept/v37.png
+  provider: google-pro
+  model: gemini-3-pro-image
+  prompt: 'Silent Water: a dark, deep-ocean world. Everything humans built feels industrial,
+    utilitarian and competent: overbuilt, honest, worn by age and pressure but never
+    sloppy. Nature is soft, irregular and organic. Low-poly forms with flat shading
+    and strong, readable silhouettes; shape matters more than texture or detail.
+
+
+    Presentation: a scene, not a single subject. Keep the reference''s camera, perspective
+    and framing exactly, wide angle included. The full environment is in frame and
+    is the subject; nothing is isolated on a background. In-world light sources (cove
+    lighting, lit screens, holograms, indicator lamps) may light the space, drawn
+    as part of the scene; no bloom, glow halos, lens flare or other lens effects.
+    People appear only when the brief asks for them.
+
+
+    Raindrop''s infrastructure in brutalist concrete and steel: massive, honest, overbuilt,
+    built to outlast the people who made it. Heavy horizontal slabs, stepped and cantilevered
+    tiers, deep overhangs with ribbed or coffered undersides, repeated vertical fins
+    and ribs, thick columns and splayed struts that show the load path. Long ribbon
+    windows and slots set deep in the mass; glass is a small recessed exception. Identical
+    repeated bays and modules. Board-marked or poured concrete, steel frames, trusses
+    and railings, with matte surfaces and low-contrast wear. Neon is thin lines, strips
+    and slots in soft amber, yellow or red, drawn as flat colour, not glow; emission
+    is added in the engine.
+
+
+    Paint over the FIRST attached reference (the grey greybox render) and keep its
+    composition, camera, wide-angle low perspective, proportions and every major shape
+    exactly. Do not move, add or remove any mass. Change only materials, surface detail,
+    colour and lighting. The frame shows the left side of the facility: a long cantilevered
+    upper tier on the left, with a row of stepped ribbed teeth under its slab edge
+    and four slanted buttress fins down the wall below. A lower plinth slab runs beneath
+    that, a low connecting block with a small stair-like ramp sits in the middle,
+    and the docking arm projects to the right as a boxy cantilevered block. Two splayed
+    A-frame concrete struts angle down from the arm into the dark, and the tall thin
+    comms mast rises at the top left. The crew''s small 10 m orange submarine hangs
+    level beneath the arm, its dorsal hatch mated to a collar in the arm''s floor.
+    Draw it as a small, modern, low-poly research submarine in worn orange with dark
+    hatch hardware, clearly tiny beside the arm. The black cliff and chasm fill the
+    lower half of the frame and drop away, bottomless. The water is deep teal at the
+    top, falling to near black at the bottom, with sparse marine snow and no water
+    surface anywhere.
+
+
+    Push the detail with flat-shaded low-poly forms and strong silhouettes. Render
+    the slabs as board-marked poured concrete with visible formwork lines, panel joints,
+    tie-hole rows and low-contrast weathering, staining and silt streaks, matte throughout.
+    Make the ribbed teeth under the upper tier deep, dark coffered soffits. Show thin,
+    deep-set ribbon window slots with warm amber light behind them along each level
+    and the tier''s front, in flat colour with no glow halos. Add heavy framed hatches
+    on the connecting block and arm. Keep the walls mostly blank concrete, with no
+    railings, stairs or terraces and no floodlighting. Run thin flat amber neon strips
+    along the upper tier''s top edge, the plinth edge and the docking arm''s edge,
+    with a few yellow accents and a few red lines on secondary edges. The neon fades
+    fast into the dark water. Add a soft, low pool of warm light under the docking
+    arm around the collar and the submarine''s hatch, as a lit in-world source with
+    no bloom or lens flare. The comms mast is a slim weathered steel truss. The mood
+    is overbuilt, competent, isolated and lonely, a lone outpost on the lip of a black
+    chasm.
+
+
+    Avoid:
+
+    - baked-in lighting that is not from an in-world source, strong highlights, glossy
+    reflections
+
+    - text, logos, labels, watermarks, signatures
+
+    - bloom, glow halos, lens flare, lens effects
+
+    - bright, sunlit, tropical or cartoon ocean
+
+    - photographic grain, noise, blur, depth of field
+
+    - a changed camera, perspective or framing, or a cropped or isolated environment
+
+    - sleek, smooth, rounded shapes; large glass domes or glazed walls
+
+    - cyberpunk look, magenta-and-cyan neon, signage, floodlighting, glow and bloom
+
+    - ornament, gothic or art deco detail
+
+    - pristine new surfaces, or sloppy random damage
+
+    - structures that read as rock'
+  parent: v31
+  created: '2026-11-28T02:33:50Z'
+  writer: claude-cli:claude-sonnet-5-5
+  references:
+  - .asset_work/research_hub/references/a8976c235919.png
+  - .asset_work/research_hub/concept/v31.png
+  reference:
+    name: chasm_approach.jpg
+    sha256: a8976c23591913904306172325b9e732f74f518f94d927527bf33285cafd50c7
+  mode: paint-over
+  presentation: scene
+  task_id: ''
+  views: []
+  options: {}
+  source: {}
+- id: v38
+  kind: concept
+  path: .asset_work/research_hub/concept/v38.png
+  provider: google-pro
+  model: gemini-3-pro-image
+  prompt: 'Silent Water: a dark, deep-ocean world. Everything humans built feels industrial,
+    utilitarian and competent: overbuilt, honest, worn by age and pressure but never
+    sloppy. Nature is soft, irregular and organic. Low-poly forms with flat shading
+    and strong, readable silhouettes; shape matters more than texture or detail.
+
+
+    Presentation: a scene, not a single subject. Keep the reference''s camera, perspective
+    and framing exactly, wide angle included. The full environment is in frame and
+    is the subject; nothing is isolated on a background. In-world light sources (cove
+    lighting, lit screens, holograms, indicator lamps) may light the space, drawn
+    as part of the scene; no bloom, glow halos, lens flare or other lens effects.
+    People appear only when the brief asks for them.
+
+
+    Raindrop''s infrastructure in brutalist concrete and steel: massive, honest, overbuilt,
+    built to outlast the people who made it. Heavy horizontal slabs, stepped and cantilevered
+    tiers, deep overhangs with ribbed or coffered undersides, repeated vertical fins
+    and ribs, thick columns and splayed struts that show the load path. Long ribbon
+    windows and slots set deep in the mass; glass is a small recessed exception. Identical
+    repeated bays and modules. Board-marked or poured concrete, steel frames, trusses
+    and railings, with matte surfaces and low-contrast wear. Neon is thin lines, strips
+    and slots in soft amber, yellow or red, drawn as flat colour, not glow; emission
+    is added in the engine.
+
+
+    Paint over the first reference image (the greybox render). KEEP its composition,
+    camera, wide-angle perspective, proportions and every mass exactly as they are.
+    Change only materials, surface detail, colour and lighting. Do not add, remove
+    or move any mass. The scene is Raindrop''s brutalist concrete research hub, seen
+    from low and to the side. It sits on the lip of a seafloor ledge, and its big
+    cantilevered upper slab overhangs a black, bottomless chasm. The slab is carried
+    on a row of identical splayed, kinked concrete piers set on a low stepped plinth.
+    Short chevron struts brace the slab''s end toward the docking arm. A short docking
+    arm juts out over the chasm, braced by a slanted A-frame strut. A tall thin comms
+    mast rises behind the slab, and a distant tower and repeated piers sit at the
+    far left edge.
+
+
+    The upper slab''s face and sides are board-marked poured concrete, with visible
+    horizontal formwork lines, panel joints, tie-hole rows, and low-contrast streaking
+    and weathering. The walls are mostly blank. Under the slab''s front edge is a
+    deep ribbed, coffered soffit, with its heavy beams repeated between the piers.
+    Add thin, deep-set ribbon windows and slots with warm amber light behind them.
+    Run them along the recessed lower level between the piers and along the slab''s
+    end face. The glass is small and recessed. Add a few heavy, framed hatch doors
+    in the recessed bays. The piers are chamfered and heavy, with the same board-marked
+    concrete and visible load path. The plinth is rough poured concrete, with stepped
+    blocks on the seafloor.
+
+
+    Neon is thin flat-colour strips, not glow. Run amber strips along the slab''s
+    top edge, the plinth edge and the docking arm''s edge. Add yellow accents, and
+    a few red strips on secondary edges. They fade quickly into the dark water. There
+    are no bloom halos and no lens flare. The sub is the small orange object under
+    the docking arm. Draw it as a small modern 10 m orange research submarine. It
+    hangs LEVEL beneath the arm, mated at its dorsal hatch to a collar in the arm''s
+    floor, with its hull horizontal and centred under the arm. Light the sub with
+    a soft pool of warm light on the collar and the arm''s underside. Make it clearly
+    smaller than the arm and the station.
+
+
+    Below and beyond the ledge, the cliff drops away black and bottomless. The seafloor
+    in the foreground is dark, matte, soft-edged silt. The water is fully submerged,
+    in deep teal fading to black, with sparse marine snow drifting through. There
+    is no water surface anywhere. Add no railings, stairs, terraces, floodlights or
+    people. Nothing is sleek or rounded. The mood is overbuilt, competent, isolated
+    and lonely. Use low-poly, flat-shaded forms with strong, readable silhouettes
+    and a dark, muted palette, lit only by the neon strips and the lit slots.
+
+
+    Avoid:
+
+    - baked-in lighting that is not from an in-world source, strong highlights, glossy
+    reflections
+
+    - text, logos, labels, watermarks, signatures
+
+    - bloom, glow halos, lens flare, lens effects
+
+    - bright, sunlit, tropical or cartoon ocean
+
+    - photographic grain, noise, blur, depth of field
+
+    - a changed camera, perspective or framing, or a cropped or isolated environment
+
+    - sleek, smooth, rounded shapes; large glass domes or glazed walls
+
+    - cyberpunk look, magenta-and-cyan neon, signage, floodlighting, glow and bloom
+
+    - ornament, gothic or art deco detail
+
+    - pristine new surfaces, or sloppy random damage
+
+    - structures that read as rock'
+  parent: v33
+  created: '2026-11-28T02:34:19Z'
+  writer: claude-cli:claude-sonnet-5-5
+  references:
+  - .asset_work/research_hub/references/89624d9ca920.png
+  - .asset_work/research_hub/concept/v33.png
+  reference:
+    name: edge_profile.jpg
+    sha256: 89624d9ca920c140ae06ca5fa2e624768b7d44342c57231d1ec547d627480609
+  mode: paint-over
+  presentation: scene
+  task_id: ''
+  views: []
+  options: {}
+  source: {}
+- id: v39
+  kind: concept
+  path: .asset_work/research_hub/concept/v39.png
+  provider: google-pro
+  model: gemini-3-pro-image
+  prompt: 'Silent Water: a dark, deep-ocean world. Everything humans built feels industrial,
+    utilitarian and competent: overbuilt, honest, worn by age and pressure but never
+    sloppy. Nature is soft, irregular and organic. Low-poly forms with flat shading
+    and strong, readable silhouettes; shape matters more than texture or detail.
+
+
+    Presentation: a scene, not a single subject. Keep the reference''s camera, perspective
+    and framing exactly, wide angle included. The full environment is in frame and
+    is the subject; nothing is isolated on a background. In-world light sources (cove
+    lighting, lit screens, holograms, indicator lamps) may light the space, drawn
+    as part of the scene; no bloom, glow halos, lens flare or other lens effects.
+    People appear only when the brief asks for them.
+
+
+    Raindrop''s infrastructure in brutalist concrete and steel: massive, honest, overbuilt,
+    built to outlast the people who made it. Heavy horizontal slabs, stepped and cantilevered
+    tiers, deep overhangs with ribbed or coffered undersides, repeated vertical fins
+    and ribs, thick columns and splayed struts that show the load path. Long ribbon
+    windows and slots set deep in the mass; glass is a small recessed exception. Identical
+    repeated bays and modules. Board-marked or poured concrete, steel frames, trusses
+    and railings, with matte surfaces and low-contrast wear. Neon is thin lines, strips
+    and slots in soft amber, yellow or red, drawn as flat colour, not glow; emission
+    is added in the engine.
+
+
+    Paint over the FIRST attached greybox reference: KEEP its composition, camera,
+    wide-angle high three-quarter aerial perspective, proportions and every major
+    shape exactly; change only materials, surface detail, colour and lighting to match
+    the style bible. The second attached image is the previous painted variant: keep
+    what works in it (the weathered concrete read, the thin neon lines, the dark teal
+    water, marine snow) and push the detail further without moving any mass. Scene:
+    Raindrop''s research and operations hub, a massive brutalist concrete facility
+    built on the lip of a seafloor ledge, the near edge of a black bottomless chasm
+    dropping away at the lower right, the full environment in frame, fully submerged
+    in deep teal to black water with drifting marine snow, no water surface anywhere.
+    Main slab block: board-marked poured concrete with visible formwork lines, panel
+    joints, tie-holes, stains and low-contrast pressure wear; the slab''s underside
+    is a deep ribbed, coffered soffit, with a row of thin deep-set ribbon-window slots
+    and small slot windows along each level and the tier''s front, warm amber light
+    behind them drawn as flat colour; heavy framed hatches; vertical buttress fins
+    ribbing the landward wall and the splayed concrete struts under the cantilever,
+    keeping their exact count and angles; walls mostly blank concrete, never stacked
+    identical floors, no railings, stairs or terraces, nothing sleek or rounded. The
+    cantilevered docking arm projecting over the chasm on the right: ribbed underside,
+    heavy framed hatch, and the crew''s small orange 10 m modern research submarine
+    hanging level beneath it, dorsal hatch mated to a collar in the arm''s floor,
+    with a soft pool of warm light under the arm around the collar and no floodlighting.
+    The smaller outlying tier at the back with its buttress fins, its connecting walkway-slab,
+    and both thin steel truss comms masts kept as in the reference, as weathered steel
+    secondary elements. Thin flat-colour neon strips along the tier edges, the plinth,
+    the walkway and the docking arm: mostly soft amber, yellow accents, a few red
+    on secondary edges, fading fast into the dark water, no glow halos, bloom or lens
+    flare. Low-poly flat-shaded forms, strong readable silhouettes, shape over texture.
+    Mood: overbuilt, competent, stable, isolated and lonely, a lone outpost in an
+    alien deep. No people.
+
+
+    Avoid:
+
+    - baked-in lighting that is not from an in-world source, strong highlights, glossy
+    reflections
+
+    - text, logos, labels, watermarks, signatures
+
+    - bloom, glow halos, lens flare, lens effects
+
+    - bright, sunlit, tropical or cartoon ocean
+
+    - photographic grain, noise, blur, depth of field
+
+    - a changed camera, perspective or framing, or a cropped or isolated environment
+
+    - sleek, smooth, rounded shapes; large glass domes or glazed walls
+
+    - cyberpunk look, magenta-and-cyan neon, signage, floodlighting, glow and bloom
+
+    - ornament, gothic or art deco detail
+
+    - pristine new surfaces, or sloppy random damage
+
+    - structures that read as rock'
+  parent: v36
+  created: '2026-11-28T02:34:47Z'
+  writer: claude-cli:claude-sonnet-5-5
+  references:
+  - .asset_work/research_hub/references/4edc0d1e6aeb.png
+  - .asset_work/research_hub/concept/v36.png
+  reference:
+    name: overview.jpg
+    sha256: 4edc0d1e6aeba1237e590e60342ad756639e2ce8d721ab8329883702e059f61a
+  mode: paint-over
+  presentation: scene
+  task_id: ''
+  views: []
+  options: {}
+  source: {}
 locked: null
 decisions: []
 brief: null
@@ -3333,6 +4200,252 @@ costs:
   api_equivalent_usd: null
   error: ''
   at: '2026-11-28T02:24:51Z'
+- command: concept
+  stage: concept
+  provider: claude-cli
+  model: claude-sonnet-5-5
+  usd: 0.0
+  basis: subscription
+  lineage: null
+  units:
+    input_tokens: 4
+    output_tokens: 1288
+  unit_price: {}
+  api_equivalent_usd: 0.088444
+  error: ''
+  at: '2026-11-28T02:31:12Z'
+- command: concept
+  stage: concept
+  provider: google-pro
+  model: gemini-3-pro-image
+  usd: 0.167416
+  basis: estimated
+  lineage: v31
+  units:
+    input_tokens: 1088
+    output_tokens: 1377
+    total_tokens: 2736
+    images: 1
+  unit_price:
+    usd_per_mtok_input: 2.0
+    usd_per_mtok_output: 120.0
+  api_equivalent_usd: null
+  error: ''
+  at: '2026-11-28T02:31:26Z'
+- command: concept
+  stage: concept
+  provider: google-pro
+  model: gemini-3-pro-image
+  usd: 0.174402
+  basis: estimated
+  lineage: v32
+  units:
+    input_tokens: 1101
+    output_tokens: 1435
+    total_tokens: 2850
+    images: 1
+  unit_price:
+    usd_per_mtok_input: 2.0
+    usd_per_mtok_output: 120.0
+  api_equivalent_usd: null
+  error: ''
+  at: '2026-11-28T02:31:41Z'
+- command: concept
+  stage: concept
+  provider: claude-cli
+  model: claude-sonnet-5-5
+  usd: 0.0
+  basis: subscription
+  lineage: null
+  units:
+    input_tokens: 6
+    output_tokens: 1197
+  unit_price: {}
+  api_equivalent_usd: 0.092279
+  error: ''
+  at: '2026-11-28T02:31:56Z'
+- command: concept
+  stage: concept
+  provider: google-pro
+  model: gemini-3-pro-image
+  usd: 0.16335
+  basis: estimated
+  lineage: v33
+  units:
+    input_tokens: 1035
+    output_tokens: 1344
+    total_tokens: 2574
+    images: 1
+  unit_price:
+    usd_per_mtok_input: 2.0
+    usd_per_mtok_output: 120.0
+  api_equivalent_usd: null
+  error: ''
+  at: '2026-11-28T02:32:10Z'
+- command: concept
+  stage: concept
+  provider: google-pro
+  model: gemini-3-pro-image
+  usd: 0.16326
+  basis: estimated
+  lineage: v34
+  units:
+    input_tokens: 1050
+    output_tokens: 1343
+    total_tokens: 2642
+    images: 1
+  unit_price:
+    usd_per_mtok_input: 2.0
+    usd_per_mtok_output: 120.0
+  api_equivalent_usd: null
+  error: ''
+  at: '2026-11-28T02:32:23Z'
+- command: concept
+  stage: concept
+  provider: claude-cli
+  model: claude-sonnet-5-5
+  usd: 0.0
+  basis: subscription
+  lineage: null
+  units:
+    input_tokens: 4
+    output_tokens: 1350
+  unit_price: {}
+  api_equivalent_usd: 0.089108
+  error: ''
+  at: '2026-11-28T02:32:39Z'
+- command: concept
+  stage: concept
+  provider: google-pro
+  model: gemini-3-pro-image
+  usd: 0.172954
+  basis: estimated
+  lineage: v35
+  units:
+    input_tokens: 1097
+    output_tokens: 1423
+    total_tokens: 2724
+    images: 1
+  unit_price:
+    usd_per_mtok_input: 2.0
+    usd_per_mtok_output: 120.0
+  api_equivalent_usd: null
+  error: ''
+  at: '2026-11-28T02:32:53Z'
+- command: concept
+  stage: concept
+  provider: google-pro
+  model: gemini-3-pro-image
+  usd: 0.168068
+  basis: estimated
+  lineage: v36
+  units:
+    input_tokens: 1114
+    output_tokens: 1382
+    total_tokens: 2743
+    images: 1
+  unit_price:
+    usd_per_mtok_input: 2.0
+    usd_per_mtok_output: 120.0
+  api_equivalent_usd: null
+  error: ''
+  at: '2026-11-28T02:33:06Z'
+- command: concept
+  stage: refine
+  provider: claude-cli
+  model: claude-sonnet-5-5
+  usd: 0.0
+  basis: subscription
+  lineage: null
+  units:
+    input_tokens: 4
+    output_tokens: 977
+  unit_price: {}
+  api_equivalent_usd: 0.092442
+  error: ''
+  at: '2026-11-28T02:33:35Z'
+- command: concept
+  stage: refine
+  provider: google-pro
+  model: gemini-3-pro-image
+  usd: 0.162602
+  basis: estimated
+  lineage: v37
+  units:
+    input_tokens: 1501
+    output_tokens: 1330
+    total_tokens: 3049
+    images: 1
+  unit_price:
+    usd_per_mtok_input: 2.0
+    usd_per_mtok_output: 120.0
+  api_equivalent_usd: null
+  error: ''
+  at: '2026-11-28T02:33:50Z'
+- command: concept
+  stage: refine
+  provider: claude-cli
+  model: claude-sonnet-5-5
+  usd: 0.0
+  basis: subscription
+  lineage: null
+  units:
+    input_tokens: 4
+    output_tokens: 1192
+  unit_price: {}
+  api_equivalent_usd: 0.09462
+  error: ''
+  at: '2026-11-28T02:34:04Z'
+- command: concept
+  stage: refine
+  provider: google-pro
+  model: gemini-3-pro-image
+  usd: 0.169648
+  basis: estimated
+  lineage: v38
+  units:
+    input_tokens: 1604
+    output_tokens: 1387
+    total_tokens: 3278
+    images: 1
+  unit_price:
+    usd_per_mtok_input: 2.0
+    usd_per_mtok_output: 120.0
+  api_equivalent_usd: null
+  error: ''
+  at: '2026-11-28T02:34:19Z'
+- command: concept
+  stage: refine
+  provider: claude-cli
+  model: claude-sonnet-5-5
+  usd: 0.0
+  basis: subscription
+  lineage: null
+  units:
+    input_tokens: 6
+    output_tokens: 1007
+  unit_price: {}
+  api_equivalent_usd: 0.097676
+  error: ''
+  at: '2026-11-28T02:34:32Z'
+- command: concept
+  stage: refine
+  provider: google-pro
+  model: gemini-3-pro-image
+  usd: 0.184864
+  basis: estimated
+  lineage: v39
+  units:
+    input_tokens: 1472
+    output_tokens: 1516
+    total_tokens: 3384
+    images: 1
+  unit_price:
+    usd_per_mtok_input: 2.0
+    usd_per_mtok_output: 120.0
+  api_equivalent_usd: null
+  error: ''
+  at: '2026-11-28T02:34:47Z'
 budget_usd: 15.0
 renames: []
 class: architecture
