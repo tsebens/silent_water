@@ -47,3 +47,20 @@ The gate run after stage 1 agrees with the gate after stage 2 on 25 of 30 seeds 
 the early filter; final placement runs again after the slow stages. 26 of 30 seeds are viable.
 
 Station classes and depth bands in `stations.py` are placeholders for the real station list.
+
+## Port plan: chunking (decided)
+
+At the game's fog density (0.018 per metre) terrain is 99% hidden by about 260 m, so a camera never sees more
+than about 5% of a map. Decided (Tristan, 2026-11-28): **fixed tiles with distance culling**. The 2 m grid is
+cut into square tiles (for example 64 x 64 cells, 128 m), one mesh each, whose visibility range ends just past
+the fog distance. The detail pass is local, so each tile's detail is generated lazily as the sub approaches,
+with a small overlap so slump matches across seams; collision is per tile near the sub and the apex; the
+holographic maps keep the 10 m macro grid.
+
+Kept for reference:
+- **GPU clipmap:** nested camera-centred rings with heights from a texture in the vertex shader. The upgrade
+  path if clearer water extends sight lines.
+- **Terrain3D addon:** clipmaps, collision, texturing and editor tools, at the cost of a native dependency
+  pinned to Godot versions and its own region and material systems.
+
+Still open: tile size, and lazy detail versus generating everything at load behind a progress screen.
