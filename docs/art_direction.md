@@ -89,15 +89,19 @@ Everything is worn by age and pressure, never sloppy.
 
 ## References
 
-Kept in `assets/media/architecture/` (to be added):
+Kept in `assets/media/architecture/`:
 
 | File | Reference | What to take from it |
 | --- | --- | --- |
-| `geisel_library.jpg` | Geisel Library, UC San Diego (William Pereira) | Stepped, cantilevered concrete tiers on splayed angled struts; ribbon glazing set deep in the mass |
-| `barbican_estate.jpg` | Barbican Estate, London | Long repeated concrete balconies on heavy pilotis; massive horizontal bands; structure meeting water |
-| `national_theatre.jpg` | National Theatre, London (Denys Lasdun) | Board-marked concrete; stacked horizontal terraces with coffered soffits; tower blocks; simple steel handrails |
-| `underwater_station.jpg` | Concept art from the film *Underwater* (2020) | A heavy station on the seafloor, truss tower and tracked modules; small cool lights in near-total dark; diver for scale |
-| `rosander_seafloor_modules.jpg` | Concept art by Patrik Rosander | Monolithic ribbed angular modules on a sloping seabed; tiny warm window lights; fog swallowing distance |
+| `geisel_library.png` | Geisel Library, UC San Diego (William Pereira) | Stepped, cantilevered concrete tiers on splayed angled struts; ribbon glazing set deep in the mass |
+| `barbican_estate.png` | Barbican Estate, London | Long repeated concrete balconies on heavy pilotis; massive horizontal bands; structure meeting water |
+| `national_theatre.webp` | National Theatre, London (Denys Lasdun) | Board-marked concrete; stacked horizontal terraces with coffered soffits; tower blocks; simple steel handrails |
+| `cantilever_on_cylinders.png` | A brutalist block cantilevered over cylindrical cores | One heavy slab lifted on drum-like cores and a few columns; a deep overhang with a ribbed soffit; a single row of deep vertical fins along one face; small punched openings |
+| `hayward_gallery.webp` | Hayward Gallery, Southbank Centre, London | A ribbed box cantilevered over a single heavy column; a long letterbox window set deep in a projecting band; a row of pyramid rooflights along the top; louvred vents in a plain face |
+
+Still to add: concept art from the film *Underwater* (2020), a heavy station on the seafloor with a truss tower and
+small cool lights in near-total dark; and Patrik Rosander's monolithic ribbed seafloor modules, with tiny warm window
+lights and fog swallowing distance.
 
 The earlier mood board in `assets/media/` remains a reference for lighting, palette and underwater atmosphere. Where it shows sleek, rounded forms, this file takes precedence.
 

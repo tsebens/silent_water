@@ -1,0 +1,207 @@
+# Research station floorplan, draft 1 (#853). Raindrop's regional research and operations hub: a crew of about ten.
+# The layout is data: tools/facility_plan/plan.py draws and checks it (run it with `uv run`), and the greybox will be
+# built from it. Laid out for play first (design doc, "Facilities"); design pillar 7: nothing that jars.
+#
+# Units: metres. Site frame: x along the ledge, z inland (the chasm is at z < 0, past the ledge edge), y up.
+# Rectangles are [x0, x1, z0, z1]. Ground (the top of the ledge) is y = 0.
+
+site:
+  ledge_edge_z: 0.0           # the lip of the chasm; everything at z < 0 hangs over the drop
+  sub_length_m: 10.0          # for scale on the plans
+
+clearances:
+  door_suited_m: 1.0          # every door: a crew member in a dive suit
+  door_carry_m: 1.2           # every door on the rescue carry route (a survivor carried between two)
+  corridor_carry_m: 1.6       # corridors and tunnels on the carry route
+  headroom_m: 2.4             # clear height on every level
+  bunk_area_m2: 5.0           # dorm floor area per bunk, lockers and floor space included
+
+structures:
+  - id: main
+    name: Main block
+    rect: [-14, 14, 2, 22]
+    levels:
+      - {id: L1, name: Work, floor_y: 0.0, height: 3.2}
+      - {id: L2, name: Living, floor_y: 3.6, height: 2.8}
+    notes: Two storeys, set back a couple of metres from the edge. Work below, living above; the science lab and the commons both look out over the chasm.
+    exterior:                 # the shell is far bigger than the rooms: that is where the presence comes from
+      wall_m: 1.5
+      plinth: {out_m: 2.5, height_m: 2.0}
+      tier: {chasm_m: 6.0, sides_m: 2.0, height_m: 4.5, rib_spacing_m: 2.0, rib_depth_m: 1.6}   # plant level, cantilevered toward the chasm
+      struts: {face: south, spacing_m: 7.0, width_m: 1.2}        # splayed struts from the plinth up to the tier's front edge
+      fins: {faces: [west, east, north], spacing_m: 4.0, depth_m: 3.5, thick_m: 1.0}
+      mast: {at: [-9, 17], height_m: 20.0, width_m: 1.2}           # the comms line's mast
+      windows:                  # thin lit slots set in the concrete: one row per level, segments between the fins
+        faces: [south, west, east]
+        rows: [{y_m: 1.5, h_m: 0.5}, {y_m: 5.1, h_m: 0.45}]
+        length_m: 3.0
+        spacing_m: 4.0
+      tier_windows: {h_m: 0.35, length_m: 5.0, spacing_m: 6.0}       # a slot band along the tier's front
+      neon: [tier_front, plinth_front]
+  - id: maintenance
+    name: Maintenance
+    rect: [26, 46, 4, 24]
+    levels:
+      - {id: M, name: Maintenance, floor_y: 0.0, height: 5.0}
+    notes: Tall single storey; the workshop has room to work on equipment. Life support is sealed off beside it.
+    exterior:
+      wall_m: 1.5
+      plinth: {out_m: 1.5, height_m: 1.5}
+      fins: {faces: [east, north, west], spacing_m: 4.0, depth_m: 3.0, thick_m: 1.0}
+      windows: {faces: [south], rows: [{y_m: 2.6, h_m: 0.45}], length_m: 2.5, spacing_m: 4.0}
+      neon: [plinth_front]
+  - id: dock
+    name: Docking arm
+    rect: [30, 38, -10, 4]
+    levels:
+      - {id: D, name: Dock, floor_y: 0.0, height: 3.0}
+    notes: Cantilevered out over the chasm from the workshop. The docking collar is in the floor of the airlock; the sub rises out of the chasm and mates its dorsal hatch to it from below (#842, #843).
+    exterior:
+      wall_m: 1.0
+      keel_m: 2.5               # a deep beam along the arm's underside, either side of the collar
+      collar_m: 2.5             # the docking collar's trunk below the arm floor: the sub hangs this far below
+      neon: [arm_edges]
+  - id: power
+    name: Power building
+    rect: [22, 38, 74, 92]
+    levels:
+      - {id: P, name: Power, floor_y: 0.0, height: 6.0}
+    notes: The reactor, set well back from the habitat because it is nuclear. Reached by the 50 m power tunnel.
+    exterior:
+      wall_m: 3.0               # shielding
+      fins: {faces: [south, east, north, west], spacing_m: 4.0, depth_m: 3.0, thick_m: 1.2}
+      stack: {at: [34, 87], height_m: 16.0, width_m: 3.0}
+      neon: [plinth_front]
+
+# Plans to draw: levels drawn together share a floor height.
+plan_views:
+  - {id: main_L1, levels: [L1]}
+  - {id: main_L2, levels: [L2]}
+  - {id: maintenance_dock, levels: [M, D], title: Maintenance and docking arm (floor at 0.0 m)}
+  - {id: power, levels: [P]}
+
+# use: what the room is for. powered: true when the room's lights and systems are dead without station power (most
+# are). zone: the watertight zone (default: the structure). tags: objective anchors and notes for the checker.
+rooms:
+  # ---- Main block, L1: work ----------------------------------------------------------------------------------------
+  - {id: science_lab,  level: L1, rect: [-14, 4, 2, 9],   use: Science lab, tags: [objective_data_coil, faces_chasm, largest_room]}
+  - {id: medical,      level: L1, rect: [4, 14, 2, 9],    use: Medical bay, tags: [faces_chasm]}
+  - {id: comms,        level: L1, rect: [-14, -7, 9, 16], use: Comms and admin, tags: [objective_data_coil, objective_comms_test]}
+  - {id: chief_office, level: L1, rect: [-14, -7, 16, 22], use: Station chief's office}
+  - {id: server_room,  level: L1, rect: [-7, 2, 18, 22],  use: Server room}
+  - {id: lab_store,    level: L1, rect: [2, 9, 18, 22],   use: Lab stores and samples}
+  - {id: refuge,       level: L1, rect: [-5, 1, 11, 16],  use: Emergency refuge, zone: refuge, tags: [objective_survivors, own_air]}
+  - {id: washroom_1,   level: L1, rect: [9, 14, 9, 13],   use: Washroom}
+  - {id: lobby,        level: L1, rect: [9, 14, 13, 22],  use: Lobby to the maintenance tunnel}
+  - {id: corr_1s,      level: L1, rect: [-7, 9, 9, 11],   use: Corridor, corridor: true}
+  - {id: corr_1n,      level: L1, rect: [-7, 9, 16, 18],  use: Corridor, corridor: true}
+  - {id: corr_1w,      level: L1, rect: [-7, -5, 11, 16], use: Corridor, corridor: true}
+  - {id: corr_1e,      level: L1, rect: [7, 9, 11, 16],   use: Corridor, corridor: true}
+  # The stair runs through both levels in the core.
+  - {id: stair,        levels: [L1, L2], rect: [1, 7, 11, 16], use: Stair, corridor: true}
+  # ---- Main block, L2: living ---------------------------------------------------------------------------------------
+  - {id: commons,      level: L2, rect: [-14, 4, 2, 9],   use: Commons (mess and games), tags: [faces_chasm]}
+  - {id: galley,       level: L2, rect: [4, 9, 2, 9],     use: Galley, tags: [faces_chasm]}
+  - {id: food_store,   level: L2, rect: [9, 14, 2, 9],    use: Food stores}
+  - {id: dorm_a,       level: L2, rect: [-14, -7, 9, 16], use: Dorm A (shift one), bunks: 5}
+  - {id: dorm_b,       level: L2, rect: [-14, -7, 16, 22], use: Dorm B (shift two), bunks: 5}
+  - {id: chief_cabin,  level: L2, rect: [9, 14, 9, 15],   use: Station chief's cabin, bunks: 1}
+  - {id: gym,          level: L2, rect: [9, 14, 15, 22],  use: Gym}
+  - {id: washroom_2,   level: L2, rect: [-5, 1, 11, 16],  use: Washroom and showers}
+  - {id: quiet_room,   level: L2, rect: [-7, 2, 18, 22],  use: Quiet room (books, games)}
+  - {id: laundry,      level: L2, rect: [2, 9, 18, 22],   use: Laundry}
+  - {id: corr_2s,      level: L2, rect: [-7, 9, 9, 11],   use: Corridor, corridor: true}
+  - {id: corr_2n,      level: L2, rect: [-7, 9, 16, 18],  use: Corridor, corridor: true}
+  - {id: corr_2w,      level: L2, rect: [-7, -5, 11, 16], use: Corridor, corridor: true}
+  - {id: corr_2e,      level: L2, rect: [7, 9, 11, 16],   use: Corridor, corridor: true}
+  # ---- Maintenance ------------------------------------------------------------------------------------------------
+  - {id: maint_hall,   level: M, rect: [26, 33, 16, 24],  use: Maintenance hall, corridor: true}
+  - {id: workshop,     level: M, rect: [26, 40, 4, 16],   use: Workshop (bilge controls), tags: [objective_bilges]}
+  - {id: spares,       level: M, rect: [33, 40, 16, 24],  use: Spares store}
+  - {id: dive_locker,  level: M, rect: [40, 46, 4, 10],   use: Dive locker (suits)}
+  - {id: lockout,      level: M, rect: [40, 46, 10, 14],  use: Lock-out to the sea, zone: lockout}
+  - {id: life_support, level: M, rect: [40, 46, 14, 24],  use: Life support, zone: life_support, tags: [objective_life_support]}
+  # ---- Docking arm ------------------------------------------------------------------------------------------------
+  - {id: dock_passage, level: D, rect: [32, 36, -2, 4],   use: Dock passage, corridor: true}
+  - {id: dock_airlock, level: D, rect: [30, 38, -10, -2], use: Dock airlock (collar in the floor), zone: dock_airlock}
+  # ---- Power building ---------------------------------------------------------------------------------------------
+  - {id: reactor_control, level: P, rect: [22, 30, 74, 82], use: Reactor control room, powered: false, tags: [objective_power_restart]}
+  - {id: switchgear,   level: P, rect: [30, 38, 74, 82],  use: Switchgear}
+  - {id: reactor_hall, level: P, rect: [22, 38, 82, 92],  use: Reactor hall, zone: reactor}
+
+# Tunnels: a path of points at floor level, its clear width, and its own watertight zone.
+tunnels:
+  - {id: link_tunnel,  path: [[14, 19], [26, 19]], width: 2.4, height: 2.6, use: Link tunnel (main block to maintenance)}
+  - {id: power_tunnel, path: [[28, 24], [28, 74]], width: 2.0, height: 2.4, use: Power tunnel (50 m), notes: The cables to the main block run along it; the ominous walk.}
+
+# Doors. kind: open (a doorless opening), manual (opens without power), powered (dead without power), watertight
+# (a heavy hand-wheeled door; opens without power), hatch (in a floor or ceiling). at: [x, z] on the shared wall.
+doors:
+  # L1
+  - {between: [science_lab, corr_1s],  at: [-2, 9],    width: 1.6, kind: powered}
+  - {between: [medical, corr_1s],      at: [7.5, 9],   width: 1.4, kind: manual}
+  - {between: [comms, corr_1w],        at: [-7, 13.5], width: 1.0, kind: powered}
+  - {between: [comms, chief_office],   at: [-10.5, 16], width: 1.0, kind: manual}
+  - {between: [chief_office, corr_1n], at: [-7, 17],   width: 1.0, kind: manual}
+  - {between: [server_room, corr_1n],  at: [-2.5, 18], width: 1.0, kind: powered}
+  - {between: [lab_store, corr_1n],    at: [5.5, 18],  width: 1.0, kind: manual}
+  - {between: [refuge, corr_1w],       at: [-5, 13.5], width: 1.2, kind: watertight}
+  - {between: [washroom_1, corr_1e],   at: [9, 12],    width: 1.0, kind: manual}
+  - {between: [lobby, corr_1e],        at: [9, 14.5],  width: 1.6, kind: manual}
+  - {between: [lobby, corr_1n],        at: [9, 17],    width: 1.6, kind: open}
+  - {between: [corr_1s, corr_1w],      at: [-6, 11],   width: 2.0, kind: open}
+  - {between: [corr_1s, corr_1e],      at: [8, 11],    width: 2.0, kind: open}
+  - {between: [corr_1n, corr_1w],      at: [-6, 16],   width: 2.0, kind: open}
+  - {between: [corr_1n, corr_1e],      at: [8, 16],    width: 2.0, kind: open}
+  - {between: [stair, corr_1s],        at: [4, 11],    width: 2.4, kind: open, level: L1}
+  - {between: [stair, corr_1n],        at: [4, 16],    width: 2.4, kind: open, level: L1}
+  - {between: [lobby, link_tunnel],    at: [14, 19],   width: 1.6, kind: watertight}
+  # L2
+  - {between: [commons, corr_2s],      at: [-2, 9],    width: 2.0, kind: open}
+  - {between: [commons, galley],       at: [4, 5.5],   width: 1.6, kind: open}
+  - {between: [galley, food_store],    at: [9, 5.5],   width: 1.0, kind: manual}
+  - {between: [galley, corr_2s],       at: [7.5, 9],   width: 1.0, kind: manual}
+  - {between: [dorm_a, corr_2w],       at: [-7, 13.5], width: 1.0, kind: manual}
+  - {between: [dorm_b, corr_2n],       at: [-7, 17],   width: 1.0, kind: manual}
+  - {between: [chief_cabin, corr_2e],  at: [9, 12],    width: 1.0, kind: manual}
+  - {between: [gym, corr_2e],          at: [9, 15],    width: 1.2, kind: manual}
+  - {between: [gym, corr_2n],          at: [9, 17],    width: 1.2, kind: manual}
+  - {between: [washroom_2, corr_2w],   at: [-5, 13.5], width: 1.0, kind: manual}
+  - {between: [quiet_room, corr_2n],   at: [-2.5, 18], width: 1.0, kind: manual}
+  - {between: [laundry, corr_2n],      at: [5.5, 18],  width: 1.0, kind: manual}
+  - {between: [corr_2s, corr_2w],      at: [-6, 11],   width: 2.0, kind: open}
+  - {between: [corr_2s, corr_2e],      at: [8, 11],    width: 2.0, kind: open}
+  - {between: [corr_2n, corr_2w],      at: [-6, 16],   width: 2.0, kind: open}
+  - {between: [corr_2n, corr_2e],      at: [8, 16],    width: 2.0, kind: open}
+  - {between: [stair, corr_2s],        at: [4, 11],    width: 2.4, kind: open, level: L2}
+  - {between: [stair, corr_2n],        at: [4, 16],    width: 2.4, kind: open, level: L2}
+  # Maintenance
+  - {between: [link_tunnel, maint_hall], at: [26, 19], width: 1.6, kind: watertight}
+  - {between: [maint_hall, workshop],  at: [29.5, 16], width: 2.0, kind: manual}
+  - {between: [maint_hall, spares],    at: [33, 20],   width: 1.2, kind: manual}
+  - {between: [workshop, spares],      at: [36.5, 16], width: 1.6, kind: manual}
+  - {between: [workshop, dive_locker], at: [40, 7],    width: 1.2, kind: manual}
+  - {between: [dive_locker, lockout],  at: [43, 10],   width: 1.0, kind: watertight}
+  - {between: [workshop, life_support], at: [40, 15],  width: 1.0, kind: watertight}
+  - {between: [maint_hall, power_tunnel], at: [28, 24], width: 1.4, kind: watertight}
+  - {between: [lockout, sea],          at: [43, 12],   width: 0.8, kind: hatch}
+  # Docking arm
+  - {between: [workshop, dock_passage], at: [34, 4],   width: 1.4, kind: watertight}
+  - {between: [dock_passage, dock_airlock], at: [34, -2], width: 1.4, kind: watertight}
+  - {between: [dock_airlock, sub],     at: [34, -6],   width: 0.9, kind: hatch}
+  # Power building
+  - {between: [power_tunnel, reactor_control], at: [28, 74], width: 1.4, kind: watertight}
+  - {between: [reactor_control, switchgear], at: [30, 78], width: 1.2, kind: manual}
+  - {between: [reactor_control, reactor_hall], at: [26, 82], width: 1.2, kind: watertight}
+
+# Routes the checker must find, and what it must hold along them.
+routes:
+  - {id: dark_start, from: sub, to: reactor_control, unpowered: true,
+     why: With the station dark, the crew can walk from the dock to the reactor controls without a powered door.}
+  - {id: rescue_carry, from: refuge, to: sub, carry: true,
+     why: Survivors in the refuge can be carried to the sub (door and corridor widths, no ladders). Hatches are exempt from the carry width; getting a survivor up through the dock hatch is the entrances concept's to design (#844).}
+  - {id: to_lab, from: sub, to: science_lab}
+  - {id: to_comms, from: sub, to: comms}
+  - {id: to_bilges, from: sub, to: workshop}
+  - {id: to_life_support, from: sub, to: life_support}
+  - {id: diver_out, from: sub, to: sea, why: A diver can leave the station for the sea (repairing the power line outside).}
