@@ -1,0 +1,565 @@
+{
+ "kind": "site",
+ "site": {
+  "pad_margin_m": 5.0,
+  "sub": {
+   "length_m": 10.0,
+   "width_m": 3.8,
+   "height_m": 3.0,
+   "tower_m": 1.5
+  }
+ },
+ "elements": [
+  {
+   "id": "node_plinth",
+   "role": "plinth",
+   "box": [
+    -5,
+    5,
+    -4,
+    4
+   ],
+   "height": 1.0
+  },
+  {
+   "id": "node",
+   "role": "node",
+   "box": [
+    -3.5,
+    3.5,
+    -2.5,
+    2.5
+   ],
+   "base_y": 1.0,
+   "height": 3.5,
+   "notes": "The node vault. Electronics",
+   "the data store and the power cell bay behind ribbed concrete. Faces the front.": null
+  },
+  {
+   "id": "node_mast",
+   "role": "mast",
+   "cylinder": {
+    "at": [
+     2.5,
+     1.5
+    ],
+    "radius": 0.35
+   },
+   "base_y": 4.5,
+   "height": 9.0,
+   "notes": "Carries the pinger and the red beacon high above the node",
+   "so both reach far.": null
+  },
+  {
+   "id": "beacon",
+   "role": "beacon",
+   "cylinder": {
+    "at": [
+     2.5,
+     1.5
+    ],
+    "radius": 0.45
+   },
+   "base_y": 13.5,
+   "height": 0.6
+  },
+  {
+   "id": "cable_bay",
+   "role": "cable_bay",
+   "box": [
+    -5,
+    -3.5,
+    -2,
+    2
+   ],
+   "base_y": 1.0,
+   "height": 1.6,
+   "notes": "Where the post cables come up out of the seabed into the node."
+  },
+  {
+   "id": "post_1",
+   "role": "post",
+   "cylinder": {
+    "at": [
+     -30,
+     -12
+    ],
+    "radius": 0.9
+   },
+   "height": 5.0,
+   "tags": [
+    "service_pod"
+   ]
+  },
+  {
+   "id": "post_2",
+   "role": "post",
+   "cylinder": {
+    "at": [
+     -18,
+     -15
+    ],
+    "radius": 0.9
+   },
+   "height": 5.0,
+   "tags": [
+    "service_pod"
+   ]
+  },
+  {
+   "id": "post_3",
+   "role": "post",
+   "cylinder": {
+    "at": [
+     -6,
+     -16
+    ],
+    "radius": 0.9
+   },
+   "height": 5.0,
+   "tags": [
+    "service_pod"
+   ]
+  },
+  {
+   "id": "post_4",
+   "role": "post",
+   "cylinder": {
+    "at": [
+     6,
+     -16
+    ],
+    "radius": 0.9
+   },
+   "height": 5.0,
+   "tags": [
+    "service_pod"
+   ]
+  },
+  {
+   "id": "post_5",
+   "role": "post",
+   "cylinder": {
+    "at": [
+     18,
+     -15
+    ],
+    "radius": 0.9
+   },
+   "height": 5.0,
+   "tags": [
+    "service_pod"
+   ]
+  },
+  {
+   "id": "post_6",
+   "role": "post",
+   "cylinder": {
+    "at": [
+     30,
+     -12
+    ],
+    "radius": 0.9
+   },
+   "height": 5.0,
+   "tags": [
+    "service_pod"
+   ]
+  },
+  {
+   "id": "work_light_w",
+   "role": "light",
+   "cylinder": {
+    "at": [
+     -6.5,
+     -5
+    ],
+    "radius": 0.25
+   },
+   "height": 3.0
+  },
+  {
+   "id": "work_light_e",
+   "role": "light",
+   "cylinder": {
+    "at": [
+     6.5,
+     -5
+    ],
+    "radius": 0.25
+   },
+   "height": 3.0
+  }
+ ],
+ "cables": [
+  {
+   "id": "cable_1",
+   "from": "cable_bay",
+   "to": "post_1",
+   "path": [
+    [
+     -5,
+     0
+    ],
+    [
+     -14,
+     -4
+    ],
+    [
+     -30,
+     -12
+    ]
+   ]
+  },
+  {
+   "id": "cable_2",
+   "from": "cable_bay",
+   "to": "post_2",
+   "path": [
+    [
+     -5,
+     -0.5
+    ],
+    [
+     -12,
+     -8
+    ],
+    [
+     -18,
+     -15
+    ]
+   ],
+   "break_at": [
+    -14,
+    -10.4
+   ]
+  },
+  {
+   "id": "cable_3",
+   "from": "cable_bay",
+   "to": "post_3",
+   "path": [
+    [
+     -5,
+     -1
+    ],
+    [
+     -6,
+     -16
+    ]
+   ]
+  },
+  {
+   "id": "cable_4",
+   "from": "cable_bay",
+   "to": "post_4",
+   "path": [
+    [
+     -5,
+     -1.5
+    ],
+    [
+     0,
+     -6
+    ],
+    [
+     6,
+     -16
+    ]
+   ]
+  },
+  {
+   "id": "cable_5",
+   "from": "cable_bay",
+   "to": "post_5",
+   "path": [
+    [
+     -5,
+     -2
+    ],
+    [
+     6,
+     -7
+    ],
+    [
+     18,
+     -15
+    ]
+   ]
+  },
+  {
+   "id": "cable_6",
+   "from": "cable_bay",
+   "to": "post_6",
+   "path": [
+    [
+     -5,
+     -2
+    ],
+    [
+     12,
+     -6
+    ],
+    [
+     30,
+     -12
+    ]
+   ]
+  },
+  {
+   "id": "power_in",
+   "from": "cable_bay",
+   "to": "offsite",
+   "path": [
+    [
+     -5,
+     1
+    ],
+    [
+     -40,
+     12
+    ],
+    [
+     -90,
+     42
+    ]
+   ],
+   "notes": "Power and data from the network",
+   "toward the nearest junction. A dead site may mean a cut here.": null
+  }
+ ],
+ "service_points": [
+  {
+   "id": "data_coil",
+   "element": "node",
+   "at": [
+    0,
+    -2.5
+   ],
+   "y": 2.4,
+   "stand_y": 1.0,
+   "faces": "south",
+   "tags": [
+    "objective_data_coil"
+   ],
+   "notes": "The data store's hatch on the node's front face."
+  },
+  {
+   "id": "reset_panel",
+   "element": "node",
+   "at": [
+    3.5,
+    0
+   ],
+   "y": 2.2,
+   "stand_y": 1.0,
+   "faces": "east",
+   "tags": [
+    "objective_reset"
+   ]
+  },
+  {
+   "id": "power_cell",
+   "element": "node",
+   "at": [
+    -2.5,
+    -2.5
+   ],
+   "y": 2.0,
+   "stand_y": 1.0,
+   "faces": "south",
+   "tags": [
+    "objective_power_cell"
+   ],
+   "notes": "The sealed cell's bay",
+   "for sites powered on site rather than by the cable.": null
+  },
+  {
+   "id": "cable_splice",
+   "element": "cable_bay",
+   "at": [
+    -5,
+    0
+   ],
+   "y": 1.6,
+   "stand_y": 1.0,
+   "faces": "west",
+   "tags": [
+    "objective_splice"
+   ]
+  },
+  {
+   "id": "pod_1",
+   "element": "post_1",
+   "at": [
+    -30,
+    -12.9
+   ],
+   "y": 1.4,
+   "stand_y": 0.0,
+   "faces": "south",
+   "tags": [
+    "objective_pod"
+   ]
+  },
+  {
+   "id": "pod_2",
+   "element": "post_2",
+   "at": [
+    -18,
+    -15.9
+   ],
+   "y": 1.4,
+   "stand_y": 0.0,
+   "faces": "south",
+   "tags": [
+    "objective_pod"
+   ]
+  },
+  {
+   "id": "pod_3",
+   "element": "post_3",
+   "at": [
+    -6,
+    -16.9
+   ],
+   "y": 1.4,
+   "stand_y": 0.0,
+   "faces": "south",
+   "tags": [
+    "objective_pod"
+   ]
+  },
+  {
+   "id": "pod_4",
+   "element": "post_4",
+   "at": [
+    6,
+    -16.9
+   ],
+   "y": 1.4,
+   "stand_y": 0.0,
+   "faces": "south",
+   "tags": [
+    "objective_pod"
+   ]
+  },
+  {
+   "id": "pod_5",
+   "element": "post_5",
+   "at": [
+    18,
+    -15.9
+   ],
+   "y": 1.4,
+   "stand_y": 0.0,
+   "faces": "south",
+   "tags": [
+    "objective_pod"
+   ]
+  },
+  {
+   "id": "pod_6",
+   "element": "post_6",
+   "at": [
+    30,
+    -12.9
+   ],
+   "y": 1.4,
+   "stand_y": 0.0,
+   "faces": "south",
+   "tags": [
+    "objective_pod"
+   ]
+  }
+ ],
+ "sub_hover": {
+  "at": [
+   0,
+   -8
+  ],
+  "heading": "x",
+  "keel_y": 2.0
+ },
+ "sub": {
+  "length_m": 10.0,
+  "width_m": 3.8,
+  "height_m": 3.0,
+  "tower_m": 1.5
+ },
+ "cameras": [
+  {
+   "id": "approach",
+   "pos": [
+    0,
+    5,
+    -62
+   ],
+   "look": [
+    0,
+    2,
+    -4
+   ],
+   "lens": 28
+  },
+  {
+   "id": "three_quarter",
+   "pos": [
+    -42,
+    16,
+    -48
+   ],
+   "look": [
+    0,
+    1.5,
+    -6
+   ],
+   "lens": 30
+  },
+  {
+   "id": "node_diver",
+   "pos": [
+    9,
+    2.6,
+    -9
+   ],
+   "look": [
+    0,
+    2.4,
+    -1
+   ],
+   "lens": 24,
+   "hide": [
+    "sub"
+   ]
+  },
+  {
+   "id": "post_diver",
+   "pos": [
+    -12,
+    2.2,
+    -21
+   ],
+   "look": [
+    -18,
+    2.0,
+    -14
+   ],
+   "lens": 22
+  },
+  {
+   "id": "overview",
+   "pos": [
+    0,
+    46,
+    -44
+   ],
+   "look": [
+    0,
+    0,
+    -6
+   ],
+   "lens": 30
+  }
+ ]
+}
