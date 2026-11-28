@@ -1,0 +1,17 @@
+# A tiny valid facility: sub > dock > hall > lab, all manual doors, one zone.
+clearances: {door_suited_m: 1.0, door_carry_m: 1.2, corridor_carry_m: 1.6, headroom_m: 2.4, bunk_area_m2: 5.0}
+structures:
+  - id: main
+    rect: [0, 20, 0, 10]
+    levels: [{id: L1, floor_y: 0.0, height: 3.0}]
+rooms:
+  - {id: dock, level: L1, rect: [0, 6, 0, 10], use: Dock}
+  - {id: hall, level: L1, rect: [6, 12, 0, 10], use: Hall, corridor: true}
+  - {id: lab, level: L1, rect: [12, 20, 0, 10], use: Lab, zone: wet}
+doors:
+  - {between: [sub, dock], at: [0, 5], width: 1.4, kind: watertight}
+  - {between: [dock, hall], at: [6, 5], width: 1.4, kind: manual}
+  - {between: [hall, lab], at: [12, 5], width: 1.4, kind: manual}
+routes:
+  - {id: dark, from: sub, to: lab, unpowered: true}
+  - {id: carry, from: lab, to: sub, carry: true}
