@@ -25,7 +25,9 @@ Noise is the core system. Everything the crew does feeds the sound field (events
 | Side thrusters, full turn | `SubController.THRUSTER_INTENSITY` | 73 dB (∝ rudder input) |
 | Bilge pump running | `LeakSystem.PUMP_INTENSITY` | 78 dB |
 | Electric motor, full output | `SubController.ENGINE_FULL_INTENSITY` | 73 dB (∝ output²; see Power) |
+| Lock-out trunk pumps running | `LockoutTrunkWiring` (`trunk_pump.tres`) | 81 dB (0.012), only while flooding or draining; louder than the bilge pump |
 | Generator running | `PowerConfig.generator_noise` | 85 dB, constant |
+| Lock-out trunk hatch moved | `hatch_clank.tres`, one event per hatch move | 85 dB (0.03), a one-off |
 | Shout (RMS ≈ 0.3) | `VoiceLoudness` | ~87 dB |
 | Blowing ballast, valve fully open | `SubController.BLOW_INTENSITY` | 90 dB |
 | Hull strike at 1 m/s | `SubController.STRIKE_INTENSITY` | 95 dB, decays over 1.5 s (∝ speed²) |
