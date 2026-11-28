@@ -30,7 +30,9 @@ from PIL import Image, ImageDraw, ImageFont
 TOL = 0.15
 FACES = {"south": (0.0, -1.0), "north": (0.0, 1.0), "west": (-1.0, 0.0), "east": (1.0, 0.0)}
 ROLE_COL = {"node": (150, 160, 168), "plinth": (95, 100, 106), "post": (175, 180, 186), "mast": (120, 124, 130),
-            "beacon": (220, 70, 60), "pinger": (220, 70, 60), "light": (240, 200, 120), "cable_bay": (110, 115, 120)}
+            "beacon": (220, 70, 60), "pinger": (220, 70, 60), "light": (240, 200, 120), "cable_bay": (110, 115, 120),
+            "fin": (140, 146, 152), "lamp_ring": (240, 170, 80), "emitter": (70, 74, 80),
+            "tank": (165, 150, 120), "gantry": (120, 124, 130), "chamber": (150, 160, 168)}
 
 
 def font(size: int, bold: bool = False) -> ImageFont.FreeTypeFont:
@@ -143,7 +145,8 @@ class Site:
                 d = math.dist(a.centre(), b.centre())
                 if d < c.get("post_spacing_m", 12.0) - TOL:
                     self.check(False, f"{a.id} and {b.id} are {d:.1f} m apart (array spacing {c.get('post_spacing_m')})")
-        self.check(len(posts) > 0, f"{len(posts)} sensor posts, at least {c.get('post_spacing_m', 12.0):.0f} m apart")
+        if "post_spacing_m" in c:  # an array: it has posts, spread out
+            self.check(len(posts) > 0, f"{len(posts)} sensor posts, at least {c['post_spacing_m']:.0f} m apart")
         cabled = set()
         for cb in self.p.get("cables", []):
             path = [tuple(p) for p in cb["path"]]
@@ -160,20 +163,41 @@ class Site:
                 self.check(on <= TOL, f"cable {cb['id']}'s break lies on its run")
         for p_ in posts:
             self.check(p_.id in cabled, f"{p_.id} is cabled to the node")
-        # approach: a straight corridor, clear of everything taller than the seabed clutter
+        # hover: the sub's footprint over whatever is beneath, keel clear; or, docked, hanging under a collar
+        hb = self.hover_box()
+        sub = self.p["site"]["sub"]
+        clear = c.get("hover_clear_m", 2.0)
+        dock = self.p["sub_hover"].get("dock")
+        if dock:  # the dorsal hatch (on top of the tower) mates to a collar in the underside of an overhead element
+            arm = self.els[dock["element"]]
+            keel = arm.base - sub["height_m"] - sub["tower_m"]
+            self.check(arm.dist(tuple(dock["collar_at"])) == 0.0, f"the collar at {dock['collar_at']} is in {arm.id}'s underside")
+            self.check(math.dist(tuple(dock["collar_at"]), tuple(self.p["sub_hover"]["at"])) <= 0.5,
+                       "the sub's hatch is under the collar")
+            # anything between the seabed and the arm's underside, within the sub's footprint, that rises into the keel's
+            # clearance or the sub itself
+            under = [e for e in self.els.values()
+                     if e is not arm and self._overlap(hb, e) and e.base < arm.base and e.top > keel - clear]
+            self.check(not under, f"docked, the sub's keel is at y = {keel:.1f} m with {clear} m clear beneath"
+                                  + (f" (blocked by {', '.join(e.id for e in under)})" if under else ""))
+            self.check(keel >= clear, f"docked, the keel ({keel:.1f} m) clears the seabed by {clear} m")
+        else:
+            under = [e for e in self.els.values() if self._overlap(hb, e)]
+            keel = max([e.top for e in under] + [0.0]) + clear
+            self.check(True, f"sub hovers at {self.p['sub_hover']['at']} with its keel at y = {keel:.1f} m"
+                             + (f" over {', '.join(e.id for e in under)}" if under else " over open seabed"))
+        self.keel_y = keel
+        # approach: a straight corridor at the sub's working height, clear of everything it would hit (the sub passes
+        # under structure whose underside is above its tower)
         ap = self.p.get("approach")
         if ap:
             a, b = tuple(ap["from"]), tuple(ap["to"])
             half = c.get("approach_width_m", 8.0) / 2
-            hit = [e.id for e in self.els.values() if min(e.dist(q) for q in self._samples(a, b)) < half]
-            self.check(not hit, f"approach from {a} to {b}, {2 * half:.0f} m wide, is clear" + (f" (crosses {', '.join(hit)})" if hit else ""))
-        # hover: the sub's footprint over whatever is beneath, keel clear
-        hb = self.hover_box()
-        under = [e for e in self.els.values() if self._overlap(hb, e)]
-        keel = max([e.top for e in under] + [0.0]) + c.get("hover_clear_m", 2.0)
-        self.keel_y = keel
-        self.check(True, f"sub hovers at {self.p['sub_hover']['at']} with its keel at y = {keel:.1f} m"
-                         + (f" over {', '.join(e.id for e in under)}" if under else " over open seabed"))
+            lo_y, hi_y = keel - 0.5, keel + sub["height_m"] + sub["tower_m"] - 0.05
+            hit = [e.id for e in self.els.values()
+                   if min(e.dist(q) for q in self._samples(a, b)) < half and e.base < hi_y and e.top > lo_y]
+            self.check(not hit, f"approach from {a} to {b}, {2 * half:.0f} m wide at the sub's height, is clear"
+                                + (f" (crosses {', '.join(hit)})" if hit else ""))
         # report: distances a diver swims from the sub to each service point
         lines = []
         hx, hz = self.p["sub_hover"]["at"]
@@ -199,8 +223,8 @@ class Site:
 
     def draw_plan(self, out: Path) -> None:
         pts = [v for e in self.els.values() for v in (e.bounds()[0:2])], [v for e in self.els.values() for v in e.bounds()[2:4]]
-        xs = pts[0] + [p[0] for cb in self.p["cables"] for p in cb["path"] if cb["to"] != "offsite"]
-        zs = pts[1] + [p[1] for cb in self.p["cables"] for p in cb["path"] if cb["to"] != "offsite"] + [self.pad[2] - 14]
+        xs = pts[0] + [p[0] for cb in self.p.get("cables", []) for p in cb["path"] if cb["to"] != "offsite"]
+        zs = pts[1] + [p[1] for cb in self.p.get("cables", []) for p in cb["path"] if cb["to"] != "offsite"] + [self.pad[2] - 14]
         x0, x1, z0, z1 = min(xs) - 10, max(xs) + 10, min(zs) - 6, max(zs) + 10
         s, m = 14.0, 50
         W, H = int((x1 - x0) * s) + 2 * m, int((z1 - z0) * s) + 2 * m + 60
@@ -222,7 +246,7 @@ class Site:
             (ax, az), (bx, bz) = ap["from"], ap["to"]
             d.rectangle([P(min(ax, bx) - half, max(az, bz)), P(max(ax, bx) + half, max(min(az, bz), z0))], fill=(26, 40, 48))
             d.text((P(ax + half + 1, z0 + 4)), "sub's approach", fill=(120, 160, 180), font=font(14))
-        for cb in self.p["cables"]:
+        for cb in self.p.get("cables", []):
             path = [P(*p) for p in cb["path"]]
             d.line(path, fill=(200, 140, 60), width=2)
             if "break_at" in cb:

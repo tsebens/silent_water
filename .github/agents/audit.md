@@ -27,6 +27,7 @@ Report every item below that has evidence in the window; say "none" for the rest
 - PRs carrying `changes-requested` for more than 30 minutes with no rework run; PRs with `ci-green` and no review run.
 - Anomalous arc state: an open arc with a merged PR whose body says `Closes #n`, or an arc closed then reopened within a minute.
 - Arcs or concepts missing from the board (the dispatcher's "adding" lines tell you it caught them; a missing one it did not catch is a defect).
+- `needs-human` escalations whose comment cites a malformed `Blocked by:` line (the dispatcher's rule in `docs/process.md`, step 3). Count them in the window with the arc numbers; since M15.16 plan review verifies the line, so the count should be zero, and any non-zero count is a **defect** (say which role wrote the line).
 
 **Loops and churn**
 - The same issue or PR starting the same role more than twice in the window.

@@ -43,9 +43,13 @@ DECK_THICKNESS = 0.06
 STEP_RUN = 0.25            # fore-and-aft length of the ramp from the cockpit floor up to the main deck
 RIM_HALF = 0.06            # the dome ring's half-section along the hull
 RIM_LIP = 0.05             # how far the ring's lip reaches in past the glass's edge, hiding it
-TOWER_RADIUS = 0.6
-TOWER_HEIGHT = 1.0
-TOWER_SINK = 0.25          # how far the tower's skirt sinks into the roof
+TOWER_RADIUS = 0.85
+TOWER_HEIGHT = 1.6         # tall enough that a climber's eye stays under the lid
+TOWER_SINK = 0.4           # how far the tower's skirt sinks into the roof
+SHAFT_RADIUS = 0.55        # the shaft's clear radius, through the roof and up the tower
+SHAFT_CUT = 0.6            # roof quads with a corner this close to the shaft's axis are cut away
+SHAFT_LIP = 0.10           # how far the collar plate sits below the roof's crown
+SHAFT_COLLAR = 0.95        # the collar plate's outer radius: past every cut quad's corner
 HATCH_FRAME = 0.06         # coaming width round the hatch opening
 
 
@@ -160,10 +164,14 @@ def build(layout: dict) -> list[Part]:
     first = min(all_rings, key=lambda r: abs(r["z"] - ring_z))
     rings = [first] + [r for r in rings if r["z"] > first["z"] + 1e-6]
     shell = Part("hull_shell-col", "hull_metal")
+    ladder = next((i for i in layout["items"] if i["kind"] == "ladder"), None)
+    tz = float(ladder["z"]) if ladder else 1.2
     for i in range(len(rings) - 1):
         a, b = rings[i], rings[i + 1]
         for k in range(n):
             k2 = (k + 1) % n
+            if _in_shaft(a, b, k, k2, tz):
+                continue
             # rings run counter-clockwise in (x, y) as z increases; this winding faces the axis
             shell.quad(
                 (*a["points"][k], a["z"]), (*b["points"][k], b["z"]),
@@ -248,8 +256,6 @@ def build(layout: dict) -> list[Part]:
     parts.append(frame)
 
     # --- the conning tower, over the ladder's z --------------------------------------------------------
-    ladder = next((i for i in layout["items"] if i["kind"] == "ladder"), None)
-    tz = float(ladder["z"]) if ladder else 1.2
     roof = _roof_y(rings, tz)
     tower = Part("tower", "hull_metal")
     y0, y1 = roof - TOWER_SINK, roof + TOWER_HEIGHT
@@ -270,6 +276,21 @@ def build(layout: dict) -> list[Part]:
         hatch.quad((a[0], y1, a[2]), (b[0], y1, b[2]), b, a)
     fix_outward(hatch, (0.0, y1 - 0.02, tz))
     parts += [tower, hatch]
+
+    # the shaft through the roof: a tube from just under the roof's crown to the lid, closed above by the lid's underside
+    shaft = Part("tower_shaft-col", "interior_panel")
+    ys0 = roof - SHAFT_LIP
+    sc = [(SHAFT_RADIUS * math.cos(2 * math.pi * k / seg), SHAFT_RADIUS * math.sin(2 * math.pi * k / seg)) for k in range(seg)]
+    for k in range(seg):
+        (xa, za), (xb, zb) = sc[k], sc[(k + 1) % seg]
+        shaft.quad_dir((xa, ys0, tz + za), (xb, ys0, tz + zb), (xb, y1, tz + zb), (xa, y1, tz + za), (-(xa + xb), 0, -(za + zb)))
+        shaft._emit(np.array((0.0, y1, tz)), np.array((xb, y1, tz + zb)), np.array((xa, y1, tz + za)), (0, -1, 0), False)
+    col_n = 48
+    for k in range(col_n):                  # the collar plate round the tube's foot, closing the cut's ragged edge
+        a0, a1 = 2 * math.pi * k / col_n, 2 * math.pi * (k + 1) / col_n
+        pts = [(r * math.cos(a), ys0, tz + r * math.sin(a)) for r, a in ((SHAFT_RADIUS, a0), (SHAFT_COLLAR, a0), (SHAFT_COLLAR, a1), (SHAFT_RADIUS, a1))]
+        shaft.quad_dir(*pts, (0, -1, 0))
+    parts.append(shaft)
 
     # --- to the interior frame --------------------------------------------------------------------------
     for part in parts:
@@ -408,6 +429,16 @@ def _orient(tris, z0, z1):
         else:
             out.append((a, b, d))
     return out
+
+
+def _in_shaft(a: dict, b: dict, k: int, k2: int, tz: float) -> bool:
+    """True for a roof quad of the loft that the shaft cuts away: a corner within SHAFT_CUT of the axis."""
+    for ring in (a, b):
+        for kk in (k, k2):
+            x, y = ring["points"][kk]
+            if y > 0.0 and math.hypot(x, ring["z"] - tz) < SHAFT_CUT:
+                return True
+    return False
 
 
 def _roof_y(rings: list, z: float) -> float:

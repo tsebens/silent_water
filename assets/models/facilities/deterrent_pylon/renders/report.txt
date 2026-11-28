@@ -1,0 +1,17 @@
+ok   needs a flat pad 19 x 19 m (x -10..10, z -10..10), front toward -z
+ok   service point cell_bay sits on column
+ok   service point cell_bay: 1.1 m above where the diver hangs (band 0.6-1.8)
+ok   service point cell_bay is within column's height
+ok   service point cell_bay: 1.5 m of clear water in front
+ok   service point arm_panel sits on column
+ok   service point arm_panel: 1.1 m above where the diver hangs (band 0.6-1.8)
+ok   service point arm_panel is within column's height
+ok   service point arm_panel: 1.5 m of clear water in front
+ok   sub hovers at [0, -16] with its keel at y = 2.0 m over open seabed
+ok   approach from (0, -80) to (0, -16), 8 m wide at the sub's height, is clear
+
+# swims
+cell_bay (power_cell): 14 m swim from the sub's lock-out
+arm_panel (reset): 14 m swim from the sub's lock-out
+
+0 problem(s)
