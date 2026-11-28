@@ -32,7 +32,7 @@ COL = {
     "wall_live": (0.66, 0.56, 0.44), "wall_keep": (0.66, 0.38, 0.34), "wall_corridor": (0.50, 0.51, 0.53),
     "objective": (0.95, 0.78, 0.20), "sub": (0.85, 0.48, 0.12), "strut": (0.36, 0.37, 0.38),
     "neon_amber": (1.0, 0.62, 0.20), "window": (1.0, 0.82, 0.52), "frame": (0.16, 0.17, 0.18),
-    "beacon": (0.90, 0.15, 0.10), "cable": (0.12, 0.12, 0.13),
+    "beacon": (0.90, 0.15, 0.10), "cable": (0.12, 0.12, 0.13), "tank": (0.62, 0.56, 0.44),
 }
 KEEP_ALIVE = {"life_support", "reactor_control", "reactor_hall", "switchgear", "refuge", "lockout", "dock_airlock",
               "workshop", "dive_locker", "spares", "maint_hall", "dock_passage"}
@@ -381,7 +381,7 @@ def build_site(layout: dict) -> None:
     box("seabed", -200, 200, -2.0, 0.0, -200, 200, "terrain", "terrain")
     mats = {"node": "concrete", "plinth": "concrete_dark", "post": "concrete", "mast": "strut", "beacon": "beacon",
             "light": "neon_amber", "cable_bay": "concrete_dark", "fin": "concrete", "lamp_ring": "neon_amber",
-            "emitter": "frame"}
+            "emitter": "frame", "tank": "tank", "gantry": "strut", "chamber": "concrete"}
     for e in layout["elements"]:
         y0 = float(e.get("base_y", 0.0))
         y1 = y0 + float(e["height"])
@@ -431,6 +431,10 @@ def build_site(layout: dict) -> None:
     sub = layout["sub"]
     hx, hz = hv["at"]
     keel = hv["keel_y"]
+    if hv.get("dock"):  # the collar: a ring in the arm's underside, lit
+        cx, cz = hv["dock"]["collar_at"]
+        top = keel + sub["height_m"] + sub["tower_m"]
+        cylinder("collar", cx, cz, 1.3, top - 0.25, top, "neon_amber", "exterior", 16)
     bm = bmesh.new()
     bmesh.ops.create_uvsphere(bm, u_segments=24, v_segments=12, radius=1.0)
     sx, sz = (sub["length_m"] / 2, sub["width_m"] / 2) if hv.get("heading", "x") == "x" else (sub["width_m"] / 2, sub["length_m"] / 2)

@@ -7,8 +7,8 @@ ok   service point arm_panel sits on column
 ok   service point arm_panel: 1.1 m above where the diver hangs (band 0.6-1.8)
 ok   service point arm_panel is within column's height
 ok   service point arm_panel: 1.5 m of clear water in front
-ok   approach from (0, -80) to (0, -16), 8 m wide, is clear
 ok   sub hovers at [0, -16] with its keel at y = 2.0 m over open seabed
+ok   approach from (0, -80) to (0, -16), 8 m wide at the sub's height, is clear
 
 # swims
 cell_bay (power_cell): 14 m swim from the sub's lock-out

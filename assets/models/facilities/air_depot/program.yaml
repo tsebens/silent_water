@@ -1,0 +1,66 @@
+# Air depot, draft 1 (#927). An unmanned site where a visiting sub docks under a collar and takes on O2, ballast air and
+# battery charge (design doc, "Facilities" → "Unmanned infrastructure"). A tank yard (three tall gas bottles on a
+# plinth, a valve house with the reserve gauges, a charging unit fed from the network) and, in front of it, a docking
+# gantry: an arm on two pairs of legs with the collar in its underside, so the sub slides in beneath it and mates its
+# dorsal hatch. Up through the collar, a small dry transfer chamber with the supply locker (scrubbers, a decoy or two).
+# A gas main runs overhead from the tanks to the arm. Reserves: about three times the sub's capacity.
+# tools/facility_plan/site.py checks and draws it; tools/facility_plan/blockout.py greyboxes it.
+#
+# Local frame: metres, centred on the tank yard's front, y up from the seabed (y = 0); the front, where the gantry
+# stands and the sub comes in, is toward -z.
+
+site:
+  pad_margin_m: 5.0
+  sub: {length_m: 10.0, width_m: 3.8, height_m: 3.0, tower_m: 1.5}
+
+clearances:
+  service_height_m: [0.6, 1.8]
+  service_room_m: 1.5
+  hover_clear_m: 2.0
+  approach_width_m: 8.0
+
+elements:
+  - {id: yard_plinth,  role: plinth,    box: [-12, 12, 0, 14], height: 1.0}
+  - {id: tank_w,       role: tank,      cylinder: {at: [-8, 9], radius: 2.4}, base_y: 1.0, height: 5.0}
+  - {id: tank_c,       role: tank,      cylinder: {at: [0, 9], radius: 2.4}, base_y: 1.0, height: 5.0}
+  - {id: tank_e,       role: tank,      cylinder: {at: [8, 9], radius: 2.4}, base_y: 1.0, height: 5.0}
+  - {id: valve_house,  role: node,      box: [-4, 4, 2, 5.5], base_y: 1.0, height: 3.5,
+     notes: The valves and the reserve gauges. Reserves are about three times the sub's capacity.}
+  - {id: charger,      role: cable_bay, box: [6, 10, 2, 5], base_y: 1.0, height: 2.5,
+     notes: The charging unit, fed by the network cable; it charges the sub's battery while docked.}
+  - {id: leg_w_front,  role: gantry,    box: [-8.5, -7, -10.5, -9.5], height: 7.5}
+  - {id: leg_w_back,   role: gantry,    box: [-8.5, -7, -6.5, -5.5], height: 7.5}
+  - {id: leg_e_front,  role: gantry,    box: [7, 8.5, -10.5, -9.5], height: 7.5}
+  - {id: leg_e_back,   role: gantry,    box: [7, 8.5, -6.5, -5.5], height: 7.5}
+  - {id: arm,          role: node,      box: [-9, 9, -10.5, -5.5], base_y: 7.5, height: 2.5,
+     notes: The docking arm. The collar is in its underside; the sub hangs beneath it while it fills.}
+  - {id: chamber,      role: chamber,   box: [-2.5, 2.5, -10, -6], base_y: 10.0, height: 3.0, tags: [objective_supply_locker],
+     notes: The dry transfer chamber up through the collar, with the supply locker.}
+  - {id: gas_main,     role: gantry,    box: [-0.6, 0.6, -5.5, 2], base_y: 7.5, height: 1.0,
+     notes: The gas main from the valve house to the arm, carried overhead.}
+  - {id: main_post,    role: gantry,    box: [-0.5, 0.5, -1.2, -0.2], height: 7.5}
+  - {id: work_light_w, role: light,     cylinder: {at: [-11, -3], radius: 0.25}, height: 3.0}
+  - {id: work_light_e, role: light,     cylinder: {at: [11, -3], radius: 0.25}, height: 3.0}
+
+cables:
+  - {id: power_in, from: charger, to: offsite, path: [[10, 3.5], [30, 10], [70, 30]],
+     notes: Power from the network, toward the nearest junction. A dead depot may mean a cut here.}
+
+service_points:
+  - {id: gauges,      element: valve_house, at: [-1.5, 2], y: 2.4, stand_y: 1.0, faces: south, tags: [objective_read_reserves],
+     notes: The reserve gauges, one per gas and one for charge.}
+  - {id: valve_panel, element: valve_house, at: [1.5, 2], y: 2.2, stand_y: 1.0, faces: south, tags: [objective_fill_valves],
+     notes: The fill valves for O2 and ballast air and the charge switch, turned by hand by a diver while the sub is docked (Tristan). Nothing flows until they are opened.}
+  - {id: power_cell,  element: charger, at: [8, 2], y: 2.0, stand_y: 1.0, faces: south, tags: [objective_power_cell],
+     notes: For a depot run on a sealed cell rather than the network.}
+
+sub_hover: {at: [0, -8], heading: x, dock: {element: arm, collar_at: [0, -8]}}
+approach: {from: [0, -80], to: [0, -8]}
+
+cameras:
+  - {id: approach, pos: [16, 4, -52], look: [0, 6, -4], lens: 28}
+  - {id: three_quarter, pos: [-32, 14, -36], look: [0, 5, -2], lens: 28}
+  - {id: docked, pos: [10, 1.6, -20], look: [0, 6.5, -8], lens: 22,
+     notes: "The sub filling under the arm, seen from the seabed: the moment of exposure."}
+  - {id: diver_gauges, pos: [-2.6, 2.6, 0.2], look: [0.6, 2.3, 2], lens: 20, hide: [sub]}
+  - {id: overview, pos: [0, 40, -36], look: [0, 3, 0], lens: 30}
