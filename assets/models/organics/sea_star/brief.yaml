@@ -1,0 +1,9 @@
+# Brief for the sea star (concept #774).
+asset: sea_star
+concept:
+  images:
+    - {path: assets/models/organics/sea_star/concept/sea_star_primary.png, role: primary, camera: concept_primary}
+    - {path: assets/models/organics/sea_star/concept/sea_star_front.png, role: context, camera: concept_front}
+    - {path: assets/models/organics/sea_star/concept/sea_star_side.png, role: context, camera: concept_side}
+    - {path: assets/models/organics/sea_star/concept/sea_star_top.png, role: context, camera: concept_top}
+    - {path: assets/models/organics/sea_star/concept/sea_star_bottom.png, role: context, camera: concept_bottom}
