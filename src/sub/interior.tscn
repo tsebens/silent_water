@@ -30,6 +30,16 @@
 [ext_resource type="Script" path="res://src/interact/joystick_indicator.gd" id="joy_ind"]
 [ext_resource type="Script" path="res://src/sub/headlight_switch.gd" id="headlight_switch"]
 
+[ext_resource type="Script" path="res://src/sub/lockout_trunk.gd" id="trunk_script"]
+[ext_resource type="Script" path="res://src/sub/lockout_trunk_wiring.gd" id="trunk_wiring"]
+[ext_resource type="Script" path="res://src/interact/climb_transit.gd" id="climb_transit"]
+[ext_resource type="Script" path="res://src/noise/sound_emitter.gd" id="sound_emitter"]
+[ext_resource type="Resource" path="res://src/noise/sound_types/trunk_pump.tres" id="trunk_pump"]
+[ext_resource type="Resource" path="res://src/noise/sound_types/hatch_clank.tres" id="hatch_clank"]
+[ext_resource type="PackedScene" path="res://src/interact/lever.tscn" id="trunk_lever"]
+[ext_resource type="Material" path="res://assets/palette/roles/hull_metal.tres" id="trunk_hatch_mat"]
+[ext_resource type="Material" path="res://assets/palette/roles/interior_panel.tres" id="trunk_post_mat"]
+
 [sub_resource type="CylinderMesh" id="hose_drop"]
 top_radius = 0.018
 bottom_radius = 0.018
@@ -44,6 +54,15 @@ height = 1.0925
 top_radius = 0.018
 bottom_radius = 0.018
 height = 0.525
+
+[sub_resource type="BoxMesh" id="trunk_hatch_mesh"]
+size = Vector3(0.9, 0.03, 0.9)
+
+[sub_resource type="BoxMesh" id="trunk_post_mesh"]
+size = Vector3(0.2, 1.0, 0.5)
+
+[sub_resource type="BoxShape3D" id="trunk_hatch_shape"]
+size = Vector3(0.9, 0.1, 0.9)
 
 [sub_resource type="BoxMesh" id="fascia_mesh"]
 size = Vector3(0.06, 0.22, 3.2)
@@ -665,3 +684,66 @@ box_index = 0
 position = Vector3(1.2, 2.1, 1.6)
 circuit = 8
 box_index = 1
+
+[node name="LockoutTrunkStation" type="Node3D" parent="."]
+script = ExtResource("station_placement")
+station_id = &"lock_out_trunk"
+placements = {
+".": Vector3(0, 0, 0)
+}
+
+[node name="Hatch" type="MeshInstance3D" parent="LockoutTrunkStation"]
+mesh = SubResource("trunk_hatch_mesh")
+surface_material_override/0 = ExtResource("trunk_hatch_mat")
+
+[node name="Post" type="MeshInstance3D" parent="LockoutTrunkStation"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.62, 0.5, 0)
+mesh = SubResource("trunk_post_mesh")
+surface_material_override/0 = ExtResource("trunk_post_mat")
+
+[node name="LockoutTrunk" type="Node" parent="LockoutTrunkStation"]
+script = ExtResource("trunk_script")
+
+[node name="TopWheel" parent="LockoutTrunkStation" instance=ExtResource("2")]
+transform = Transform3D(0, 0, 1, 0, 1, 0, -1, 0, 0, 0.5, 0.8, -0.1)
+label = "top hatch wheel"
+
+[node name="FloodValve" parent="LockoutTrunkStation" instance=ExtResource("2")]
+transform = Transform3D(0, 0, 1, 0, 1, 0, -1, 0, 0, 0.5, 0.8, 0.1)
+label = "flood and drain valve"
+
+[node name="BottomLever" parent="LockoutTrunkStation" instance=ExtResource("trunk_lever")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.62, 1.0, 0)
+label = "bottom hatch lever"
+
+[node name="Climb" type="Node3D" parent="LockoutTrunkStation"]
+script = ExtResource("climb_transit")
+path = PackedVector3Array(0, -1.6, 0, 0, 0, 0)
+extra_bounds = AABB(-0.5, -2.0, -0.5, 1.0, 2.1, 1.0)
+label = "lock-out trunk"
+
+[node name="Grab" type="StaticBody3D" parent="LockoutTrunkStation/Climb"]
+collision_layer = 2
+collision_mask = 0
+
+[node name="Shape" type="CollisionShape3D" parent="LockoutTrunkStation/Climb/Grab"]
+shape = SubResource("trunk_hatch_shape")
+
+[node name="PumpEmitter" type="Node" parent="LockoutTrunkStation"]
+script = ExtResource("sound_emitter")
+sound_type = ExtResource("trunk_pump")
+active = false
+
+[node name="ClankEmitter" type="Node" parent="LockoutTrunkStation"]
+script = ExtResource("sound_emitter")
+sound_type = ExtResource("hatch_clank")
+
+[node name="Wiring" type="Node3D" parent="LockoutTrunkStation" node_paths=PackedStringArray("trunk", "top_wheel", "flood_valve", "bottom_lever", "transit", "pump_emitter", "clank_emitter")]
+script = ExtResource("trunk_wiring")
+trunk = NodePath("../LockoutTrunk")
+top_wheel = NodePath("../TopWheel")
+flood_valve = NodePath("../FloodValve")
+bottom_lever = NodePath("../BottomLever")
+transit = NodePath("../Climb")
+pump_emitter = NodePath("../PumpEmitter")
+clank_emitter = NodePath("../ClankEmitter")
