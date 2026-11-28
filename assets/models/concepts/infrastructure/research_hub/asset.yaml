@@ -1,6 +1,6 @@
 slug: research_hub
 issue: null
-stage: concept
+stage: locked
 description: 'Raindrop''s research and operations hub for the region: a large, imposing,
   multi-level brutalist facility on the seafloor, built right on the lip of a ledge
   and overhanging a vast underwater chasm too deep to see anything but its near edge,
@@ -3454,8 +3454,22 @@ lineage:
   views: []
   options: {}
   source: {}
-locked: null
-decisions: []
+locked:
+  variant: v37
+  decision: approved
+  reviewer: Tristan
+  notes: 'Locked 2026-11-28 as the research station''s primary concept: the approach
+    from the chasm. v39 (the overview) is the companion context view. A great starting
+    point (Tristan).'
+  at: '2026-11-28T02:36:02Z'
+decisions:
+- variant: v37
+  decision: approved
+  reviewer: Tristan
+  notes: 'Locked 2026-11-28 as the research station''s primary concept: the approach
+    from the chasm. v39 (the overview) is the companion context view. A great starting
+    point (Tristan).'
+  at: '2026-11-28T02:36:02Z'
 brief: null
 cleanups: []
 checks: []

@@ -418,7 +418,7 @@ A crew of about ten, lately; contact has been lost. Rooms, by what people do the
 | Live | Commons (shared galley, mess, games); two shift dorms; washroom; medical bay; stores |
 | Hooks | An emergency refuge where survivors would hole up; the station chief's office in admin |
 
-The floorplan (#853) is laid out for play first: routes, loops and dead ends, doors that stay shut without power, room for a suited diver and for carrying a survivor, watertight zones for flooding, and where objectives sit. The exterior wraps the plan; its look is the style board in `assets/models/concepts/infrastructure/research_hub/concept/`.
+The floorplan (#853) is laid out for play first: routes, loops and dead ends, doors that stay shut without power, room for a suited diver and for carrying a survivor, watertight zones for flooding, and where objectives sit. The exterior wraps the plan, and is far bigger than the rooms: thick walls, a plinth, a plant tier cantilevered toward the chasm on splayed struts, buttress fins, a comms mast. The docking arm hangs out over the drop, and the sub docks beneath it. The look follows the style board, and the locked concept art (painted over the greybox built from the floorplan) is in `assets/models/concepts/infrastructure/research_hub/concept/`. The floorplan, its checker and the greybox are in `assets/models/facilities/research_station/` and `tools/facility_plan/`.
 
 ## Audio direction
 

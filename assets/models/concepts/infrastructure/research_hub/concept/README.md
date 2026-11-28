@@ -1,5 +1,22 @@
 # Research hub: concept art
 
+## Locked concept (2026-11-28)
+
+The research station (#853), locked by Tristan as "a great starting point":
+
+| File | View | Lineage |
+| --- | --- | --- |
+| `research_station_primary.png` | The approach from the chasm: the cantilevered tier on its struts, the docking arm over the drop with the sub mated to its collar | v37, a refine of v31, a paint-over of the greybox camera `chasm_approach` |
+| `research_station_overview.png` | The whole site: main block, maintenance, docking arm, tunnels, power building, mast | v39, a refine of v36, a paint-over of the greybox camera `overview` |
+
+They were painted over the greybox built from the floorplan (`assets/models/facilities/research_station/`): the
+layout is `program.yaml`, the greybox renders are in its `renders/blockout/`, and each painted view keeps its greybox
+camera. So the art matches the plan, and a build can be rendered from the same cameras and compared. The exterior
+is far bigger than the rooms on purpose: the presence comes from the concrete (thick walls, plinth, the tier,
+buttress fins), not the room count.
+
+## Exploration
+
 Concept art for Raindrop's regional research and operations hub, generated in Asset Studio (`research_hub`,
 architecture class, scene presentation). The asset's brief in `../asset.yaml` carries the style in words; every
 variant's prompt, model and cost is in its lineage. The images themselves stay in the git-ignored
