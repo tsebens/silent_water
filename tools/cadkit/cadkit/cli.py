@@ -4,8 +4,11 @@
     cadkit check                           build everything in a staging folder; write nothing
     cadkit build                           the same, then write the result if every scene passed (all or nothing)
     cadkit verify                          the same, then report generated files that are stale or hand-edited
-    cadkit render <slug> [--out DIR] [--cameras FILE]    PNGs of a scene (default out: build/renders/<slug>/)
-    cadkit sheet <slug>                    render afresh, then write review sheets in <scene>/review/
+    cadkit render <slug> [--out DIR] [--cameras FILE] [--pose BONE=RX,RY,RZ ...]
+                                           PNGs of a scene (default out: build/renders/<slug>/); --pose renders the
+                                           scene's skinned mesh alone with those bones rotated (degrees)
+    cadkit sheet <slug> [--pose BONE=RX,RY,RZ ...]
+                                           render afresh, then write review sheets in <scene>/review/; --pose adds a posed view
     cadkit plan <program.yaml> [out_dir]   check a facility floorplan program, write its plan images and report.txt
     cadkit palette [--sheets] [--out DIR]  swatches with their values and roles with their swatches; --sheets renders
                                            the swatch sheets (default out: docs/images/palette/)
@@ -34,8 +37,10 @@ def main(argv: list[str] | None = None) -> int:
     r.add_argument("slug")
     r.add_argument("--out", type=Path)
     r.add_argument("--cameras", type=Path)
+    r.add_argument("--pose", action="append", default=[])
     s = sub.add_parser("sheet")
     s.add_argument("slug")
+    s.add_argument("--pose", action="append", default=[])
     pl = sub.add_parser("plan")
     pl.add_argument("program", type=Path)
     pl.add_argument("out", nargs="?", type=Path)
@@ -81,10 +86,11 @@ def main(argv: list[str] | None = None) -> int:
     rel = lambda paths: [Path(x).resolve().relative_to(library.REPO).as_posix() for x in paths]
     try:
         if args.cmd == "render":
-            shots = render.render(args.slug, args.out.resolve() if args.out else None, args.cameras)
+            shots = render.render(args.slug, args.out.resolve() if args.out else None, args.cameras,
+                                  render.parse_pose(args.pose))
             print(json.dumps({"ok": True, "slug": args.slug, "renders": [str(x) for x in shots]}, indent=1))
         else:
-            print(json.dumps({"ok": True, "slug": args.slug, "sheets": rel(render.sheet(args.slug))}, indent=1))
+            print(json.dumps({"ok": True, "slug": args.slug, "sheets": rel(render.sheet(args.slug, pose=render.parse_pose(args.pose)))}, indent=1))
     except (RuntimeError, FileNotFoundError, ValueError) as e:
         print(json.dumps({"ok": False, "slug": args.slug, "error": str(e)}, indent=1))
         return 1

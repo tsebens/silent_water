@@ -459,6 +459,8 @@ Facilities are told apart mainly by the crew they were built for. Each class has
 
 Thoughts on facility missions collect in #854; the variants have draft concepts (suits indoors #845, flooding #846, survivors #847, decommissioning #848, the power restart #849). Variants come from the station's state and the objective: a routine restart of a hibernated station, a lost-contact investigation, a rescue against a survivor's air supply, a demolition. The crew always knows the shape (a structure, a way in, air to be won, something to fetch) and never quite knows the state.
 
+Decommissioning (#848) uses **carried charges**: the crew shuts down the reactor, carries charges to each charge point and arms them, then leaves before the fuse runs out. Charges cannot arm while the reactor is on; disarming one, or aborting the countdown, fails the objective. A self-destruct variant (a console that arms everything at once) is a possible later arc. The host-side state machine is `DemolitionObjective` (`src/objective/demolition_objective.gd`).
+
 ### The research station
 
 A crew of about ten, lately; contact has been lost. Rooms, by what people do there:
