@@ -1,0 +1,81 @@
+# Sensor array, draft 2 (#927). Raindrop's commonest unmanned site: a listening array on the seabed. A central node
+# vault and a fan of sensor posts reaching out in front of it, joined by cables. Not tied to any terrain: a dive puts
+# it on a flat pad wherever it fits, sometimes at the edge of a chasm (the fan then faces the drop), often not.
+# Built for visitors (design doc, "Facilities" → "Unmanned infrastructure"): service hatches at a diver's working
+# height, a hover point for the sub over the node, labels and work lights. tools/facility_plan/site.py checks and
+# draws it; tools/facility_plan/blockout.py greyboxes it.
+#
+# Local frame: metres, centred on the node, y up from the seabed (y = 0); the site's front, where the posts fan out
+# and the sub comes in, is toward -z. The checker reports the flat pad the site needs.
+
+site:
+  pad_margin_m: 5.0             # flat ground beyond the outermost element, for the pad the dive's terrain provides
+  sub: {length_m: 10.0, width_m: 3.8, height_m: 3.0, tower_m: 1.5}
+
+clearances:
+  service_height_m: [0.6, 1.8]  # a diver works a hatch or panel whose centre is in this band above the ground it stands on
+  service_room_m: 1.5           # clear water in front of a service point, for a diver to hang there
+  hover_clear_m: 2.0            # the sub hovering over the node keeps this much water under its keel
+  approach_width_m: 8.0         # the corridor the sub flies in along (its width plus margin either side)
+  post_spacing_m: 12.0          # sensor posts at least this far apart, so they listen as an array
+  max_cable_m: 70.0             # a cable run from the node to a post is no longer than this
+
+# Elements: boxes (rect [x0, x1, z0, z1] and height) or cylinders (at [x, z], radius, height) standing on the seabed at
+# base_y (default 0). role: node, post, mast, beacon, pinger, plinth, light, cable_bay. Tags mark objectives.
+elements:
+  - {id: node_plinth,  role: plinth, box: [-5, 5, -4, 4], height: 1.0}
+  - {id: node,         role: node,   box: [-3.5, 3.5, -2.5, 2.5], base_y: 1.0, height: 3.5,
+     notes: The node vault. Electronics, the data store and the power cell bay behind ribbed concrete. Faces the front.}
+  - {id: node_mast,    role: mast,   cylinder: {at: [2.5, 1.5], radius: 0.35}, base_y: 4.5, height: 9.0,
+     notes: Carries the pinger and the red beacon high above the node, so both reach far.}
+  - {id: beacon,       role: beacon, cylinder: {at: [2.5, 1.5], radius: 0.45}, base_y: 13.5, height: 0.6}
+  - {id: cable_bay,    role: cable_bay, box: [-5, -3.5, -2, 2], base_y: 1.0, height: 1.6,
+     notes: Where the post cables come up out of the seabed into the node.}
+  # Six sensor posts in a fan in front of the node: a heavy plinth, a ribbed mast, the sensor pod in a housing at diver height.
+  - {id: post_1, role: post, cylinder: {at: [-30, -12], radius: 0.9}, height: 5.0, tags: [service_pod]}
+  - {id: post_2, role: post, cylinder: {at: [-18, -15], radius: 0.9}, height: 5.0, tags: [service_pod]}
+  - {id: post_3, role: post, cylinder: {at: [-6, -16], radius: 0.9}, height: 5.0, tags: [service_pod]}
+  - {id: post_4, role: post, cylinder: {at: [6, -16], radius: 0.9}, height: 5.0, tags: [service_pod]}
+  - {id: post_5, role: post, cylinder: {at: [18, -15], radius: 0.9}, height: 5.0, tags: [service_pod]}
+  - {id: post_6, role: post, cylinder: {at: [30, -12], radius: 0.9}, height: 5.0, tags: [service_pod]}
+  - {id: work_light_w, role: light, cylinder: {at: [-6.5, -5], radius: 0.25}, height: 3.0}
+  - {id: work_light_e, role: light, cylinder: {at: [6.5, -5], radius: 0.25}, height: 3.0}
+
+# Cables on the seabed: from the node's cable bay to each post. One may carry a break (an objective variant).
+cables:
+  - {id: cable_1, from: cable_bay, to: post_1, path: [[-5, 0], [-14, -4], [-30, -12]]}
+  - {id: cable_2, from: cable_bay, to: post_2, path: [[-5, -0.5], [-12, -8], [-18, -15]], break_at: [-14, -10.4]}
+  - {id: cable_3, from: cable_bay, to: post_3, path: [[-5, -1], [-6, -16]]}
+  - {id: cable_4, from: cable_bay, to: post_4, path: [[-5, -1.5], [0, -6], [6, -16]]}
+  - {id: cable_5, from: cable_bay, to: post_5, path: [[-5, -2], [6, -7], [18, -15]]}
+  - {id: cable_6, from: cable_bay, to: post_6, path: [[-5, -2], [12, -6], [30, -12]]}
+  - {id: power_in, from: cable_bay, to: offsite, path: [[-5, 1], [-40, 12], [-90, 42]],
+     notes: Power and data from the network, toward the nearest junction. A dead site may mean a cut here.}
+
+# Service points: where a diver works. at: [x, z], y: height of the point's centre, stand_y: the ground the diver
+# hangs over, faces: the outward direction of the hatch (south = toward the front, -z).
+service_points:
+  - {id: data_coil, element: node,      at: [0, -2.5],  y: 2.4, stand_y: 1.0, faces: south, tags: [objective_data_coil],
+     notes: The data store's hatch on the node's front face.}
+  - {id: reset_panel, element: node,      at: [3.5, 0],  y: 2.2, stand_y: 1.0, faces: east,  tags: [objective_reset]}
+  - {id: power_cell, element: node,      at: [-2.5, -2.5], y: 2.0, stand_y: 1.0, faces: south, tags: [objective_power_cell],
+     notes: The sealed cell's bay, for sites powered on site rather than by the cable.}
+  - {id: cable_splice, element: cable_bay, at: [-5, 0], y: 1.6, stand_y: 1.0, faces: west, tags: [objective_splice]}
+  - {id: pod_1, element: post_1, at: [-30, -12.9], y: 1.4, stand_y: 0.0, faces: south, tags: [objective_pod]}
+  - {id: pod_2, element: post_2, at: [-18, -15.9], y: 1.4, stand_y: 0.0, faces: south, tags: [objective_pod]}
+  - {id: pod_3, element: post_3, at: [-6, -16.9],  y: 1.4, stand_y: 0.0, faces: south, tags: [objective_pod]}
+  - {id: pod_4, element: post_4, at: [6, -16.9],   y: 1.4, stand_y: 0.0, faces: south, tags: [objective_pod]}
+  - {id: pod_5, element: post_5, at: [18, -15.9],  y: 1.4, stand_y: 0.0, faces: south, tags: [objective_pod]}
+  - {id: pod_6, element: post_6, at: [30, -12.9],  y: 1.4, stand_y: 0.0, faces: south, tags: [objective_pod]}
+
+# The sub: where it hovers to work the site (a diver goes out from here), and the way it comes in.
+sub_hover: {at: [0, -8], heading: x}            # over the open water in front of the node, between it and the posts
+approach: {from: [0, -78], to: [0, -8]}          # straight in from the front, between the middle posts
+
+# Greybox and concept cameras (local frame): position, target, lens.
+cameras:
+  - {id: approach, pos: [0, 5, -62], look: [0, 2, -4], lens: 28}
+  - {id: three_quarter, pos: [-42, 16, -48], look: [0, 1.5, -6], lens: 30}
+  - {id: node_diver, pos: [9, 2.6, -9], look: [0, 2.4, -1], lens: 24, hide: [sub]}
+  - {id: post_diver, pos: [-12, 2.2, -21], look: [-18, 2.0, -14], lens: 22}
+  - {id: overview, pos: [0, 46, -44], look: [0, 0, -6], lens: 30}

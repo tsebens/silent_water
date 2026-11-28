@@ -32,6 +32,7 @@ COL = {
     "wall_live": (0.66, 0.56, 0.44), "wall_keep": (0.66, 0.38, 0.34), "wall_corridor": (0.50, 0.51, 0.53),
     "objective": (0.95, 0.78, 0.20), "sub": (0.85, 0.48, 0.12), "strut": (0.36, 0.37, 0.38),
     "neon_amber": (1.0, 0.62, 0.20), "window": (1.0, 0.82, 0.52), "frame": (0.16, 0.17, 0.18),
+    "beacon": (0.90, 0.15, 0.10), "cable": (0.12, 0.12, 0.13),
 }
 KEEP_ALIVE = {"life_support", "reactor_control", "reactor_hall", "switchgear", "refuge", "lockout", "dock_airlock",
               "workshop", "dive_locker", "spares", "maint_hall", "dock_passage"}
@@ -368,12 +369,81 @@ def render(cam: dict) -> Path:
     return out
 
 
+def cylinder(name: str, x: float, z: float, r: float, y0: float, y1: float, material: str, group: str, segments: int = 12) -> None:
+    bm = bmesh.new()
+    bmesh.ops.create_cone(bm, cap_ends=True, segments=segments, radius1=r, radius2=r, depth=y1 - y0)
+    bmesh.ops.translate(bm, vec=B(x, (y0 + y1) / 2, z), verts=bm.verts)
+    obj_from(name, bm, material, group)
+
+
+def build_site(layout: dict) -> None:
+    """An exterior site (tools/facility_plan/site.py's layout): the seabed, its elements, cables, the hovering sub."""
+    box("seabed", -200, 200, -2.0, 0.0, -200, 200, "terrain", "terrain")
+    mats = {"node": "concrete", "plinth": "concrete_dark", "post": "concrete", "mast": "strut", "beacon": "beacon",
+            "light": "neon_amber", "cable_bay": "concrete_dark"}
+    for e in layout["elements"]:
+        y0 = float(e.get("base_y", 0.0))
+        y1 = y0 + float(e["height"])
+        m = mats.get(e.get("role", ""), "concrete")
+        if "box" in e:
+            x0, x1, z0, z1 = e["box"]
+            box(e["id"], x0, x1, y0, y1, z0, z1, m, "exterior")
+        else:
+            (cx, cz), r = e["cylinder"]["at"], e["cylinder"]["radius"]
+            if e.get("role") == "light":  # a dark post with a lit head
+                cylinder(e["id"], cx, cz, r, y0, y1 - 0.3, "strut", "exterior", 8)
+                cylinder(f"{e['id']}_head", cx, cz, r * 1.6, y1 - 0.3, y1, "neon_amber", "exterior", 8)
+                continue
+            cylinder(e["id"], cx, cz, r, y0, y1, m, "exterior", 8 if e.get("role") == "post" else 12)
+            if e.get("role") == "post":  # a ribbed post: a wider foot, the sensor head on top
+                cylinder(f"{e['id']}_foot", cx, cz, r * 1.6, y0, y0 + 0.8, "concrete_dark", "exterior", 8)
+                cylinder(f"{e['id']}_head", cx, cz, r * 0.7, y1, y1 + 0.9, "frame", "exterior", 8)
+    for s in layout.get("service_points", []):  # a housing or hatch frame at each, with a lit bar above it
+        x, z = s["at"]
+        fx, fz = {"south": (0, -1), "north": (0, 1), "west": (-1, 0), "east": (1, 0)}[s["faces"]]
+        w, h, d = 0.9, 0.7, 0.25
+        cx, cz = x + fx * d / 2, z + fz * d / 2
+        hx, hz = (w / 2, d / 2) if fx == 0 else (d / 2, w / 2)
+        box(f"{s['id']}_hatch", cx - hx, cx + hx, s["y"] - h / 2, s["y"] + h / 2, cz - hz, cz + hz, "frame", "exterior")
+        box(f"{s['id']}_lamp", cx - hx, cx + hx, s["y"] + h / 2 + 0.05, s["y"] + h / 2 + 0.12, cz - hz, cz + hz, "neon_amber", "exterior")
+    for cb in layout.get("cables", []):
+        pts = cb["path"]
+        brk = cb.get("break_at")
+        for k, ((ax, az), (bx, bz)) in enumerate(zip(pts, pts[1:])):
+            segs = [((ax, az), (bx, bz))]
+            if brk:  # leave a gap at the break, the cut ends a little apart
+                t = ((brk[0] - ax) * (bx - ax) + (brk[1] - az) * (bz - az)) / max(1e-9, (bx - ax) ** 2 + (bz - az) ** 2)
+                if 0 < t < 1 and math.dist(brk, (ax + t * (bx - ax), az + t * (bz - az))) < 0.2:
+                    L = math.dist((ax, az), (bx, bz))
+                    g = 0.6 / L
+                    segs = [((ax, az), (ax + (t - g) * (bx - ax), az + (t - g) * (bz - az))),
+                            ((ax + (t + g) * (bx - ax), az + (t + g) * (bz - az)), (bx, bz))]
+            for j, (p, q) in enumerate(segs):
+                strut(f"{cb['id']}_{k}_{j}", (p[0], 0.12, p[1]), (q[0], 0.12, q[1]), 0.22, "cable", "exterior")
+    hv = layout["sub_hover"]
+    sub = layout["sub"]
+    hx, hz = hv["at"]
+    keel = hv["keel_y"]
+    bm = bmesh.new()
+    bmesh.ops.create_uvsphere(bm, u_segments=24, v_segments=12, radius=1.0)
+    sx, sz = (sub["length_m"] / 2, sub["width_m"] / 2) if hv.get("heading", "x") == "x" else (sub["width_m"] / 2, sub["length_m"] / 2)
+    bmesh.ops.scale(bm, vec=Vector((sx, sz, sub["height_m"] / 2)), verts=bm.verts)
+    bmesh.ops.translate(bm, vec=B(hx, keel + sub["height_m"] / 2, hz), verts=bm.verts)
+    obj_from("sub_hull", bm, "sub", "sub")
+    box("sub_tower", hx - 0.6, hx + 0.6, keel + sub["height_m"] - 0.2, keel + sub["height_m"] + sub["tower_m"], hz - 0.6, hz + 0.6, "sub", "sub")
+
+
 def main() -> None:
     bpy.ops.wm.read_factory_settings(use_empty=True)
     setup()
-    build(json.loads(LAYOUT.read_text(encoding="utf-8")))
+    layout = json.loads(LAYOUT.read_text(encoding="utf-8"))
+    if layout.get("kind") == "site":
+        build_site(layout)
+    else:
+        build(layout)
+    cams = layout.get("cameras") or CAMERAS
     OUT.mkdir(parents=True, exist_ok=True)
-    done = [str(render(c)) for c in CAMERAS if not ONLY or c["id"] in ONLY]
+    done = [str(render(c)) for c in cams if not ONLY or c["id"] in ONLY]
     bpy.ops.wm.save_as_mainfile(filepath=str(OUT / "blockout.blend"))
     print("BLOCKOUT " + json.dumps(done))
 

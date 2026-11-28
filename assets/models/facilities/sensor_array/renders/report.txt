@@ -1,0 +1,84 @@
+ok   needs a flat pad 72 x 31 m (x -36..36, z -22..9), front toward -z
+ok   service point data_coil sits on node
+ok   service point data_coil: 1.4 m above where the diver hangs (band 0.6-1.8)
+ok   service point data_coil is within node's height
+ok   service point data_coil: 1.5 m of clear water in front
+ok   service point reset_panel sits on node
+ok   service point reset_panel: 1.2 m above where the diver hangs (band 0.6-1.8)
+ok   service point reset_panel is within node's height
+ok   service point reset_panel: 1.5 m of clear water in front
+ok   service point power_cell sits on node
+ok   service point power_cell: 1.0 m above where the diver hangs (band 0.6-1.8)
+ok   service point power_cell is within node's height
+ok   service point power_cell: 1.5 m of clear water in front
+ok   service point cable_splice sits on cable_bay
+ok   service point cable_splice: 0.6 m above where the diver hangs (band 0.6-1.8)
+ok   service point cable_splice is within cable_bay's height
+ok   service point cable_splice: 1.5 m of clear water in front
+ok   service point pod_1 sits on post_1
+ok   service point pod_1: 1.4 m above where the diver hangs (band 0.6-1.8)
+ok   service point pod_1 is within post_1's height
+ok   service point pod_1: 1.5 m of clear water in front
+ok   service point pod_2 sits on post_2
+ok   service point pod_2: 1.4 m above where the diver hangs (band 0.6-1.8)
+ok   service point pod_2 is within post_2's height
+ok   service point pod_2: 1.5 m of clear water in front
+ok   service point pod_3 sits on post_3
+ok   service point pod_3: 1.4 m above where the diver hangs (band 0.6-1.8)
+ok   service point pod_3 is within post_3's height
+ok   service point pod_3: 1.5 m of clear water in front
+ok   service point pod_4 sits on post_4
+ok   service point pod_4: 1.4 m above where the diver hangs (band 0.6-1.8)
+ok   service point pod_4 is within post_4's height
+ok   service point pod_4: 1.5 m of clear water in front
+ok   service point pod_5 sits on post_5
+ok   service point pod_5: 1.4 m above where the diver hangs (band 0.6-1.8)
+ok   service point pod_5 is within post_5's height
+ok   service point pod_5: 1.5 m of clear water in front
+ok   service point pod_6 sits on post_6
+ok   service point pod_6: 1.4 m above where the diver hangs (band 0.6-1.8)
+ok   service point pod_6 is within post_6's height
+ok   service point pod_6: 1.5 m of clear water in front
+ok   6 sensor posts, at least 12 m apart
+ok   cable cable_1 starts at cable_bay
+ok   cable cable_1 ends at post_1
+ok   cable cable_1: 28 m
+ok   cable cable_2 starts at cable_bay
+ok   cable cable_2 ends at post_2
+ok   cable cable_2: 19 m
+ok   cable cable_2's break lies on its run
+ok   cable cable_3 starts at cable_bay
+ok   cable cable_3 ends at post_3
+ok   cable cable_3: 15 m
+ok   cable cable_4 starts at cable_bay
+ok   cable cable_4 ends at post_4
+ok   cable cable_4: 18 m
+ok   cable cable_5 starts at cable_bay
+ok   cable cable_5 ends at post_5
+ok   cable cable_5: 27 m
+ok   cable cable_6 starts at cable_bay
+ok   cable cable_6 ends at post_6
+ok   cable cable_6: 36 m
+ok   cable power_in starts at cable_bay
+ok   post_1 is cabled to the node
+ok   post_2 is cabled to the node
+ok   post_3 is cabled to the node
+ok   post_4 is cabled to the node
+ok   post_5 is cabled to the node
+ok   post_6 is cabled to the node
+ok   approach from (0, -78) to (0, -8), 8 m wide, is clear
+ok   sub hovers at [0, -8] with its keel at y = 2.0 m over open seabed
+
+# swims
+data_coil (data_coil): 6 m swim from the sub's lock-out
+reset_panel (reset): 9 m swim from the sub's lock-out
+power_cell (power_cell): 6 m swim from the sub's lock-out
+cable_splice (splice): 9 m swim from the sub's lock-out
+pod_1 (pod): 30 m swim from the sub's lock-out
+pod_2 (pod): 20 m swim from the sub's lock-out
+pod_3 (pod): 11 m swim from the sub's lock-out
+pod_4 (pod): 11 m swim from the sub's lock-out
+pod_5 (pod): 20 m swim from the sub's lock-out
+pod_6 (pod): 30 m swim from the sub's lock-out
+
+0 problem(s)
