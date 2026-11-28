@@ -1,0 +1,26 @@
+slug: seaweed
+group: organics
+kind: organic
+summary: 'Seaweed clump, 50 cm tall, leaning toward +X: an umber holdfast disc, 6 tapered stipes, 6 strap-like dark
+  olive ruffled fronds and 5 faceted bladders. Static; no script.'
+tags:
+- organic
+- seaweed
+- kelp
+- flora
+- static
+- fronds
+scene: res://assets/models/organics/seaweed/seaweed.tscn
+footprint_mm:
+- 243.8
+- 330.5
+stand_out_mm: 496.6
+mount: holdfast on Y=0, centred on X/Z at the origin; fronds lean toward +X; static, no behaviour
+triangles: 1708
+built_by: tools/cadkit/scenes/seaweed.py
+files:
+- component.yaml
+- review/.gdignore
+- review/cameras.json
+- seaweed.glb
+- seaweed.tscn
