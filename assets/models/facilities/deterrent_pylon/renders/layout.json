@@ -1,0 +1,246 @@
+{
+ "kind": "site",
+ "site": {
+  "pad_margin_m": 5.0,
+  "sub": {
+   "length_m": 10.0,
+   "width_m": 3.8,
+   "height_m": 3.0,
+   "tower_m": 1.5
+  }
+ },
+ "elements": [
+  {
+   "id": "plinth",
+   "role": "plinth",
+   "box": [
+    -4.5,
+    4.5,
+    -4.5,
+    4.5
+   ],
+   "height": 1.5,
+   "notes": "A heavy square plinth; the buttresses stand on it."
+  },
+  {
+   "id": "column",
+   "role": "node",
+   "box": [
+    -1.6,
+    1.6,
+    -1.6,
+    1.6
+   ],
+   "base_y": 1.5,
+   "height": 12.0,
+   "notes": "The ribbed column. Cell bay and arming panel at its foot."
+  },
+  {
+   "id": "buttress_n",
+   "role": "fin",
+   "box": [
+    -0.5,
+    0.5,
+    1.6,
+    4.5
+   ],
+   "base_y": 1.5,
+   "height": 6.0
+  },
+  {
+   "id": "buttress_w",
+   "role": "fin",
+   "box": [
+    -4.5,
+    -1.6,
+    -0.5,
+    0.5
+   ],
+   "base_y": 1.5,
+   "height": 6.0
+  },
+  {
+   "id": "buttress_e",
+   "role": "fin",
+   "box": [
+    1.6,
+    4.5,
+    -0.5,
+    0.5
+   ],
+   "base_y": 1.5,
+   "height": 6.0
+  },
+  {
+   "id": "lamp_ring",
+   "role": "lamp_ring",
+   "cylinder": {
+    "at": [
+     0,
+     0
+    ],
+    "radius": 2.3
+   },
+   "base_y": 11.0,
+   "height": 0.5,
+   "notes": "The charge gauge: its lamps go out one by one as the cell drains."
+  },
+  {
+   "id": "emitter",
+   "role": "emitter",
+   "cylinder": {
+    "at": [
+     0,
+     0
+    ],
+    "radius": 2.2
+   },
+   "base_y": 13.5,
+   "height": 2.0,
+   "notes": "The emitter head",
+   "a ring of transducers. Calls with the apex's voice.": null
+  },
+  {
+   "id": "receiver",
+   "role": "mast",
+   "cylinder": {
+    "at": [
+     0,
+     0
+    ],
+    "radius": 0.25
+   },
+   "base_y": 15.5,
+   "height": 2.5,
+   "notes": "Hears the coded acoustic command from the sub's countermeasures station that switches it on and off."
+  }
+ ],
+ "cables": [],
+ "service_points": [
+  {
+   "id": "cell_bay",
+   "element": "column",
+   "at": [
+    -0.7,
+    -1.6
+   ],
+   "y": 2.6,
+   "stand_y": 1.5,
+   "faces": "south",
+   "tags": [
+    "objective_power_cell"
+   ],
+   "notes": "On the clear south face (the buttresses stand on the other three); the dead cell out",
+   "a fresh one in.": null
+  },
+  {
+   "id": "arm_panel",
+   "element": "column",
+   "at": [
+    0.7,
+    -1.6
+   ],
+   "y": 2.6,
+   "stand_y": 1.5,
+   "faces": "south",
+   "tags": [
+    "objective_reset"
+   ],
+   "notes": "Reset and arm. Once armed",
+   "the sub's countermeasures station switches it on and off from a distance.": null
+  }
+ ],
+ "sub_hover": {
+  "at": [
+   0,
+   -16
+  ],
+  "heading": "x",
+  "keel_y": 2.0
+ },
+ "sub": {
+  "length_m": 10.0,
+  "width_m": 3.8,
+  "height_m": 3.0,
+  "tower_m": 1.5
+ },
+ "cameras": [
+  {
+   "id": "approach",
+   "pos": [
+    18,
+    5,
+    -62
+   ],
+   "look": [
+    0,
+    7,
+    0
+   ],
+   "lens": 30
+  },
+  {
+   "id": "three_quarter",
+   "pos": [
+    -26,
+    10,
+    -30
+   ],
+   "look": [
+    0,
+    7,
+    0
+   ],
+   "lens": 28
+  },
+  {
+   "id": "from_below",
+   "pos": [
+    7,
+    1.2,
+    -10
+   ],
+   "look": [
+    0,
+    11,
+    0
+   ],
+   "lens": 20,
+   "hide": [
+    "sub"
+   ],
+   "notes": "A diver at its foot, looking up: the monument."
+  },
+  {
+   "id": "diver_service",
+   "pos": [
+    4,
+    3.4,
+    -8
+   ],
+   "look": [
+    0,
+    3.2,
+    -1.6
+   ],
+   "lens": 24,
+   "hide": [
+    "sub"
+   ]
+  },
+  {
+   "id": "overview",
+   "pos": [
+    0,
+    36,
+    -36
+   ],
+   "look": [
+    0,
+    4,
+    -4
+   ],
+   "lens": 30
+  }
+ ]
+}

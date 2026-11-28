@@ -380,7 +380,8 @@ def build_site(layout: dict) -> None:
     """An exterior site (tools/facility_plan/site.py's layout): the seabed, its elements, cables, the hovering sub."""
     box("seabed", -200, 200, -2.0, 0.0, -200, 200, "terrain", "terrain")
     mats = {"node": "concrete", "plinth": "concrete_dark", "post": "concrete", "mast": "strut", "beacon": "beacon",
-            "light": "neon_amber", "cable_bay": "concrete_dark"}
+            "light": "neon_amber", "cable_bay": "concrete_dark", "fin": "concrete", "lamp_ring": "neon_amber",
+            "emitter": "frame"}
     for e in layout["elements"]:
         y0 = float(e.get("base_y", 0.0))
         y1 = y0 + float(e["height"])
@@ -390,6 +391,12 @@ def build_site(layout: dict) -> None:
             box(e["id"], x0, x1, y0, y1, z0, z1, m, "exterior")
         else:
             (cx, cz), r = e["cylinder"]["at"], e["cylinder"]["radius"]
+            if e.get("role") == "lamp_ring":  # separate lamps on a slim collar, never a solid glowing band
+                cylinder(e["id"], cx, cz, r * 0.92, y0, y1, "concrete_dark", "exterior", 16)
+                for k in range(16):
+                    a = 2 * math.pi * k / 16
+                    cylinder(f"{e['id']}_lamp_{k}", cx + r * math.cos(a), cz + r * math.sin(a), 0.11, y0 + 0.1, y1 - 0.1, "neon_amber", "exterior", 6)
+                continue
             if e.get("role") == "light":  # a dark post with a lit head
                 cylinder(e["id"], cx, cz, r, y0, y1 - 0.3, "strut", "exterior", 8)
                 cylinder(f"{e['id']}_head", cx, cz, r * 1.6, y1 - 0.3, y1, "neon_amber", "exterior", 8)
