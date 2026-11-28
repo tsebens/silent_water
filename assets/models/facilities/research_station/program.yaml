@@ -24,24 +24,46 @@ structures:
       - {id: L1, name: Work, floor_y: 0.0, height: 3.2}
       - {id: L2, name: Living, floor_y: 3.6, height: 2.8}
     notes: Two storeys, set back a couple of metres from the edge. Work below, living above; the science lab and the commons both look out over the chasm.
+    exterior:                 # the shell is far bigger than the rooms: that is where the presence comes from
+      wall_m: 1.5
+      plinth: {out_m: 2.5, height_m: 2.0}
+      tier: {chasm_m: 6.0, sides_m: 2.0, height_m: 4.5, rib_spacing_m: 2.0, rib_depth_m: 1.0}   # plant level, cantilevered toward the chasm
+      struts: {face: south, spacing_m: 7.0, width_m: 1.2}        # splayed struts from the plinth up to the tier's front edge
+      fins: {faces: [west, east, north], spacing_m: 4.0, depth_m: 3.5, thick_m: 1.0}
+      mast: {at: [-9, 17], height_m: 20.0, width_m: 1.2}           # the comms line's mast
+      neon: [tier_front, plinth_front]
   - id: maintenance
     name: Maintenance
     rect: [26, 46, 4, 24]
     levels:
       - {id: M, name: Maintenance, floor_y: 0.0, height: 5.0}
     notes: Tall single storey; the workshop has room to work on equipment. Life support is sealed off beside it.
+    exterior:
+      wall_m: 1.5
+      plinth: {out_m: 1.5, height_m: 1.5}
+      fins: {faces: [east, north, west], spacing_m: 4.0, depth_m: 3.0, thick_m: 1.0}
+      neon: [plinth_front]
   - id: dock
     name: Docking arm
     rect: [30, 38, -10, 4]
     levels:
       - {id: D, name: Dock, floor_y: 0.0, height: 3.0}
     notes: Cantilevered out over the chasm from the workshop. The docking collar is in the floor of the airlock; the sub rises out of the chasm and mates its dorsal hatch to it from below (#842, #843).
+    exterior:
+      wall_m: 1.0
+      keel_m: 2.5               # a deep beam along the arm's underside, either side of the collar
+      neon: [arm_edges]
   - id: power
     name: Power building
     rect: [22, 38, 74, 92]
     levels:
       - {id: P, name: Power, floor_y: 0.0, height: 6.0}
     notes: The reactor, set well back from the habitat because it is nuclear. Reached by the 50 m power tunnel.
+    exterior:
+      wall_m: 3.0               # shielding
+      fins: {faces: [south, east, north, west], spacing_m: 4.0, depth_m: 3.0, thick_m: 1.2}
+      stack: {at: [34, 87], height_m: 16.0, width_m: 3.0}
+      neon: [plinth_front]
 
 # Plans to draw: levels drawn together share a floor height.
 plan_views:

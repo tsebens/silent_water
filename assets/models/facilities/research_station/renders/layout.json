@@ -23,7 +23,48 @@
      "height": 2.8
     }
    ],
-   "notes": "Two storeys, set back a couple of metres from the edge. Work below, living above; the science lab and the commons both look out over the chasm."
+   "notes": "Two storeys, set back a couple of metres from the edge. Work below, living above; the science lab and the commons both look out over the chasm.",
+   "exterior": {
+    "wall_m": 1.5,
+    "plinth": {
+     "out_m": 2.5,
+     "height_m": 2.0
+    },
+    "tier": {
+     "chasm_m": 6.0,
+     "sides_m": 2.0,
+     "height_m": 4.5,
+     "rib_spacing_m": 2.0,
+     "rib_depth_m": 1.0
+    },
+    "struts": {
+     "face": "south",
+     "spacing_m": 7.0,
+     "width_m": 1.2
+    },
+    "fins": {
+     "faces": [
+      "west",
+      "east",
+      "north"
+     ],
+     "spacing_m": 4.0,
+     "depth_m": 3.5,
+     "thick_m": 1.0
+    },
+    "mast": {
+     "at": [
+      -9,
+      17
+     ],
+     "height_m": 20.0,
+     "width_m": 1.2
+    },
+    "neon": [
+     "tier_front",
+     "plinth_front"
+    ]
+   }
   },
   {
    "id": "maintenance",
@@ -42,7 +83,27 @@
      "height": 5.0
     }
    ],
-   "notes": "Tall single storey; the workshop has room to work on equipment. Life support is sealed off beside it."
+   "notes": "Tall single storey; the workshop has room to work on equipment. Life support is sealed off beside it.",
+   "exterior": {
+    "wall_m": 1.5,
+    "plinth": {
+     "out_m": 1.5,
+     "height_m": 1.5
+    },
+    "fins": {
+     "faces": [
+      "east",
+      "north",
+      "west"
+     ],
+     "spacing_m": 4.0,
+     "depth_m": 3.0,
+     "thick_m": 1.0
+    },
+    "neon": [
+     "plinth_front"
+    ]
+   }
   },
   {
    "id": "dock",
@@ -61,7 +122,14 @@
      "height": 3.0
     }
    ],
-   "notes": "Cantilevered out over the chasm from the workshop. The docking collar is in the floor of the airlock; the sub rises out of the chasm and mates its dorsal hatch to it from below (#842,"
+   "notes": "Cantilevered out over the chasm from the workshop. The docking collar is in the floor of the airlock; the sub rises out of the chasm and mates its dorsal hatch to it from below (#842,",
+   "exterior": {
+    "wall_m": 1.0,
+    "keel_m": 2.5,
+    "neon": [
+     "arm_edges"
+    ]
+   }
   },
   {
    "id": "power",
@@ -80,7 +148,32 @@
      "height": 6.0
     }
    ],
-   "notes": "The reactor, set well back from the habitat because it is nuclear. Reached by the 50 m power tunnel."
+   "notes": "The reactor, set well back from the habitat because it is nuclear. Reached by the 50 m power tunnel.",
+   "exterior": {
+    "wall_m": 3.0,
+    "fins": {
+     "faces": [
+      "south",
+      "east",
+      "north",
+      "west"
+     ],
+     "spacing_m": 4.0,
+     "depth_m": 3.0,
+     "thick_m": 1.2
+    },
+    "stack": {
+     "at": [
+      34,
+      87
+     ],
+     "height_m": 16.0,
+     "width_m": 3.0
+    },
+    "neon": [
+     "plinth_front"
+    ]
+   }
   }
  ],
  "rooms": [

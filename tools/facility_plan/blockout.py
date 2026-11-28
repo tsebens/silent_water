@@ -127,6 +127,107 @@ def walls(room: dict, level: str, floor_y: float, height: float, doors: list[dic
                 box(name, min(value, value + inset), max(value, value + inset), floor_y, floor_y + height, a, b, material, "interior")
 
 
+FACES = {  # outward direction and the direction along the face, in the site frame (x, y, z)
+    "south": ((0, 0, -1), (1, 0, 0)), "north": ((0, 0, 1), (1, 0, 0)),
+    "west": ((-1, 0, 0), (0, 0, 1)), "east": ((1, 0, 0), (0, 0, 1)),
+}
+
+
+def extrude(name: str, origin: tuple[float, float, float], out: tuple[float, float, float], along: tuple[float, float, float],
+            pts: list[tuple[float, float]], thick: float, material: str, group: str) -> None:
+    """A slab whose outline is `pts` (u outward, v up) in the plane of `out` and up, `thick` wide along `along`."""
+    bm = bmesh.new()
+    rings = []
+    for t in (-thick / 2, thick / 2):
+        ring = []
+        for u, v in pts:
+            x = origin[0] + out[0] * u + along[0] * t
+            y = origin[1] + v
+            z = origin[2] + out[2] * u + along[2] * t
+            ring.append(bm.verts.new(B(x, y, z)))
+        rings.append(ring)
+    n = len(pts)
+    bm.faces.new(rings[0])
+    bm.faces.new(rings[1][::-1])
+    for k in range(n):
+        bm.faces.new((rings[0][k], rings[0][(k + 1) % n], rings[1][(k + 1) % n], rings[1][k]))
+    bmesh.ops.recalc_face_normals(bm, faces=bm.faces)
+    obj_from(name, bm, material, group)
+
+
+def exterior(s: dict) -> None:
+    ex = s.get("exterior", {})
+    sid = s["id"]
+    x0, x1, z0, z1 = s["rect"]
+    w = ex.get("wall_m", 0.6)
+    lo = min(l["floor_y"] for l in s["levels"]) - 0.6
+    hi = max(l["floor_y"] + l["height"] for l in s["levels"]) + 0.8
+    X0, X1, Z0, Z1 = x0 - w, x1 + w, z0 - w, z1 + w
+    box(f"{sid}_mass", X0, X1, lo, hi, Z0, Z1, "concrete", "exterior")
+    top = hi
+    pl = ex.get("plinth")
+    if pl:
+        o = pl["out_m"]
+        box(f"{sid}_plinth", X0 - o, X1 + o, -0.6, pl["height_m"], Z0 - o, Z1 + o, "concrete_dark", "exterior")
+    tier = ex.get("tier")
+    if tier:
+        tz0 = Z0 - tier["chasm_m"]
+        tx0, tx1 = X0 - tier["sides_m"], X1 + tier["sides_m"]
+        box(f"{sid}_tier", tx0, tx1, hi, hi + tier["height_m"], tz0, Z1, "concrete", "exterior")
+        top = hi + tier["height_m"]
+        k, x = 0, tx0 + tier["rib_spacing_m"] / 2
+        while x < tx1:  # ribs under the overhang toward the chasm
+            box(f"{sid}_rib_{k}", x - 0.3, x + 0.3, hi - tier["rib_depth_m"], hi, tz0, Z0, "concrete_dark", "exterior")
+            x += tier["rib_spacing_m"]
+            k += 1
+        st = ex.get("struts")
+        if st:
+            base_y = pl["height_m"] if pl else 0.0
+            base_z = Z0 - (pl["out_m"] if pl else 0.0)
+            k, x = 0, tx0 + st["spacing_m"] / 2
+            while x < tx1:
+                strut(f"{sid}_strut_{k}", (x, base_y, base_z), (x, hi - tier["rib_depth_m"], tz0 + 0.8), st["width_m"], "concrete", "exterior")
+                x += st["spacing_m"]
+                k += 1
+    fins = ex.get("fins")
+    if fins:
+        for face in fins["faces"]:
+            out, along = FACES[face]
+            fixed = {"south": Z0, "north": Z1, "west": X0, "east": X1}[face]
+            lo_a, hi_a = (X0, X1) if face in ("south", "north") else (Z0, Z1)
+            h = (top if not tier or face != "north" else hi) - 0.0
+            d = fins["depth_m"]
+            k, a = 0, lo_a + fins["spacing_m"] / 2
+            while a < hi_a:
+                origin = (a, 0.0, fixed) if face in ("south", "north") else (fixed, 0.0, a)
+                extrude(f"{sid}_fin_{face}_{k}", origin, out, along, [(0, -0.5), (d, -0.5), (d, h * 0.3), (0, h)],
+                        fins["thick_m"], "concrete", "exterior")
+                a += fins["spacing_m"]
+                k += 1
+    for key, mat_name in (("mast", "strut"), ("stack", "concrete_dark")):
+        m = ex.get(key)
+        if m:
+            mx, mz = m["at"]
+            hw = m["width_m"] / 2
+            box(f"{sid}_{key}", mx - hw, mx + hw, top, top + m["height_m"], mz - hw, mz + hw, mat_name, "exterior")
+    keel = ex.get("keel_m")
+    if keel:
+        for k, x in enumerate((X0 + 1.0, X1 - 1.0)):
+            box(f"{sid}_keel_{k}", x - 0.6, x + 0.6, lo - keel, lo, Z0, Z1, "concrete_dark", "exterior")
+    for n in ex.get("neon", []):  # where the amber strips go: thin lines on the edges
+        if n == "tier_front" and tier:
+            y = hi + tier["height_m"] * 0.55
+            box(f"{sid}_neon_tier", X0 - tier["sides_m"], X1 + tier["sides_m"], y - 0.12, y + 0.12,
+                Z0 - tier["chasm_m"] - 0.06, Z0 - tier["chasm_m"], "neon_amber", "exterior")
+        elif n == "plinth_front" and pl:
+            y = pl["height_m"] - 0.3
+            box(f"{sid}_neon_plinth", X0 - pl["out_m"], X1 + pl["out_m"], y - 0.1, y + 0.1,
+                Z0 - pl["out_m"] - 0.06, Z0 - pl["out_m"], "neon_amber", "exterior")
+        elif n == "arm_edges":
+            for k, x in enumerate((X0 - 0.06, X1)):
+                box(f"{sid}_neon_edge_{k}", x, x + 0.06, hi - 0.6, hi - 0.4, Z0, Z1, "neon_amber", "exterior")
+
+
 def build(layout: dict) -> None:
     structs = {s["id"]: s for s in layout["structures"]}
     # terrain: the ledge top at y = 0 for z >= 0, a cliff down into the chasm, a far wall across it
@@ -134,13 +235,9 @@ def build(layout: dict) -> None:
     box("cliff", -160, 200, -160, -1.0, 0, 220, "cliff", "terrain")  # its z = 0 face is the cliff, 160 m of it
     for i, (x, w) in enumerate(((-120, 30), (-60, 22), (90, 26), (150, 30))):  # a ragged lip: a few boulders on the edge
         box(f"lip_{i}", x, x + w, 0, 2.5, 0.0, 4.0, "cliff", "terrain")
-    # exterior mass per structure: thick walls and slabs round its levels
+    # exterior: per structure, from its `exterior` block (the shell is far bigger than the rooms)
     for s in layout["structures"]:
-        x0, x1, z0, z1 = s["rect"]
-        lo = min(l["floor_y"] for l in s["levels"]) - 0.6
-        hi = max(l["floor_y"] + l["height"] for l in s["levels"]) + 0.8
-        e = 0.6
-        box(f"{s['id']}_mass", x0 - e, x1 + e, lo, hi, z0 - e, z1 + e, "concrete", "exterior")
+        exterior(s)
     # docking arm: it overhangs the chasm, so it gets struts back to the cliff face
     if "dock" in structs:
         x0, x1, z0, z1 = structs["dock"]["rect"]
