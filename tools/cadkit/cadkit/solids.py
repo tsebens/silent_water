@@ -203,6 +203,48 @@ def read_glb(path: Path) -> dict:
     return out
 
 
+def _accessor(doc: dict, blob: bytes, idx: int) -> np.ndarray:
+    acc = doc["accessors"][idx]
+    view = doc["bufferViews"][acc["bufferView"]]
+    width = {"SCALAR": 1, "VEC3": 3, "VEC4": 4, "MAT4": 16}[acc["type"]]
+    dtype = {5126: np.float32, 5123: np.uint16, 5125: np.uint32}[acc["componentType"]]
+    a = np.frombuffer(blob, dtype, acc["count"] * width, view.get("byteOffset", 0) + acc.get("byteOffset", 0))
+    return a.reshape(acc["count"], width) if width > 1 else a
+
+
+def read_skinned(path: Path) -> dict:
+    """A skinned GLB's data for checking and posing: {"surfaces": [{"role", "pos" (metres), "joints", "weights",
+    "indices"}], "bones": [{"name", "parent", "head" (metres, world at rest), "ibm_t" (inverse bind translation)}]}.
+    Raises ValueError if the file has no skin."""
+    data = Path(path).read_bytes()
+    jlen = struct.unpack_from("<I", data, 12)[0]
+    doc = json.loads(data[20:20 + jlen])
+    blob = data[20 + jlen + 8:]
+    if not doc.get("skins"):
+        raise ValueError(f"{path} is not skinned")
+    skin, nodes = doc["skins"][0], doc["nodes"]
+    parent = {c: i for i, n in enumerate(nodes) for c in n.get("children", [])}
+
+    def world(j: int) -> np.ndarray:
+        t = np.array(nodes[j].get("translation", [0.0, 0.0, 0.0]), dtype=float)
+        return t + (world(parent[j]) if j in parent else 0.0)
+
+    ibm = _accessor(doc, blob, skin["inverseBindMatrices"])
+    bones = [{"name": nodes[j]["name"], "parent": nodes[parent[j]]["name"] if j in parent else None,
+              "head": world(j), "ibm_t": ibm[i, 12:15].astype(float)} for i, j in enumerate(skin["joints"])]
+    out = []
+    for p in doc["meshes"][0]["primitives"]:
+        at_ = p["attributes"]
+        if "JOINTS_0" not in at_ or "WEIGHTS_0" not in at_:
+            raise ValueError(f"{path}: a primitive has no JOINTS_0/WEIGHTS_0")
+        out.append({"role": doc["materials"][p["material"]]["name"],
+                    "pos": _accessor(doc, blob, at_["POSITION"]).astype(float),
+                    "joints": _accessor(doc, blob, at_["JOINTS_0"]),
+                    "weights": _accessor(doc, blob, at_["WEIGHTS_0"]),
+                    "indices": _accessor(doc, blob, p["indices"])})
+    return {"surfaces": out, "bones": bones}
+
+
 def export_solids_glb(solids: list[Solid], path: Path, node_name: str, tol_mm: float = 0.2, ang: float = 0.5,
                       skeleton=None) -> dict:
     """Write a GLB of the solids (one node, one surface per role) and its Godot .import. Returns triangles and bbox.
