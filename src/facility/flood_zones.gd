@@ -105,6 +105,13 @@ func is_flooded(zone: StringName) -> bool:
 	return state.flooded.get(String(zone), false)
 
 
+## How full of water a zone is, 0 (dry) to 1 (flooded), for presentation. Falls while the zone is pumped.
+func water_level(zone: StringName) -> float:
+	if not is_flooded(zone):
+		return 0.0
+	return clampf(state.level.get(String(zone), 1.0), 0.0, 1.0)
+
+
 ## "flooded" or "dry".
 func zone_status(zone: StringName) -> StringName:
 	return &"flooded" if is_flooded(zone) else &"dry"
@@ -113,6 +120,7 @@ func zone_status(zone: StringName) -> StringName:
 ## Pump a zone dry. It floods again if it is still connected to the sea.
 func drain(zone: StringName) -> void:
 	state.flooded.erase(String(zone))
+	state.level.erase(String(zone))
 	spread()
 
 

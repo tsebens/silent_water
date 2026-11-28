@@ -1,0 +1,10 @@
+[gd_resource type="Resource" script_class="FloodWork" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://src/facility/flood_work.gd" id="1_work"]
+
+[resource]
+script = ExtResource("1_work")
+kind = &"recover_flooding"
+points = 22
+state_flag = &"flooded"
+can_be_main = false

@@ -17,8 +17,11 @@ const TUNING: FloodTuning = preload("res://src/facility/flood_tuning.tres")
 var zones: FloodZones
 var store: FacilityGasStore
 var tuning: FloodTuning
-## Zone id -> water level 0..1 for zones that have started pumping.
-var level: Dictionary = {}
+## Zone id -> water level 0..1 for zones that have started pumping. Lives in the zones' state, so
+## [method FloodZones.water_level] sees the pump's progress.
+var level: Dictionary:
+	get:
+		return zones.state.level
 ## Zone id -> true while its pump is switched on.
 var pumping: Dictionary = {}
 ## Zone id -> true while the pump is stalled for want of gas.
@@ -36,9 +39,7 @@ static func create(fz: FloodZones, t: FloodTuning = TUNING) -> FloodRecovery:
 
 
 func water_level(zone: StringName) -> float:
-	if not zones.is_flooded(zone):
-		return 0.0
-	return level.get(String(zone), 1.0)
+	return zones.water_level(zone)
 
 
 func is_pumping(zone: StringName) -> bool:
@@ -111,7 +112,8 @@ func to_dict() -> Dictionary:
 
 
 func apply_dict(d: Dictionary) -> void:
-	level = (d.get("level", {}) as Dictionary).duplicate()
+	level.clear()
+	level.merge(d.get("level", {}) as Dictionary)
 	pumping = (d.get("pumping", {}) as Dictionary).duplicate()
 	stalled = (d.get("stalled", {}) as Dictionary).duplicate()
 	recovered = (d.get("recovered", {}) as Dictionary).duplicate()
