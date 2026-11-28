@@ -1,16 +1,4 @@
-ok   node_plinth stands on the shelf (z from 14.0)
-ok   node stands on the shelf (z from 15.5)
-ok   node_mast stands on the shelf (z from 19.1)
-ok   beacon stands on the shelf (z from 19.1)
-ok   cable_bay stands on the shelf (z from 16.0)
-ok   post_1 stands on the shelf (z from 5.1)
-ok   post_2 stands on the shelf (z from 2.1)
-ok   post_3 stands on the shelf (z from 1.1)
-ok   post_4 stands on the shelf (z from 1.1)
-ok   post_5 stands on the shelf (z from 2.1)
-ok   post_6 stands on the shelf (z from 5.1)
-ok   work_light_w stands on the shelf (z from 12.8)
-ok   work_light_e stands on the shelf (z from 12.8)
+ok   needs a flat pad 72 x 31 m (x -36..36, z -22..9), front toward -z
 ok   service point data_coil sits on node
 ok   service point data_coil: 1.4 m above where the diver hangs (band 0.6-1.8)
 ok   service point data_coil is within node's height
@@ -78,8 +66,8 @@ ok   post_3 is cabled to the node
 ok   post_4 is cabled to the node
 ok   post_5 is cabled to the node
 ok   post_6 is cabled to the node
-ok   approach from (0, -60) to (0, 10), 8 m wide, is clear
-ok   sub hovers at [0, 10] with its keel at y = 2.0 m over open seabed
+ok   approach from (0, -78) to (0, -8), 8 m wide, is clear
+ok   sub hovers at [0, -8] with its keel at y = 2.0 m over open seabed
 
 # swims
 data_coil (data_coil): 6 m swim from the sub's lock-out

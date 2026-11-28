@@ -12,8 +12,10 @@ works, and the sub's hover point and approach. Writes into out_dir (default: `re
 blockout.py). Exits non-zero when a check fails.
 
 Checks, for play: every service point sits on its element, at a diver's working height, with clear water in front;
-sensor posts are spread as an array; every cable joins its ends and is not too long; the approach corridor from the
-chasm is clear; the sub hovering at its work point keeps water under its keel; everything stands on the shelf.
+sensor posts are spread as an array; every cable joins its ends and is not too long; the approach corridor is clear;
+the sub hovering at its work point keeps water under its keel. A site is not tied to terrain: the report gives the
+flat pad it needs (`site.pad_margin_m` beyond its elements). If the program gives `site.ledge_edge_z` (a site drawn
+at a chasm), everything must stand on the shelf.
 """
 from __future__ import annotations
 
@@ -114,10 +116,16 @@ class Site:
         c = self.c
         lo, hi = c.get("service_height_m", [0.6, 1.8])
         room = c.get("service_room_m", 1.5)
-        edge = self.p["site"].get("ledge_edge_z", 0.0)
-        for e in self.els.values():
-            x0, x1, z0, z1 = e.bounds()
-            self.check(z0 >= edge - TOL or "overhang" in e.tags, f"{e.id} stands on the shelf (z from {z0:.1f})")
+        edge = self.p["site"].get("ledge_edge_z")
+        if edge is not None:
+            for e in self.els.values():
+                x0, x1, z0, z1 = e.bounds()
+                self.check(z0 >= edge - TOL or "overhang" in e.tags, f"{e.id} stands on the shelf (z from {z0:.1f})")
+        b = [e.bounds() for e in self.els.values()]
+        mg = self.p["site"].get("pad_margin_m", 5.0)
+        self.pad = (min(v[0] for v in b) - mg, max(v[1] for v in b) + mg, min(v[2] for v in b) - mg, max(v[3] for v in b) + mg)
+        self.check(True, f"needs a flat pad {self.pad[1] - self.pad[0]:.0f} x {self.pad[3] - self.pad[2]:.0f} m "
+                         f"(x {self.pad[0]:.0f}..{self.pad[1]:.0f}, z {self.pad[2]:.0f}..{self.pad[3]:.0f}), front toward -z")
         for s in self.p.get("service_points", []):
             el = self.els[s["element"]]
             at = tuple(s["at"])
@@ -192,17 +200,22 @@ class Site:
     def draw_plan(self, out: Path) -> None:
         pts = [v for e in self.els.values() for v in (e.bounds()[0:2])], [v for e in self.els.values() for v in e.bounds()[2:4]]
         xs = pts[0] + [p[0] for cb in self.p["cables"] for p in cb["path"] if cb["to"] != "offsite"]
-        zs = pts[1] + [p[1] for cb in self.p["cables"] for p in cb["path"] if cb["to"] != "offsite"] + [-20.0]
+        zs = pts[1] + [p[1] for cb in self.p["cables"] for p in cb["path"] if cb["to"] != "offsite"] + [self.pad[2] - 14]
         x0, x1, z0, z1 = min(xs) - 10, max(xs) + 10, min(zs) - 6, max(zs) + 10
         s, m = 14.0, 50
         W, H = int((x1 - x0) * s) + 2 * m, int((z1 - z0) * s) + 2 * m + 60
         img = Image.new("RGB", (W, H), (18, 22, 26))
         d = ImageDraw.Draw(img)
         P = lambda x, z: (m + (x - x0) * s, 60 + m + (z1 - z) * s)
-        edge = self.p["site"].get("ledge_edge_z", 0.0)
-        d.rectangle([P(x0, edge), P(x1, z0)], fill=(6, 8, 12))
-        d.line([P(x0, edge), P(x1, edge)], fill=(90, 110, 120), width=3)
-        d.text((P(x0, edge)[0] + 6, P(x0, edge)[1] + 6), "LEDGE EDGE · the chasm", fill=(90, 110, 120), font=font(16, True))
+        edge = self.p["site"].get("ledge_edge_z")
+        if edge is not None:
+            d.rectangle([P(x0, edge), P(x1, z0)], fill=(6, 8, 12))
+            d.line([P(x0, edge), P(x1, edge)], fill=(90, 110, 120), width=3)
+            d.text((P(x0, edge)[0] + 6, P(x0, edge)[1] + 6), "LEDGE EDGE · the chasm", fill=(90, 110, 120), font=font(16, True))
+        px0, px1, pz0, pz1 = self.pad
+        d.rectangle([P(px0, pz1), P(px1, pz0)], outline=(80, 100, 90), width=2)
+        d.text((P(px0, pz1)[0] + 6, P(px0, pz1)[1] + 6), "flat pad", fill=(110, 140, 120), font=font(14))
+        d.text((P(x0, z0)[0] + 6, P(x0, z0)[1] - 26), "FRONT (-z)", fill=(110, 140, 120), font=font(14, True))
         ap = self.p.get("approach")
         if ap:
             half = self.c.get("approach_width_m", 8.0) / 2
@@ -260,7 +273,7 @@ class Site:
         hb = self.hover_box()
         sub = self.p["site"]["sub"]
         d.rounded_rectangle([P(hb[0], self.keel_y + sub["height_m"]), P(hb[1], self.keel_y)], radius=10, outline=(240, 140, 40), width=3)
-        d.text((m, 10), f"{self.p.get('name', 'site')} · elevation from the chasm", fill=(240, 180, 90), font=font(22, True))
+        d.text((m, 10), f"{self.p.get('name', 'site')} · elevation from the front", fill=(240, 180, 90), font=font(22, True))
         img.save(out)
 
     def export(self, out: Path) -> None:
