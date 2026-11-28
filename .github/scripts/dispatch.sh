@@ -376,11 +376,26 @@ close_finished_milestones() { # same arguments as closable_milestones
 # Run.
 # ---------------------------------------------------------------------------
 
+# Other open arcs of the same concept as arc $1 ("Concept: #N"), one "- #n title" line each. Advisory only.
+suggest_blockers() { # number
+  local c
+  c=$(arc_body "$1" | grep -i -m1 -E '^\**concept:?\**:?' | grep -oE '#[0-9]+' | head -1 | tr -d '#' || true)
+  [ -n "$c" ] || return 0
+  echo "$ARCS" | jq -r --argjson n "$1" --arg c "$c" '.[] | select(.number != $n)
+    | select(.body | test("(^|\n)\\**[Cc]oncept:?\\**:? *#" + $c + "([^0-9]|$)")) | "- #\(.number) \(.title // "")"'
+}
+
 # A malformed `Blocked by:` line cannot be trusted either way: escalate once (needs-human is terminal, so later
 # passes skip the arc). $2 is the open_blockers_of output.
 escalate_if_malformed() { # number open-blockers
+  local sugg
   case "$2" in *'?malformed-blocked-by-line'*) ;; *) return 1 ;; esac
   log "  #$1 has a malformed Blocked by: line; escalating"
+  sugg=$(suggest_blockers "$1")
+  comment "$1" "Dispatcher: the \`Blocked by:\` line of this arc is malformed (each entry must be \`none\` or \`#<digits>\`, comma-separated), so it is held and needs a human.${sugg:+
+Likely intended blockers (the other arcs of the same concept):
+$sugg}
+Fix the line and the arc can proceed."
   add_label "$1" needs-human
   act gh issue edit "$1" -R "$REPO" --add-assignee tsebens >/dev/null
   return 0
