@@ -40,6 +40,8 @@ Frames (metres in Godot, millimetres in CAD): X right, Y up, Z out of the mount 
 | `furniture` | Seats and the like | On the floor at Y=0; an occupant faces -Z |
 | `stations` | Floor-standing, with an operator's position | Floor at Y=0, back on Z=0, operator at +Z facing -Z |
 | `organics` | Creatures and other organic forms (M20 experiment) | Centred on the origin, Y up, nose toward +Z; no mount face or floor, no mount checks |
+| `facility_parts` | Pieces of a facility (rooms, corridors, bulkheads) | Floor frame at Y=0, centred on X, outer face toward +Z, 0.5 m grid; no mount checks |
+| `facilities` | A facility structure placed on the seabed ledge | Site frame: ground at Y=0, X along the ledge, chasm toward -Z; no mount checks |
 
 ## 2. The library, and scanning it
 
@@ -114,7 +116,7 @@ Refinements:
 - **A solid that needs more than a handful of CAD operations, or blows its triangle budget, is split.**
 
 Budgets (triangles, everything a scene instances included): kit 1,500; furniture 3,000; panels 4,000; stations
-12,000; organics 8,000 (the creature class). `cadkit build` fails a scene over its group's budget. A scene whose look gate approved a larger budget
+12,000; organics 8,000 (the creature class); facility_parts 2,000; facilities 60,000 (per structure scene). `cadkit build` fails a scene over its group's budget. A scene whose look gate approved a larger budget
 records it as `triangle_budget` in its catalogue entry (the life_support station: 24,000; the navball: 10,000, #467), and that replaces the group's.
 
 ## 4. When a part needs to differ: three tiers
@@ -393,7 +395,7 @@ need it; locally, `uv run --project tools/cadkit cadkit ...`.
 | `cadkit render <slug>` | PNGs of a scene from its review cameras, into `build/renders/<slug>/` (not committed) |
 | `cadkit sheet <slug>` | Review sheets in `<scene>/review/` (committed) |
 
-A build script (`tools/cadkit/scenes/<slug>.py`) declares `SLUG`, `GROUP` (`kit`, `furniture`, `panels`, `stations`, `organics`), `USES`
+A build script (`tools/cadkit/scenes/<slug>.py`) declares `SLUG`, `GROUP` (`kit`, `furniture`, `panels`, `stations`, `organics`, `facility_parts`, `facilities`), `USES`
 and `build()`. There is no list of scenes: adding a scene adds files and edits none. The helpers are in
 `cadkit.solids` (shapes, `expect`, GLB export), `cadkit.tscn` (the scene writer) and `cadkit.library` (paths, entries,
 the panel module). Read an existing script of the same kind before writing one:
