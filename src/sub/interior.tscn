@@ -31,6 +31,8 @@
 [ext_resource type="Script" path="res://src/sub/headlight_switch.gd" id="headlight_switch"]
 
 [ext_resource type="Script" path="res://src/sub/lockout_trunk.gd" id="trunk_script"]
+[ext_resource type="Script" path="res://src/sub/dorsal_hatch.gd" id="dorsal_hatch"]
+[ext_resource type="Resource" path="res://src/noise/sound_types/alarm_chime.tres" id="alarm_chime"]
 [ext_resource type="Script" path="res://src/sub/lockout_trunk_wiring.gd" id="trunk_wiring"]
 [ext_resource type="Script" path="res://src/interact/climb_transit.gd" id="climb_transit"]
 [ext_resource type="Script" path="res://src/noise/sound_emitter.gd" id="sound_emitter"]
@@ -54,6 +56,9 @@ height = 1.0925
 top_radius = 0.018
 bottom_radius = 0.018
 height = 0.525
+
+[sub_resource type="BoxShape3D" id="dorsal_grab_shape"]
+size = Vector3(0.7, 2.0, 0.8)
 
 [sub_resource type="BoxMesh" id="trunk_hatch_mesh"]
 size = Vector3(0.9, 0.03, 0.9)
@@ -747,3 +752,39 @@ bottom_lever = NodePath("../BottomLever")
 transit = NodePath("../Climb")
 pump_emitter = NodePath("../PumpEmitter")
 clank_emitter = NodePath("../ClankEmitter")
+
+[node name="DorsalHatchStation" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 1.2)
+
+[node name="DorsalHatch" type="Node" parent="DorsalHatchStation" node_paths=PackedStringArray("wheel", "transit", "clank_emitter", "chime_emitter")]
+script = ExtResource("dorsal_hatch")
+wheel = NodePath("../TopWheel")
+transit = NodePath("../Climb")
+clank_emitter = NodePath("../ClankEmitter")
+chime_emitter = NodePath("../ChimeEmitter")
+
+[node name="TopWheel" parent="DorsalHatchStation" instance=ExtResource("2")]
+transform = Transform3D(0, 0, 1, 0, 1, 0, -1, 0, 0, -1.55, 1.4, 0)
+label = "dorsal hatch wheel"
+
+[node name="Climb" type="Node3D" parent="DorsalHatchStation"]
+script = ExtResource("climb_transit")
+path = PackedVector3Array(-0.4, 0, 0, -0.15, 0.7, 0, -0.1, 2.2, 0)
+extra_bounds = AABB(-0.6, 2.0, -0.6, 1.2, 1.9, 1.2)
+label = "conning tower ladder"
+
+[node name="Grab" type="StaticBody3D" parent="DorsalHatchStation/Climb"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.35, 1.0, 0)
+collision_layer = 2
+collision_mask = 0
+
+[node name="Shape" type="CollisionShape3D" parent="DorsalHatchStation/Climb/Grab"]
+shape = SubResource("dorsal_grab_shape")
+
+[node name="ClankEmitter" type="Node" parent="DorsalHatchStation"]
+script = ExtResource("sound_emitter")
+sound_type = ExtResource("hatch_clank")
+
+[node name="ChimeEmitter" type="Node" parent="DorsalHatchStation"]
+script = ExtResource("sound_emitter")
+sound_type = ExtResource("alarm_chime")

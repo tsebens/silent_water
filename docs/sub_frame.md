@@ -77,9 +77,12 @@ So the main deck is y = 0, the sunken cockpit floor (`floor_offset_m: -0.20`) is
 | `deck_midships-col`, `deck_bulkhead-col`, `deck_engineering-col` | The main deck, one slab per compartment; `deck_bulkhead` is the hatch sill | `interior_dark` |
 | `bulkhead-col` | The watertight bulkhead with its opening (`hatch_width_m` by `hatch_height_m`) | `interior_panel` |
 | `hatch_frame` | The coaming round the opening | `trim_black` |
-| `tower`, `tower_hatch` | The conning tower on the roof over the ladder, with its top hatch. The shaft through the roof belongs to the ladder's arc | `hull_metal`, `interior_panel` |
+| `tower`, `tower_hatch` | The conning tower on the roof over the ladder (0.85 m radius, 1.6 m high), with its top hatch lid | `hull_metal`, `interior_panel` |
+| `tower_shaft-col` | The shaft through the roof: a 0.55 m radius tube from 0.15 m under the roof's crown up to the lid, closed above. The roof loft has no quads inside it | `interior_panel` |
 
 The hatch is 1.85 m high, not the draft program's 1.7 m: the player capsule is 1.75 m tall, and its dome jams under a 1.7 m lintel. `tests/unit/test_sub_hull.gd` checks the envelope, deck heights, step, hatch opening and 2.0 m head room, and walks a capsule from the cockpit through the hatch and back.
+
+**The dorsal hatch (#920).** `Interior/DorsalHatchStation` sits at the ladder's z (1.2) on the centreline. Its `Climb` (`ClimbTransit`, "conning tower ladder") runs from the foot at x -0.4 on the deck, diagonally to stand under the shaft, then straight up it to a head 2.2 m above the deck; the climber's eye (1.65 m higher) stays under the lid, and the path declares `extra_bounds` over the shaft. The ladder's reserved footprint is on the port wall, but the shaft is on the centreline, so the foot is the nearest place under it. `DorsalHatch` (`src/sub/dorsal_hatch.gd`) is host-authoritative and replicated by snapshot, like the lock-out trunk. It opens only when the sub's depth (from the physics state) is under `surface_depth_m` (1.0 m) or `mated` is true (the docking arc sets it), and refuses otherwise. If the sub dives while it is open it closes itself and sounds `alarm_chime`; each move is one `hatch_clank`. It emits `hatch_opened` and `hatch_closed` for the docking collar. The wheel on the port wall (`TopWheel`) works it by hand; the ladder is climbable only while it is open. It is dry-only, not an airlock. `tests/unit/test_dorsal_hatch.gd` covers the behaviour and replication; `tests/unit/test_sub_hull.gd` checks the shaft's geometry and a capsule held along the climb.
 
 ## Pilot station and spawn points
 
