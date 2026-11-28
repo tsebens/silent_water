@@ -1,0 +1,26 @@
+slug: sea_anemone
+group: organics
+kind: organic
+summary: 'Sea anemone, 15 cm tall and across: flared dark-teal faceted column on a chamfered disc base, crowned
+  by 76 short blunt pale-teal hexagonal tentacles in 5 rings, upright inside and splayed outside. Static; no script.'
+tags:
+- organic
+- anemone
+- sea anemone
+- creature
+- static
+- tentacles
+scene: res://assets/models/organics/sea_anemone/sea_anemone.tscn
+footprint_mm:
+- 150.0
+- 150.0
+stand_out_mm: 150.0
+mount: base on Y=0, centred on X/Z, radially symmetric about Y; static, no behaviour
+triangles: 2716
+built_by: tools/cadkit/scenes/sea_anemone.py
+files:
+- component.yaml
+- review/.gdignore
+- review/cameras.json
+- sea_anemone.glb
+- sea_anemone.tscn
