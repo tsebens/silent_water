@@ -7,6 +7,7 @@ algorithms to GDScript under `src/site/` beside `CanyonSite`, which stays as it 
 ```
 uv run sketch render --seeds 3 7 11 --out <dir>   # one hillshade per seed, stations placed, log and depth histogram
 uv run sketch stats --seeds 1..50                  # how many seeds pass the viability gate, and why the rest fail
+uv run sketch detail --seeds 1 5 --out <dir>       # the detail pass on viable seeds: overview, crops, pad cut and fill
 ```
 
 ## Stages
@@ -32,6 +33,15 @@ uv run sketch stats --seeds 1..50                  # how many seeds pass the via
    footprint and the most relief a levelled pad can absorb. A map is viable when every class has ground and a
    placement spreads the stations across the map with no outlier. Placement rewards spacing up to a cap and
    then prefers the interior, and keeps a 220 m margin, so stations do not all go to the edges.
+
+4. **Detail** (`detail.py`, about 5 s, only for a map that passed the gate). Upsample to 2 m cells (about
+   1.2 million), classify ground as rock (steep, little sediment) or sediment, then add detail by material:
+   ridged crags, a blocky texture and warped strata ledges of varying thickness on rock; scree lumps below
+   cliffs; rugosity from 70 m down to about 6 m everywhere; sand waves across a seeded current on gentle soft
+   ground. A fine slump, a boulder scatter (below cliffs and on rock), then each station's pad is levelled to
+   the median ground in its footprint and blended out, with the cut and fill reported per pad. The crops use a
+   local-relief render (the surface smoothed over about 60 m is subtracted before shading), because plain
+   hillshade at this scale shows only the big slopes.
 
 The gate run after stage 1 agrees with the gate after stage 2 on 25 of 30 seeds (round 3), so it works as
 the early filter; final placement runs again after the slow stages. 26 of 30 seeds are viable.

@@ -10,6 +10,7 @@ from .landforms import build_macro
 from .erosion import run_macro_erosion
 from .stations import place, DEFAULT_STATIONS
 from .render import render, hypsometry
+from PIL import Image
 
 
 def _seeds(args: list[str]) -> list[int]:
@@ -46,6 +47,8 @@ def main(argv: list[str] | None = None) -> int:
     r.add_argument("--no-erode", action="store_true"); r.add_argument("--scale", type=int, default=3)
     r.add_argument("--outlines", action="store_true", help="draw landform footprints")
     s = sub.add_parser("stats"); s.add_argument("--seeds", nargs="+", default=["1..30"])
+    dd = sub.add_parser("detail", help="run the detail pass on viable seeds: overview plus 1:1 crops round stations")
+    dd.add_argument("--seeds", nargs="+", default=["1"]); dd.add_argument("--out", required=True)
     args = ap.parse_args(argv)
     preset = MapPreset()
     if args.cmd == "render":
@@ -61,6 +64,45 @@ def main(argv: list[str] | None = None) -> int:
             for line in v.reasons: print("   gate: " + line)
             if v.metrics: print("   metrics: " + json.dumps({k: round(float(x), 2) for k, x in v.metrics.items()}))
             print(hypsometry(h, preset))
+        return 0
+    if args.cmd == "detail":
+        from .detail import run_detail
+        from .render import render_detail
+        out = Path(args.out); out.mkdir(parents=True, exist_ok=True)
+        for seed in _seeds(args.seeds):
+            h, macro, v = generate(preset, seed)
+            if not v.ok:
+                print(f"== seed {seed}: rejected at the gate, no detail pass"); continue
+            d = run_detail(h, macro.sediment, preset, seed, v.placements)
+            fine_place = [type(p)(p.name, p.x, p.z, pr.y) for p, pr in zip(v.placements, d.pads)]
+            ov = render_detail(d.h, d.rock, d.cell, preset, placements=fine_place, title=f"seed {seed} detail, 2 m cells")
+            ov = ov.resize((ov.width * 3 // 5, ov.height * 3 // 5), Image.LANCZOS)
+            ov.save(out / f"seed_{seed:03d}_overview.png")
+            from scipy import ndimage as _nd
+            import numpy as _np
+            def _hot(field):
+                sm = _nd.uniform_filter(field, size=int(240 / d.cell))
+                m = 60  # keep crops inside the map
+                sm[:m, :] = -1; sm[-m:, :] = -1; sm[:, :m] = -1; sm[:, -m:] = -1
+                j, i = _np.unravel_index(_np.argmax(sm), sm.shape)
+                return -preset.width_m / 2 + i * d.cell, -preset.length_m / 2 + j * d.cell
+            spots = [("cliff", *_hot(d.rock)), ("sediment", *_hot(_np.minimum(d.sediment, 15.0)))]
+            for name in ["research_station", "vent_field"]:
+                p = next((pp for pp in fine_place if pp.name == name), None)
+                if p is not None: spots.append((name, p.x, p.z))
+            for name, cx, cz in spots:
+                win = (cx - 220, cz - 160, cx + 220, cz + 160)
+                img = render_detail(d.h, d.rock, d.cell, preset, boulders=d.boulders, placements=fine_place, window=win, scale=2,
+                                    title=f"seed {seed}: {name}, 440 x 320 m, 2 m cells, local relief", contours_m=50.0, local_relief=True)
+                img.save(out / f"seed_{seed:03d}_{name}.png")
+            crops = [Image.open(out / f"seed_{seed:03d}_{n}.png") for n, _, _ in spots]
+            cw, chh = crops[0].size; sheet = Image.new("RGB", (cw * 2, chh * 2))
+            for k, im in enumerate(crops[:4]): sheet.paste(im, ((k % 2) * cw, (k // 2) * chh))
+            sheet.save(out / f"seed_{seed:03d}_crops.png")
+            print(f"== seed {seed}: fine grid {d.h.shape[1]} x {d.h.shape[0]} ({d.h.size/1e6:.2f} M cells), {len(d.boulders)} boulders")
+            print("   timings: " + ", ".join(f"{k} {v*1000:.0f} ms" for k, v in d.timings.items()))
+            for pr in d.pads:
+                print(f"   pad {pr.name:17s} y {pr.y:7.1f}  cut {pr.cut_m3:8.0f} m3 fill {pr.fill_m3:8.0f} m3  max cut {pr.max_cut:5.1f} m max fill {pr.max_fill:5.1f} m")
         return 0
     if args.cmd == "stats":
         okc = 0; reasons: dict[str, int] = {}; n = 0; t0 = time.perf_counter()

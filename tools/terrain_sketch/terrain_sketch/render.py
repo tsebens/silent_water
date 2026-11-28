@@ -82,3 +82,55 @@ def hypsometry(h: np.ndarray, preset: MapPreset, bins: int = 12) -> str:
         bar = "#" * int(40 * counts[k] / max(counts.max(), 1))
         lines.append(f"{edges[k]:7.0f}..{edges[k+1]:5.0f} {100*counts[k]/total:5.1f}% {bar}")
     return "\n".join(lines)
+
+
+def render_detail(h: np.ndarray, rock: np.ndarray, cell: float, preset: MapPreset, boulders=None, placements=None,
+                  window: tuple | None = None, scale: int = 1, title: str = "", contours_m: float = 10.0,
+                  local_relief: bool = False) -> Image.Image:
+    """A fine-grid render: hillshade, depth tint, rock versus sediment colour, contours, boulders and pads.
+    window is (x0, z0, x1, z1) in world metres; None renders the whole map."""
+    nz, nx = h.shape
+    def idx(wx, wz):
+        return int(round((wz + preset.length_m / 2) / cell)), int(round((wx + preset.width_m / 2) / cell))
+    if window:
+        j0, i0 = idx(window[0], window[1]); j1, i1 = idx(window[2], window[3])
+        j0, j1 = sorted((max(j0, 0), min(j1, nz))); i0, i1 = sorted((max(i0, 0), min(i1, nx)))
+    else:
+        j0, j1, i0, i1 = 0, nz, 0, nx
+    hh = h[j0:j1, i0:i1]; rr = rock[j0:j1, i0:i1]
+    t = (hh - preset.depth_deep) / (preset.depth_shallow - preset.depth_deep)
+    shade = hillshade(hh, cell, el_deg=28.0)
+    if local_relief:
+        # Local relief model: shade only what remains after removing the surface smoothed over about 60 m.
+        from scipy import ndimage as _nd
+        lrm = hh - _nd.gaussian_filter(hh, 30.0 / cell)
+        shade = np.clip(0.35 * shade + 0.65 * hillshade(lrm * 3.0 + hh * 0.15, cell, el_deg=35.0), 0.0, 1.0)
+    base = _tint(np.clip(t, 0, 1))
+    rock_col = np.array([0.42, 0.42, 0.44]); silt_col = np.array([0.66, 0.58, 0.44])
+    mat = silt_col * (1 - rr[..., None]) + rock_col * rr[..., None]
+    rgb = (base * 0.55 + mat * 0.45) * (0.45 + 0.85 * shade[..., None])
+    lev = np.floor(hh / contours_m)
+    cross = (lev != np.roll(lev, 1, axis=0)) | (lev != np.roll(lev, 1, axis=1))
+    cross[0, :] = False; cross[:, 0] = False
+    rgb[cross] *= 0.82
+    img = Image.fromarray((np.clip(rgb, 0, 1) * 255).astype(np.uint8))
+    if scale != 1:
+        img = img.resize((img.width * scale, img.height * scale), Image.NEAREST)
+    d = ImageDraw.Draw(img)
+    x0 = -preset.width_m / 2 + i0 * cell; z0 = -preset.length_m / 2 + j0 * cell
+    def px(wx, wz):
+        return ((wx - x0) / cell * scale, (wz - z0) / cell * scale)
+    if boulders and window:
+        for b in boulders:
+            if window[0] <= b.x <= window[2] and window[1] <= b.z <= window[3]:
+                cx, cz = px(b.x, b.z); r = max(b.size / cell * scale * 0.5, 1.5)
+                d.ellipse([cx - r, cz - r, cx + r, cz + r], fill=(70, 66, 60), outline=(30, 28, 26))
+    if placements:
+        for p in placements:
+            cx, cz = px(p.x, p.z)
+            if 0 <= cx < img.width and 0 <= cz < img.height:
+                d.ellipse([cx - 6, cz - 6, cx + 6, cz + 6], outline=(255, 255, 255), width=2)
+                d.text((cx + 8, cz - 6), f"{p.name} {p.y:.0f}", fill=(255, 255, 255))
+    if title:
+        d.rectangle([0, 0, img.width, 14], fill=(0, 0, 0)); d.text((3, 1), title, fill=(230, 230, 230))
+    return img
