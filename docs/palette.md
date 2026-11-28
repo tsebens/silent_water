@@ -175,7 +175,6 @@ Tristan to tune, are: `env_water`, `life_jade`, `infra_metal_light`, `sub_contro
 | `octopus_eye` | `info_black` | Octopus pupil slits |
 
 Environment, sea floor, life and flora have swatches but, apart from the roles above, no roles yet: those assets come from the image-to-3D route
-
 with vertex colours. Moving them onto the palette is part of the migration (M13).
 
 ## Swatch sheets
