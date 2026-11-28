@@ -1,0 +1,11 @@
+[gd_resource type="Resource" script_class="FloodTuning" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://src/facility/flood_tuning.gd" id="1_tune"]
+
+[resource]
+script = ExtResource("1_tune")
+pump_rate = 0.02
+gas_per_level = 40.0
+gas_store_capacity = 400.0
+start_noise_scale = 1.0
+stall_noise_scale = 0.8
