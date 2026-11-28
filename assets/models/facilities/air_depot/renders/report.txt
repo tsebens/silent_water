@@ -20,7 +20,7 @@ ok   approach from (0, -80) to (0, -8), 8 m wide at the sub's height, is clear
 
 # swims
 gauges (read_reserves): 10 m swim from the sub's lock-out
-valve_panel (reset): 10 m swim from the sub's lock-out
+valve_panel (fill_valves): 10 m swim from the sub's lock-out
 power_cell (power_cell): 13 m swim from the sub's lock-out
 
 0 problem(s)

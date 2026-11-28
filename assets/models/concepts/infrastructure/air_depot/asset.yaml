@@ -1,6 +1,6 @@
 slug: air_depot
 issue: 927
-stage: concept
+stage: locked
 description: 'A Raindrop air depot: an unmanned refuelling site on the open seafloor
   where a visiting research submarine docks to take on oxygen, ballast air and battery
   charge. The site is ONLY this: a low concrete plinth (the tank yard) carrying three
@@ -509,8 +509,24 @@ lineage:
   views: []
   options: {}
   source: {}
-locked: null
-decisions: []
+locked:
+  variant: v3
+  decision: approved
+  reviewer: Tristan
+  notes: Locked 2026-11-28 as the air depot's primary concept (the sub docked under
+    the arm). v2 (three-quarter), v1 (approach) and v4 (a diver at the gauges and
+    valve panel) are companion views. 'Like a little underwater gas station' (Tristan);
+    the valves are turned by hand by a diver while docked.
+  at: '2026-11-28T06:35:34Z'
+decisions:
+- variant: v3
+  decision: approved
+  reviewer: Tristan
+  notes: Locked 2026-11-28 as the air depot's primary concept (the sub docked under
+    the arm). v2 (three-quarter), v1 (approach) and v4 (a diver at the gauges and
+    valve panel) are companion views. 'Like a little underwater gas station' (Tristan);
+    the valves are turned by hand by a diver while docked.
+  at: '2026-11-28T06:35:34Z'
 brief: null
 cleanups: []
 checks: []

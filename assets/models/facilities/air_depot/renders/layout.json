@@ -262,8 +262,10 @@
    "stand_y": 1.0,
    "faces": "south",
    "tags": [
-    "objective_reset"
-   ]
+    "objective_fill_valves"
+   ],
+   "notes": "The fill valves for O2 and ballast air and the charge switch",
+   "turned by hand by a diver while the sub is docked (Tristan). Nothing flows until they are opened.": null
   },
   {
    "id": "power_cell",

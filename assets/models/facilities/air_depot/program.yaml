@@ -49,7 +49,8 @@ cables:
 service_points:
   - {id: gauges,      element: valve_house, at: [-1.5, 2], y: 2.4, stand_y: 1.0, faces: south, tags: [objective_read_reserves],
      notes: The reserve gauges, one per gas and one for charge.}
-  - {id: valve_panel, element: valve_house, at: [1.5, 2], y: 2.2, stand_y: 1.0, faces: south, tags: [objective_reset]}
+  - {id: valve_panel, element: valve_house, at: [1.5, 2], y: 2.2, stand_y: 1.0, faces: south, tags: [objective_fill_valves],
+     notes: The fill valves for O2 and ballast air and the charge switch, turned by hand by a diver while the sub is docked (Tristan). Nothing flows until they are opened.}
   - {id: power_cell,  element: charger, at: [8, 2], y: 2.0, stand_y: 1.0, faces: south, tags: [objective_power_cell],
      notes: For a depot run on a sealed cell rather than the network.}
 
