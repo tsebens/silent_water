@@ -170,6 +170,8 @@ Tristan to tune, are: `env_water`, `life_jade`, `infra_metal_light`, `sub_contro
 
 | Role | Swatches | For |
 | --- | --- | --- |
+| `organic_ochre` | `sub_yellow` | Upper side of cadkit organics (the sea star). Stand-in until organics get their own swatches |
+| `organic_umber` | `infra_concrete_dark` | Undersides of cadkit organics. Stand-in, as above |
 | `anemone_column` | `env_teal` | The sea anemone's column, base and oral disc |
 | `anemone_tentacle` | `flora_sage` | The sea anemone's tentacles (the nearest existing pale teal) |
 | `seaweed_frond` | `flora_deep` | The seaweed clump's strap fronds |
