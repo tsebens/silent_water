@@ -114,3 +114,24 @@ script comparator. Not timed: fans, ponds and the mudflat smoothing. The mudflat
 eighteen times; done naively in GDScript that would cost more than everything above, so the port uses
 running-sum box blurs, which cost the same at any width. The gate windows can use the same running trick.
 A rejected seed costs only the stages before the early gate.
+
+## Caves and overhangs (exploratory, no commitment)
+
+A heightfield holds one height per column, so it cannot hold rock above water. `caves.py` tries the usual
+escape on one 160 x 160 m patch: a 3D density field (solid where positive) that starts as the heightfield,
+gets 3D noise and alternating hard and soft rock beds on cliff-steep rock, has one tunnel bored into the face,
+and fades to the plain heightfield at the patch's sides so the two meet exactly. About 1.7 million voxels at
+2 m, built in about 3 s in numpy.
+
+Finding: perturbing the heightfield gives notches, not overhangs. The generator's cliffs run at about 55 to 60
+degrees, and nudging a sloping face does not tip it past vertical. Dramatic lips and enterable caves would
+need deliberate shapes cut into the density field (a protruding slab for a lip, a capsule for a tunnel at
+least 15 m across so the 10 m sub fits), or near-vertical cliffs from the macro stage.
+
+Ways it could reach the game, roughly cheapest first:
+- **Placed rock pieces:** overhang slabs, arches and cave mouths as meshes set against cliffs, the heightfield
+  unchanged. Art-directable and cheap; caves stay shallow unless the piece has an interior.
+- **Density patches:** at chosen cliff sites, replace a tile's heightfield with a mesh extracted from a density
+  field (marching cubes), matched to the heightfield at its edges, with trimesh collision. Real overhangs and
+  caves; costs a mesher in the port and a way to cut the height-map collision there.
+- **Full voxel terrain:** everything as density; the largest change, and in Godot it means a native module.
