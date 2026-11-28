@@ -54,6 +54,7 @@ const METAL_LOOKS: Dictionary = {
 	"deck_engineering": [&"interior_dark", 0.35, 0.75],
 	"cockpit_step": [&"interior_dark", 0.35, 0.75],
 	"bulkhead": [&"interior_panel", 0.4, 0.85],
+	"tower_shaft": [&"interior_panel", 0.4, 0.85],
 	"tower_hatch": [&"interior_panel", 0.4, 0.85],
 }
 const FITTING_LOOK: Array = [&"trim_black", 0.0, 0.85]

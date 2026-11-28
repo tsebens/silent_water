@@ -5,7 +5,7 @@ extends TestCase
 const HULL: PackedScene = preload("res://assets/sub/sub_hull.glb")
 const PARTS: PackedStringArray = [
 	"hull_shell", "dome_glass", "dome_rim", "deck_cockpit", "deck_midships", "deck_bulkhead", "deck_engineering",
-	"cockpit_step", "bulkhead", "hatch_frame", "tower", "tower_hatch",
+	"cockpit_step", "bulkhead", "hatch_frame", "tower", "tower_hatch", "tower_shaft",
 ]
 ## The program's wall_m: the hull's inner surface sits this far inside its envelope.
 const WALL_M: float = 0.12
@@ -170,3 +170,43 @@ func test_the_hull_walls_hold_a_player_in() -> void:
 		await runner.get_tree().physics_frame
 	expect(body.position.x < SubLayout.hull_size().x / 2.0, "stopped by the wall, x=%f" % body.position.x)
 	body.free()
+
+
+const INTERIOR: PackedScene = preload("res://src/sub/interior.tscn")
+
+
+func test_the_tower_shaft_goes_through_the_roof() -> void:
+	await _frames(2)
+	var tz: float = SubLayout.position(&"tower_ladder").z
+	var shaft: AABB = _mesh("tower_shaft").get_aabb()
+	var roof: float = _mesh("hull_shell").get_aabb().end.y
+	expect(shaft.end.y > roof + 1.0, "the shaft stands %f above the roof" % (shaft.end.y - roof))
+	expect(shaft.position.y < roof, "and hangs below its crown")
+	# up the axis: the roof is open, the first thing hit is the shaft's closed top, well above the roof
+	var hit: Variant = _ray(Vector3(0.0, 1.0, tz), Vector3(0.0, shaft.end.y + 0.5, tz))
+	expect(hit != null, "the shaft is closed at the top")
+	if hit != null:
+		expect((hit as Vector3).y > shaft.end.y - 0.05, "nothing in the way up the shaft, hit at y=%f" % (hit as Vector3).y)
+	# beside the shaft the roof is still there
+	expect(_ray(Vector3(1.2, 1.0, tz), Vector3(1.2, 4.0, tz)) != null, "the roof is whole beside the shaft")
+
+
+## A capsule held at points along the ladder's path, deck to hatch, touches nothing.
+func test_a_capsule_climbs_from_the_deck_to_the_hatch() -> void:
+	var interior: Node3D = INTERIOR.instantiate() as Node3D
+	runner.add_child(interior)
+	await _frames(3)
+	var climb: ClimbTransit = interior.get_node("DorsalHatchStation/Climb") as ClimbTransit
+	var body: CharacterBody3D = _walker(Vector3.ZERO)
+	var head: Vector3 = climb.world_points()[climb.world_points().size() - 1]
+	var steps: int = 40
+	for i: int in range(steps + 1):
+		var pos: Vector3 = climb.point_at(float(i) / steps, true)
+		var xf: Transform3D = Transform3D(Basis.IDENTITY, pos)
+		expect(not body.test_move(xf, Vector3.ZERO), "free at %.2f of the climb (y=%.2f)" % [float(i) / steps, pos.y])
+		expect(climb.bounds_allow(pos), "inside the bounds at %.2f" % (float(i) / steps))
+	var eye: float = head.y + 1.65
+	var lid: float = _mesh("tower_hatch").get_aabb().position.y
+	expect(eye < lid, "the climber's eye (%f) stays under the lid (%f)" % [eye, lid])
+	body.free()
+	interior.free()

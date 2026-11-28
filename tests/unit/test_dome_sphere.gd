@@ -79,7 +79,7 @@ func test_collision_is_a_trimesh_of_the_same_surface() -> void:
 		expect_eq(shape.get_faces().size() / 3, tris, "same triangles")
 
 
-## Fingerprints taken from the hull before the dome was made spherical: the non-dome parts must be what they were
+## Fingerprints taken from the hull before the dome was made spherical (the tower and shell ones retaken when the tower shaft was cut, #920): the non-dome parts must be what they were
 ## (triangle count and the sum of all vertex coordinates), and the loft aft of the ring the same.
 const UNCHANGED: Dictionary = {
 	"deck_midships": [196, -560.547],
@@ -88,8 +88,8 @@ const UNCHANGED: Dictionary = {
 	"cockpit_step": [12, -132.378],
 	"bulkhead": [232, 2005.411],
 	"hatch_frame": [72, 618.48],
-	"tower": [96, 1184.582],
-	"tower_hatch": [96, 1310.342],
+	"tower": [96, 1285.375],
+	"tower_hatch": [96, 1483.137],
 }
 
 
@@ -119,8 +119,8 @@ func test_non_dome_parts_are_unchanged() -> void:
 
 func test_hull_shell_aft_of_the_old_cockpit_is_unchanged() -> void:
 	var got: Array = _fingerprint("hull_shell", -3.2)
-	expect_eq(got[0], 7126, "shell triangles aft of z -3.2")
-	expect_near(float(got[1]), 40689.27, 0.5, "shell geometry aft of z -3.2")
+	expect_eq(got[0], 7010, "shell triangles aft of z -3.2")
+	expect_near(float(got[1]), 39471.918, 0.5, "shell geometry aft of z -3.2")
 
 
 func test_hull_ring_data_aft_of_the_ring_is_unchanged() -> void:

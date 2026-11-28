@@ -425,7 +425,7 @@ Every dive has a **point budget**, and every piece of work in it costs points. T
 - The diver talks only over the suit radio, is the most exposed crew member, and depends on the sonar operator for warnings.
 - Radio signal degrades with distance and walls, worst inside facilities.
 - Emergencies can force a dive, not just objectives.
-- **Two ways out of the sub** (#843): the **dorsal hatch** in the conning tower (the surface hatch, and the hatch that mates to a station's docking collar; passengers who aren't divers use it) and the **lock-out trunk** in the midships floor (the diver's way out underwater: seal the top hatch, flood, open to the sea). Neither is built yet (#844).
+- **Two ways out of the sub** (#843): the **dorsal hatch** in the conning tower (the surface hatch, and the hatch that mates to a station's docking collar; passengers who aren't divers use it) and the **lock-out trunk** in the midships floor (the diver's way out underwater: seal the top hatch, flood, open to the sea). Both are built. The **dorsal hatch** (M18.10) is dry-only, not an airlock: it opens by hand (a wheel on the port wall) only when the sub is at the surface or mated to a collar, refuses underwater, and closes itself with the alarm chime if the sub dives while it is open; the crew climb a ladder up the tower shaft through the roof. The **lock-out trunk** is the only way out while submerged, and also operated by hand.
 
 ## Facilities
 
