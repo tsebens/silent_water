@@ -185,6 +185,10 @@ names the station, anchor and depths. A station with no `mounts` key has not opt
 not yet converted (life_support, sonar_console) are exactly those; pilot_station and map_table have converted (#596); the
 conversion arcs add `mounts` to each, so there is no allow-list to empty.
 
+### 5.2 Facility geometry checks
+
+A `facilities` build script measures what it built with `cadkit.facility_checks` (millimetres, site frame): `expect_opening` (clear width and height of a wall's opening, probed on the solid), `expect_grounded`, `expect_overhang_supported` (struts reach the ground or the cliff face), `expect_interior_inside` (a minimum wall on every side, so no coplanar faces), and the dock checks `expect_collar_clear`, `expect_dock_envelope` (the 10 x 3.8 x 3 m hull under the arm) and `expect_clear_approach` (a straight approach from the chasm). Each fails with a message naming the part. A scene in any other group that calls one fails its build.
+
 ## 6. The loop, stage by stage
 
 The recursion is the pipeline's arc graph. The organization agent breaks the whole station down at once, every level,
