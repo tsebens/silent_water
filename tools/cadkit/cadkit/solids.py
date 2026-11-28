@@ -46,6 +46,7 @@ def ngon_prism(sides: int, radius_mm: float, height_mm: float, rotation_deg: flo
 class Solid:
     shape: bd.Shape          # mm, in the GLB's frame
     role: str                # a palette role: a file in assets/palette/roles/
+    bind: object = None      # a cadkit.skeleton Rigid or Chain, for a scene with a skeleton
 
 
 def srgb_to_linear(rgb: tuple[float, float, float]) -> tuple[float, ...]:
@@ -80,18 +81,48 @@ def surfaces(solids: list[Solid], tol_mm: float = 0.2, ang: float = 0.5) -> list
     return out
 
 
-def write_glb(path: Path, node_name: str, surfs: list[tuple[str, np.ndarray, np.ndarray]]) -> None:
-    """A GLB with one node and one mesh holding a primitive per surface, its material named by the role."""
+def skinned_surfaces(solids: list[Solid], skel, tol_mm: float = 0.2, ang: float = 0.5) -> list[tuple]:
+    """`surfaces`, with each vertex's skin kept through the per-role merge:
+    (role, positions, normals, joints (n, 4) uint16, weights (n, 4) float32). Every solid must be bound."""
+    known = library.roles()
+    by_role: dict[str, list] = {}
+    for s in solids:
+        if s.role not in known:
+            raise ValueError(f"role {s.role!r} is not a palette role: {sorted(known)}")
+        if s.bind is None:
+            raise ValueError(f"a {s.role} solid has no bone binding, but the scene has a skeleton")
+        v, t = tessellate(s.shape, tol_mm, ang)
+        pos = v[t].reshape(-1, 3)
+        j, w = skel.weights(s.bind, pos * 1000.0)
+        by_role.setdefault(s.role, []).append((pos, j, w))
+    out = []
+    for role, chunks in by_role.items():
+        pos = np.concatenate([c[0] for c in chunks]).astype(np.float32)
+        tri = pos.reshape(-1, 3, 3)
+        n = np.cross(tri[:, 1] - tri[:, 0], tri[:, 2] - tri[:, 0])
+        n /= np.maximum(np.linalg.norm(n, axis=1, keepdims=True), 1e-12)
+        out.append((role, pos, np.repeat(n, 3, axis=0).astype(np.float32),
+                    np.concatenate([c[1] for c in chunks]), np.concatenate([c[2] for c in chunks])))
+    return out
+
+
+def write_glb(path: Path, node_name: str, surfs: list[tuple], skel=None) -> None:
+    """A GLB with one node and one mesh holding a primitive per surface, its material named by the role.
+    With a skeleton, surfaces are `skinned_surfaces` tuples and the file also holds joint nodes in their hierarchy and a
+    skin the mesh node points at (joints, inverse bind matrices; JOINTS_0 and WEIGHTS_0 on each primitive)."""
     blob, views, accessors, prims, materials = bytearray(), [], [], [], []
 
-    def add(data: bytes, target: int) -> int:
+    def add(data: bytes, target: int | None) -> int:
         while len(blob) % 4:
             blob.append(0)
-        views.append({"buffer": 0, "byteOffset": len(blob), "byteLength": len(data), "target": target})
+        views.append({"buffer": 0, "byteOffset": len(blob), "byteLength": len(data)})
+        if target is not None:
+            views[-1]["target"] = target
         blob.extend(data)
         return len(views) - 1
 
-    for role, pos, nrm in surfs:
+    for surf in surfs:
+        role, pos, nrm = surf[:3]
         count = len(pos)
         big = count > 65535
         idx = np.arange(count, dtype=np.uint32 if big else np.uint16)
@@ -106,10 +137,39 @@ def write_glb(path: Path, node_name: str, surfs: list[tuple[str, np.ndarray, np.
             "baseColorFactor": [round(c, 6) for c in rgb] + [1.0], "metallicFactor": 0.0, "roughnessFactor": 0.8}})
         prims.append({"attributes": {"POSITION": a_pos, "NORMAL": a_pos + 1}, "indices": a_pos + 2,
                       "material": len(materials) - 1})
+        if skel is not None:
+            prims[-1]["attributes"]["JOINTS_0"] = len(accessors)
+            accessors.append({"bufferView": add(np.ascontiguousarray(surf[3], dtype=np.uint16).tobytes(), 34962),
+                              "componentType": 5123, "count": count, "type": "VEC4"})
+            prims[-1]["attributes"]["WEIGHTS_0"] = len(accessors)
+            accessors.append({"bufferView": add(np.ascontiguousarray(surf[4], dtype=np.float32).tobytes(), 34962),
+                              "componentType": 5126, "count": count, "type": "VEC4"})
+    nodes = [{"name": node_name, "mesh": 0}]
+    scene_nodes = [0]
+    extra = {}
+    if skel is not None:
+        heads = [np.array(b.head) / 1000.0 for b in skel.bones]
+        ibm = np.zeros((len(heads), 16), dtype=np.float32)
+        ibm[:, [0, 5, 10, 15]] = 1.0
+        ibm[:, 12:15] = -np.array(heads)
+        a_ibm = len(accessors)
+        accessors.append({"bufferView": add(ibm.tobytes(), None), "componentType": 5126, "count": len(heads),
+                          "type": "MAT4"})
+        for i, b in enumerate(skel.bones):
+            at_ = heads[i] - (heads[skel.index(b.parent)] if b.parent else 0.0)
+            nodes.append({"name": b.name, "translation": [float(x) for x in at_]})
+        for i, b in enumerate(skel.bones):
+            if b.parent is None:
+                scene_nodes.append(1 + i)
+            else:
+                nodes[1 + skel.index(b.parent)].setdefault("children", []).append(1 + i)
+        nodes[0]["skin"] = 0
+        extra["skins"] = [{"name": node_name, "joints": [1 + i for i in range(len(heads))],
+                           "inverseBindMatrices": a_ibm}]
     while len(blob) % 4:
         blob.append(0)
-    doc = {"asset": {"version": "2.0", "generator": "cadkit"}, "scene": 0, "scenes": [{"nodes": [0]}],
-           "nodes": [{"name": node_name, "mesh": 0}], "meshes": [{"name": node_name, "primitives": prims}],
+    doc = {"asset": {"version": "2.0", "generator": "cadkit"}, "scene": 0, "scenes": [{"nodes": scene_nodes}],
+           "nodes": nodes, "meshes": [{"name": node_name, "primitives": prims}], **extra,
            "materials": materials, "buffers": [{"byteLength": len(blob)}], "bufferViews": views, "accessors": accessors}
     js = json.dumps(doc, separators=(",", ":")).encode()
     js += b" " * (-len(js) % 4)
@@ -131,23 +191,37 @@ def read_glb(path: Path) -> dict:
             acc = doc["accessors"][p["attributes"]["POSITION"]]
             lo.append(acc["min"])
             hi.append(acc["max"])
-    return {"bounds": [np.min(lo, axis=0).tolist(), np.max(hi, axis=0).tolist()], "surfaces": surf}
+    out = {"bounds": [np.min(lo, axis=0).tolist(), np.max(hi, axis=0).tolist()], "surfaces": surf}
+    if doc.get("skins"):
+        skin = doc["skins"][0]
+        nodes = doc["nodes"]
+        parent = {c: i for i, n in enumerate(nodes) for c in n.get("children", [])}
+        out["bones"] = [{"name": nodes[j]["name"], "parent": nodes[parent[j]]["name"] if j in parent else None,
+                         "translation": nodes[j].get("translation", [0.0, 0.0, 0.0])} for j in skin["joints"]]
+        out["skin"] = {"joints": [nodes[j]["name"] for j in skin["joints"]],
+                       "inverse_bind_matrices": doc["accessors"][skin["inverseBindMatrices"]]["count"]}
+    return out
 
 
-def export_solids_glb(solids: list[Solid], path: Path, node_name: str, tol_mm: float = 0.2, ang: float = 0.5) -> dict:
-    """Write a GLB of the solids (one node, one surface per role) and its Godot .import. Returns triangles and bbox."""
-    surfs = surfaces(solids, tol_mm, ang)
+def export_solids_glb(solids: list[Solid], path: Path, node_name: str, tol_mm: float = 0.2, ang: float = 0.5,
+                      skeleton=None) -> dict:
+    """Write a GLB of the solids (one node, one surface per role) and its Godot .import. Returns triangles and bbox.
+    With a skeleton the solids must be bound and the GLB is skinned; the report then also lists the bone names."""
+    surfs = surfaces(solids, tol_mm, ang) if skeleton is None else skinned_surfaces(solids, skeleton, tol_mm, ang)
     path.parent.mkdir(parents=True, exist_ok=True)
-    write_glb(path, node_name, surfs)
+    write_glb(path, node_name, surfs, skeleton)
     res = library.res(path)
     library.note(path)
     imp = Path(str(path) + ".import")
     if not imp.exists():
         imp.write_text(f'[remap]\n\nimporter="scene"\nimporter_version=1\ntype="PackedScene"\n\n[deps]\n\n'
                        f'source_file="{res}"\n\n[params]\n\nimport_script/path="{IMPORT_SCRIPT}"\n')
-    allpos = np.concatenate([p for _, p, _ in surfs])
+    allpos = np.concatenate([sf[1] for sf in surfs])
     lo, hi = allpos.min(axis=0), allpos.max(axis=0)
-    return {"glb": res, "triangles": int(len(allpos) // 3), "bbox_m": [lo.round(4).tolist(), hi.round(4).tolist()]}
+    rep = {"glb": res, "triangles": int(len(allpos) // 3), "bbox_m": [lo.round(4).tolist(), hi.round(4).tolist()]}
+    if skeleton is not None:
+        rep["bones"] = skeleton.names()
+    return rep
 
 
 def at(shape: bd.Shape, x: float = 0.0, y: float = 0.0, z: float = 0.0, rx: float = 0.0, ry: float = 0.0, rz: float = 0.0) -> bd.Shape:
