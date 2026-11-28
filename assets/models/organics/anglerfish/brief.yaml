@@ -1,0 +1,44 @@
+# Brief for the anglerfish (concept #771).
+asset: anglerfish
+summary: >
+  An anglerfish about 20 cm long as a faceted low-poly model: bulky head, wide mouth slightly open with long thin
+  teeth, small eyes, a lure on a stalk, rounded fins, tapering body. Dark umber and grey. Static mesh.
+
+concept:
+  images:
+    - path: assets/models/organics/anglerfish/concept/anglerfish_primary.png
+      role: primary
+      camera: concept_primary
+      view: three-quarter from the front left, slightly above
+    - path: assets/models/organics/anglerfish/concept/anglerfish_front.png
+      role: context
+      camera: concept_front
+      view: orthographic front, mouth toward the camera
+    - path: assets/models/organics/anglerfish/concept/anglerfish_side.png
+      role: context
+      camera: concept_side
+      view: orthographic left side, mouth to the right
+    - path: assets/models/organics/anglerfish/concept/anglerfish_top.png
+      role: context
+      camera: concept_top
+      view: from above and ahead (the top view came out front-high rather than straight down)
+    - path: assets/models/organics/anglerfish/concept/anglerfish_bottom.png
+      role: context
+      camera: concept_bottom
+      view: orthographic bottom, mouth toward the top of the image
+  compare_on:
+    - overall silhouette (head mass against body, mouth gape, lure stalk and bulb, fin placement)
+    - facet density: dense on the head and jaw, sparse on the body; teeth as separate thin solids
+    - colour blocking (dark body, pale teeth)
+  ignore:
+    - the exact facet layout, the count of teeth, lighting, background
+
+functions: []
+
+constraints:
+  kind: organic
+  group: organics
+  frame: centred on the origin, Y up, mouth toward +Z
+  size_m: 0.20
+  triangle_budget: 8000
+  palette: existing roles only; no new swatches

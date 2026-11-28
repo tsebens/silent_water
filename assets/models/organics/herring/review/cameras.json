@@ -1,0 +1,8 @@
+[
+ {"name": "concept_primary", "pos": [-0.26, 0.14, 0.28], "look_at": [0, 0, 0], "fov": 28.0},
+ {"name": "concept_side", "pos": [-0.55, 0.0, 0.0], "look_at": [0, 0, 0], "fov": 22.0},
+ {"name": "concept_front", "pos": [0.0, 0.0, 0.55], "look_at": [0, 0, 0], "fov": 22.0},
+ {"name": "concept_top", "pos": [0.0, 0.55, 0.0], "look_at": [0, 0, 0], "fov": 22.0},
+ {"name": "concept_bottom", "pos": [0.0, -0.55, 0.0], "look_at": [0, 0, 0], "fov": 22.0},
+ {"name": "rear_three_quarter", "pos": [0.25, 0.12, -0.3], "look_at": [0, 0, 0], "fov": 28.0}
+]

@@ -1,0 +1,82 @@
+slug: decoy_loader
+group: panels
+kind: panel
+summary: 'Decoy loader: an armoured wall unit, 0.8 x 0.6 m, at most 0.45 m deep closed. A heavy slide-out drawer
+  with a viewing window below (0.65 m of travel, an orange pull handle), an armoured box above with the prime lever,
+  an engraved tube plate, EMPTY / LOADED / PRIMED strip lamps, a valve body and a compressed-air hose. A LaunchTube
+  wires drawer, cradle and lever; TubeLamps lights the lamps.'
+tags:
+- panel
+- decoy
+- loader
+- launch tube
+- countermeasure
+- drawer
+- lever
+- wall unit
+scene: res://assets/models/panels/decoy_loader/decoy_loader.tscn
+behaviour:
+  wire:
+    tube: 'Tube (LaunchTube; set `tube_name` there: FORE TUBE or STERN TUBE); request_fire() fires it; `fired(exit_point)`
+      emits from `Exit`'
+    drawer: 'Drawer (loader_drawer: LoaderDrawer, with Slide/Cradle a DecoyCradle)'
+    lever: PrimeLever (SwitchLever; down is primed)
+    lamps: Lamps (TubeLamps) lights EmptyLamp / LoadedLamp / PrimedLamp from the tube's state
+    eye: OperatorEye (the standing eye, 0.5 m out, 0.65 m above the unit's centre)
+footprint_mm:
+- 800.0
+- 600.0
+stand_out_mm: 450.0
+open_stand_out_mm: 1100.0
+mount: back on Z=0 against the hull, centred on the unit (X and Y); the drawer opens toward +Z
+set_on_instance:
+  Tube.tube_name: FORE TUBE or STERN TUBE
+operator_eye_m:
+- 0.0
+- 0.65
+- 0.5
+reach_m: 1.1
+mounts:
+- anchor: EmptyLamp
+  scene: led_strip_warn
+  offset_mm: 2.0
+  host_face: lamp inset
+- anchor: LoadedLamp
+  scene: led_strip
+  offset_mm: 2.0
+  host_face: lamp inset
+- anchor: PrimedLamp
+  scene: led_strip_alarm
+  offset_mm: 2.0
+  host_face: lamp inset
+- anchor: PrimeLever
+  scene: prime_lever
+  offset_mm: 2.0
+  host_face: box face
+uses:
+- loader_drawer
+- prime_lever
+- led_strip
+- led_strip_warn
+- led_strip_alarm
+triangles: 1440
+triangle_budget: 4000
+triangles_by_part:
+  body: 600
+  drawer: 424
+checks:
+  width_mm: 800.0
+  height_mm: 600.0
+  closed_depth_mm: 450.0
+  open_reach_mm: 650.0
+  grip_reach_mm:
+    up: 247.9
+    down: 425.3
+  reach_limit_mm: 1100.0
+built_by: tools/cadkit/scenes/decoy_loader.py
+files:
+- component.yaml
+- decoy_loader.tscn
+- decoy_loader_body.glb
+- review/.gdignore
+- review/cameras.json

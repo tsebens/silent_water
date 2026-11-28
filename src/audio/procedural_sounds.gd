@@ -317,6 +317,21 @@ static func scanner() -> AudioStreamWAV:
 		return _wav(s, true))
 
 
+## A quiet two-note alarm chime, one-shot (not looped): a soft bell with a fast decay.
+static func alarm_chime() -> AudioStreamWAV:
+	return _cached(&"alarm_chime", func() -> AudioStreamWAV:
+		var n: int = int(RATE * 0.45)
+		var s: PackedFloat32Array = PackedFloat32Array()
+		s.resize(n)
+		for i: int in range(n):
+			var t: float = float(i) / RATE
+			var f: float = 880.0 if t < 0.15 else 1174.0
+			var local: float = t if t < 0.15 else t - 0.15
+			var env: float = exp(-local * 14.0) * minf(local * 400.0, 1.0)
+			s[i] = sin(TAU * f * t) * env * 0.8
+		return _wav(s, false))
+
+
 static func _cached(key: StringName, make: Callable) -> AudioStreamWAV:
 	if not _cache.has(key):
 		_cache[key] = make.call()

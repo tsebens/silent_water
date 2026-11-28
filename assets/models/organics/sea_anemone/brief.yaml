@@ -1,0 +1,16 @@
+# Brief for the sea anemone (concept #773, scene arc #783). Only the part the review sheets read is kept here; the full brief is on #773.
+asset: sea_anemone
+concept:
+  images:
+    - {path: assets/models/organics/sea_anemone/concept/sea_anemone_primary.png, role: primary, camera: concept_primary, view: three-quarter, slightly above}
+    - {path: assets/models/organics/sea_anemone/concept/sea_anemone_front.png, role: context, camera: concept_front, view: orthographic front}
+    - {path: assets/models/organics/sea_anemone/concept/sea_anemone_side.png, role: context, camera: concept_side, view: orthographic side}
+    - {path: assets/models/organics/sea_anemone/concept/sea_anemone_top.png, role: context, camera: concept_top, view: orthographic top}
+    - {path: assets/models/organics/sea_anemone/concept/sea_anemone_bottom.png, role: context, camera: concept_bottom, view: orthographic bottom}
+  compare_on:
+    - overall silhouette (column height against crown width, column waist)
+    - the tentacles as repeated faceted solids in concentric rings, radiating evenly
+    - colour blocking (dark column, pale tentacles)
+  ignore:
+    - the exact tentacle count, facet layout, lighting, background
+functions: []

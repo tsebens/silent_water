@@ -1,0 +1,21 @@
+slug: octopus_arm
+group: organics
+kind: solid_set
+summary: 'One octopus arm: flattened, tapering, rises from the body, lies on the seabed, curls at the tip; suckers
+  underneath.'
+tags:
+- octopus
+- arm
+- creature
+- organic
+glb: res://assets/models/organics/octopus_arm/octopus_arm.glb
+mount: root at the origin end, running along +X, Y up, floor at Y=0; tip curls toward +Z
+extent_m:
+- 0.1826
+- 0.0395
+- 0.0637
+triangles: 472
+built_by: tools/cadkit/scenes/octopus_arm.py
+files:
+- component.yaml
+- octopus_arm.glb

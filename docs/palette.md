@@ -41,7 +41,15 @@ swatches. `cadkit palette --sheets` renders the swatch sheets below.
   infrastructure, red threat.
 - **Map markers and pins are neon purple** (`map_marker`): outside the indicator colours and clear on a black and cyan
   chart.
-- **Infrastructure** is concrete and metal, lighter than real so it reads against the dark. Its lights are neon
+- **Creatures**
+
+| Role | Swatches | For |
+| --- | --- | --- |
+| `fish_back` | `sub_grey_dark` | A fish's darker blue-grey back |
+| `fish_flank` | `sub_control_grey` | A fish's pale silver flank and belly |
+| `fish_fin` | `infra_metal_light` | A fish's fins and tail |
+
+**Infrastructure** is concrete and metal, lighter than real so it reads against the dark. Its lights are neon
   **amber, yellow and red**; blue and green would vanish against the water.
 - **The sub's interior** is brighter on average than the world outside, so the two never blur together. Its light is
   dim and warm: bright enough to tell colours apart, only just.
@@ -158,7 +166,25 @@ Tristan to tune, are: `env_water`, `life_jade`, `infra_metal_light`, `sub_contro
 | `infra_metal` | `infra_metal` | Infrastructure metal |
 | `infra_metal_light` | `infra_metal_light` | Infrastructure metal, lighter |
 
-Environment, sea floor, life and flora have swatches but no roles yet: those assets come from the image-to-3D route
+**Organics**
+
+| Role | Swatches | For |
+| --- | --- | --- |
+| `organic_ochre` | `sub_yellow` | Upper side of cadkit organics (the sea star). Stand-in until organics get their own swatches |
+| `organic_umber` | `infra_concrete_dark` | Undersides of cadkit organics. Stand-in, as above |
+| `anemone_column` | `env_teal` | The sea anemone's column, base and oral disc |
+| `anemone_tentacle` | `flora_sage` | The sea anemone's tentacles (the nearest existing pale teal) |
+
+**Life**
+
+| Role | Swatches | For |
+| --- | --- | --- |
+| `octopus_skin` | `floor_rock_light` | Octopus arm skin |
+| `octopus_sucker` | `infra_concrete_dark` | Octopus arm suckers |
+| `octopus_spot` | `env_teal` | Octopus small flat teal spots on mantle and arms |
+| `octopus_eye` | `info_black` | Octopus pupil slits |
+
+Environment, sea floor, life and flora have swatches but, apart from the roles above, no roles yet: those assets come from the image-to-3D route
 with vertex colours. Moving them onto the palette is part of the migration (M13).
 
 ## Swatch sheets

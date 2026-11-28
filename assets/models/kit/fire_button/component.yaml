@@ -1,0 +1,38 @@
+slug: fire_button
+group: kit
+kind: control
+summary: 'FIRE: a red push button on a 2x2 plate under a hazard-striped flip guard hinged along its top edge. Click
+  the guard to lift it up and forward; click again to close it. The button counts only while the guard is open,
+  then fires the tube set on `tube`.'
+tags:
+- fire
+- launch
+- decoy
+- emergency
+- button
+- guard
+- flip guard
+- hazard
+- release
+scene: res://assets/models/kit/fire_button/fire_button.tscn
+behaviour:
+  script: FireButton
+  values: 'guard is a SwitchLever: 0 closed, 1 open; the press is the push_button'
+  signal: pressed
+  wiring: '`guard` and `button` are set in the scene; set `tube` (a LaunchTube) on the instance'
+base: 2x2
+footprint_mm:
+- 116.0
+- 116.0
+stand_out_mm: 36.0
+mount: back on Z=0, centred; front +Z; the guard's hinge is along its top edge, +Y
+uses:
+- control_base
+- push_button
+triangles: 220
+built_by: tools/cadkit/scenes/fire_button.py
+files:
+- component.yaml
+- fire_button.tscn
+- fire_button_body.glb
+- fire_button_guard.glb

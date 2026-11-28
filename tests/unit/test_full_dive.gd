@@ -51,10 +51,10 @@ func _put(path: String, v: float) -> void:
 func _hold_depth(target_y: float) -> void:
 	var err: float = c.model.position.y - target_y  # + means too high
 	var vy: float = c.model.velocity.y
-	var want_vy: float = clampf(-err * 0.08, -0.8, 0.8)
+	var want_vy: float = clampf(-err * 0.04, -3.0, 3.0)
 	var dv: float = vy - want_vy
-	_put("Ballast/Panel/FloodWheel", clampf(dv * 2.0, 0.0, 1.0))
-	_put("Ballast/Panel/BlowWheel", clampf(-dv * 1.0, 0.0, 1.0))
+	_put("Ballast/Panel/FloodWheel", clampf(dv * 0.15, 0.0, 1.0))
+	_put("Ballast/Panel/BlowWheel", clampf(-dv * 0.1, 0.0, 1.0))
 	_put("Pilot/Planes", clampf(err * 0.05, -1.0, 1.0))
 
 
@@ -125,7 +125,7 @@ func test_autopilot_completes_a_dive() -> void:
 		await runner.get_tree().physics_frame
 		t += dt
 		if fmod(t, 60.0) < dt:
-			print("[full dive] t=%.0f %s pos=%s speed=%.2f" % [t, phase, c.model.position.snapped(Vector3.ONE), c.speed])
+			print("[full dive] t=%.0f %s pos=%s speed=%.2f air=%.1f tank=%.1f vy=%.2f" % [t, phase, c.model.position.snapped(Vector3.ONE), c.speed, c.model.air_t, c.model.tank_water_t, c.model.velocity.y])
 	print("[full dive] %s after %.0f s (scan began %.0f s), air left %.0f%%, max depth %.0f m" % [
 		"complete" if completed else "stuck in phase " + phase, t, scan_started_at, c.air_fraction * 100.0, director.max_depth])
 	expect(completed, "autopilot should finish the dive (stuck in %s at %s)" % [phase, c.model.position])

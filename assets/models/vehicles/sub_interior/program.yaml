@@ -84,9 +84,10 @@ stations:
   # The science station (#529, reserved here by #598): a long starboard wall station, three module bays over a hand ledge,
   # taking the bulk of the wall between sonar and countermeasures. The operator stands in the aisle facing starboard.
   - {id: science,         compartment: midships,    kind: panel, side: starboard, z: -1.4, footprint: [1.2, 0.25], faces: starboard}
-  # Countermeasures: the aft end of the starboard wall, against the bulkhead (footprint ends at z 1.5). Kept 0.5 m long so it does
-  # not run alongside the lock-out trunk (z 0.05 to 0.95): the trunk keeps a clear 0.98 m of deck on its starboard side.
-  - {id: countermeasures, compartment: midships,    kind: panel, side: starboard, z: 1.25, footprint: [0.5, 0.45]}
+  # Countermeasures (#758): the aft end of the starboard wall, against the bulkhead (footprint ends at z 1.5). The full 1.0 m of
+  # panel and decoy rack along the hull by 0.45 m deep (#767). It runs alongside the lock-out trunk (z 0.05 to 0.95), but the trunk
+  # is on the centreline (x within 0.45) and the operator stands at x 0.9, so the hatch and the aisle stay clear.
+  - {id: countermeasures, compartment: midships,    kind: panel, side: starboard, z: 1.0, footprint: [1.0, 0.45]}
   - {id: map_table,       compartment: midships,    kind: table, side: port,      z: -1.25, footprint: [2.2, 0.9], mount_height_m: 0.75,
      hologram_height_m: 0.7,
      display: {size: table, placement: a curved slab of light filling the D-shaped top, capped at 0.7 m tall, purpose: every scale for the crew; one operator moves the camera, observers place pins; everyone stands, so all share one perspective}}
