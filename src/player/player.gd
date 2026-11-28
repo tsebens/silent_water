@@ -36,6 +36,8 @@ const INTERIOR_BOUNDS: AABB = AABB(Vector3(-2.0, -0.8, -5.0), Vector3(4.0, 3.8, 
 ## over [constant LANDING_NOISE_S].
 const LANDING_INTENSITY: float = 1.2e-2
 const LANDING_NOISE_S: float = 0.25
+## Noise while climbing a ladder or shaft: a quiet scuffing, under a footstep.
+const CLIMB_INTENSITY: float = 8e-4
 const RESCUE_POINT: Vector3 = Vector3(0.0, 0.1, -0.8)
 ## Wander oscillator rates (rad/s). Two incommensurate sines read as drifting.
 const WANDER_RATE_A: float = 1.7
@@ -54,6 +56,8 @@ const DOWN_LOOK_PITCH: float = deg_to_rad(25.0)
 @export var sync_pitch: float = 0.0
 ## Counts landings after a jump; every peer turns a change into landing noise.
 @export var sync_landings: int = 0
+## True while the owner climbs a [ClimbTransit]; others hear it as climbing.
+@export var sync_climbing: bool = false
 ## Jump height in metres, sub-local. Low enough to clear a step or seat edge
 ## and nothing out of bounds.
 @export var jump_height: float = 0.3
@@ -76,6 +80,11 @@ var _held: Interactable = null
 var _interact_down: bool = false
 var _seat: StationSeat = null
 var _worn: Wearable = null
+var _climb: ClimbTransit = null
+var _climb_t: float = 0.0
+var _climb_up: bool = true
+## Where the player stood relative to the path's start; eased out as the climb begins.
+var _climb_offset: Vector3 = Vector3.ZERO
 var _stride: float = 0.0
 ## Smoothed movement speed, measured the same way on every peer.
 var _speed: float = 0.0
@@ -164,6 +173,7 @@ func collapse() -> void:
 	_release_held()
 	stand_up()
 	take_off()
+	end_climb()
 	bot_move = Vector2.ZERO
 	bot_planes = 0.0
 	bot_ballast = 0.0
@@ -292,6 +302,9 @@ func _simulate(delta: float) -> void:
 	if is_down():
 		_simulate_down(delta, gravity)
 		return
+	if _climb != null:
+		_simulate_climb(delta)
+		return
 	var input: Vector2 = bot_move
 	var menu: PauseMenu = get_tree().get_first_node_in_group(PauseMenu.GROUP) as PauseMenu
 	var menu_open: bool = menu != null and menu.is_open()
@@ -366,6 +379,64 @@ func _simulate(delta: float) -> void:
 			footstep.emit(clampf(_speed / WALK_SPEED, 0.0, 1.0))
 
 
+## Climbing: the pose follows the transit's path; the view stays free.
+func _simulate_climb(delta: float) -> void:
+	_climb_t = minf(_climb_t + delta / _climb.duration, 1.0)
+	var pos: Vector3 = _climb.point_at(_climb_t, _climb_up) + _climb_offset * (1.0 - smoothstep(0.0, 0.25, _climb_t))
+	if not _climb.bounds_allow(pos):
+		push_warning("Player %s left the interior climbing; moving back inside" % name)
+		end_climb()
+		position = RESCUE_POINT
+		velocity = Vector3.ZERO
+		return
+	position = pos
+	velocity = Vector3.ZERO
+	if _climb_t >= 1.0:
+		end_climb()
+
+
+## E on a transit: starts climbing if the way is open and nobody else is on it.
+## Returns whether the climb began.
+func start_climb(transit: ClimbTransit) -> bool:
+	if _climb != null or _seat != null or is_down():
+		return false
+	var up: bool = transit.going_up_from(position)
+	if not transit.try_enter(name.to_int(), position):
+		return false
+	_release_held()
+	take_off()
+	_climb = transit
+	_climb_t = 0.0
+	_climb_up = up
+	_climb_offset = position - transit.point_at(0.0, up)
+	sync_climbing = true
+	velocity = Vector3.ZERO
+	_climb.begin_interaction()
+	_climb.holder_changed.connect(_on_climb_holder_changed)
+	return true
+
+
+## Leaves the transit (arrived or broken off).
+func end_climb() -> void:
+	if _climb == null:
+		return
+	var transit: ClimbTransit = _climb
+	_climb = null
+	sync_climbing = false
+	transit.holder_changed.disconnect(_on_climb_holder_changed)
+	transit.end_interaction()
+	transit.leave(name.to_int())
+
+
+func is_climbing() -> bool:
+	return _climb != null
+
+
+func _on_climb_holder_changed(peer_id: int) -> void:
+	if peer_id != Net.local_id() and peer_id != InteractableState.NO_HOLDER:
+		end_climb()
+
+
 ## Incapacitated: input is ignored; the body just settles under gravity.
 func _simulate_down(delta: float, gravity: Vector3) -> void:
 	velocity.x = move_toward(velocity.x, 0.0, ACCEL * delta)
@@ -386,6 +457,7 @@ func teleport(spot: Vector3) -> void:
 	_release_held()
 	stand_up()
 	take_off()
+	end_climb()
 	position = spot
 	velocity = Vector3.ZERO
 	sync_position = spot
@@ -436,7 +508,7 @@ func _track_speed(delta: float) -> void:
 	_speed = lerpf(_speed, instant, 1.0 - exp(-8.0 * delta))
 	# Remote players get footstep events from their replicated movement, so
 	# everyone hears everyone's steps.
-	if not is_multiplayer_authority():
+	if not is_multiplayer_authority() and not sync_climbing:
 		_stride += instant * delta
 		if _stride >= STRIDE_M:
 			_stride = 0.0
@@ -448,6 +520,8 @@ func _track_speed(delta: float) -> void:
 func noise_intensity() -> float:
 	if _seat != null:
 		return 0.0
+	if sync_climbing:
+		return CLIMB_INTENSITY
 	var landing: float = LANDING_INTENSITY * _landing_left / LANDING_NOISE_S
 	if _speed < 0.2:
 		return landing
@@ -490,11 +564,15 @@ func worn() -> Wearable:
 
 ## E: take or leave a station (pilot seat, sonar headset).
 func _activate() -> void:
+	if _climb != null:
+		return  # Movement is locked until the climb ends.
 	if _seat != null:
 		stand_up()
 		return
 	var node: Interactable = aim_target()
-	if node is StationSeat:
+	if node is ClimbTransit:
+		start_climb(node as ClimbTransit)
+	elif node is StationSeat:
 		_release_held()
 		sit_in(node as StationSeat)
 	elif node is Wearable:
@@ -509,6 +587,8 @@ func _activate() -> void:
 ## The interact button went down on [param node] (what the player aims at).
 ## Grabs it unless a seat forbids grabbing.
 func press_interact(node: Interactable) -> void:
+	if _climb != null:
+		return
 	_interact_down = true
 	if _seat == null or _seat.allow_grab(node):
 		_try_grab(node)
@@ -524,7 +604,7 @@ func release_interact() -> void:
 
 
 func _try_grab(node: Interactable) -> void:
-	if node == null or node is StationSeat or node is Wearable:
+	if node == null or node is StationSeat or node is Wearable or node is ClimbTransit:
 		return  # Stations are taken with E, not grabbed.
 	_held = node
 	_held.begin_interaction()

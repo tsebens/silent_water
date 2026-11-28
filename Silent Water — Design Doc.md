@@ -473,6 +473,38 @@ A crew of about ten, lately; contact has been lost. Rooms, by what people do the
 
 The floorplan (#853) is laid out for play first: routes, loops and dead ends, doors that stay shut without power, room for a suited diver and for carrying a survivor, watertight zones for flooding, and where objectives sit. The exterior wraps the plan, and is far bigger than the rooms: thick walls, a plinth, a plant tier cantilevered toward the chasm on splayed struts, buttress fins, a comms mast. The docking arm hangs out over the drop, and the sub docks beneath it. The look follows the style board, and the locked concept art (painted over the greybox built from the floorplan) is in `assets/models/concepts/infrastructure/research_hub/concept/`. The floorplan, its checker and the greybox are in `assets/models/facilities/research_station/` and `tools/facility_plan/`.
 
+### Unmanned infrastructure
+
+Draft (#927). Machines people visit, not places people live: the commonest sites in a dive, and the loneliest. No galley, no bunks, no air inside by default. Everything is built for the crews who come to maintain it: service hatches and panels at a diver's working height, grab rails, mooring points for the sub, work lights, clear labels. Power comes down a cable from a larger station or from a small sealed source on site, so "the power's out" means a cut line to follow or a dead cell to swap. Comms go by cable to a surface buoy, or through a nearby station. The look is the style board's concrete and ribs at a smaller scale: single heavy monoliths, plinths and ribbed housings, little glass, amber running lights and a red beacon, a lone object in the dark. Some sites (the automated lab, the drone bay) may have a small dry interior one or two crew can enter. Sites are not tied to particular terrain: each is laid out in its own frame and declares the flat pad it needs, and a dive places it wherever one fits, at the edge of a chasm or not (Tristan, 2026-11-28). The sensor array's layout is `assets/models/facilities/sensor_array/program.yaml`, checked and drawn by `tools/facility_plan/site.py`; its locked concept art is in `assets/models/concepts/infrastructure/sensor_array/concept/`.
+
+| Site | What it is for | The crew's work there | Restored, it helps by |
+| --- | --- | --- | --- |
+| **Sensor array** (built first) | Listening and measuring: a central node and a field of sensor posts joined by cable | Scan it; a diver swaps a sensor pod, splices a cut cable or resets the node; pull its data coil | Feeding contacts to the sub |
+| **Junction** | Where power and data cables meet: a vault on the seabed | Follow a dead line to its break and fix it (how a station's power is restored from outside) | Powering whatever is downstream |
+| **Deterrent pylon** | Emits pulses that drive creatures off | Restore its power and reset it | Covering the crew in its radius |
+| **Air depot** | Pressurised gas stores for visiting subs and divers | Dock at a small collar or plug in a hose | Topping up the sub's O2 and ballast air |
+| **Drone bay** | A hangar for autonomous survey drones | Recover a lost drone, swap its battery, relaunch it | Surveying an area for the crew |
+| **Automated lab** | A sealed instrument pod that samples the water | Pull its samples or data | Data and rewards |
+
+#### Restored sites help the crew
+
+"Fixing things gives the crew power" (Setting and tone), and "when the network goes untended, things get worse". Restoring a site is an investment: it costs points, time and usually noise now, and pays back later in the dive. Principles:
+
+- **Help touches what the crew feels most:** air, hearing, safety, knowing where things are. Never a number on a screen: it arrives through the sub's own instruments or the world (a contact on the sonar, a pulse you hear, a gauge that rises).
+- **Help is never free.** Restoring is loud (the final step is loud or bright), help runs out (a cell drains, a creature wrecks the site), and taking help can expose the crew (sitting docked at a depot).
+- **Help is partial.** A feed is delayed and coarse; a deterrent pushes some creatures away and annoys others. The crew still has to listen and decide.
+- **Sites form a network.** Cables join them: restoring a junction can wake several sites downstream, and one dead cable explains why a whole area is dark. The map table shows which sites are live.
+
+How each site could help (to tune in play):
+
+- **Sensor array:** once restored, for the rest of the dive, contacts within its range appear on the map table as Raindrop marks, a few seconds old and only roughly placed: an extra pair of ears, which the sonar operator still has to confirm. Its pinger gives a fixed point to navigate by.
+- **Deterrent pylon:** a deep pulse every few seconds within about 100 m. Lesser creatures keep out of the radius; the pulse also masks the sub's own noise for a moment, so a crew can time a loud job to the pulses. It may draw the apex's attention: a safe zone that is not quite safe. Its help is temporary: the cell drains.
+- **Air depot:** O2 and ballast air while docked or plugged in, at a rate; the longer the top-up, the longer the crew sits still beside a lit structure.
+- **Junction:** powers the sites, lights and doors downstream; a station whose own plant is dead can be powered from outside.
+- **Drone bay:** a relaunched drone sweeps an area and adds its terrain and any sites it finds to the map table.
+
+- **Within one dive** (#949). Dive maps are ephemeral: a dive's map and its sites are built for that dive and torn down after, with no fixed place in the regional map and no state carried between dives. A restored site is not wrecked again mid-dive (that would turn into whack-a-mole). How long help lasts depends on the site: the deterrent's is temporary (its cell drains); the sensor array's feed lasts the rest of the dive. Continuity between dives, if wanted later, would be a points tally of effort and success, not a persistent map.
+
 ## Audio direction
 
 There is no music. Ambient sound is the backbone of the game, and its absence makes the ambience stand out.
