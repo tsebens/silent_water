@@ -1,0 +1,21 @@
+slug: herring
+group: organics
+kind: organic
+summary: 'Static faceted herring, about 25 cm: blue-grey back, silver flank, forked tail, dorsal, pectoral and pelvic
+  fins, round eye. No script.'
+tags:
+- herring
+- fish
+- creature
+- organic
+scene: res://assets/models/organics/herring/herring.tscn
+footprint_mm:
+- 60
+- 250.0
+mount: centred on the origin, Y up, nose toward +Z
+triangles: 544
+built_by: tools/cadkit/scenes/herring.py
+files:
+- component.yaml
+- herring.glb
+- herring.tscn

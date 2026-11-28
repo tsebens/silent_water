@@ -1,0 +1,10 @@
+[gd_resource type="StandardMaterial3D" script_class="RoleMaterial" format=3]
+
+[ext_resource type="Script" path="res://src/palette/role_material.gd" id="1_gdpnc"]
+
+[resource]
+resource_name = "fish_flank"
+metallic = 0.25
+roughness = 0.6
+script = ExtResource("1_gdpnc")
+swatch = &"sub_control_grey"

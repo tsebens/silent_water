@@ -1,0 +1,15 @@
+# Concept brief for the herring (#781, concept #770): a static faceted fish, no behaviour.
+asset: herring
+summary: >
+  A herring about 25 cm nose to tail, centred on the origin, Y up, nose toward +Z. Fusiform, faceted, with a darker
+  blue-grey back and pale silver flank and belly, a forked tail, one dorsal fin, pectoral and pelvic fins and a round eye.
+concept:
+  images:
+    - {path: assets/models/organics/herring/concept/herring_primary.png, role: primary, camera: concept_primary, view: three-quarter from front-left and above}
+    - {path: assets/models/organics/herring/concept/herring_side.png, role: primary, camera: concept_side, view: left side, nose right}
+    - {path: assets/models/organics/herring/concept/herring_front.png, role: context, camera: concept_front, view: head on}
+    - {path: assets/models/organics/herring/concept/herring_top.png, role: context, camera: concept_top, view: from above, nose at the bottom}
+    - {path: assets/models/organics/herring/concept/herring_bottom.png, role: context, camera: concept_bottom, view: from below}
+  compare_on: [silhouette and proportions, fork of the tail, fin placement, back and flank colour split, facet density]
+  ignore: [lighting mood, background]
+constraints: {kind: organic, length_m: 0.25, triangle_budget: 8000}
