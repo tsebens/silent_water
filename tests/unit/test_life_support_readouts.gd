@@ -159,3 +159,38 @@ func test_surfacing_vents_the_readout() -> void:
 		src.step(1.0)
 	expect_near(src.co2_ppm, 400.0, 1.0, "vented to baseline within about 30 s")
 	sc.free()
+
+
+func _breathe_one_minute(players: int, survivors: int) -> LifeSupportReadouts:
+	var r: LifeSupportReadouts = LifeSupportReadouts.new()
+	runner.add_child(r)
+	var sv: SurvivorsAboard = SurvivorsAboard.new()
+	runner.add_child(sv)
+	sv.add(survivors)
+	r.crew_override = players
+	r.fans_on = false
+	r.step(60.0)
+	sv.free()
+	return r
+
+
+func test_survivors_breathe_like_players() -> void:
+	var mixed: LifeSupportReadouts = _breathe_one_minute(2, 2)
+	var four: LifeSupportReadouts = _breathe_one_minute(4, 0)
+	expect_near(mixed.co2_production_lps, four.co2_production_lps, 0.00001)
+	expect_near(mixed.co2_ppm, four.co2_ppm, 0.001)
+	expect_near(mixed.o2_level, four.o2_level, 0.00001)
+	expect(mixed.o2_level < 1.0, "the tank was drawn")
+	mixed.free()
+	four.free()
+
+
+func test_survivors_are_not_crew() -> void:
+	var sv: SurvivorsAboard = SurvivorsAboard.new()
+	runner.add_child(sv)
+	sv.add(3)
+	src.crew_override = 2
+	expect_eq(src.crew_inside(), 2, "crew_inside counts players only")
+	expect_eq(src.breathers(), 5)
+	expect_eq(CrewIncapacitation.new().crew_ids().size(), 0, "survivors never enter the incapacitation roster")
+	sv.free()
