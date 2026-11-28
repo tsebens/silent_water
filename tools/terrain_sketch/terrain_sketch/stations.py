@@ -46,7 +46,7 @@ class Viability:
     metrics: dict = field(default_factory=dict)
 
 
-def candidate_masks(h: np.ndarray, preset: MapPreset, classes: list[StationClass], edge_margin_m: float = 120.0) -> dict:
+def candidate_masks(h: np.ndarray, preset: MapPreset, classes: list[StationClass], edge_margin_m: float = 220.0) -> dict:
     nz, nx = h.shape
     jj, ii = np.mgrid[0:nz, 0:nx]
     edge = np.minimum.reduce([ii, nx - 1 - ii, jj, nz - 1 - jj]) * preset.cell_m >= edge_margin_m
@@ -94,10 +94,17 @@ def place(h: np.ndarray, preset: MapPreset, classes: list[StationClass], seed: i
             if placed:
                 # Farthest-point: prefer cells far from everything placed so far, with some randomness.
                 dmin = np.min([np.hypot(x[js, iss] - p.x, z[js, iss] - p.z) for p in placed], axis=0)
-                score = dmin * rng.uniform(0.7, 1.0, size=dmin.shape)
+                # Farthest-point alone drives every station to the margins: cap the reward for distance at the
+                # spacing we want, then prefer the interior among cells far enough away.
+                spacing = np.minimum(dmin, max_nearest_m * 0.75)
+                edge = np.minimum(preset.width_m / 2 - np.abs(x[js, iss]), preset.length_m / 2 - np.abs(z[js, iss]))
+                interior = 0.55 + 0.45 * np.clip(edge / 500.0, 0.0, 1.0)
+                score = spacing * interior * rng.uniform(0.85, 1.0, size=dmin.shape)
                 k = int(np.argmax(score))
             else:
-                k = int(rng.integers(len(js)))
+                # First station: anywhere, weighted toward the interior.
+                edge = np.minimum(preset.width_m / 2 - np.abs(x[js, iss]), preset.length_m / 2 - np.abs(z[js, iss]))
+                k = int(np.argmax(np.clip(edge / 500.0, 0.0, 1.0) * rng.uniform(0.0, 1.0, size=len(js))))
             j, i = js[k], iss[k]
             placed.append(Placement(c.name, float(x[j, i]), float(z[j, i]), float(h[j, i])))
         if not ok:

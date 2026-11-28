@@ -74,11 +74,19 @@ def base_field(preset: MapPreset, seed: int, x: np.ndarray, z: np.ndarray, u_off
     # has real ground whatever the noise happens to span this seed.
     shares = rng.dirichlet([6.0, 6.0, 5.0])
     steps = np.quantile(u, [shares[0], shares[0] + shares[1]])
-    width = 0.04 + 0.03 * rng.random()
-    t = levels[0] + (levels[1] - levels[0]) * smoothstep(steps[0] - width, steps[0] + width, u) \
-        + (levels[2] - levels[1]) * smoothstep(steps[1] - width, steps[1] + width, u)
-    # Relief on the levels: a little of the raw field, more on the shelf than the plain.
-    t = t + (u - 0.5) * (0.02 + 0.04 * t)
+    # The rise between levels is a cliff in one place and a long ramp in another: its width varies in space.
+    wvar = noise.fbm(x, z, seed + 3, wavelength=700.0, octaves=3) * 0.5 + 0.5
+    width = 0.015 + 0.09 * wvar ** 1.5
+    # Each rim wanders on its own, so a step does not follow one contour of the field.
+    s0 = steps[0] + noise.fbm(x, z, seed + 4, wavelength=500.0, octaves=3) * 0.05
+    s1 = steps[1] + noise.fbm(x, z, seed + 5, wavelength=500.0, octaves=3) * 0.05
+    t = levels[0] + (levels[1] - levels[0]) * smoothstep(0.0, 1.0, (u - s0 + width) / (2 * width)) \
+        + (levels[2] - levels[1]) * smoothstep(0.0, 1.0, (u - s1 + width) / (2 * width))
+    # Relief within a level: broad swales and low rises (about 15 m on the plain, 30 m on the shelf),
+    # with a medium-scale ridged texture on higher ground so the shelf reads as worn rock, the plain as sediment.
+    swale = noise.fbm(wx, wz, seed + 6, wavelength=450.0, octaves=4, gain=0.55)
+    rough = noise.ridged(wx, wz, seed + 8, wavelength=220.0, octaves=3) - 0.35
+    t = t + swale * (0.025 + 0.03 * t) + rough * 0.03 * t * t
     tilt_dir = rng.uniform(0.0, 2 * np.pi)
     tilt = (x * np.cos(tilt_dir) + z * np.sin(tilt_dir)) / max(preset.width_m, preset.length_m)
     t = np.clip(t + tilt * rng.uniform(0.04, 0.12), 0.0, 1.0)
@@ -87,40 +95,65 @@ def base_field(preset: MapPreset, seed: int, x: np.ndarray, z: np.ndarray, u_off
 
 def _chasm(h: np.ndarray, x: np.ndarray, z: np.ndarray, pts: np.ndarray, half_width: float, depth: float,
            seed: int, head_fade: float = 0.15) -> np.ndarray:
-    """A trough along a polyline: U-shaped floor, walls steepening with depth, depth and width varying along it."""
-    d, t, _ = polyline_distance(x, z, pts)
-    # Width and depth grow from the head toward the mouth, with meander noise on the edge.
-    along = smoothstep(0.0, head_fade, t) * (1.0 - smoothstep(0.9, 1.0, t))
-    wobble = 1.0 + 0.35 * noise.fbm(x, z, seed, wavelength=180.0, octaves=3)
-    w = half_width * (0.55 + 0.45 * t) * wobble
-    depth_here = depth * (0.5 + 0.5 * t) * along
-    # Cross profile: flat floor inside 0.45 w, then a rounded wall to the rim at w.
-    r = d / np.maximum(w, 1.0)
-    profile = 1.0 - smoothstep(0.45, 1.0, r) ** 0.8
-    floor = h - depth_here * profile
-    return smin(h, floor, 12.0)
+    """A trough along a spline. The edge is warped so it never runs parallel to the centreline; the width swells
+    and pinches along its length; one wall is a cliff and the other a steep ramp, swapping sides along it; the
+    floor undulates, with deeper pools."""
+    wx, wz = noise.warp(x, z, seed + 1, wavelength=260.0, amount=55.0)
+    d, t, side = polyline_distance(wx, wz, pts)
+    along = smoothstep(0.0, head_fade, t) * (1.0 - smoothstep(0.88, 1.0, t))
+    swell = 1.0 + 0.45 * noise.fbm(t * 9.0, np.zeros_like(t) + 3.7, seed + 2, wavelength=1.0, octaves=2)
+    w = half_width * (0.5 + 0.5 * t) * swell
+    # Asymmetry: which side is the cliff flips slowly along the chasm.
+    which = noise.fbm(t * 4.0, np.zeros_like(t) + 9.1, seed + 3, wavelength=1.0, octaves=1)
+    cliff_side = np.sign(which) * side
+    sharp = np.where(cliff_side > 0, 2.6, 0.9)
+    r = np.clip(d / np.maximum(w, 1.0), 0.0, 1.5)
+    profile = (1.0 - smoothstep(0.35, 1.0, r)) ** (1.0 / sharp)
+    floor_var = 1.0 + 0.18 * noise.fbm(x, z, seed + 4, wavelength=160.0, octaves=3)
+    depth_here = depth * (0.5 + 0.5 * t) * along * floor_var
+    return smin(h, h - depth_here * profile, 10.0)
 
 
 def _pit(h: np.ndarray, x: np.ndarray, z: np.ndarray, c: np.ndarray, radius: float, depth: float, seed: int,
          ellipse: float, angle: float) -> np.ndarray:
-    """A steep-walled hole with a flat floor: a collapse pit or sinkhole."""
-    dx, dz = x - c[0], z - c[1]
-    ex = dx * np.cos(angle) + dz * np.sin(angle)
-    ez = -dx * np.sin(angle) + dz * np.cos(angle)
-    r = np.hypot(ex / radius, ez / (radius * ellipse))
-    r = r * (1.0 + 0.18 * noise.fbm(x, z, seed, wavelength=120.0, octaves=3))
-    profile = 1.0 - smoothstep(0.7, 1.0, r)
+    """A collapse pit: two or three overlapping lobes on warped coordinates, so the rim is scalloped, with a
+    ledge part way down on some."""
+    rng = np.random.default_rng(seed)
+    wx, wz = noise.warp(x, z, seed + 1, wavelength=140.0, amount=0.35 * radius)
+    r = np.full(x.shape, np.inf)
+    for k in range(rng.integers(2, 4)):
+        off = rng.normal(0.0, 0.45 * radius, size=2) if k else np.zeros(2)
+        rad = radius * (rng.uniform(0.55, 0.85) if k else 1.0)
+        a = angle + rng.normal(0.0, 0.6)
+        dx, dz = wx - (c[0] + off[0]), wz - (c[1] + off[1])
+        ex = dx * np.cos(a) + dz * np.sin(a)
+        ez = -dx * np.sin(a) + dz * np.cos(a)
+        r = np.minimum(r, np.hypot(ex / rad, ez / (rad * ellipse)))
+    profile = 1.0 - smoothstep(0.62, 1.0, r)
+    if rng.random() < 0.5:
+        # A ledge at about a third of the depth: material that slumped and stuck.
+        profile = np.maximum(profile * 0.35, 1.0 - smoothstep(0.35, 0.75, r))
     return smin(h, h - depth * profile, 8.0)
 
 
 def _seamount(h: np.ndarray, x: np.ndarray, z: np.ndarray, c: np.ndarray, radius: float, height: float,
               seed: int) -> np.ndarray:
-    """A cone with ridged flanks: a seamount or mountain."""
-    r = np.hypot(x - c[0], z - c[1]) / radius
-    r = r * (1.0 + 0.25 * noise.fbm(x, z, seed, wavelength=220.0, octaves=3))
-    cone = np.clip(1.0 - r, 0.0, 1.0) ** 1.4
-    ridge = noise.ridged(x, z, seed + 5, wavelength=160.0, octaves=3)
-    shape = cone * (0.75 + 0.5 * ridge)
+    """A mountain: an elongated cone on warped coordinates, ridged flanks with spurs, and a flat or cratered top."""
+    rng = np.random.default_rng(seed)
+    wx, wz = noise.warp(x, z, seed + 1, wavelength=300.0, amount=0.25 * radius)
+    a = rng.uniform(0, np.pi)
+    stretch = rng.uniform(1.0, 1.8)
+    dx, dz = wx - c[0], wz - c[1]
+    ex = dx * np.cos(a) + dz * np.sin(a)
+    ez = -dx * np.sin(a) + dz * np.cos(a)
+    r = np.hypot(ex / (radius * stretch), ez / radius)
+    cone = np.clip(1.0 - r, 0.0, 1.0) ** 1.2
+    ridge = noise.ridged(wx, wz, seed + 5, wavelength=150.0, octaves=4)
+    shape = cone * (0.65 + 0.6 * ridge * (0.4 + 0.6 * cone))
+    top = rng.uniform(0.72, 0.9)
+    shape = np.minimum(shape, top + (shape - top) * 0.15)          # summit plateau
+    if rng.random() < 0.35:
+        shape = shape - 0.12 * (1.0 - smoothstep(0.0, 0.18, r))    # a summit crater
     return smax(h, h + height * shape, 10.0)
 
 
@@ -128,9 +161,10 @@ def _scarp_field(x: np.ndarray, z: np.ndarray, pts: np.ndarray, blend: float, se
     """A fault line's influence, 0..1: 1 on the left of travel across a narrow blend, fading at both ends. Added
     to the base noise before the staircase, it lifts or drops a whole block by part of a level, so the fault
     reads as the cliff between two flats."""
-    d, t, side = polyline_distance(x, z, pts)
+    wx, wz = noise.warp(x, z, seed + 1, wavelength=350.0, amount=90.0)
+    d, t, side = polyline_distance(wx, wz, pts)
     ends = smoothstep(0.0, 0.12, t) * (1.0 - smoothstep(0.88, 1.0, t))
-    wob = noise.fbm(x, z, seed, wavelength=150.0, octaves=3) * blend * 0.8
+    wob = noise.fbm(x, z, seed, wavelength=150.0, octaves=3) * blend * 1.5
     s = side * d + wob
     return smoothstep(-blend, blend, s) * ends
 
@@ -159,8 +193,8 @@ def build_macro(preset: MapPreset, seed: int) -> MacroResult:
     # Seamounts: one or two, rising toward the shallow limit.
     for i in range(rng.integers(1, 3)):
         c = pick_start(250.0)
-        radius = rng.uniform(220.0, 420.0)
-        height = rng.uniform(0.3, 0.55) * span
+        radius = rng.uniform(260.0, 460.0)
+        height = rng.uniform(0.45, 0.7) * span
         h = _seamount(h, x, z, c, radius, height, seed + 400 + i)
         forms.append(Landform("seamount", c[None, :], radius, height))
 

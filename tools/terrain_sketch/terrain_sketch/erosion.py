@@ -46,7 +46,9 @@ def incise(h: np.ndarray, cell: float, iterations: int, k: float, m: float = 0.5
         recv, s, acc = flow_route(out, cell)
         # Channels form on slopes; gentle ground keeps its flats for mudflats and pads.
         gentle = smoothstep(0.03, 0.08, s)
-        cut = np.minimum(k * (acc ** m) * (np.maximum(s, 0.0) ** n), max_cut) * gentle
+        # Only cells with real drainage above them cut: a gully per cell on a bare cliff reads as a comb.
+        fed = smoothstep(25.0, 120.0, acc)
+        cut = np.minimum(k * (acc ** m) * (np.maximum(s, 0.0) ** n), max_cut) * gentle * fed
         floor = out.ravel()[recv.ravel()].reshape(h.shape)
         new = np.maximum(out - cut, floor + 0.05)
         out = np.where(recv == np.arange(h.size).reshape(h.shape), out, new)
@@ -84,21 +86,24 @@ def fans(h: np.ndarray, cell: float, acc: np.ndarray, steep_deg: float = 14.0, f
 
 
 def thermal(h: np.ndarray, cell: float, talus_deg: float, iterations: int, rate: float = 0.12) -> np.ndarray:
-    """Slump material downhill wherever the 4-neighbour drop exceeds the talus angle. Mass-conserving."""
+    """Slump material downhill wherever the drop to any of the 8 neighbours exceeds the talus angle.
+    Mass-conserving; using diagonals as well avoids axis-aligned combs on steep faces."""
     out = h.copy()
-    max_drop = np.tan(np.radians(talus_deg)) * cell
+    tan_t = np.tan(np.radians(talus_deg))
+    pairs = [((0, 1), 1.0), ((1, 0), 1.0), ((1, 1), 1.4142), ((1, -1), 1.4142)]
     for _ in range(iterations):
         delta = np.zeros_like(out)
-        for axis in (0, 1):
-            a = np.take(out, range(0, out.shape[axis] - 1), axis=axis)
-            b = np.take(out, range(1, out.shape[axis]), axis=axis)
-            d = a - b
-            excess = np.abs(d) - max_drop
-            moved = np.where(excess > 0, excess * rate * np.sign(d), 0.0)
-            sl_a = [slice(None)] * 2; sl_a[axis] = slice(0, -1)
-            sl_b = [slice(None)] * 2; sl_b[axis] = slice(1, None)
-            delta[tuple(sl_a)] -= moved
-            delta[tuple(sl_b)] += moved
+        for (dj, di), dist in pairs:
+            nb = np.roll(np.roll(out, -dj, axis=0), -di, axis=1)
+            d = out - nb
+            excess = np.abs(d) - tan_t * cell * dist
+            moved = np.where(excess > 0, excess * rate * 0.5 * np.sign(d), 0.0)
+            # Drop pairs that wrapped round an edge.
+            if dj: moved[-dj:, :] = 0.0
+            if di > 0: moved[:, -di:] = 0.0
+            if di < 0: moved[:, :-di] = 0.0
+            delta -= moved
+            delta += np.roll(np.roll(moved, dj, axis=0), di, axis=1)
         out = out + delta
     return out
 
@@ -106,11 +111,15 @@ def thermal(h: np.ndarray, cell: float, talus_deg: float, iterations: int, rate:
 def mudflat_fill(h: np.ndarray, cell: float, flat_deg: float = 3.5, iterations: int = 18, strength: float = 0.65,
                  basin_sigma: float = 4.0) -> np.ndarray:
     """Sediment settles on gentle low ground: relax flat cells toward a smoothed local level, strongest in
-    basins, leaving slopes alone. Produces mudflats and plains between the landforms."""
+    basins, leaving slopes alone. Produces mudflats and plains between the landforms.
+    The weight is computed once, from the slope of smoothed ground and then smoothed itself: a per-cell
+    threshold recomputed each pass feeds on itself (a filled cell gets flatter and fills more) and breaks
+    the foot of every cliff into teeth."""
     out = h.copy()
+    s = slope_deg(ndimage.gaussian_filter(h, 1.5), cell)
+    w = (1.0 - smoothstep(flat_deg * 0.5, flat_deg * 2.5, s)) * strength
+    w = ndimage.gaussian_filter(w, 2.0)
     for _ in range(iterations):
-        s = slope_deg(out, cell)
-        w = (1.0 - smoothstep(flat_deg * 0.5, flat_deg * 2.0, s)) * strength
         local = ndimage.gaussian_filter(out, basin_sigma)
         # Fill upward more readily than shave: sediment comes from above.
         target = np.where(local > out, local, out + (local - out) * 0.35)
