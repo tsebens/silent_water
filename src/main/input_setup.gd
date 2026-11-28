@@ -15,6 +15,7 @@ const ACTIONS: Dictionary = {
 	&"dev_single_player": [KEY_F5],
 	&"dev_toggle_leaks": [KEY_F6],
 	&"dev_toggle_night": [KEY_F7],
+	&"dev_impairment_level": [KEY_F8],
 	&"activate": [KEY_E],
 	&"sonar_mark": [KEY_M],
 	&"pilot_planes_rise": [KEY_R],

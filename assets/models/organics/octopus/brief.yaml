@@ -1,0 +1,15 @@
+asset: octopus
+summary: >
+  An octopus about 40 cm across as a faceted low-poly model: rounded mantle, eyes on short bulges, eight arms spread
+  evenly and curling at the tips, sucker rows on the undersides. Muted grey-umber, small flat teal spots. Static mesh.
+concept:
+  images:
+    - {path: assets/models/organics/octopus/concept/octopus_primary.png, role: primary, camera: octopus_primary, view: three-quarter from the front, slightly above}
+    - {path: assets/models/organics/octopus/concept/octopus_front.png, role: context, camera: octopus_front, view: orthographic front, eyes toward the camera}
+    - {path: assets/models/organics/octopus/concept/octopus_side.png, role: context, camera: octopus_side, view: orthographic left side, eyes to the right}
+    - {path: assets/models/organics/octopus/concept/octopus_top.png, role: context, camera: octopus_top, view: orthographic top, mantle toward the bottom of the image}
+    - {path: assets/models/organics/octopus/concept/octopus_bottom.png, role: context, camera: octopus_bottom, view: orthographic bottom, the sucker rows and mouth}
+  compare_on: [overall silhouette, the arms as one tapering curled form repeated eight times, colour blocking]
+  ignore: [exact arm curl angles and sucker count, facet layout, lighting, background]
+functions: []
+constraints: {kind: organic, frame: resting on the floor at Y=0 centred eyes toward +Z, size_m: 0.40, triangle_budget: 8000}

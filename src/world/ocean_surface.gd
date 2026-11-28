@@ -5,7 +5,12 @@ extends MeshInstance3D
 ## sum of Gerstner waves (sharp crests, flat troughs) displaces the mesh; the
 ## GDScript functions below mirror the shader exactly.
 
-const SURFACE_Y: float = 0.0
+## Where on the dome the rendered waterline sits, as a fraction of the dome's height from its lowest point.
+const WATERLINE_DOME_FRACTION: float = 1.0 / 3.0
+
+## The rendered sea's height (world y). Physics keeps the surface at y = 0; the sea is drawn this far below it so the
+## surfaced sub looks to float with water a third of the way up the pilot's dome. Computed once at startup.
+static var SURFACE_Y: float = -render_offset_m()
 const WAVE_SHADER: Shader = preload("res://src/world/ocean_surface.gdshader")
 
 ## Largest wave count the shader's uniform arrays hold.
@@ -146,10 +151,32 @@ func build_waves() -> Array[Wave]:
 		amplitude, wind_spread_deg, speed)
 
 
-## Marine snow density multiplier at a world depth (m, positive below the
-## surface): 0 at and above the surface, `base_density` below it.
+## How far (m) the rendered sea sits below the physics surface. The empty, fully blown sub floats with its hull
+## submerged by mass / displacement; that waterline (through the hull section from SubLayout) is where physics puts
+## the surface. The render puts it a third of the way up the dome (centre and radius from SubLayout.dome()) instead.
+static func render_offset_m() -> float:
+	var model: SubPhysicsModel = SubPhysicsModel.new()
+	model.tank_water_t = 0.0
+	model.bilge_water_t = 0.0
+	var floating_fraction: float = clampf(model.total_mass_t() / model.displacement_t, 0.0, 1.0)
+	var physics_waterline_y: float = SubPhysicsModel.hull_bottom() + floating_fraction * (SubPhysicsModel.hull_top() - SubPhysicsModel.hull_bottom())
+	var dome: Dictionary = SubLayout.dome()
+	var dome_bottom_y: float = (dome["centre"] as Vector3).y - float(dome["radius"])
+	var rendered_waterline_y: float = dome_bottom_y + WATERLINE_DOME_FRACTION * 2.0 * float(dome["radius"])
+	return physics_waterline_y - rendered_waterline_y
+
+
+## Depth (m below the rendered surface) at which marine snow reaches full density. One shared constant with the
+## light ramp: the snow is full where the sunlight runs out.
+const SNOW_PEAK_DEPTH: float = SurfaceLighting.RAMP_DEPTH
+## Exponent of the density curve `(depth / peak) ^ SNOW_CURVE_POWER`. Mirrored by marine_snow.gdshader.
+const SNOW_CURVE_POWER: float = 2.0
+
+
+## Marine snow density multiplier at a depth (m, positive below the rendered surface): 0 at and above the surface,
+## a convex curve rising to `base_density` at SNOW_PEAK_DEPTH, constant below.
 static func snow_density(depth: float, base_density: float = 1.0) -> float:
-	return base_density if depth > 0.0 else 0.0
+	return base_density * pow(clampf(depth / SNOW_PEAK_DEPTH, 0.0, 1.0), SNOW_CURVE_POWER)
 
 
 ## True when a render-space point lies inside the hull volume (centre, half

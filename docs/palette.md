@@ -165,7 +165,17 @@ Tristan to tune, are: `env_water`, `life_jade`, `infra_metal_light`, `sub_contro
 | `anemone_column` | `env_teal` | The sea anemone's column, base and oral disc |
 | `anemone_tentacle` | `flora_sage` | The sea anemone's tentacles (the nearest existing pale teal) |
 
-Environment, sea floor, life and flora have swatches but, apart from the organics above, no roles yet: those assets come from the image-to-3D route
+**Life**
+
+| Role | Swatches | For |
+| --- | --- | --- |
+| `octopus_skin` | `floor_rock_light` | Octopus arm skin |
+| `octopus_sucker` | `infra_concrete_dark` | Octopus arm suckers |
+| `octopus_spot` | `env_teal` | Octopus small flat teal spots on mantle and arms |
+| `octopus_eye` | `info_black` | Octopus pupil slits |
+
+Environment, sea floor, life and flora have swatches but, apart from the roles above, no roles yet: those assets come from the image-to-3D route
+
 with vertex colours. Moving them onto the palette is part of the migration (M13).
 
 ## Swatch sheets

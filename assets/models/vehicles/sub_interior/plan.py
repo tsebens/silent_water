@@ -125,8 +125,11 @@ def clearance_report(spec: dict, hull: Hull) -> list[str]:
         it["z"] = (z0 + z1) / 2
         # Narrowest deck width across the item's length, and what other items occupy at the same z.
         fw = min(hull.deck_half_width(z) for z in (z0, it["z"], z1))
-        occupied = [(x0, x1)]
+        # A floor hatch is flush with the deck: it can be walked over, so it takes no aisle (but its own aisle is still checked).
+        occupied = [] if it.get("kind") == "floor_hatch" else [(x0, x1)]
         for other in items:
+            if other.get("kind") == "floor_hatch" and other is not it:
+                continue
             if other is it or other is it.get("_host") or other.get("_host") is it:
                 if other is not it:
                     occupied.append(place(other, hull)[:2])
