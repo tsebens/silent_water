@@ -1,0 +1,27 @@
+name: Set up rendering
+description: >
+  Install what headless Godot rendering needs on a runner with no GPU or display: Xvfb and the software
+  Vulkan driver (lavapipe, from mesa-vulkan-drivers), and fail early if the driver's ICD file is missing.
+  Used by `cadkit render` and `cadkit sheet` (docs/asset_process.md). Godot itself comes from setup-godot.
+
+  Environment variables exported to later steps through $GITHUB_ENV:
+    VK_ICD_FILENAMES          /usr/share/vulkan/icd.d/lvp_icd.json (the lavapipe ICD, so the Vulkan loader picks it)
+    VK_DRIVER_FILES           the same path (the name newer Vulkan loaders read)
+    LIBGL_ALWAYS_SOFTWARE     1 (any GL fallback also renders in software)
+
+runs:
+  using: composite
+  steps:
+    - name: Rendering packages
+      shell: bash
+      run: |
+        set -euo pipefail
+        sudo apt-get update -qq
+        sudo apt-get install -y -qq xvfb mesa-vulkan-drivers
+        icd=/usr/share/vulkan/icd.d/lvp_icd.json
+        ls "$icd"
+        {
+          echo "VK_ICD_FILENAMES=$icd"
+          echo "VK_DRIVER_FILES=$icd"
+          echo "LIBGL_ALWAYS_SOFTWARE=1"
+        } >> "$GITHUB_ENV"

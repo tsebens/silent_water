@@ -28,8 +28,8 @@ inputs:
     default: "false"
   cadkit:
     description: >
-      "true" installs the cadkit environment (asset catalogue, build, verify); "render" also installs what
-      `cadkit render` needs. See docs/asset_process.md.
+      "true" installs the cadkit environment (asset catalogue, build, verify); "render" also runs setup-render
+      (what `cadkit render` needs). See docs/asset_process.md.
     required: false
     default: "false"
   claude-code-version:
@@ -67,8 +67,10 @@ runs:
     - name: Set up cadkit
       if: inputs.cadkit != 'false'
       uses: ./.github/actions/setup-cadkit
-      with:
-        render: ${{ inputs.cadkit == 'render' && 'true' || 'false' }}
+
+    - name: Set up rendering
+      if: inputs.cadkit == 'render'
+      uses: ./.github/actions/setup-render
 
     - name: Install Claude Code
       shell: bash

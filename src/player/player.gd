@@ -37,6 +37,16 @@ const INTERIOR_BOUNDS: AABB = AABB(Vector3(-2.0, -0.8, -5.0), Vector3(4.0, 3.8, 
 const LANDING_INTENSITY: float = 1.2e-2
 const LANDING_NOISE_S: float = 0.25
 const RESCUE_POINT: Vector3 = Vector3(0.0, 0.1, -0.8)
+## Wander oscillator rates (rad/s). Two incommensurate sines read as drifting.
+const WANDER_RATE_A: float = 1.7
+const WANDER_RATE_B: float = 2.9
+## Collapse: seconds to fall, and to stand up again after recovery.
+const FALL_S: float = 0.8
+const STAND_UP_S: float = 2.0
+## Eye height (m) on the floor, and how far the view may turn while down.
+const DOWN_EYE_HEIGHT: float = 0.3
+const DOWN_LOOK_YAW: float = deg_to_rad(50.0)
+const DOWN_LOOK_PITCH: float = deg_to_rad(25.0)
 
 ## Replicated pose (sub-local). Written by the owning peer.
 @export var sync_position: Vector3 = Vector3.ZERO
@@ -76,10 +86,72 @@ var _airborne: bool = false
 var _seen_landings: int = 0
 ## Seconds of landing noise left.
 var _landing_left: float = 0.0
+## 0 standing, 1 flat on the floor. Every peer drives it from the replicated
+## incapacitated flag; the camera and the remote avatar's tilt follow it.
+var down_blend: float = 0.0
+var _was_down: bool = false
+var _down_yaw: float = 0.0
 
 
 func _enter_tree() -> void:
 	set_multiplayer_authority(name.to_int())
+
+
+## Wander added to walk [param input] at time [param t] seconds: sideways and
+## along the input, swinging further as strength rises. Zero when the model
+## has no movement effect or there is no input. Deterministic and continuous in [param t].
+static func impaired_wander(input: Vector2, model: ImpairmentModel, t: float) -> Vector2:
+	var swing: float = model.wander_swing()
+	if swing <= 0.0 or input == Vector2.ZERO:
+		return Vector2.ZERO
+	var side: Vector2 = Vector2(-input.y, input.x)
+	var osc_side: float = sin(t * WANDER_RATE_A) * 0.6 + sin(t * WANDER_RATE_B + 1.3) * 0.4
+	var osc_along: float = sin(t * WANDER_RATE_B + 0.4) * 0.5
+	return (side * osc_side + input * osc_along) * swing
+
+
+## Walk input with the impairment wander added.
+static func impaired_input(input: Vector2, model: ImpairmentModel, t: float) -> Vector2:
+	return input + impaired_wander(input, model, t)
+
+
+## Walking [param speed] after the impairment slowdown.
+static func impaired_speed(speed: float, model: ImpairmentModel) -> float:
+	return speed * (1.0 - model.movement_slowdown())
+
+
+## True while this player is incapacitated (the host-decided, replicated flag).
+func is_down() -> bool:
+	var impairment: PlayerImpairment = get_node_or_null(^"Impairment") as PlayerImpairment
+	return impairment != null and impairment.incapacitated
+
+
+## Advances the collapse on every peer: lets go of everything on the owner at
+## the moment of the drop, and eases [member down_blend] toward the pose.
+func _update_collapse(delta: float) -> void:
+	var down: bool = is_down()
+	if down and not _was_down:
+		_down_yaw = rotation.y
+		if is_multiplayer_authority():
+			collapse()
+	_was_down = down
+	var rate: float = 1.0 / (FALL_S if down else STAND_UP_S)
+	down_blend = move_toward(down_blend, 1.0 if down else 0.0, rate * delta)
+	# Tilt the avatar onto its back: only others see it.
+	_body_mesh.rotation.x = -down_blend * PI * 0.5
+	_body_mesh.position = Vector3(0.0, lerpf(0.875, 0.3, down_blend), lerpf(0.0, 0.5, down_blend))
+
+
+## Drops whatever the player holds, sits in or wears.
+func collapse() -> void:
+	_interact_down = false
+	_release_held()
+	stand_up()
+	take_off()
+	bot_move = Vector2.ZERO
+	bot_planes = 0.0
+	bot_ballast = 0.0
+	bot_jump = false
 
 
 func _ready() -> void:
@@ -146,6 +218,12 @@ func _unhandled_input(event: InputEvent) -> void:
 		if not busy and menu != null:
 			menu.open()
 		return
+	if is_down():
+		# Down: only looking about, within a narrow cone. No interacting.
+		var look: InputEventMouseMotion = event as InputEventMouseMotion
+		if look != null and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
+			_look(look.relative)
+		return
 	if _seat != null and _seat.has_table_view():
 		# The table handles its own mouse and keys; only E leaves it.
 		if event.is_action_pressed(&"activate"):
@@ -172,6 +250,7 @@ func _unhandled_input(event: InputEvent) -> void:
 
 
 func _physics_process(delta: float) -> void:
+	_update_collapse(delta)
 	if is_multiplayer_authority():
 		_simulate(delta)
 		sync_position = position
@@ -194,6 +273,9 @@ func _simulate(delta: float) -> void:
 	var gravity: Vector3 = Vector3.DOWN * SubFrame.GRAVITY
 	if _sub_frame != null:
 		gravity = _sub_frame.gravity_in_sub()
+	if is_down():
+		_simulate_down(delta, gravity)
+		return
 	var input: Vector2 = bot_move
 	var menu: PauseMenu = get_tree().get_first_node_in_group(PauseMenu.GROUP) as PauseMenu
 	var menu_open: bool = menu != null and menu.is_open()
@@ -219,6 +301,11 @@ func _simulate(delta: float) -> void:
 		return
 	var sneaking: bool = Input.is_action_pressed(&"sneak")
 	var speed: float = SNEAK_SPEED if sneaking else WALK_SPEED
+	var impairment: PlayerImpairment = get_node_or_null(^"Impairment") as PlayerImpairment
+	if impairment != null and impairment.model != null:
+		impairment.model.strength = impairment.impairment
+		input = impaired_input(input, impairment.model, Time.get_ticks_msec() / 1000.0)
+		speed = impaired_speed(speed, impairment.model)
 	# Part of gravity along the deck. The deck is flat in the sub frame, so the
 	# physics engine never sees a slope; tilt is handled here instead.
 	var along_deck: Vector3 = Vector3(gravity.x, 0.0, gravity.z)
@@ -262,6 +349,20 @@ func _simulate(delta: float) -> void:
 			footstep.emit(clampf(_speed / WALK_SPEED, 0.0, 1.0))
 
 
+## Incapacitated: input is ignored; the body just settles under gravity.
+func _simulate_down(delta: float, gravity: Vector3) -> void:
+	velocity.x = move_toward(velocity.x, 0.0, ACCEL * delta)
+	velocity.z = move_toward(velocity.z, 0.0, ACCEL * delta)
+	if is_on_floor():
+		velocity.y = minf(velocity.y, 0.0) + gravity.y * delta
+	else:
+		velocity += gravity * delta
+	move_and_slide()
+	if not INTERIOR_BOUNDS.has_point(position):
+		position = RESCUE_POINT
+		velocity = Vector3.ZERO
+
+
 ## Moves this player (on its owner) to a sub-local point, letting go of
 ## everything first.
 func teleport(spot: Vector3) -> void:
@@ -295,6 +396,8 @@ func _process(delta: float) -> void:
 		var want: Transform3D = _seat.table_view()
 		_camera.global_transform = _camera.global_transform.interpolate_with(want, 1.0 - exp(-8.0 * delta))
 		return
+	if _seat == null and (down_blend > 0.0 or _head.position.y != STANDING_EYE_HEIGHT):
+		_head.position.y = lerpf(STANDING_EYE_HEIGHT, DOWN_EYE_HEIGHT, smoothstep(0.0, 1.0, down_blend))
 	if _camera.position != Vector3.ZERO:
 		_camera.transform = Transform3D.IDENTITY
 	if _shake > 0.0001:
@@ -335,10 +438,13 @@ func noise_intensity() -> float:
 
 
 func _look(relative: Vector2) -> void:
-	rotation.y -= relative.x * MOUSE_SENSITIVITY
-	_head.rotation.x = clampf(
-		_head.rotation.x - relative.y * MOUSE_SENSITIVITY, deg_to_rad(-85.0), deg_to_rad(85.0)
-	)
+	var yaw: float = rotation.y - relative.x * MOUSE_SENSITIVITY
+	var pitch: float = _head.rotation.x - relative.y * MOUSE_SENSITIVITY
+	if is_down():
+		yaw = _down_yaw + clampf(angle_difference(_down_yaw, yaw), -DOWN_LOOK_YAW, DOWN_LOOK_YAW)
+		pitch = clampf(pitch, -DOWN_LOOK_PITCH, DOWN_LOOK_PITCH)
+	rotation.y = yaw
+	_head.rotation.x = clampf(pitch, deg_to_rad(-85.0), deg_to_rad(85.0))
 
 
 ## The control under the aiming point, or null.

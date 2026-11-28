@@ -159,3 +159,19 @@ func test_client_fire_is_a_request() -> void:
 	expect_near((a[1] as SubController).model.air_t, 60.0, 0.001, "client does not spend air itself")
 	item.queue_free()
 	_free(a)
+
+
+func test_play_launch_sound_is_play_only() -> void:
+	var a: Array = _make()
+	var tube: LaunchTube = a[0]
+	var em: SoundEmitter = SoundEmitter.new()
+	runner.add_child(em)
+	tube.emitter = em
+	expect(em.field_events, "field events on by default")
+	tube.play_launch_sound(Vector3(4.0, 5.0, 6.0))
+	expect(em.field_events, "field_events restored")
+	expect(em.world_position.is_equal_approx(Vector3(4.0, 5.0, 6.0)), "emitter placed at the exit")
+	tube.emitter = null
+	tube.play_launch_sound(Vector3.ZERO)
+	em.queue_free()
+	_free(a)

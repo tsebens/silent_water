@@ -35992,15 +35992,15 @@
    "compartment": "midships",
    "kind": "panel",
    "side": "starboard",
-   "z": 1.25,
+   "z": 1.0,
    "footprint": [
-    0.5,
+    1.0,
     0.45
    ],
    "floor_box": [
     0.954,
     1.404,
-    1.0,
+    0.5,
     1.5
    ],
    "floor_y": -0.95

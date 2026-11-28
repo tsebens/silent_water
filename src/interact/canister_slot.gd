@@ -4,7 +4,7 @@ extends Node3D
 ## canister when empty and refuses a second; [method release] lets it go again.
 ## A seated canister is placed at this node's origin, standing along its +Y.
 ##
-## Network sync is not required: control behaviour only, local to the player.
+## Network sync is not required: seating is local; the canister's capacity is synced by [ScrubberCanister].
 
 signal seated(canister: ScrubberCanister)
 signal released(canister: ScrubberCanister)

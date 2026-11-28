@@ -32,3 +32,11 @@ func test_acoustics_records_recent_events_capped() -> void:
 	expect_eq(Acoustics.recent_events.size(), Acoustics.RECENT_EVENTS_MAX)
 	expect_eq((Acoustics.recent_events.back()["position"] as Vector3).x, float(Acoustics.RECENT_EVENTS_MAX + 2))
 	Acoustics.reset()
+
+
+func test_stats_show_render_offset() -> void:
+	var g: Game = load("res://src/game/game.tscn").instantiate() as Game
+	runner.add_child(g)
+	var text: String = DevOverlay.stats_text(g)
+	expect(text.contains("rendered sea %.2f m below" % OceanSurface.render_offset_m()), text)
+	g.free()
