@@ -22,9 +22,9 @@ func after_each() -> void:
 	interior.free()
 
 
-## True when `n` is inside the map table's or the science station's subtree, which their reserved footprints stand for.
+## True when `n` is inside the map table's, the science station's or the countermeasures station's subtree, which their reserved footprints stand for.
 func _is_map_table(n: Node) -> bool:
-	return interior.get_node("Stations/Maps").is_ancestor_of(n) or interior.get_node("Stations/Science").is_ancestor_of(n)
+	return interior.get_node("Stations/Maps").is_ancestor_of(n) or interior.get_node("Stations/Science").is_ancestor_of(n) or interior.get_node("Stations/Countermeasures").is_ancestor_of(n)
 
 
 func test_nothing_built_overlaps_a_reserved_footprint() -> void:

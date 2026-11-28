@@ -6,6 +6,8 @@ The pipeline runs entirely as **GitHub Actions**. Each Claude role is a workflow
 
 Tracked by [#62](https://github.com/tsebens/silent_water/issues/62); the migration to Actions by [#93](https://github.com/tsebens/silent_water/issues/93).
 
+A one-page flow chart of this process, with the dispatcher's steps, the label table and the guardrails, is [`pipeline_flow.html`](pipeline_flow.html) (open it in a browser).
+
 ## Principles
 
 - **The repo is the source of truth.** Roles, labels, the state machine, the dispatcher and every trigger live in version control and change through pull requests into `dev`. A change to the pipeline deploys when it merges to `dev`.
@@ -87,7 +89,7 @@ One role, four modes, chosen by the event.
 
 **Rework** (started when `changes-requested` is added to an arc PR, by the review agent or by CI): checks out the head branch, reads the handoff, every review and rework comment and the diff (and the failing run's logs for a CI failure), addresses every point or the CI cause, runs `tools/check.sh` to green, **clears `changes-requested` before pushing** (so a red CI on the new head re-adds it as a real event), pushes, and replies under `## Rework` point by point. It never touches the review counter. Three consecutive `## CI failed` rounds with no review between them escalate to `needs-human`.
 
-**The look gate** (`look-gate` arcs only; [`asset_process.md`](asset_process.md), 6.5). A build stops after the push: the agent renders the review sheets, posts `## Look review: ready for approval` on the arc with them embedded, applies `look-review` and ends with the arc still `claimed`. **Look approved** (started by `look-approved`): integrates `dev`, does Tristan's small notes, opens the PR as a build would, and swaps `claimed` and `look-approved` for `in-review`. **Look rework** (started by `look-changes`): fixes Tristan's numbered points on the same branch, re-renders, removes `look-changes`, pushes and posts the next round, which re-applies `look-review`. No round cap: each round is Tristan's.
+**The look gate** (`look-gate` arcs only; [`asset_process.md`](asset_process.md), 6.5). A build stops after the push: the agent renders the review sheets (for a world arc, in-game shots from `tools/shot.sh --sheet`, proven by CI's `world-shot` job), posts `## Look review: ready for approval` on the arc with them embedded, applies `look-review` and ends with the arc still `claimed`. **Look approved** (started by `look-approved`): integrates `dev`, does Tristan's small notes, opens the PR as a build would, and swaps `claimed` and `look-approved` for `in-review`. **Look rework** (started by `look-changes`): fixes Tristan's numbered points on the same branch, re-renders, removes `look-changes`, pushes and posts the next round, which re-applies `look-review`. No round cap: each round is Tristan's.
 
 ### Review agent
 
@@ -115,7 +117,7 @@ Mechanical assets (controls, panels, furniture, stations) are built by the same 
 - **The gate's level is what the concept asked for.** The organizer marks the arc that delivers it (`Look gate: yes`: a station's assembly arc, or a single control's own arc), and plan review creates it with `look-gate`. That arc's build ends in a look review instead of a PR (Development agent, above); Tristan answers with `look-approved` or `look-changes`.
 - The development agent builds each scene with `cadkit` (a parametric CAD script, geometric checks, a Godot test, committed review renders). CI runs `cadkit verify`, so generated files that are stale or hand-edited fail.
 - The review agent checks the PR as usual. It judges the look from the committed renders only where Tristan has not already approved it (scenes below the gate), and does not re-judge an approved look. Tristan's feedback after a merge is a short follow-up concept.
-- Roles that work with assets get the cadkit environment on their runner (`.github/actions/setup-cadkit`); the development role also gets Xvfb and a software Vulkan driver for rendering.
+- Roles that work with assets get the cadkit environment on their runner (`.github/actions/setup-cadkit`); the development role also gets Xvfb and a software Vulkan driver for rendering (`setup-render`), which serves both `cadkit sheet` and, for a world arc's look review, `xvfb-run -a tools/shot.sh <camera> --sheet 0,20,100 --out sheet.png`.
 
 ## Issues and labels
 

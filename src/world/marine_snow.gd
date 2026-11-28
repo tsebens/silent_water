@@ -16,6 +16,8 @@ func _ready() -> void:
 	_material.shader = preload("res://src/world/marine_snow.gdshader")
 	_material.set_shader_parameter(&"box_size", box_size)
 	_material.set_shader_parameter(&"surface_y", OceanSurface.SURFACE_Y)
+	_material.set_shader_parameter(&"peak_depth", OceanSurface.SNOW_PEAK_DEPTH)
+	_material.set_shader_parameter(&"curve_power", OceanSurface.SNOW_CURVE_POWER)
 	mesh = _build_mesh()
 	material_override = _material
 	cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
@@ -38,19 +40,23 @@ func _build_mesh() -> ArrayMesh:
 	rng.seed = 7
 	var verts: PackedVector3Array = PackedVector3Array()
 	var uvs: PackedVector2Array = PackedVector2Array()
+	var thresholds: PackedColorArray = PackedColorArray()
 	var indices: PackedInt32Array = PackedInt32Array()
 	var corners: Array[Vector2] = [Vector2(0, 0), Vector2(1, 0), Vector2(1, 1), Vector2(0, 1)]
 	for i: int in range(flake_count):
 		var p: Vector3 = Vector3(rng.randf(), rng.randf(), rng.randf()) * box_size
+		var threshold: float = rng.randf() # drawn only once the density at its depth exceeds this
 		var start: int = verts.size()
 		for c: Vector2 in corners:
 			verts.append(p)
 			uvs.append(c)
+			thresholds.append(Color(threshold, 0.0, 0.0, 1.0))
 		indices.append_array([start, start + 1, start + 2, start, start + 2, start + 3])
 	var arrays: Array = []
 	arrays.resize(Mesh.ARRAY_MAX)
 	arrays[Mesh.ARRAY_VERTEX] = verts
 	arrays[Mesh.ARRAY_TEX_UV] = uvs
+	arrays[Mesh.ARRAY_COLOR] = thresholds
 	arrays[Mesh.ARRAY_INDEX] = indices
 	var m: ArrayMesh = ArrayMesh.new()
 	m.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)

@@ -5,10 +5,14 @@ extends Node3D
 ## into a slot or sets it down. [member capacity] is a plain exported fraction
 ## (1 fresh, 0 spent); what uses it (the CO2 balance) is not part of this script.
 ##
-## Network sync is not required: this is control behaviour only, local to the
-## player carrying it. Syncing a carried canister is a later arc.
+## [member capacity] is host-authoritative and replicated to every client in
+## every state (seated, carried, stored): the host sends it when it changes, at
+## most every [constant SNAPSHOT_INTERVAL] seconds, and to each joining peer.
+## Canisters are matched across peers by node path. Carrying itself stays local.
 ##
 ## Local axes: the canister stands along +Y from its base.
+
+const SNAPSHOT_INTERVAL: float = 0.5
 
 signal capacity_changed(capacity: float)
 signal carried_changed(carrier: Node3D)
@@ -28,8 +32,55 @@ signal seated_changed(slot: CanisterSlot)
 ## Where a carried canister hangs relative to its carrier.
 @export var carry_offset: Vector3 = Vector3(0.0, -0.1, -0.45)
 
+## Test seam: behave as a client even where the peer is offline.
+var simulate_client: bool = false
+
 var _carrier: Node3D = null
 var _slot: CanisterSlot = null
+var _sent_capacity: float = -1.0
+var _send_timer: float = 0.0
+
+
+func _ready() -> void:
+	if is_inside_tree():
+		Net.peer_joined.connect(_on_peer_joined)
+
+
+func _physics_process(delta: float) -> void:
+	if not _is_host() or not _online():
+		return
+	_send_timer += delta
+	if _send_timer >= SNAPSHOT_INTERVAL and not is_equal_approx(_sent_capacity, capacity):
+		_send_timer = 0.0
+		_sent_capacity = capacity
+		_rpc_capacity.rpc(capacity)
+
+
+func _is_host() -> bool:
+	return not simulate_client and (not is_inside_tree() or multiplayer.is_server())
+
+
+func _online() -> bool:
+	return is_inside_tree() and Net.is_online()
+
+
+## Capacity as replicated to clients.
+func snapshot() -> Dictionary:
+	return {"capacity": capacity}
+
+
+func apply_snapshot(snap: Dictionary) -> void:
+	capacity = float(snap["capacity"])
+
+
+@rpc("authority", "call_remote", "reliable")
+func _rpc_capacity(v: float) -> void:
+	apply_snapshot({"capacity": v})
+
+
+func _on_peer_joined(peer_id: int) -> void:
+	if _is_host():
+		_rpc_capacity.rpc_id(peer_id, capacity)
 
 
 func _process(_delta: float) -> void:

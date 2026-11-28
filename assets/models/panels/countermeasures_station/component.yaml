@@ -1,0 +1,122 @@
+slug: countermeasures_station
+group: panels
+kind: panel
+summary: 'Countermeasures station: a tall flat grey panel against the starboard hull with a COUNTERMEASURES plate,
+  FORE TUBE and AFT TUBE sections side by side (EMPTY, LOADED and PRIMED lamps over a guarded FIRE button each),
+  the decoy status screen beneath, the AIR and NOISE gauges below it and an orange grab rail; the six-cradle decoy
+  rack stands beside it. Engraved label plates, hazard-striped base, matte grey body.'
+tags:
+- panel
+- countermeasures
+- decoy
+- fire
+- tube
+- rack
+- status screen
+- air
+- noise
+- standing
+scene: res://assets/models/panels/countermeasures_station/countermeasures_station.tscn
+behaviour:
+  wire:
+    tubes: 'ForeFire and AftFire (FireButton) and ForeLamps and AftLamps (TubeLamps): set `tube` (a LaunchTube)
+      on each pair; unset until the loaders are placed'
+    lamps: ForeEmpty, ForeLoaded, ForePrimed, AftEmpty, AftLoaded, AftPrimed (IndicatorLamp), driven by the TubeLamps
+    screen: 'StatusScreen (DecoyStatusScreen): lists the decoy_buoys group'
+    gauges: AirGauge (air_fraction), NoiseGauge (acoustics_readouts)
+    rack: 'DecoyRack: Cradle1..Cradle6 seat Decoy1..Decoy6 (see the decoy_rack entry)'
+    eye: OperatorEye (the standing eye, 0.5 m out, 0.55 m above the station's centre)
+footprint_mm:
+- 990.0
+- 450.0
+stand_out_mm: 450.0
+mount: back on Z=0 against the starboard hull (X along the hull, Z out into the aisle); centred along the hull on
+  the panel and rack together; the origin stands 1.1 m above the floor (Y -1100 is the floor)
+operator_eye_m:
+- 0.0
+- 0.55
+- 0.5
+reach_m: 1.1
+mounts:
+- anchor: ForeFire
+  scene: fire_button
+  offset_mm: 2.0
+  host_face: fore section inset
+- anchor: ForeEmpty
+  scene: led_strip_alarm
+  offset_mm: 2.0
+  host_face: fore section inset
+- anchor: ForeLoaded
+  scene: led_strip_warn
+  offset_mm: 2.0
+  host_face: fore section inset
+- anchor: ForePrimed
+  scene: led_strip
+  offset_mm: 2.0
+  host_face: fore section inset
+- anchor: AftFire
+  scene: fire_button
+  offset_mm: 2.0
+  host_face: aft section inset
+- anchor: AftEmpty
+  scene: led_strip_alarm
+  offset_mm: 2.0
+  host_face: aft section inset
+- anchor: AftLoaded
+  scene: led_strip_warn
+  offset_mm: 2.0
+  host_face: aft section inset
+- anchor: AftPrimed
+  scene: led_strip
+  offset_mm: 2.0
+  host_face: aft section inset
+- anchor: AirGauge
+  scene: gauge
+  offset_mm: 12.0
+  host_face: panel front
+- anchor: NoiseGauge
+  scene: gauge
+  offset_mm: 12.0
+  host_face: panel front
+- anchor: DecoyRack
+  scene: decoy_rack
+  offset_mm: 2.0
+  host_face: hull wall z=0
+uses:
+- fire_button
+- led_strip
+- led_strip_warn
+- led_strip_alarm
+- gauge
+- decoy_rack
+- decoy
+triangles: 3336
+triangle_budget: 10000
+triangles_by_part:
+  body: 288
+  rack_with_decoys: 1704
+checks:
+  reach_mm:
+    ForeFire: 565.3
+    AftFire: 446.2
+    AirGauge: 502.9
+    NoiseGauge: 411.3
+    StatusScreen: 450.8
+    Cradle1: 1053.1
+    Cradle2: 759.8
+    Cradle3: 507.5
+    Cradle4: 387.3
+    Cradle5: 504.6
+    Cradle6: 755.9
+  reach_limit_mm: 1100.0
+  sight_lines: 9
+  along_hull_mm: 990.0
+  depth_mm: 450.0
+  max_eye_angle_deg: 59.5
+built_by: tools/cadkit/scenes/countermeasures_station.py
+files:
+- component.yaml
+- countermeasures_station.tscn
+- countermeasures_station_body.glb
+- review/.gdignore
+- review/cameras.json

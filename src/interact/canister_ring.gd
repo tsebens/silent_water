@@ -7,7 +7,7 @@ extends Node3D
 ## [signal ScrubberCanister.capacity_changed]. Build in [method _ready]; the
 ## segments lie on a circle in the local XZ plane.
 ##
-## Network sync is not required: display only.
+## Network sync is not required: display only (the canister's capacity is replicated, so the ring follows it on every peer).
 
 ## Fraction of the circle the ring covers (about 300 degrees).
 const ARC_FRACTION: float = 300.0 / 360.0

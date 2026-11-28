@@ -29,6 +29,15 @@ To try it alone with several windows on one machine:
 tools/launch.sh 4
 ```
 
+To get a still of the game at a depth, without a window or a crew (software rendering works under `xvfb-run -a`):
+
+```bash
+tools/shot.sh outside_bow --depth 100 --light night --out /tmp/deep.png
+tools/shot.sh pilot_eye --sheet 0,20,100 --out /tmp/sheet.png     # one image, captioned with the renderer
+```
+
+Cameras: the program's ids (`midships_forward`, `pilot_view`, ...), `pilot_eye`, `outside_<bow|stern|port|starboard|top|bottom>`.
+
 ## The dive
 
 The **orders** are on the board on the aft bulkhead:
