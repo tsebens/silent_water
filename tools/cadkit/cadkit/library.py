@@ -94,13 +94,14 @@ def scene_path(slug: str) -> str:
     return entry(slug)["scene"]
 
 
-def write_entry(group: str, slug: str, body: dict) -> Path:
-    """Write a scene's catalogue entry. Call it last: it lists the files the build wrote."""
+def write_entry(group: str, slug: str, body: dict, bones: list[str] | None = None) -> Path:
+    """Write a scene's catalogue entry. Call it last: it lists the files the build wrote.
+    A skinned scene passes its bone names (`skeleton.names()`); an entry without bones has no `bones` key."""
     p = out_dir(group, slug) / "component.yaml"
     p.parent.mkdir(parents=True, exist_ok=True)
     files = sorted({f.name if f.parent == p.parent else f.relative_to(p.parent).as_posix() for f in _written
                     if p.parent in f.parents} | {"component.yaml"})
-    full = {"slug": slug, "group": group, **body, "built_by": f"tools/cadkit/scenes/{slug}.py", "files": files}
+    full = {"slug": slug, "group": group, **body, **({"bones": list(bones)} if bones else {}), "built_by": f"tools/cadkit/scenes/{slug}.py", "files": files}
     p.write_text(yaml.safe_dump(full, sort_keys=False, width=110))
     note(p)
     return p
