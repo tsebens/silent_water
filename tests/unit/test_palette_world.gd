@@ -64,3 +64,24 @@ func test_water_and_floor_follow_the_palette() -> void:
 	pal.set_color(&"env_water", old)
 	expect(CanyonSite.sand_color() == pal.color(&"floor_sand"), "sand")
 	expect(CanyonSite.rock_color() == pal.color(&"floor_rock"), "rock")
+
+
+static func _lum(c: Color) -> float:
+	return 0.2126 * c.r + 0.7152 * c.g + 0.0722 * c.b
+
+
+func test_ocean_swatches_are_lifted_and_still_go_dark() -> void:
+	var pal: Palette = Palette.main()
+	var abyss: float = _lum(pal.color(&"env_abyss"))
+	var deep: float = _lum(pal.color(&"env_deep"))
+	var water: float = _lum(pal.color(&"env_water"))
+	var teal: float = _lum(pal.color(&"env_teal"))
+	expect(abyss < deep and deep < water and water < teal, "env swatches darken in order teal, water, deep, abyss")
+	var w: Color = pal.color(&"env_water")
+	expect(w.g > 0.5 and w.b > 0.65 and w.r < 0.15, "env_water is a saturated turquoise")
+	expect(pal.color(&"env_teal").s < w.s and pal.color(&"env_teal").v > w.v, "env_teal is the paler, lit tone")
+
+
+func test_silt_stays_dark_and_apart_from_lit_water() -> void:
+	var pal: Palette = Palette.main()
+	expect(_lum(pal.color(&"floor_silt")) < _lum(pal.color(&"env_water")), "silt is darker than the lit water")

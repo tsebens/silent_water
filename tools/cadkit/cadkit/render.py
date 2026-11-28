@@ -10,6 +10,7 @@ import shutil
 import subprocess
 from pathlib import Path
 
+import numpy as np
 import yaml
 
 from cadkit import library
@@ -42,10 +43,79 @@ def _wrap_glb(slug: str, glb: str) -> str:
     return f"res://build/wrap/{slug}.tscn"
 
 
-def render(slug: str, out: Path | None = None, cameras: Path | None = None) -> list[Path]:
-    """Render the scene from its review cameras (`review/cameras.json`), or from automatic ones. Returns the PNGs."""
+def parse_pose(items: list[str]) -> dict[str, tuple[float, float, float]]:
+    """`bone=rx,ry,rz` (degrees about X, then Y, then Z) for each item."""
+    pose = {}
+    for it in items:
+        name, _, vals = it.partition("=")
+        parts = [float(x) for x in vals.split(",")] if vals else []
+        if not name or len(parts) != 3:
+            raise ValueError(f"pose {it!r}: expected bone=rx,ry,rz")
+        pose[name] = (parts[0], parts[1], parts[2])
+    return pose
+
+
+def rotation_matrix(rx: float, ry: float, rz: float) -> np.ndarray:
+    """3x3 rotation for degrees about X, then Y, then Z (the order of `solids.at`)."""
+    a, b, c = np.radians([rx, ry, rz])
+    mx = np.array([[1, 0, 0], [0, np.cos(a), -np.sin(a)], [0, np.sin(a), np.cos(a)]])
+    my = np.array([[np.cos(b), 0, np.sin(b)], [0, 1, 0], [-np.sin(b), 0, np.cos(b)]])
+    mz = np.array([[np.cos(c), -np.sin(c), 0], [np.sin(c), np.cos(c), 0], [0, 0, 1]])
+    return mz @ my @ mx
+
+
+def posed_surfaces(glb: Path, pose: dict[str, tuple[float, float, float]]) -> list[tuple]:
+    """A skinned GLB's surfaces (role, positions, normals) with the named bones rotated, by linear blend skinning."""
+    from cadkit.skeleton import skin_positions
+    from cadkit.skin_checks import skeleton_of
+    from cadkit.solids import read_skinned
+    data = read_skinned(glb)
+    skel = skeleton_of(data["bones"])
+    unknown = sorted(set(pose) - set(skel.names()))
+    if unknown:
+        raise ValueError(f"no bone {unknown[0]!r}: {skel.names()}")
+    rots = {k: rotation_matrix(*v) for k, v in pose.items()}
+    out = []
+    for sf in data["surfaces"]:
+        pos = skin_positions(skel, sf["joints"].astype(int), sf["weights"].astype(float), sf["pos"] * 1000.0, rots) / 1000.0
+        pos = pos.astype(np.float32)
+        tri = pos.reshape(-1, 3, 3)
+        n = np.cross(tri[:, 1] - tri[:, 0], tri[:, 2] - tri[:, 0])
+        n /= np.maximum(np.linalg.norm(n, axis=1, keepdims=True), 1e-12)
+        out.append((sf["role"], pos, np.repeat(n, 3, axis=0).astype(np.float32)))
+    return out
+
+
+def skinned_glb(slug: str) -> Path:
+    """The scene's skinned GLB: its entry's `glb`, else the one skinned GLB among its files."""
+    from cadkit.solids import read_glb
+    folder = scene_dir(slug)
     entry = library.entry(slug)
-    if "scene" not in entry:
+    names = [Path(entry["glb"]).name] if entry.get("glb") else [f for f in entry.get("files", []) if f.endswith(".glb")]
+    for n in names:
+        if (folder / n).is_file() and "bones" in read_glb(folder / n):
+            return folder / n
+    raise ValueError(f"{slug} has no skinned GLB to pose")
+
+
+def posed_scene(slug: str, pose: dict[str, tuple[float, float, float]]) -> str:
+    """A throwaway scene (build/wrap, not committed) of the skinned GLB with `pose` applied, as a static mesh."""
+    from cadkit.solids import write_glb
+    d = library.REPO / "build" / "wrap"
+    d.mkdir(parents=True, exist_ok=True)
+    write_glb(d / f"{slug}_posed.glb", f"{slug}_posed", posed_surfaces(skinned_glb(slug), pose))
+    return _wrap_glb(f"{slug}_posed", f"res://build/wrap/{slug}_posed.glb")
+
+
+def render(slug: str, out: Path | None = None, cameras: Path | None = None,
+           pose: dict[str, tuple[float, float, float]] | None = None) -> list[Path]:
+    """Render the scene from its review cameras (`review/cameras.json`), or from automatic ones. Returns the PNGs.
+    With `pose` (bone -> degrees about X, Y, Z) the scene's skinned GLB is rendered alone in that pose, from automatic cameras."""
+    entry = library.entry(slug)
+    if pose:
+        entry = {**entry, "scene": posed_scene(slug, pose)}
+        cameras = Path("/nonexistent")
+    elif "scene" not in entry:
         if not entry.get("glb"):
             raise ValueError(f"{slug} is a set of solids with no scene of its own; render a scene that uses it")
         entry = {**entry, "scene": _wrap_glb(slug, entry["glb"])}   # a lone GLB: render it in a throwaway scene
@@ -106,7 +176,7 @@ def _fit(path: Path):
     return im.resize((round(im.width * SHEET_H / im.height), SHEET_H))
 
 
-def sheet(slug: str, renders: Path | None = None) -> list[Path]:
+def sheet(slug: str, renders: Path | None = None, pose: dict[str, tuple[float, float, float]] | None = None) -> list[Path]:
     """Render the scene and write its review sheets into `<scene>/review/`: each concept image beside the render from its camera
     (pairs come from `brief.yaml`: a concept image with a `camera:`), and `views.png` with the other renders."""
     from PIL import Image
@@ -135,8 +205,12 @@ def sheet(slug: str, renders: Path | None = None) -> list[Path]:
             made.append(p)
             paired.add(cam)
     rest = [p for p in sorted(renders.glob("*.png")) if p.stem not in paired]
+    if pose:                                  # one extra view: the skinned mesh with the bones rotated
+        posed = render(slug, library.REPO / "build" / "renders" / f"{slug}_posed", pose=pose)
+        rest.append(posed[0])
     if rest:
-        tiles = [_label(Image.open(p).convert("RGB").resize((480, 300)), p.stem) for p in rest]
+        tiles = [_label(Image.open(p).convert("RGB").resize((480, 300)), "posed" if pose and p == rest[-1] else p.stem)
+                 for p in rest]
         cols = 2
         g = Image.new("RGB", (cols * 480, ((len(tiles) + cols - 1) // cols) * 300))
         for i, t in enumerate(tiles):

@@ -398,6 +398,7 @@ need it; locally, `uv run --project tools/cadkit cadkit ...`.
 | `cadkit verify` | The same, then report generated files that are stale or hand-edited (CI runs this) |
 | `cadkit render <slug>` | PNGs of a scene from its review cameras, into `build/renders/<slug>/` (not committed) |
 | `cadkit sheet <slug>` | Review sheets in `<scene>/review/` (committed) |
+| `cadkit plan <program.yaml> [out_dir]` | Check a facility's floorplan program (section 10) and draw its plans; non-zero if a check fails |
 
 A build script (`tools/cadkit/scenes/<slug>.py`) declares `SLUG`, `GROUP` (`kit`, `furniture`, `panels`, `stations`, `organics`, `facility_parts`, `facilities`), `USES`
 and `build()`. There is no list of scenes: adding a scene adds files and edits none. The helpers are in
@@ -476,3 +477,56 @@ The game's tests need only Godot: the GLBs are committed.
 - Renders show a blank chart screen (it draws only in a running game) and no figure for scale.
 - The review agent judges the look from committed sheets; it does not re-render.
 - One station has been built with the process, by hand in one session. The first pipeline-built station is the test.
+
+## 10. Facilities
+
+A facility is a structure or a whole site: a building on a ledge, a tunnel, a docking arm. It enters the pipeline as a
+concept issue from `.github/ISSUE_TEMPLATE/facility_brief.md`, and is built under the same loop as a station
+(section 6) with the differences below. The design is in the design doc, "Facilities".
+
+### 10.1 Groups, frames and budgets
+
+| Group | What | Frame | Budget (triangles per scene) |
+| --- | --- | --- | --- |
+| `facility_parts` | Modular building pieces reused across facilities: wall and slab panels, buttress fins, struts, ribbon window slots, door and hatch frames, corridor and tunnel segments, the docking collar, masts, stacks, neon strips | Floor at Y=0, centred on X, outer face toward +Z, 0.5 m grid | 2,000 |
+| `facilities` | An assembled structure or a whole facility | The floorplan's site frame: ground at Y=0, X along the ledge, the chasm toward -Z | 60,000 per structure scene |
+
+Budgets are set for about 100 m of visibility: the silhouette reads from 100 m, detail matters within 30 m, and
+Godot's automatic mesh LOD does the rest. A structure's exterior and interior are **separate GLBs** within its scene, so
+either can be culled. The cross-section need not be truthful: players see only the inside and the outside, so the
+shell may be bigger than the rooms and the space between solid. Neither group has mount checks.
+
+### 10.2 The program is the layout
+
+The facility's `program.yaml` is authoritative for layout, as `functions` is for a station: rooms, doors and their
+kinds, tunnels, watertight zones, objective anchors and routes. The build script reads it with
+`cadkit.facility.load(path)` and instances `facility_parts` per wall, slab, door and tunnel. If the concept art
+disagrees with the program, the program wins.
+
+### 10.3 Checks
+
+`cadkit plan <program.yaml>` checks the program's numbers and writes `site.png`, one `plan_<view>.png` per view,
+`report.txt` and `layout.json`, naming every failing part: door widths (suited diver 1.0 m, carry 1.2 m, hatches exempt),
+carry-route corridor width 1.6 m, headroom 2.4 m, floor space per bunk, rooms inside their structures without overlap,
+a door on every room, a loop on every level, watertight doors between watertight zones, a dark-start route with no
+powered door, and the rescue carry route.
+
+A constraint without a check is not met (6.4), so the build script also measures what it built with the helpers in
+`cadkit.facility_checks` (5.2): `expect_opening` for the clearances of the generated openings, `expect_grounded`
+and `expect_overhang_supported` for nothing floating, `expect_interior_inside` for the interior inside the exterior,
+and `expect_collar_clear`, `expect_dock_envelope` and `expect_clear_approach` for the dock. These run only for
+`facilities` scenes, so other builds are no slower.
+
+### 10.4 Review under sea light
+
+The interior-lit review would tell nothing about an exterior. `tests/scene_shot.gd` has a `"light": "sea"` camera
+preset: dark teal ambient and fog with about 100 m reach (`"reach"` overrides it), a white work light from the sub's
+side, and glow so the infrastructure neon shows. A scene larger than 20 m across also gets a sea-lit automatic camera.
+A facility's `review/cameras.json` reuses its greybox cameras (`chasm_approach`, `overview`, ...), so `cadkit sheet`
+writes `*_vs_concept.png` beside the concept art painted from the same camera, and adds one interior camera per level
+under white and red light, as for stations.
+
+### 10.5 The break-off rule
+
+A building module used by one facility is a local solid in that facility's GLB. On its **second use** it becomes a
+`facility_parts` scene, the same rule as the kit (section 3).
