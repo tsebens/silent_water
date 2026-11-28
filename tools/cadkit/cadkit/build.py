@@ -23,7 +23,7 @@ from pathlib import Path
 
 import yaml
 
-from cadkit import library, mount
+from cadkit import facility_checks, library, mount
 from cadkit.solids import GeometryError
 
 SCENES_DIR = Path(__file__).resolve().parents[1] / "scenes"
@@ -85,6 +85,7 @@ def stage(staging: Path, scenes_dir: Path = SCENES_DIR) -> dict:
     library.set_root(staging)
     library.register(modules)
     library.take_written()
+    facility_checks.take_log()
     built = {}
     try:
         for slug in order(modules):
@@ -94,6 +95,7 @@ def stage(staging: Path, scenes_dir: Path = SCENES_DIR) -> dict:
                 raise BuildFailed(slug, str(e)) from e
             except FileNotFoundError as e:
                 raise BuildFailed(slug, str(e)) from e
+            _check_facility_checks(slug, modules[slug].GROUP)
             built[slug] = {"result": result, "files": library.take_written(), "group": modules[slug].GROUP}
             _check_budget(slug, modules[slug].GROUP)
             _check_mounts(slug, modules[slug].GROUP)
@@ -111,6 +113,13 @@ def _check_budget(slug: str, group: str) -> None:
     budget = entry.get("triangle_budget", library.TRIANGLE_BUDGET[group])   # a scene may carry its own approved budget
     if max(counts) > budget:
         raise BuildFailed(slug, f"{max(counts)} triangles; the budget for {group} is {budget}")
+
+
+def _check_facility_checks(slug: str, group: str) -> None:
+    """The facility geometry helpers (cadkit.facility_checks) are for `facilities` scenes only."""
+    used = facility_checks.take_log()
+    if used and group != "facilities":
+        raise BuildFailed(slug, f"used facility checks ({', '.join(sorted(set(used)))}) but its group is {group}; they run only for facilities")
 
 
 def _check_mounts(slug: str, group: str) -> None:
