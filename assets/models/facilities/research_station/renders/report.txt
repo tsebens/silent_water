@@ -1,0 +1,283 @@
+ok   headroom L1: 3.2 m
+ok   headroom L2: 2.8 m
+ok   headroom M: 5.0 m
+ok   headroom D: 3.0 m
+ok   headroom P: 6.0 m
+ok   headroom link_tunnel: 2.6 m
+ok   headroom power_tunnel: 2.4 m
+ok   science_lab lies inside main
+ok   medical lies inside main
+ok   comms lies inside main
+ok   chief_office lies inside main
+ok   server_room lies inside main
+ok   lab_store lies inside main
+ok   refuge lies inside main
+ok   washroom_1 lies inside main
+ok   lobby lies inside main
+ok   corr_1s lies inside main
+ok   corr_1n lies inside main
+ok   corr_1w lies inside main
+ok   corr_1e lies inside main
+ok   stair lies inside main
+ok   commons lies inside main
+ok   galley lies inside main
+ok   food_store lies inside main
+ok   dorm_a lies inside main
+ok   dorm_a: 9.8 m² per bunk (5 bunks)
+ok   dorm_b lies inside main
+ok   dorm_b: 8.4 m² per bunk (5 bunks)
+ok   chief_cabin lies inside main
+ok   chief_cabin: 30.0 m² per bunk (1 bunks)
+ok   gym lies inside main
+ok   washroom_2 lies inside main
+ok   quiet_room lies inside main
+ok   laundry lies inside main
+ok   corr_2s lies inside main
+ok   corr_2n lies inside main
+ok   corr_2w lies inside main
+ok   corr_2e lies inside main
+ok   maint_hall lies inside maintenance
+ok   workshop lies inside maintenance
+ok   spares lies inside maintenance
+ok   dive_locker lies inside maintenance
+ok   lockout lies inside maintenance
+ok   life_support lies inside maintenance
+ok   dock_passage lies inside dock
+ok   dock_airlock lies inside dock
+ok   reactor_control lies inside power
+ok   switchgear lies inside power
+ok   reactor_hall lies inside power
+ok   science_lab (126 m²) is the largest room in main (next: commons, 126 m²)
+ok   door science_lab-corr_1s at (-2, 9) is on a wall of science_lab
+ok   door science_lab-corr_1s at (-2, 9) is on a wall of corr_1s
+ok   door science_lab-corr_1s: 1.6 m clear (suited diver needs 1.0)
+ok   door medical-corr_1s at (7.5, 9) is on a wall of medical
+ok   door medical-corr_1s at (7.5, 9) is on a wall of corr_1s
+ok   door medical-corr_1s: 1.4 m clear (suited diver needs 1.0)
+ok   door comms-corr_1w at (-7, 13.5) is on a wall of comms
+ok   door comms-corr_1w at (-7, 13.5) is on a wall of corr_1w
+ok   door comms-corr_1w: 1.0 m clear (suited diver needs 1.0)
+ok   door comms-chief_office at (-10.5, 16) is on a wall of comms
+ok   door comms-chief_office at (-10.5, 16) is on a wall of chief_office
+ok   door comms-chief_office: 1.0 m clear (suited diver needs 1.0)
+ok   door chief_office-corr_1n at (-7, 17) is on a wall of chief_office
+ok   door chief_office-corr_1n at (-7, 17) is on a wall of corr_1n
+ok   door chief_office-corr_1n: 1.0 m clear (suited diver needs 1.0)
+ok   door server_room-corr_1n at (-2.5, 18) is on a wall of server_room
+ok   door server_room-corr_1n at (-2.5, 18) is on a wall of corr_1n
+ok   door server_room-corr_1n: 1.0 m clear (suited diver needs 1.0)
+ok   door lab_store-corr_1n at (5.5, 18) is on a wall of lab_store
+ok   door lab_store-corr_1n at (5.5, 18) is on a wall of corr_1n
+ok   door lab_store-corr_1n: 1.0 m clear (suited diver needs 1.0)
+ok   door refuge-corr_1w at (-5, 13.5) is on a wall of refuge
+ok   door refuge-corr_1w at (-5, 13.5) is on a wall of corr_1w
+ok   door refuge-corr_1w: 1.2 m clear (suited diver needs 1.0)
+ok   door refuge-corr_1w between zones refuge and main is watertight (watertight)
+ok   door washroom_1-corr_1e at (9, 12) is on a wall of washroom_1
+ok   door washroom_1-corr_1e at (9, 12) is on a wall of corr_1e
+ok   door washroom_1-corr_1e: 1.0 m clear (suited diver needs 1.0)
+ok   door lobby-corr_1e at (9, 14.5) is on a wall of lobby
+ok   door lobby-corr_1e at (9, 14.5) is on a wall of corr_1e
+ok   door lobby-corr_1e: 1.6 m clear (suited diver needs 1.0)
+ok   door lobby-corr_1n at (9, 17) is on a wall of lobby
+ok   door lobby-corr_1n at (9, 17) is on a wall of corr_1n
+ok   door lobby-corr_1n: 1.6 m clear (suited diver needs 1.0)
+ok   door corr_1s-corr_1w at (-6, 11) is on a wall of corr_1s
+ok   door corr_1s-corr_1w at (-6, 11) is on a wall of corr_1w
+ok   door corr_1s-corr_1w: 2.0 m clear (suited diver needs 1.0)
+ok   door corr_1s-corr_1e at (8, 11) is on a wall of corr_1s
+ok   door corr_1s-corr_1e at (8, 11) is on a wall of corr_1e
+ok   door corr_1s-corr_1e: 2.0 m clear (suited diver needs 1.0)
+ok   door corr_1n-corr_1w at (-6, 16) is on a wall of corr_1n
+ok   door corr_1n-corr_1w at (-6, 16) is on a wall of corr_1w
+ok   door corr_1n-corr_1w: 2.0 m clear (suited diver needs 1.0)
+ok   door corr_1n-corr_1e at (8, 16) is on a wall of corr_1n
+ok   door corr_1n-corr_1e at (8, 16) is on a wall of corr_1e
+ok   door corr_1n-corr_1e: 2.0 m clear (suited diver needs 1.0)
+ok   door stair-corr_1s at (4, 11) is on a wall of stair
+ok   door stair-corr_1s at (4, 11) is on a wall of corr_1s
+ok   door stair-corr_1s: 2.4 m clear (suited diver needs 1.0)
+ok   door stair-corr_1n at (4, 16) is on a wall of stair
+ok   door stair-corr_1n at (4, 16) is on a wall of corr_1n
+ok   door stair-corr_1n: 2.4 m clear (suited diver needs 1.0)
+ok   door lobby-link_tunnel at (14, 19) is on a wall of lobby
+ok   door lobby-link_tunnel at (14, 19) is at an end of link_tunnel
+ok   door lobby-link_tunnel: 1.6 m clear (suited diver needs 1.0)
+ok   door lobby-link_tunnel between zones main and link_tunnel is watertight (watertight)
+ok   door commons-corr_2s at (-2, 9) is on a wall of commons
+ok   door commons-corr_2s at (-2, 9) is on a wall of corr_2s
+ok   door commons-corr_2s: 2.0 m clear (suited diver needs 1.0)
+ok   door commons-galley at (4, 5.5) is on a wall of commons
+ok   door commons-galley at (4, 5.5) is on a wall of galley
+ok   door commons-galley: 1.6 m clear (suited diver needs 1.0)
+ok   door galley-food_store at (9, 5.5) is on a wall of galley
+ok   door galley-food_store at (9, 5.5) is on a wall of food_store
+ok   door galley-food_store: 1.0 m clear (suited diver needs 1.0)
+ok   door galley-corr_2s at (7.5, 9) is on a wall of galley
+ok   door galley-corr_2s at (7.5, 9) is on a wall of corr_2s
+ok   door galley-corr_2s: 1.0 m clear (suited diver needs 1.0)
+ok   door dorm_a-corr_2w at (-7, 13.5) is on a wall of dorm_a
+ok   door dorm_a-corr_2w at (-7, 13.5) is on a wall of corr_2w
+ok   door dorm_a-corr_2w: 1.0 m clear (suited diver needs 1.0)
+ok   door dorm_b-corr_2n at (-7, 17) is on a wall of dorm_b
+ok   door dorm_b-corr_2n at (-7, 17) is on a wall of corr_2n
+ok   door dorm_b-corr_2n: 1.0 m clear (suited diver needs 1.0)
+ok   door chief_cabin-corr_2e at (9, 12) is on a wall of chief_cabin
+ok   door chief_cabin-corr_2e at (9, 12) is on a wall of corr_2e
+ok   door chief_cabin-corr_2e: 1.0 m clear (suited diver needs 1.0)
+ok   door gym-corr_2e at (9, 15) is on a wall of gym
+ok   door gym-corr_2e at (9, 15) is on a wall of corr_2e
+ok   door gym-corr_2e: 1.2 m clear (suited diver needs 1.0)
+ok   door gym-corr_2n at (9, 17) is on a wall of gym
+ok   door gym-corr_2n at (9, 17) is on a wall of corr_2n
+ok   door gym-corr_2n: 1.2 m clear (suited diver needs 1.0)
+ok   door washroom_2-corr_2w at (-5, 13.5) is on a wall of washroom_2
+ok   door washroom_2-corr_2w at (-5, 13.5) is on a wall of corr_2w
+ok   door washroom_2-corr_2w: 1.0 m clear (suited diver needs 1.0)
+ok   door quiet_room-corr_2n at (-2.5, 18) is on a wall of quiet_room
+ok   door quiet_room-corr_2n at (-2.5, 18) is on a wall of corr_2n
+ok   door quiet_room-corr_2n: 1.0 m clear (suited diver needs 1.0)
+ok   door laundry-corr_2n at (5.5, 18) is on a wall of laundry
+ok   door laundry-corr_2n at (5.5, 18) is on a wall of corr_2n
+ok   door laundry-corr_2n: 1.0 m clear (suited diver needs 1.0)
+ok   door corr_2s-corr_2w at (-6, 11) is on a wall of corr_2s
+ok   door corr_2s-corr_2w at (-6, 11) is on a wall of corr_2w
+ok   door corr_2s-corr_2w: 2.0 m clear (suited diver needs 1.0)
+ok   door corr_2s-corr_2e at (8, 11) is on a wall of corr_2s
+ok   door corr_2s-corr_2e at (8, 11) is on a wall of corr_2e
+ok   door corr_2s-corr_2e: 2.0 m clear (suited diver needs 1.0)
+ok   door corr_2n-corr_2w at (-6, 16) is on a wall of corr_2n
+ok   door corr_2n-corr_2w at (-6, 16) is on a wall of corr_2w
+ok   door corr_2n-corr_2w: 2.0 m clear (suited diver needs 1.0)
+ok   door corr_2n-corr_2e at (8, 16) is on a wall of corr_2n
+ok   door corr_2n-corr_2e at (8, 16) is on a wall of corr_2e
+ok   door corr_2n-corr_2e: 2.0 m clear (suited diver needs 1.0)
+ok   door stair-corr_2s at (4, 11) is on a wall of stair
+ok   door stair-corr_2s at (4, 11) is on a wall of corr_2s
+ok   door stair-corr_2s: 2.4 m clear (suited diver needs 1.0)
+ok   door stair-corr_2n at (4, 16) is on a wall of stair
+ok   door stair-corr_2n at (4, 16) is on a wall of corr_2n
+ok   door stair-corr_2n: 2.4 m clear (suited diver needs 1.0)
+ok   door link_tunnel-maint_hall at (26, 19) is at an end of link_tunnel
+ok   door link_tunnel-maint_hall at (26, 19) is on a wall of maint_hall
+ok   door link_tunnel-maint_hall: 1.6 m clear (suited diver needs 1.0)
+ok   door link_tunnel-maint_hall between zones link_tunnel and maintenance is watertight (watertight)
+ok   door maint_hall-workshop at (29.5, 16) is on a wall of maint_hall
+ok   door maint_hall-workshop at (29.5, 16) is on a wall of workshop
+ok   door maint_hall-workshop: 2.0 m clear (suited diver needs 1.0)
+ok   door maint_hall-spares at (33, 20) is on a wall of maint_hall
+ok   door maint_hall-spares at (33, 20) is on a wall of spares
+ok   door maint_hall-spares: 1.2 m clear (suited diver needs 1.0)
+ok   door workshop-spares at (36.5, 16) is on a wall of workshop
+ok   door workshop-spares at (36.5, 16) is on a wall of spares
+ok   door workshop-spares: 1.6 m clear (suited diver needs 1.0)
+ok   door workshop-dive_locker at (40, 7) is on a wall of workshop
+ok   door workshop-dive_locker at (40, 7) is on a wall of dive_locker
+ok   door workshop-dive_locker: 1.2 m clear (suited diver needs 1.0)
+ok   door dive_locker-lockout at (43, 10) is on a wall of dive_locker
+ok   door dive_locker-lockout at (43, 10) is on a wall of lockout
+ok   door dive_locker-lockout: 1.0 m clear (suited diver needs 1.0)
+ok   door dive_locker-lockout between zones maintenance and lockout is watertight (watertight)
+ok   door workshop-life_support at (40, 15) is on a wall of workshop
+ok   door workshop-life_support at (40, 15) is on a wall of life_support
+ok   door workshop-life_support: 1.0 m clear (suited diver needs 1.0)
+ok   door workshop-life_support between zones maintenance and life_support is watertight (watertight)
+ok   door maint_hall-power_tunnel at (28, 24) is on a wall of maint_hall
+ok   door maint_hall-power_tunnel at (28, 24) is at an end of power_tunnel
+ok   door maint_hall-power_tunnel: 1.4 m clear (suited diver needs 1.0)
+ok   door maint_hall-power_tunnel between zones maintenance and power_tunnel is watertight (watertight)
+ok   hatch lockout-sea at (43, 12) is in the floor of lockout
+ok   door lockout-sea: 0.8 m clear (suited diver needs 0.8)
+ok   door lockout-sea between zones lockout and outside is watertight (hatch)
+ok   door workshop-dock_passage at (34, 4) is on a wall of workshop
+ok   door workshop-dock_passage at (34, 4) is on a wall of dock_passage
+ok   door workshop-dock_passage: 1.4 m clear (suited diver needs 1.0)
+ok   door workshop-dock_passage between zones maintenance and dock is watertight (watertight)
+ok   door dock_passage-dock_airlock at (34, -2) is on a wall of dock_passage
+ok   door dock_passage-dock_airlock at (34, -2) is on a wall of dock_airlock
+ok   door dock_passage-dock_airlock: 1.4 m clear (suited diver needs 1.0)
+ok   door dock_passage-dock_airlock between zones dock and dock_airlock is watertight (watertight)
+ok   hatch dock_airlock-sub at (34, -6) is in the floor of dock_airlock
+ok   door dock_airlock-sub: 0.9 m clear (suited diver needs 0.8)
+ok   door dock_airlock-sub between zones dock_airlock and outside is watertight (hatch)
+ok   door power_tunnel-reactor_control at (28, 74) is at an end of power_tunnel
+ok   door power_tunnel-reactor_control at (28, 74) is on a wall of reactor_control
+ok   door power_tunnel-reactor_control: 1.4 m clear (suited diver needs 1.0)
+ok   door power_tunnel-reactor_control between zones power_tunnel and power is watertight (watertight)
+ok   door reactor_control-switchgear at (30, 78) is on a wall of reactor_control
+ok   door reactor_control-switchgear at (30, 78) is on a wall of switchgear
+ok   door reactor_control-switchgear: 1.2 m clear (suited diver needs 1.0)
+ok   door reactor_control-reactor_hall at (26, 82) is on a wall of reactor_control
+ok   door reactor_control-reactor_hall at (26, 82) is on a wall of reactor_hall
+ok   door reactor_control-reactor_hall: 1.2 m clear (suited diver needs 1.0)
+ok   door reactor_control-reactor_hall between zones power and reactor is watertight (watertight)
+ok   science_lab has a door
+ok   medical has a door
+ok   comms has a door
+ok   chief_office has a door
+ok   server_room has a door
+ok   lab_store has a door
+ok   refuge has a door
+ok   washroom_1 has a door
+ok   lobby has a door
+ok   corr_1s has a door
+ok   corr_1n has a door
+ok   corr_1w has a door
+ok   corr_1e has a door
+ok   stair has a door
+ok   commons has a door
+ok   galley has a door
+ok   food_store has a door
+ok   dorm_a has a door
+ok   dorm_b has a door
+ok   chief_cabin has a door
+ok   gym has a door
+ok   washroom_2 has a door
+ok   quiet_room has a door
+ok   laundry has a door
+ok   corr_2s has a door
+ok   corr_2n has a door
+ok   corr_2w has a door
+ok   corr_2e has a door
+ok   maint_hall has a door
+ok   workshop has a door
+ok   spares has a door
+ok   dive_locker has a door
+ok   lockout has a door
+ok   life_support has a door
+ok   dock_passage has a door
+ok   dock_airlock has a door
+ok   reactor_control has a door
+ok   switchgear has a door
+ok   reactor_hall has a door
+ok   link_tunnel has a door
+ok   power_tunnel has a door
+ok   level L1: 4 independent loop(s), 1 connected part(s)
+ok   level L1 is one connected part
+ok   level L2: 4 independent loop(s), 1 connected part(s)
+ok   level L2 is one connected part
+ok   level M: 1 independent loop(s), 1 connected part(s)
+ok   level M is one connected part
+ok   route dark_start (no power): 85 m
+ok   route rescue_carry (carrying): 66 m
+
+# routes (walking distance through door points)
+dark_start (no power): 85 m  sub > dock_airlock > dock_passage > workshop > maint_hall > power_tunnel > reactor_control
+rescue_carry (carrying): 66 m  refuge > corr_1w > corr_1n > lobby > link_tunnel > maint_hall > workshop > dock_passage > dock_airlock > sub
+to_lab: 65 m  sub > dock_airlock > dock_passage > workshop > maint_hall > link_tunnel > lobby > corr_1e > corr_1s > science_lab
+to_comms: 66 m  sub > dock_airlock > dock_passage > workshop > maint_hall > link_tunnel > lobby > corr_1n > corr_1w > comms
+to_bilges: 16 m  sub > dock_airlock > dock_passage > workshop
+to_life_support: 28 m  sub > dock_airlock > dock_passage > workshop > life_support
+diver_out: 23 m  sub > dock_airlock > dock_passage > workshop > dive_locker > lockout > sea
+unreachable without power: science_lab, server_room
+
+# objectives
+data_coil: science_lab (Science lab), 65 m from the sub
+data_coil: comms (Comms and admin), 66 m from the sub
+comms_test: comms (Comms and admin), 66 m from the sub
+survivors: refuge (Emergency refuge), 66 m from the sub
+bilges: workshop (Workshop (bilge controls)), 16 m from the sub
+life_support: life_support (Life support), 28 m from the sub
+power_restart: reactor_control (Reactor control room), 85 m from the sub
+
+0 problem(s)

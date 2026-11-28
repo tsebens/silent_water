@@ -3,7 +3,7 @@
 One build script per scene, `tools/cadkit/scenes/<slug>.py`, each declaring:
 
     SLUG   the scene's name (the file's name)
-    GROUP  kit | furniture | panels | stations | organics
+    GROUP  kit | furniture | panels | stations | organics | facility_parts | facilities
     USES   slugs of generated scenes it instances or reads (its dependencies)
     build() -> dict   make the solids, check them (cadkit.solids.expect), write GLBs, the .tscn and the entry
 

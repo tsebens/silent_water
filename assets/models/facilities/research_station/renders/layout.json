@@ -1,0 +1,1840 @@
+{
+ "structures": [
+  {
+   "id": "main",
+   "name": "Main block",
+   "rect": [
+    -14,
+    14,
+    2,
+    22
+   ],
+   "levels": [
+    {
+     "id": "L1",
+     "name": "Work",
+     "floor_y": 0.0,
+     "height": 3.2
+    },
+    {
+     "id": "L2",
+     "name": "Living",
+     "floor_y": 3.6,
+     "height": 2.8
+    }
+   ],
+   "notes": "Two storeys, set back a couple of metres from the edge. Work below, living above; the science lab and the commons both look out over the chasm.",
+   "exterior": {
+    "wall_m": 1.5,
+    "plinth": {
+     "out_m": 2.5,
+     "height_m": 2.0
+    },
+    "tier": {
+     "chasm_m": 6.0,
+     "sides_m": 2.0,
+     "height_m": 4.5,
+     "rib_spacing_m": 2.0,
+     "rib_depth_m": 1.6
+    },
+    "struts": {
+     "face": "south",
+     "spacing_m": 7.0,
+     "width_m": 1.2
+    },
+    "fins": {
+     "faces": [
+      "west",
+      "east",
+      "north"
+     ],
+     "spacing_m": 4.0,
+     "depth_m": 3.5,
+     "thick_m": 1.0
+    },
+    "mast": {
+     "at": [
+      -9,
+      17
+     ],
+     "height_m": 20.0,
+     "width_m": 1.2
+    },
+    "windows": {
+     "faces": [
+      "south",
+      "west",
+      "east"
+     ],
+     "rows": [
+      {
+       "y_m": 1.5,
+       "h_m": 0.5
+      },
+      {
+       "y_m": 5.1,
+       "h_m": 0.45
+      }
+     ],
+     "length_m": 3.0,
+     "spacing_m": 4.0
+    },
+    "tier_windows": {
+     "h_m": 0.35,
+     "length_m": 5.0,
+     "spacing_m": 6.0
+    },
+    "neon": [
+     "tier_front",
+     "plinth_front"
+    ]
+   }
+  },
+  {
+   "id": "maintenance",
+   "name": "Maintenance",
+   "rect": [
+    26,
+    46,
+    4,
+    24
+   ],
+   "levels": [
+    {
+     "id": "M",
+     "name": "Maintenance",
+     "floor_y": 0.0,
+     "height": 5.0
+    }
+   ],
+   "notes": "Tall single storey; the workshop has room to work on equipment. Life support is sealed off beside it.",
+   "exterior": {
+    "wall_m": 1.5,
+    "plinth": {
+     "out_m": 1.5,
+     "height_m": 1.5
+    },
+    "fins": {
+     "faces": [
+      "east",
+      "north",
+      "west"
+     ],
+     "spacing_m": 4.0,
+     "depth_m": 3.0,
+     "thick_m": 1.0
+    },
+    "windows": {
+     "faces": [
+      "south"
+     ],
+     "rows": [
+      {
+       "y_m": 2.6,
+       "h_m": 0.45
+      }
+     ],
+     "length_m": 2.5,
+     "spacing_m": 4.0
+    },
+    "neon": [
+     "plinth_front"
+    ]
+   }
+  },
+  {
+   "id": "dock",
+   "name": "Docking arm",
+   "rect": [
+    30,
+    38,
+    -10,
+    4
+   ],
+   "levels": [
+    {
+     "id": "D",
+     "name": "Dock",
+     "floor_y": 0.0,
+     "height": 3.0
+    }
+   ],
+   "notes": "Cantilevered out over the chasm from the workshop. The docking collar is in the floor of the airlock; the sub rises out of the chasm and mates its dorsal hatch to it from below (#842,",
+   "exterior": {
+    "wall_m": 1.0,
+    "keel_m": 2.5,
+    "collar_m": 2.5,
+    "neon": [
+     "arm_edges"
+    ]
+   }
+  },
+  {
+   "id": "power",
+   "name": "Power building",
+   "rect": [
+    22,
+    38,
+    74,
+    92
+   ],
+   "levels": [
+    {
+     "id": "P",
+     "name": "Power",
+     "floor_y": 0.0,
+     "height": 6.0
+    }
+   ],
+   "notes": "The reactor, set well back from the habitat because it is nuclear. Reached by the 50 m power tunnel.",
+   "exterior": {
+    "wall_m": 3.0,
+    "fins": {
+     "faces": [
+      "south",
+      "east",
+      "north",
+      "west"
+     ],
+     "spacing_m": 4.0,
+     "depth_m": 3.0,
+     "thick_m": 1.2
+    },
+    "stack": {
+     "at": [
+      34,
+      87
+     ],
+     "height_m": 16.0,
+     "width_m": 3.0
+    },
+    "neon": [
+     "plinth_front"
+    ]
+   }
+  }
+ ],
+ "rooms": [
+  {
+   "id": "science_lab",
+   "levels": [
+    "L1"
+   ],
+   "rect": [
+    -14,
+    4,
+    2,
+    9
+   ],
+   "use": "Science lab",
+   "structure": "main",
+   "zone": "main",
+   "corridor": false,
+   "tags": [
+    "objective_data_coil",
+    "faces_chasm",
+    "largest_room"
+   ],
+   "floor_y": [
+    0.0
+   ],
+   "height": [
+    3.2
+   ]
+  },
+  {
+   "id": "medical",
+   "levels": [
+    "L1"
+   ],
+   "rect": [
+    4,
+    14,
+    2,
+    9
+   ],
+   "use": "Medical bay",
+   "structure": "main",
+   "zone": "main",
+   "corridor": false,
+   "tags": [
+    "faces_chasm"
+   ],
+   "floor_y": [
+    0.0
+   ],
+   "height": [
+    3.2
+   ]
+  },
+  {
+   "id": "comms",
+   "levels": [
+    "L1"
+   ],
+   "rect": [
+    -14,
+    -7,
+    9,
+    16
+   ],
+   "use": "Comms and admin",
+   "structure": "main",
+   "zone": "main",
+   "corridor": false,
+   "tags": [
+    "objective_data_coil",
+    "objective_comms_test"
+   ],
+   "floor_y": [
+    0.0
+   ],
+   "height": [
+    3.2
+   ]
+  },
+  {
+   "id": "chief_office",
+   "levels": [
+    "L1"
+   ],
+   "rect": [
+    -14,
+    -7,
+    16,
+    22
+   ],
+   "use": "Station chief's office",
+   "structure": "main",
+   "zone": "main",
+   "corridor": false,
+   "tags": [],
+   "floor_y": [
+    0.0
+   ],
+   "height": [
+    3.2
+   ]
+  },
+  {
+   "id": "server_room",
+   "levels": [
+    "L1"
+   ],
+   "rect": [
+    -7,
+    2,
+    18,
+    22
+   ],
+   "use": "Server room",
+   "structure": "main",
+   "zone": "main",
+   "corridor": false,
+   "tags": [],
+   "floor_y": [
+    0.0
+   ],
+   "height": [
+    3.2
+   ]
+  },
+  {
+   "id": "lab_store",
+   "levels": [
+    "L1"
+   ],
+   "rect": [
+    2,
+    9,
+    18,
+    22
+   ],
+   "use": "Lab stores and samples",
+   "structure": "main",
+   "zone": "main",
+   "corridor": false,
+   "tags": [],
+   "floor_y": [
+    0.0
+   ],
+   "height": [
+    3.2
+   ]
+  },
+  {
+   "id": "refuge",
+   "levels": [
+    "L1"
+   ],
+   "rect": [
+    -5,
+    1,
+    11,
+    16
+   ],
+   "use": "Emergency refuge",
+   "structure": "main",
+   "zone": "refuge",
+   "corridor": false,
+   "tags": [
+    "objective_survivors",
+    "own_air"
+   ],
+   "floor_y": [
+    0.0
+   ],
+   "height": [
+    3.2
+   ]
+  },
+  {
+   "id": "washroom_1",
+   "levels": [
+    "L1"
+   ],
+   "rect": [
+    9,
+    14,
+    9,
+    13
+   ],
+   "use": "Washroom",
+   "structure": "main",
+   "zone": "main",
+   "corridor": false,
+   "tags": [],
+   "floor_y": [
+    0.0
+   ],
+   "height": [
+    3.2
+   ]
+  },
+  {
+   "id": "lobby",
+   "levels": [
+    "L1"
+   ],
+   "rect": [
+    9,
+    14,
+    13,
+    22
+   ],
+   "use": "Lobby to the maintenance tunnel",
+   "structure": "main",
+   "zone": "main",
+   "corridor": false,
+   "tags": [],
+   "floor_y": [
+    0.0
+   ],
+   "height": [
+    3.2
+   ]
+  },
+  {
+   "id": "corr_1s",
+   "levels": [
+    "L1"
+   ],
+   "rect": [
+    -7,
+    9,
+    9,
+    11
+   ],
+   "use": "Corridor",
+   "structure": "main",
+   "zone": "main",
+   "corridor": true,
+   "tags": [],
+   "floor_y": [
+    0.0
+   ],
+   "height": [
+    3.2
+   ]
+  },
+  {
+   "id": "corr_1n",
+   "levels": [
+    "L1"
+   ],
+   "rect": [
+    -7,
+    9,
+    16,
+    18
+   ],
+   "use": "Corridor",
+   "structure": "main",
+   "zone": "main",
+   "corridor": true,
+   "tags": [],
+   "floor_y": [
+    0.0
+   ],
+   "height": [
+    3.2
+   ]
+  },
+  {
+   "id": "corr_1w",
+   "levels": [
+    "L1"
+   ],
+   "rect": [
+    -7,
+    -5,
+    11,
+    16
+   ],
+   "use": "Corridor",
+   "structure": "main",
+   "zone": "main",
+   "corridor": true,
+   "tags": [],
+   "floor_y": [
+    0.0
+   ],
+   "height": [
+    3.2
+   ]
+  },
+  {
+   "id": "corr_1e",
+   "levels": [
+    "L1"
+   ],
+   "rect": [
+    7,
+    9,
+    11,
+    16
+   ],
+   "use": "Corridor",
+   "structure": "main",
+   "zone": "main",
+   "corridor": true,
+   "tags": [],
+   "floor_y": [
+    0.0
+   ],
+   "height": [
+    3.2
+   ]
+  },
+  {
+   "id": "stair",
+   "levels": [
+    "L1",
+    "L2"
+   ],
+   "rect": [
+    1,
+    7,
+    11,
+    16
+   ],
+   "use": "Stair",
+   "structure": "main",
+   "zone": "main",
+   "corridor": true,
+   "tags": [],
+   "floor_y": [
+    0.0,
+    3.6
+   ],
+   "height": [
+    3.2,
+    2.8
+   ]
+  },
+  {
+   "id": "commons",
+   "levels": [
+    "L2"
+   ],
+   "rect": [
+    -14,
+    4,
+    2,
+    9
+   ],
+   "use": "Commons (mess and games)",
+   "structure": "main",
+   "zone": "main",
+   "corridor": false,
+   "tags": [
+    "faces_chasm"
+   ],
+   "floor_y": [
+    3.6
+   ],
+   "height": [
+    2.8
+   ]
+  },
+  {
+   "id": "galley",
+   "levels": [
+    "L2"
+   ],
+   "rect": [
+    4,
+    9,
+    2,
+    9
+   ],
+   "use": "Galley",
+   "structure": "main",
+   "zone": "main",
+   "corridor": false,
+   "tags": [
+    "faces_chasm"
+   ],
+   "floor_y": [
+    3.6
+   ],
+   "height": [
+    2.8
+   ]
+  },
+  {
+   "id": "food_store",
+   "levels": [
+    "L2"
+   ],
+   "rect": [
+    9,
+    14,
+    2,
+    9
+   ],
+   "use": "Food stores",
+   "structure": "main",
+   "zone": "main",
+   "corridor": false,
+   "tags": [],
+   "floor_y": [
+    3.6
+   ],
+   "height": [
+    2.8
+   ]
+  },
+  {
+   "id": "dorm_a",
+   "levels": [
+    "L2"
+   ],
+   "rect": [
+    -14,
+    -7,
+    9,
+    16
+   ],
+   "use": "Dorm A (shift one)",
+   "structure": "main",
+   "zone": "main",
+   "corridor": false,
+   "tags": [],
+   "floor_y": [
+    3.6
+   ],
+   "height": [
+    2.8
+   ]
+  },
+  {
+   "id": "dorm_b",
+   "levels": [
+    "L2"
+   ],
+   "rect": [
+    -14,
+    -7,
+    16,
+    22
+   ],
+   "use": "Dorm B (shift two)",
+   "structure": "main",
+   "zone": "main",
+   "corridor": false,
+   "tags": [],
+   "floor_y": [
+    3.6
+   ],
+   "height": [
+    2.8
+   ]
+  },
+  {
+   "id": "chief_cabin",
+   "levels": [
+    "L2"
+   ],
+   "rect": [
+    9,
+    14,
+    9,
+    15
+   ],
+   "use": "Station chief's cabin",
+   "structure": "main",
+   "zone": "main",
+   "corridor": false,
+   "tags": [],
+   "floor_y": [
+    3.6
+   ],
+   "height": [
+    2.8
+   ]
+  },
+  {
+   "id": "gym",
+   "levels": [
+    "L2"
+   ],
+   "rect": [
+    9,
+    14,
+    15,
+    22
+   ],
+   "use": "Gym",
+   "structure": "main",
+   "zone": "main",
+   "corridor": false,
+   "tags": [],
+   "floor_y": [
+    3.6
+   ],
+   "height": [
+    2.8
+   ]
+  },
+  {
+   "id": "washroom_2",
+   "levels": [
+    "L2"
+   ],
+   "rect": [
+    -5,
+    1,
+    11,
+    16
+   ],
+   "use": "Washroom and showers",
+   "structure": "main",
+   "zone": "main",
+   "corridor": false,
+   "tags": [],
+   "floor_y": [
+    3.6
+   ],
+   "height": [
+    2.8
+   ]
+  },
+  {
+   "id": "quiet_room",
+   "levels": [
+    "L2"
+   ],
+   "rect": [
+    -7,
+    2,
+    18,
+    22
+   ],
+   "use": "Quiet room (books",
+   "structure": "main",
+   "zone": "main",
+   "corridor": false,
+   "tags": [],
+   "floor_y": [
+    3.6
+   ],
+   "height": [
+    2.8
+   ]
+  },
+  {
+   "id": "laundry",
+   "levels": [
+    "L2"
+   ],
+   "rect": [
+    2,
+    9,
+    18,
+    22
+   ],
+   "use": "Laundry",
+   "structure": "main",
+   "zone": "main",
+   "corridor": false,
+   "tags": [],
+   "floor_y": [
+    3.6
+   ],
+   "height": [
+    2.8
+   ]
+  },
+  {
+   "id": "corr_2s",
+   "levels": [
+    "L2"
+   ],
+   "rect": [
+    -7,
+    9,
+    9,
+    11
+   ],
+   "use": "Corridor",
+   "structure": "main",
+   "zone": "main",
+   "corridor": true,
+   "tags": [],
+   "floor_y": [
+    3.6
+   ],
+   "height": [
+    2.8
+   ]
+  },
+  {
+   "id": "corr_2n",
+   "levels": [
+    "L2"
+   ],
+   "rect": [
+    -7,
+    9,
+    16,
+    18
+   ],
+   "use": "Corridor",
+   "structure": "main",
+   "zone": "main",
+   "corridor": true,
+   "tags": [],
+   "floor_y": [
+    3.6
+   ],
+   "height": [
+    2.8
+   ]
+  },
+  {
+   "id": "corr_2w",
+   "levels": [
+    "L2"
+   ],
+   "rect": [
+    -7,
+    -5,
+    11,
+    16
+   ],
+   "use": "Corridor",
+   "structure": "main",
+   "zone": "main",
+   "corridor": true,
+   "tags": [],
+   "floor_y": [
+    3.6
+   ],
+   "height": [
+    2.8
+   ]
+  },
+  {
+   "id": "corr_2e",
+   "levels": [
+    "L2"
+   ],
+   "rect": [
+    7,
+    9,
+    11,
+    16
+   ],
+   "use": "Corridor",
+   "structure": "main",
+   "zone": "main",
+   "corridor": true,
+   "tags": [],
+   "floor_y": [
+    3.6
+   ],
+   "height": [
+    2.8
+   ]
+  },
+  {
+   "id": "maint_hall",
+   "levels": [
+    "M"
+   ],
+   "rect": [
+    26,
+    33,
+    16,
+    24
+   ],
+   "use": "Maintenance hall",
+   "structure": "maintenance",
+   "zone": "maintenance",
+   "corridor": true,
+   "tags": [],
+   "floor_y": [
+    0.0
+   ],
+   "height": [
+    5.0
+   ]
+  },
+  {
+   "id": "workshop",
+   "levels": [
+    "M"
+   ],
+   "rect": [
+    26,
+    40,
+    4,
+    16
+   ],
+   "use": "Workshop (bilge controls)",
+   "structure": "maintenance",
+   "zone": "maintenance",
+   "corridor": false,
+   "tags": [
+    "objective_bilges"
+   ],
+   "floor_y": [
+    0.0
+   ],
+   "height": [
+    5.0
+   ]
+  },
+  {
+   "id": "spares",
+   "levels": [
+    "M"
+   ],
+   "rect": [
+    33,
+    40,
+    16,
+    24
+   ],
+   "use": "Spares store",
+   "structure": "maintenance",
+   "zone": "maintenance",
+   "corridor": false,
+   "tags": [],
+   "floor_y": [
+    0.0
+   ],
+   "height": [
+    5.0
+   ]
+  },
+  {
+   "id": "dive_locker",
+   "levels": [
+    "M"
+   ],
+   "rect": [
+    40,
+    46,
+    4,
+    10
+   ],
+   "use": "Dive locker (suits)",
+   "structure": "maintenance",
+   "zone": "maintenance",
+   "corridor": false,
+   "tags": [],
+   "floor_y": [
+    0.0
+   ],
+   "height": [
+    5.0
+   ]
+  },
+  {
+   "id": "lockout",
+   "levels": [
+    "M"
+   ],
+   "rect": [
+    40,
+    46,
+    10,
+    14
+   ],
+   "use": "Lock-out to the sea",
+   "structure": "maintenance",
+   "zone": "lockout",
+   "corridor": false,
+   "tags": [],
+   "floor_y": [
+    0.0
+   ],
+   "height": [
+    5.0
+   ]
+  },
+  {
+   "id": "life_support",
+   "levels": [
+    "M"
+   ],
+   "rect": [
+    40,
+    46,
+    14,
+    24
+   ],
+   "use": "Life support",
+   "structure": "maintenance",
+   "zone": "life_support",
+   "corridor": false,
+   "tags": [
+    "objective_life_support"
+   ],
+   "floor_y": [
+    0.0
+   ],
+   "height": [
+    5.0
+   ]
+  },
+  {
+   "id": "dock_passage",
+   "levels": [
+    "D"
+   ],
+   "rect": [
+    32,
+    36,
+    -2,
+    4
+   ],
+   "use": "Dock passage",
+   "structure": "dock",
+   "zone": "dock",
+   "corridor": true,
+   "tags": [],
+   "floor_y": [
+    0.0
+   ],
+   "height": [
+    3.0
+   ]
+  },
+  {
+   "id": "dock_airlock",
+   "levels": [
+    "D"
+   ],
+   "rect": [
+    30,
+    38,
+    -10,
+    -2
+   ],
+   "use": "Dock airlock (collar in the floor)",
+   "structure": "dock",
+   "zone": "dock_airlock",
+   "corridor": false,
+   "tags": [],
+   "floor_y": [
+    0.0
+   ],
+   "height": [
+    3.0
+   ]
+  },
+  {
+   "id": "reactor_control",
+   "levels": [
+    "P"
+   ],
+   "rect": [
+    22,
+    30,
+    74,
+    82
+   ],
+   "use": "Reactor control room",
+   "structure": "power",
+   "zone": "power",
+   "corridor": false,
+   "tags": [
+    "objective_power_restart"
+   ],
+   "floor_y": [
+    0.0
+   ],
+   "height": [
+    6.0
+   ]
+  },
+  {
+   "id": "switchgear",
+   "levels": [
+    "P"
+   ],
+   "rect": [
+    30,
+    38,
+    74,
+    82
+   ],
+   "use": "Switchgear",
+   "structure": "power",
+   "zone": "power",
+   "corridor": false,
+   "tags": [],
+   "floor_y": [
+    0.0
+   ],
+   "height": [
+    6.0
+   ]
+  },
+  {
+   "id": "reactor_hall",
+   "levels": [
+    "P"
+   ],
+   "rect": [
+    22,
+    38,
+    82,
+    92
+   ],
+   "use": "Reactor hall",
+   "structure": "power",
+   "zone": "reactor",
+   "corridor": false,
+   "tags": [],
+   "floor_y": [
+    0.0
+   ],
+   "height": [
+    6.0
+   ]
+  }
+ ],
+ "tunnels": [
+  {
+   "id": "link_tunnel",
+   "path": [
+    [
+     14,
+     19
+    ],
+    [
+     26,
+     19
+    ]
+   ],
+   "width": 2.4,
+   "height": 2.6,
+   "length": 12.0
+  },
+  {
+   "id": "power_tunnel",
+   "path": [
+    [
+     28,
+     24
+    ],
+    [
+     28,
+     74
+    ]
+   ],
+   "width": 2.0,
+   "height": 2.4,
+   "length": 50.0
+  }
+ ],
+ "doors": [
+  {
+   "between": [
+    "science_lab",
+    "corr_1s"
+   ],
+   "at": [
+    -2,
+    9
+   ],
+   "width": 1.6,
+   "kind": "powered",
+   "level": null
+  },
+  {
+   "between": [
+    "medical",
+    "corr_1s"
+   ],
+   "at": [
+    7.5,
+    9
+   ],
+   "width": 1.4,
+   "kind": "manual",
+   "level": null
+  },
+  {
+   "between": [
+    "comms",
+    "corr_1w"
+   ],
+   "at": [
+    -7,
+    13.5
+   ],
+   "width": 1.0,
+   "kind": "powered",
+   "level": null
+  },
+  {
+   "between": [
+    "comms",
+    "chief_office"
+   ],
+   "at": [
+    -10.5,
+    16
+   ],
+   "width": 1.0,
+   "kind": "manual",
+   "level": null
+  },
+  {
+   "between": [
+    "chief_office",
+    "corr_1n"
+   ],
+   "at": [
+    -7,
+    17
+   ],
+   "width": 1.0,
+   "kind": "manual",
+   "level": null
+  },
+  {
+   "between": [
+    "server_room",
+    "corr_1n"
+   ],
+   "at": [
+    -2.5,
+    18
+   ],
+   "width": 1.0,
+   "kind": "powered",
+   "level": null
+  },
+  {
+   "between": [
+    "lab_store",
+    "corr_1n"
+   ],
+   "at": [
+    5.5,
+    18
+   ],
+   "width": 1.0,
+   "kind": "manual",
+   "level": null
+  },
+  {
+   "between": [
+    "refuge",
+    "corr_1w"
+   ],
+   "at": [
+    -5,
+    13.5
+   ],
+   "width": 1.2,
+   "kind": "watertight",
+   "level": null
+  },
+  {
+   "between": [
+    "washroom_1",
+    "corr_1e"
+   ],
+   "at": [
+    9,
+    12
+   ],
+   "width": 1.0,
+   "kind": "manual",
+   "level": null
+  },
+  {
+   "between": [
+    "lobby",
+    "corr_1e"
+   ],
+   "at": [
+    9,
+    14.5
+   ],
+   "width": 1.6,
+   "kind": "manual",
+   "level": null
+  },
+  {
+   "between": [
+    "lobby",
+    "corr_1n"
+   ],
+   "at": [
+    9,
+    17
+   ],
+   "width": 1.6,
+   "kind": "open",
+   "level": null
+  },
+  {
+   "between": [
+    "corr_1s",
+    "corr_1w"
+   ],
+   "at": [
+    -6,
+    11
+   ],
+   "width": 2.0,
+   "kind": "open",
+   "level": null
+  },
+  {
+   "between": [
+    "corr_1s",
+    "corr_1e"
+   ],
+   "at": [
+    8,
+    11
+   ],
+   "width": 2.0,
+   "kind": "open",
+   "level": null
+  },
+  {
+   "between": [
+    "corr_1n",
+    "corr_1w"
+   ],
+   "at": [
+    -6,
+    16
+   ],
+   "width": 2.0,
+   "kind": "open",
+   "level": null
+  },
+  {
+   "between": [
+    "corr_1n",
+    "corr_1e"
+   ],
+   "at": [
+    8,
+    16
+   ],
+   "width": 2.0,
+   "kind": "open",
+   "level": null
+  },
+  {
+   "between": [
+    "stair",
+    "corr_1s"
+   ],
+   "at": [
+    4,
+    11
+   ],
+   "width": 2.4,
+   "kind": "open",
+   "level": "L1"
+  },
+  {
+   "between": [
+    "stair",
+    "corr_1n"
+   ],
+   "at": [
+    4,
+    16
+   ],
+   "width": 2.4,
+   "kind": "open",
+   "level": "L1"
+  },
+  {
+   "between": [
+    "lobby",
+    "link_tunnel"
+   ],
+   "at": [
+    14,
+    19
+   ],
+   "width": 1.6,
+   "kind": "watertight",
+   "level": null
+  },
+  {
+   "between": [
+    "commons",
+    "corr_2s"
+   ],
+   "at": [
+    -2,
+    9
+   ],
+   "width": 2.0,
+   "kind": "open",
+   "level": null
+  },
+  {
+   "between": [
+    "commons",
+    "galley"
+   ],
+   "at": [
+    4,
+    5.5
+   ],
+   "width": 1.6,
+   "kind": "open",
+   "level": null
+  },
+  {
+   "between": [
+    "galley",
+    "food_store"
+   ],
+   "at": [
+    9,
+    5.5
+   ],
+   "width": 1.0,
+   "kind": "manual",
+   "level": null
+  },
+  {
+   "between": [
+    "galley",
+    "corr_2s"
+   ],
+   "at": [
+    7.5,
+    9
+   ],
+   "width": 1.0,
+   "kind": "manual",
+   "level": null
+  },
+  {
+   "between": [
+    "dorm_a",
+    "corr_2w"
+   ],
+   "at": [
+    -7,
+    13.5
+   ],
+   "width": 1.0,
+   "kind": "manual",
+   "level": null
+  },
+  {
+   "between": [
+    "dorm_b",
+    "corr_2n"
+   ],
+   "at": [
+    -7,
+    17
+   ],
+   "width": 1.0,
+   "kind": "manual",
+   "level": null
+  },
+  {
+   "between": [
+    "chief_cabin",
+    "corr_2e"
+   ],
+   "at": [
+    9,
+    12
+   ],
+   "width": 1.0,
+   "kind": "manual",
+   "level": null
+  },
+  {
+   "between": [
+    "gym",
+    "corr_2e"
+   ],
+   "at": [
+    9,
+    15
+   ],
+   "width": 1.2,
+   "kind": "manual",
+   "level": null
+  },
+  {
+   "between": [
+    "gym",
+    "corr_2n"
+   ],
+   "at": [
+    9,
+    17
+   ],
+   "width": 1.2,
+   "kind": "manual",
+   "level": null
+  },
+  {
+   "between": [
+    "washroom_2",
+    "corr_2w"
+   ],
+   "at": [
+    -5,
+    13.5
+   ],
+   "width": 1.0,
+   "kind": "manual",
+   "level": null
+  },
+  {
+   "between": [
+    "quiet_room",
+    "corr_2n"
+   ],
+   "at": [
+    -2.5,
+    18
+   ],
+   "width": 1.0,
+   "kind": "manual",
+   "level": null
+  },
+  {
+   "between": [
+    "laundry",
+    "corr_2n"
+   ],
+   "at": [
+    5.5,
+    18
+   ],
+   "width": 1.0,
+   "kind": "manual",
+   "level": null
+  },
+  {
+   "between": [
+    "corr_2s",
+    "corr_2w"
+   ],
+   "at": [
+    -6,
+    11
+   ],
+   "width": 2.0,
+   "kind": "open",
+   "level": null
+  },
+  {
+   "between": [
+    "corr_2s",
+    "corr_2e"
+   ],
+   "at": [
+    8,
+    11
+   ],
+   "width": 2.0,
+   "kind": "open",
+   "level": null
+  },
+  {
+   "between": [
+    "corr_2n",
+    "corr_2w"
+   ],
+   "at": [
+    -6,
+    16
+   ],
+   "width": 2.0,
+   "kind": "open",
+   "level": null
+  },
+  {
+   "between": [
+    "corr_2n",
+    "corr_2e"
+   ],
+   "at": [
+    8,
+    16
+   ],
+   "width": 2.0,
+   "kind": "open",
+   "level": null
+  },
+  {
+   "between": [
+    "stair",
+    "corr_2s"
+   ],
+   "at": [
+    4,
+    11
+   ],
+   "width": 2.4,
+   "kind": "open",
+   "level": "L2"
+  },
+  {
+   "between": [
+    "stair",
+    "corr_2n"
+   ],
+   "at": [
+    4,
+    16
+   ],
+   "width": 2.4,
+   "kind": "open",
+   "level": "L2"
+  },
+  {
+   "between": [
+    "link_tunnel",
+    "maint_hall"
+   ],
+   "at": [
+    26,
+    19
+   ],
+   "width": 1.6,
+   "kind": "watertight",
+   "level": null
+  },
+  {
+   "between": [
+    "maint_hall",
+    "workshop"
+   ],
+   "at": [
+    29.5,
+    16
+   ],
+   "width": 2.0,
+   "kind": "manual",
+   "level": null
+  },
+  {
+   "between": [
+    "maint_hall",
+    "spares"
+   ],
+   "at": [
+    33,
+    20
+   ],
+   "width": 1.2,
+   "kind": "manual",
+   "level": null
+  },
+  {
+   "between": [
+    "workshop",
+    "spares"
+   ],
+   "at": [
+    36.5,
+    16
+   ],
+   "width": 1.6,
+   "kind": "manual",
+   "level": null
+  },
+  {
+   "between": [
+    "workshop",
+    "dive_locker"
+   ],
+   "at": [
+    40,
+    7
+   ],
+   "width": 1.2,
+   "kind": "manual",
+   "level": null
+  },
+  {
+   "between": [
+    "dive_locker",
+    "lockout"
+   ],
+   "at": [
+    43,
+    10
+   ],
+   "width": 1.0,
+   "kind": "watertight",
+   "level": null
+  },
+  {
+   "between": [
+    "workshop",
+    "life_support"
+   ],
+   "at": [
+    40,
+    15
+   ],
+   "width": 1.0,
+   "kind": "watertight",
+   "level": null
+  },
+  {
+   "between": [
+    "maint_hall",
+    "power_tunnel"
+   ],
+   "at": [
+    28,
+    24
+   ],
+   "width": 1.4,
+   "kind": "watertight",
+   "level": null
+  },
+  {
+   "between": [
+    "lockout",
+    "sea"
+   ],
+   "at": [
+    43,
+    12
+   ],
+   "width": 0.8,
+   "kind": "hatch",
+   "level": null
+  },
+  {
+   "between": [
+    "workshop",
+    "dock_passage"
+   ],
+   "at": [
+    34,
+    4
+   ],
+   "width": 1.4,
+   "kind": "watertight",
+   "level": null
+  },
+  {
+   "between": [
+    "dock_passage",
+    "dock_airlock"
+   ],
+   "at": [
+    34,
+    -2
+   ],
+   "width": 1.4,
+   "kind": "watertight",
+   "level": null
+  },
+  {
+   "between": [
+    "dock_airlock",
+    "sub"
+   ],
+   "at": [
+    34,
+    -6
+   ],
+   "width": 0.9,
+   "kind": "hatch",
+   "level": null
+  },
+  {
+   "between": [
+    "power_tunnel",
+    "reactor_control"
+   ],
+   "at": [
+    28,
+    74
+   ],
+   "width": 1.4,
+   "kind": "watertight",
+   "level": null
+  },
+  {
+   "between": [
+    "reactor_control",
+    "switchgear"
+   ],
+   "at": [
+    30,
+    78
+   ],
+   "width": 1.2,
+   "kind": "manual",
+   "level": null
+  },
+  {
+   "between": [
+    "reactor_control",
+    "reactor_hall"
+   ],
+   "at": [
+    26,
+    82
+   ],
+   "width": 1.2,
+   "kind": "watertight",
+   "level": null
+  }
+ ]
+}
