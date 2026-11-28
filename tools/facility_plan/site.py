@@ -30,7 +30,8 @@ from PIL import Image, ImageDraw, ImageFont
 TOL = 0.15
 FACES = {"south": (0.0, -1.0), "north": (0.0, 1.0), "west": (-1.0, 0.0), "east": (1.0, 0.0)}
 ROLE_COL = {"node": (150, 160, 168), "plinth": (95, 100, 106), "post": (175, 180, 186), "mast": (120, 124, 130),
-            "beacon": (220, 70, 60), "pinger": (220, 70, 60), "light": (240, 200, 120), "cable_bay": (110, 115, 120)}
+            "beacon": (220, 70, 60), "pinger": (220, 70, 60), "light": (240, 200, 120), "cable_bay": (110, 115, 120),
+            "fin": (140, 146, 152), "lamp_ring": (240, 170, 80), "emitter": (70, 74, 80)}
 
 
 def font(size: int, bold: bool = False) -> ImageFont.FreeTypeFont:
@@ -143,7 +144,8 @@ class Site:
                 d = math.dist(a.centre(), b.centre())
                 if d < c.get("post_spacing_m", 12.0) - TOL:
                     self.check(False, f"{a.id} and {b.id} are {d:.1f} m apart (array spacing {c.get('post_spacing_m')})")
-        self.check(len(posts) > 0, f"{len(posts)} sensor posts, at least {c.get('post_spacing_m', 12.0):.0f} m apart")
+        if "post_spacing_m" in c:  # an array: it has posts, spread out
+            self.check(len(posts) > 0, f"{len(posts)} sensor posts, at least {c['post_spacing_m']:.0f} m apart")
         cabled = set()
         for cb in self.p.get("cables", []):
             path = [tuple(p) for p in cb["path"]]
@@ -199,8 +201,8 @@ class Site:
 
     def draw_plan(self, out: Path) -> None:
         pts = [v for e in self.els.values() for v in (e.bounds()[0:2])], [v for e in self.els.values() for v in e.bounds()[2:4]]
-        xs = pts[0] + [p[0] for cb in self.p["cables"] for p in cb["path"] if cb["to"] != "offsite"]
-        zs = pts[1] + [p[1] for cb in self.p["cables"] for p in cb["path"] if cb["to"] != "offsite"] + [self.pad[2] - 14]
+        xs = pts[0] + [p[0] for cb in self.p.get("cables", []) for p in cb["path"] if cb["to"] != "offsite"]
+        zs = pts[1] + [p[1] for cb in self.p.get("cables", []) for p in cb["path"] if cb["to"] != "offsite"] + [self.pad[2] - 14]
         x0, x1, z0, z1 = min(xs) - 10, max(xs) + 10, min(zs) - 6, max(zs) + 10
         s, m = 14.0, 50
         W, H = int((x1 - x0) * s) + 2 * m, int((z1 - z0) * s) + 2 * m + 60
@@ -222,7 +224,7 @@ class Site:
             (ax, az), (bx, bz) = ap["from"], ap["to"]
             d.rectangle([P(min(ax, bx) - half, max(az, bz)), P(max(ax, bx) + half, max(min(az, bz), z0))], fill=(26, 40, 48))
             d.text((P(ax + half + 1, z0 + 4)), "sub's approach", fill=(120, 160, 180), font=font(14))
-        for cb in self.p["cables"]:
+        for cb in self.p.get("cables", []):
             path = [P(*p) for p in cb["path"]]
             d.line(path, fill=(200, 140, 60), width=2)
             if "break_at" in cb:

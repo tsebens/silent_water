@@ -380,7 +380,8 @@ def build_site(layout: dict) -> None:
     """An exterior site (tools/facility_plan/site.py's layout): the seabed, its elements, cables, the hovering sub."""
     box("seabed", -200, 200, -2.0, 0.0, -200, 200, "terrain", "terrain")
     mats = {"node": "concrete", "plinth": "concrete_dark", "post": "concrete", "mast": "strut", "beacon": "beacon",
-            "light": "neon_amber", "cable_bay": "concrete_dark"}
+            "light": "neon_amber", "cable_bay": "concrete_dark", "fin": "concrete", "lamp_ring": "neon_amber",
+            "emitter": "frame"}
     for e in layout["elements"]:
         y0 = float(e.get("base_y", 0.0))
         y1 = y0 + float(e["height"])
