@@ -207,7 +207,7 @@ def sheet(slug: str, renders: Path | None = None, pose: dict[str, tuple[float, f
     rest = [p for p in sorted(renders.glob("*.png")) if p.stem not in paired]
     if pose:                                  # one extra view: the skinned mesh with the bones rotated
         posed = render(slug, library.REPO / "build" / "renders" / f"{slug}_posed", pose=pose)
-        rest.append(posed[0])
+        rest.append(next((p for p in posed if p.stem == "three_quarter"), posed[0]))   # the view that shows a bend
     if rest:
         tiles = [_label(Image.open(p).convert("RGB").resize((480, 300)), "posed" if pose and p == rest[-1] else p.stem)
                  for p in rest]
