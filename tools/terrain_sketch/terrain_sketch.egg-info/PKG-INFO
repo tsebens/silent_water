@@ -1,0 +1,8 @@
+Metadata-Version: 2.4
+Name: terrain-sketch
+Version: 0.1.0
+Summary: Numpy prototype of Silent Water's macro terrain generator: landform composition, macro erosion, station viability. Renders hillshades; the agreed algorithms are ported to GDScript under src/site/.
+Requires-Python: >=3.11
+Requires-Dist: numpy>=1.26
+Requires-Dist: pillow>=10
+Requires-Dist: scipy>=1.11

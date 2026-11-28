@@ -20,3 +20,4 @@ __pycache__/
 
 # Scratch checkouts made by agent sessions
 /.claude/worktrees/
+/tools/terrain_sketch/.venv/

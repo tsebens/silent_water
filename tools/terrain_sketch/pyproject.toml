@@ -1,0 +1,17 @@
+[project]
+name = "terrain-sketch"
+version = "0.1.0"
+description = "Numpy prototype of Silent Water's macro terrain generator: landform composition, macro erosion, station viability. Renders hillshades; the agreed algorithms are ported to GDScript under src/site/."
+requires-python = ">=3.11"
+dependencies = ["numpy>=1.26", "pillow>=10", "scipy>=1.11"]
+
+[project.scripts]
+sketch = "terrain_sketch.cli:main"
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["terrain_sketch*"]
