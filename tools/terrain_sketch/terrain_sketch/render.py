@@ -26,10 +26,14 @@ def hillshade(h: np.ndarray, cell: float, az_deg: float = 315.0, el_deg: float =
 
 
 def render(h: np.ndarray, preset: MapPreset, scale: int = 3, contours_m: float = 50.0, placements=None,
-           landforms=None, candidates: dict | None = None, title: str = "") -> Image.Image:
+           landforms=None, candidates: dict | None = None, title: str = "", sediment: np.ndarray | None = None) -> Image.Image:
     t = (h - preset.depth_deep) / (preset.depth_shallow - preset.depth_deep)
     shade = hillshade(h, preset.cell_m)
     rgb = _tint(np.clip(t, 0, 1)) * (0.55 + 0.85 * shade[..., None])
+    if sediment is not None:
+        # Sediment as a warm silt tint, by thickness: fans, channel fills and mudflats show apart from rock.
+        a = np.clip(sediment / 8.0, 0.0, 1.0)[..., None] * 0.55
+        rgb = rgb * (1 - a) + np.array([0.62, 0.52, 0.36]) * (0.55 + 0.7 * shade[..., None]) * a
     # Contours: darken cells where a level crosses between neighbours.
     lev = np.floor(h / contours_m)
     cross = (lev != np.roll(lev, 1, axis=0)) | (lev != np.roll(lev, 1, axis=1))
@@ -41,7 +45,7 @@ def render(h: np.ndarray, preset: MapPreset, scale: int = 3, contours_m: float =
     if candidates:
         # Tint candidate cells of the hardest class faintly so the gate is visible.
         name, m = min(candidates.items(), key=lambda kv: kv[1].sum())
-        rgb[m] = rgb[m] * 0.6 + np.array([0.9, 0.6, 0.2]) * 0.4
+        rgb[m] = rgb[m] * 0.6 + np.array([0.75, 0.35, 0.85]) * 0.4
     img = Image.fromarray((np.clip(rgb, 0, 1) * 255).astype(np.uint8)).resize((h.shape[1] * scale, h.shape[0] * scale), Image.NEAREST)
     d = ImageDraw.Draw(img)
 

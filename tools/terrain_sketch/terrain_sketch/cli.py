@@ -28,9 +28,10 @@ def generate(preset: MapPreset, seed: int, erode: bool = True):
     macro = build_macro(preset, seed)
     t1 = time.perf_counter()
     h = macro.h
-    fan_list = []
+    macro.sediment = None
     if erode:
-        h, acc, fan_list = run_macro_erosion(h, preset.cell_m, macro.log)
+        h, acc, sed = run_macro_erosion(h, preset.cell_m, macro.log)
+        macro.sediment = sed
     t2 = time.perf_counter()
     v = place(h, preset, DEFAULT_STATIONS, seed)
     t3 = time.perf_counter()
@@ -53,7 +54,7 @@ def main(argv: list[str] | None = None) -> int:
             h, macro, v = generate(preset, seed, erode=not args.no_erode)
             title = f"seed {seed}  {'VIABLE' if v.ok else 'REJECT'}  y {h.min():.0f}..{h.max():.0f}"
             img = render(h, preset, scale=args.scale, placements=v.placements, landforms=macro.landforms if args.outlines else None,
-                         candidates=v.candidates, title=title)
+                         candidates=v.candidates, title=title, sediment=getattr(macro, 'sediment', None))
             img.save(out / f"seed_{seed:03d}.png")
             print(f"== seed {seed}: {'viable' if v.ok else 'reject'}")
             for line in macro.log: print("   " + line)
