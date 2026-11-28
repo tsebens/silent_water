@@ -8,7 +8,7 @@ import numpy as np
 from .grid import MapPreset
 from .landforms import build_macro
 from .erosion import run_macro_erosion
-from .stations import place, DEFAULT_STATIONS
+from .stations import place, load_stations, terrace_bands, EXAMPLE_STATIONS
 from .render import render, hypsometry
 from PIL import Image
 
@@ -24,7 +24,9 @@ def _seeds(args: list[str]) -> list[int]:
     return out
 
 
-def generate(preset: MapPreset, seed: int, erode: bool = True):
+def generate(preset: MapPreset, seed: int, erode: bool = True, stations=None):
+    stations = stations if stations is not None else load_stations(EXAMPLE_STATIONS)
+    preset.terrace_bands = terrace_bands(stations, preset)
     t0 = time.perf_counter()
     macro = build_macro(preset, seed)
     t1 = time.perf_counter()
@@ -34,7 +36,7 @@ def generate(preset: MapPreset, seed: int, erode: bool = True):
         h, acc, sed = run_macro_erosion(h, preset.cell_m, macro.log)
         macro.sediment = sed
     t2 = time.perf_counter()
-    v = place(h, preset, DEFAULT_STATIONS, seed)
+    v = place(h, preset, stations, seed)
     t3 = time.perf_counter()
     macro.log.append(f"timing: landforms {1000*(t1-t0):.0f} ms, erosion {1000*(t2-t1):.0f} ms, gate {1000*(t3-t2):.0f} ms")
     return h, macro, v
@@ -74,7 +76,7 @@ def main(argv: list[str] | None = None) -> int:
             if not v.ok:
                 print(f"== seed {seed}: rejected at the gate, no detail pass"); continue
             d = run_detail(h, macro.sediment, preset, seed, v.placements)
-            fine_place = [type(p)(p.name, p.x, p.z, pr.y) for p, pr in zip(v.placements, d.pads)]
+            fine_place = [type(p)(p.id, p.x, p.z, pr.y, p.footprint_m) for p, pr in zip(v.placements, d.pads)]
             ov = render_detail(d.h, d.rock, d.cell, preset, placements=fine_place, title=f"seed {seed} detail, 2 m cells")
             ov = ov.resize((ov.width * 3 // 5, ov.height * 3 // 5), Image.LANCZOS)
             ov.save(out / f"seed_{seed:03d}_overview.png")
@@ -87,9 +89,8 @@ def main(argv: list[str] | None = None) -> int:
                 j, i = _np.unravel_index(_np.argmax(sm), sm.shape)
                 return -preset.width_m / 2 + i * d.cell, -preset.length_m / 2 + j * d.cell
             spots = [("cliff", *_hot(d.rock)), ("sediment", *_hot(_np.minimum(d.sediment, 15.0)))]
-            for name in ["research_station", "vent_field"]:
-                p = next((pp for pp in fine_place if pp.name == name), None)
-                if p is not None: spots.append((name, p.x, p.z))
+            for p in sorted(fine_place, key=lambda pp: -pp.footprint_m)[:2]:
+                spots.append((p.id, p.x, p.z))
             for name, cx, cz in spots:
                 win = (cx - 220, cz - 160, cx + 220, cz + 160)
                 img = render_detail(d.h, d.rock, d.cell, preset, boulders=d.boulders, placements=fine_place, window=win, scale=2,

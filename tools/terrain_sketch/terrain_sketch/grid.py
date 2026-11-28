@@ -13,7 +13,7 @@ class MapPreset:
     depth_shallow: float = -60.0      # the highest ground (world y)
     depth_deep: float = -650.0        # the lowest ground (world y)
     # Depth bands (deep, shallow) the three base levels are drawn from: deep plain, mid terrace, shallow shelf.
-    # They follow the station classes, so the flats land where stations need ground.
+    # Derived from the station list (stations.terrace_bands) before generation.
     terrace_bands: tuple = ((-520.0, -400.0), (-320.0, -210.0), (-160.0, -90.0))
 
     @property

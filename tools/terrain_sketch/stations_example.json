@@ -1,0 +1,74 @@
+[
+ {
+  "id": "station_a",
+  "depth_band": [
+   -320,
+   -200
+  ],
+  "footprint_m": 60,
+  "max_relief_m": 16
+ },
+ {
+  "id": "station_b",
+  "depth_band": [
+   -160,
+   -80
+  ],
+  "footprint_m": 30,
+  "max_relief_m": 8
+ },
+ {
+  "id": "station_c",
+  "depth_band": [
+   -240,
+   -120
+  ],
+  "footprint_m": 35,
+  "max_relief_m": 9
+ },
+ {
+  "id": "station_d",
+  "depth_band": [
+   -520,
+   -340
+  ],
+  "footprint_m": 20,
+  "max_relief_m": 8
+ },
+ {
+  "id": "station_e",
+  "depth_band": [
+   -520,
+   -340
+  ],
+  "footprint_m": 20,
+  "max_relief_m": 8
+ },
+ {
+  "id": "station_f",
+  "depth_band": [
+   -520,
+   -340
+  ],
+  "footprint_m": 20,
+  "max_relief_m": 8
+ },
+ {
+  "id": "station_g",
+  "depth_band": [
+   -110,
+   -60
+  ],
+  "footprint_m": 12,
+  "max_relief_m": 5
+ },
+ {
+  "id": "station_h",
+  "depth_band": [
+   -650,
+   -500
+  ],
+  "footprint_m": 30,
+  "max_relief_m": 25
+ }
+]

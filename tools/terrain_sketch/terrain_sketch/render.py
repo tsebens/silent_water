@@ -65,7 +65,7 @@ def render(h: np.ndarray, preset: MapPreset, scale: int = 3, contours_m: float =
         for p in placements:
             px, pz = to_px(p.x, p.z)
             d.ellipse([px - 5, pz - 5, px + 5, pz + 5], outline=(255, 255, 255), width=2)
-            d.text((px + 7, pz - 6), f"{p.name} {p.y:.0f}", fill=(255, 255, 255))
+            d.text((px + 7, pz - 6), f"{p.id} {p.y:.0f}", fill=(255, 255, 255))
     if title:
         d.rectangle([0, 0, img.width, 16], fill=(0, 0, 0))
         d.text((4, 2), title, fill=(230, 230, 230))
@@ -130,7 +130,7 @@ def render_detail(h: np.ndarray, rock: np.ndarray, cell: float, preset: MapPrese
             cx, cz = px(p.x, p.z)
             if 0 <= cx < img.width and 0 <= cz < img.height:
                 d.ellipse([cx - 6, cz - 6, cx + 6, cz + 6], outline=(255, 255, 255), width=2)
-                d.text((cx + 8, cz - 6), f"{p.name} {p.y:.0f}", fill=(255, 255, 255))
+                d.text((cx + 8, cz - 6), f"{p.id} {p.y:.0f}", fill=(255, 255, 255))
     if title:
         d.rectangle([0, 0, img.width, 14], fill=(0, 0, 0)); d.text((3, 1), title, fill=(230, 230, 230))
     return img

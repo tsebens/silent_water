@@ -29,11 +29,14 @@ uv run sketch detail --seeds 1 5 --out <dir>       # the detail pass on viable s
    gentle low ground. The mudflat weight is computed once from smoothed ground: a per-cell threshold
    recomputed each pass broke every cliff foot into teeth. Erosion also returns a sediment-thickness grid,
    drawn as a silt tint, and later the basis for choosing sediment or rock materials.
-3. **Viability gate and placement** (`stations.py`, about 0.03 s). Each station class has a depth band, a
-   footprint and the most relief a levelled pad can absorb. A map is viable when every class has ground and a
-   placement spreads the stations across the map with no outlier. Placement rewards spacing up to a cap and
-   then prefers the interior, and keeps a 220 m margin, so stations do not all go to the edges.
-
+3. **Viability gate and placement** (`stations.py`, about 0.03 s). The terrain knows one kind of station: an
+   id, a depth band, a footprint radius and the most relief its levelled pad can absorb. The game passes a list
+   at runtime, one entry per station (`stations_example.json` is a placeholder list); what each station is,
+   is not the terrain's concern. The base field's flats are derived from that list by interval stabbing: the
+   fewest depths such that every station's band contains one, each flat placed in the middle of the overlap
+   of the bands it serves. A map is viable when every station has ground and placement spreads the stations
+   across the map with no outlier. Placement rewards spacing up to a cap and then prefers the interior, and
+   keeps a 220 m margin, so stations do not all go to the edges.
 4. **Detail** (`detail.py`, about 5 s, only for a map that passed the gate). Upsample to 2 m cells (about
    1.2 million), classify ground as rock (steep, little sediment) or sediment, then add detail by material:
    ridged crags, a blocky texture and warped strata ledges of varying thickness on rock; scree lumps below
@@ -46,7 +49,6 @@ uv run sketch detail --seeds 1 5 --out <dir>       # the detail pass on viable s
 The gate run after stage 1 agrees with the gate after stage 2 on 25 of 30 seeds (round 3), so it works as
 the early filter; final placement runs again after the slow stages. 26 of 30 seeds are viable.
 
-Station classes and depth bands in `stations.py` are placeholders for the real station list.
 
 ## Port plan: chunking (decided)
 
@@ -90,3 +92,25 @@ The whole map is 286 tiles: about 5 s on one thread. Batched noise saves only ab
 batch output is 8-bit, so per-cell sampling (full precision) is the better choice. The slump is the costliest
 step. Not yet timed: the macro stage in GDScript (flow routing and sediment routing over about 47,000 cells,
 ten passes), which has the heaviest loops of the pipeline.
+
+## The macro stage in GDScript
+
+`bench/macro_bench.gd` times the heavy parts of the macro stage on the same 171 x 276 grid (run it the same
+way as the tile benchmark). Results in the cloud container:
+
+| Part | ms |
+| --- | --- |
+| Base field (7 noise fields) | 69 |
+| Distance to 8 curves of 48 segments, culled to 400 m | 239 |
+| Incision, 6 passes with flow routing (one routing about 67 ms) | 410 |
+| Slump, 4 passes | 104 |
+| Sediment routing, 10 passes with flow routing | 880 |
+| Priority-flood basin fill (binary heap) | 212 |
+| Gate relief windows, 4 footprint sizes | 411 |
+| **Total** | **about 2.3 s** |
+
+Flow routing sorts the grid natively by packing height and cell index into one 64-bit key, which avoids a
+script comparator. Not timed: fans, ponds and the mudflat smoothing. The mudflat step repeats wide blurs
+eighteen times; done naively in GDScript that would cost more than everything above, so the port uses
+running-sum box blurs, which cost the same at any width. The gate windows can use the same running trick.
+A rejected seed costs only the stages before the early gate.

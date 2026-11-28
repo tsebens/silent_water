@@ -9,7 +9,7 @@ from scipy import ndimage
 from . import noise
 from .grid import MapPreset, smoothstep, slope_deg
 from .erosion import thermal
-from .stations import Placement, StationClass, DEFAULT_STATIONS
+from .stations import Placement
 
 
 @dataclass
@@ -77,8 +77,7 @@ def upsample(a: np.ndarray, factor: int, order: int) -> np.ndarray:
 
 
 def run_detail(macro_h: np.ndarray, sediment: np.ndarray, preset: MapPreset, seed: int,
-               placements: list[Placement], classes: list[StationClass] = DEFAULT_STATIONS,
-               p: DetailParams = DetailParams()) -> DetailResult:
+               placements: list[Placement], p: DetailParams = DetailParams()) -> DetailResult:
     tm: dict = {}
     t = time.perf_counter()
     x, z, cell = fine_coords(preset, p.factor)
@@ -152,10 +151,9 @@ def run_detail(macro_h: np.ndarray, sediment: np.ndarray, preset: MapPreset, see
 
     # Station pads: level each footprint to the median ground inside it, blending to natural ground.
     t = time.perf_counter()
-    radius = {c.name: c.footprint_m for c in classes}
     pads: list[PadReport] = []
     for pl in placements:
-        r = radius.get(pl.name, 20.0)
+        r = pl.footprint_m
         d = np.hypot(x - pl.x, z - pl.z)
         inside = d <= r
         if not inside.any():
@@ -165,7 +163,7 @@ def run_detail(macro_h: np.ndarray, sediment: np.ndarray, preset: MapPreset, see
         new = h + (y - h) * w
         delta = new - h
         a = cell * cell
-        pads.append(PadReport(pl.name, y, float(-delta[delta < 0].sum() * a), float(delta[delta > 0].sum() * a),
+        pads.append(PadReport(pl.id, y, float(-delta[delta < 0].sum() * a), float(delta[delta > 0].sum() * a),
                               float(max(-delta.min(), 0.0)), float(max(delta.max(), 0.0))))
         h = new
         rock = rock * (1.0 - w)                 # a levelled pad is graded sediment

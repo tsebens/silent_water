@@ -66,22 +66,21 @@ def base_field(preset: MapPreset, seed: int, x: np.ndarray, z: np.ndarray, u_off
     if u_offset is not None:
         u = u + u_offset   # faults shift ground up or down a level before the staircase
     u = np.clip(u, 0.0, 1.0)
-    # Three levels as fractions of the range (0 deep, 1 shallow) and where in u each step sits.
-    # The three flats sit where stations need ground: one in the deep band, one in the middle band, one shallow.
-    span = preset.depth_shallow - preset.depth_deep
-    levels = np.array([(rng.uniform(*b) - preset.depth_deep) / span for b in preset.terrace_bands])
-    # Area shares of plain, terrace and shelf set the step positions as quantiles of the field, so every level
+    # The flats sit where stations need ground: one level per band from the station list (stations.terrace_bands),
+    # each drawn inside its band. Area shares set the step positions as quantiles of the field, so every level
     # has real ground whatever the noise happens to span this seed.
-    shares = rng.dirichlet([6.0, 6.0, 5.0])
-    steps = np.quantile(u, [shares[0], shares[0] + shares[1]])
+    span = preset.depth_shallow - preset.depth_deep
+    levels = np.sort(np.array([(rng.uniform(*b) - preset.depth_deep) / span for b in preset.terrace_bands]))
+    shares = rng.dirichlet([6.0] * len(levels))
+    steps = np.quantile(u, np.cumsum(shares)[:-1])
     # The rise between levels is a cliff in one place and a long ramp in another: its width varies in space.
     wvar = noise.fbm(x, z, seed + 3, wavelength=700.0, octaves=3) * 0.5 + 0.5
-    width = 0.015 + 0.09 * wvar ** 1.5
+    width = 0.015 + 0.09 * wvar ** 1.5 / max(len(levels) - 2, 1) ** 0.5
     # Each rim wanders on its own, so a step does not follow one contour of the field.
-    s0 = steps[0] + noise.fbm(x, z, seed + 4, wavelength=500.0, octaves=3) * 0.05
-    s1 = steps[1] + noise.fbm(x, z, seed + 5, wavelength=500.0, octaves=3) * 0.05
-    t = levels[0] + (levels[1] - levels[0]) * smoothstep(0.0, 1.0, (u - s0 + width) / (2 * width)) \
-        + (levels[2] - levels[1]) * smoothstep(0.0, 1.0, (u - s1 + width) / (2 * width))
+    t = np.full_like(u, levels[0])
+    for k, step in enumerate(steps):
+        sk = step + noise.fbm(x, z, seed + 4 + k, wavelength=500.0, octaves=3) * 0.05
+        t = t + (levels[k + 1] - levels[k]) * smoothstep(0.0, 1.0, (u - sk + width) / (2 * width))
     # Relief within a level: broad swales and low rises (about 15 m on the plain, 30 m on the shelf),
     # with a medium-scale ridged texture on higher ground so the shelf reads as worn rock, the plain as sediment.
     swale = noise.fbm(wx, wz, seed + 6, wavelength=450.0, octaves=4, gain=0.55)
